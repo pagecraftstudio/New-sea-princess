@@ -239,6 +239,57 @@
     </main>
   </div>
 
+  <!-- ── Funnel Analytics Section ───────────────────────────────────────── -->
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-xl font-bold text-gray-800 border-b-2 border-primary pb-2 inline-block">تحليلات القمع</h2>
+        <p class="text-xs text-gray-400 mt-1">آخر 30 يوماً</p>
+      </div>
+      <button onclick="loadFunnelStats()" class="text-xs font-bold text-primary border border-primary px-3 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
+        <i class="fa-solid fa-rotate-right ml-1"></i> تحديث
+      </button>
+    </div>
+
+    <!-- KPI row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">مشاهدات الباقات</p>
+        <p id="fKpiViews"   class="text-2xl font-bold text-purple-600">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">بدأ الحجز</p>
+        <p id="fKpiStarts"  class="text-2xl font-bold text-blue-500">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">أتمّ الحجز</p>
+        <p id="fKpiDone"    class="text-2xl font-bold text-green-600">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">معدل التحويل</p>
+        <p id="fKpiRate"    class="text-2xl font-bold text-gold">—</p>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Drop-off by step -->
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-chart-waterfall text-primary"></i> تسرب المستخدمين بحسب الخطوة
+        </h3>
+        <div id="fFunnelBars" class="space-y-3 text-sm"></div>
+      </div>
+
+      <!-- Top viewed vs booked -->
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-eye text-gold"></i> أكثر الباقات مشاهدةً مقابل محجوزة
+        </h3>
+        <div id="fTopPackages" class="space-y-3 text-sm"></div>
+      </div>
+    </div>
+  </div>
+
 <script>
   // Mobile drawer
   document.getElementById('mobileMenuBtn').addEventListener('click', () => {
@@ -593,11 +644,89 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
-    adminCheckAuth().then(ok => { if (ok) loadDashboardStats(); });
+    adminCheckAuth().then(ok => { if (ok) { loadDashboardStats(); loadFunnelStats(); } });
     document.getElementById('mobileMenuBtn').addEventListener('click', () => {
       document.getElementById('mobileDrawer').classList.remove('hidden');
     });
   });
+
+  // ── Funnel Analytics ──────────────────────────────────────────────────────
+  async function loadFunnelStats() {
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+    try {
+      const { data, error } = await window.db
+        .from('page_events')
+        .select('event_type, package_title, step_number')
+        .gte('created_at', since);
+
+      if (error || !data) return;
+
+      const views    = data.filter(e => e.event_type === 'package_view').length;
+      const starts   = data.filter(e => e.event_type === 'booking_start').length;
+      const completes= data.filter(e => e.event_type === 'booking_complete').length;
+      const rate     = starts ? ((completes / starts) * 100).toFixed(1) + '%' : '—';
+
+      document.getElementById('fKpiViews').textContent  = views.toLocaleString('ar-EG');
+      document.getElementById('fKpiStarts').textContent = starts.toLocaleString('ar-EG');
+      document.getElementById('fKpiDone').textContent   = completes.toLocaleString('ar-EG');
+      document.getElementById('fKpiRate').textContent   = rate;
+
+      // ── Drop-off funnel bars ──
+      const STEPS = [
+        { key: 'booking_start',    label: 'بدأ الحجز',         color: 'bg-blue-400' },
+        { key: 'booking_step_2',   label: 'وصل للخطوة 2',      color: 'bg-yellow-400' },
+        { key: 'booking_step_3',   label: 'وصل للخطوة 3',      color: 'bg-orange-400' },
+        { key: 'booking_complete', label: 'أتمّ الحجز',        color: 'bg-green-500' },
+      ];
+      const stepCounts = {
+        booking_start:    starts,
+        booking_step_2:   data.filter(e => e.event_type === 'booking_step' && e.step_number === 2).length,
+        booking_step_3:   data.filter(e => e.event_type === 'booking_step' && e.step_number === 3).length,
+        booking_complete: completes,
+      };
+      const maxCount = Math.max(...Object.values(stepCounts), 1);
+      document.getElementById('fFunnelBars').innerHTML = STEPS.map(s => {
+        const count = stepCounts[s.key];
+        const pct   = Math.round((count / maxCount) * 100);
+        return `<div>
+          <div class="flex justify-between mb-1"><span class="text-gray-600">${s.label}</span><span class="font-bold">${count.toLocaleString('ar-EG')}</span></div>
+          <div class="w-full bg-gray-100 rounded-full h-2.5">
+            <div class="${s.color} h-2.5 rounded-full transition-all" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+      }).join('');
+
+      // ── Top packages viewed vs booked ──
+      const viewsByPkg = {};
+      const booksByPkg = {};
+      data.forEach(e => {
+        if (!e.package_title) return;
+        if (e.event_type === 'package_view')    viewsByPkg[e.package_title] = (viewsByPkg[e.package_title] || 0) + 1;
+        if (e.event_type === 'booking_complete') booksByPkg[e.package_title] = (booksByPkg[e.package_title] || 0) + 1;
+      });
+      const topPkgs = Object.entries(viewsByPkg)
+        .sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const maxViews = topPkgs[0]?.[1] || 1;
+      document.getElementById('fTopPackages').innerHTML = topPkgs.length
+        ? topPkgs.map(([title, v]) => {
+            const b   = booksByPkg[title] || 0;
+            const pct = Math.round((v / maxViews) * 100);
+            return `<div>
+              <div class="flex justify-between mb-1 gap-2">
+                <span class="text-gray-700 truncate">${title}</span>
+                <span class="text-xs text-gray-400 whitespace-nowrap shrink-0">${v} مشاهدة · ${b} حجز</span>
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-2">
+                <div class="bg-purple-400 h-2 rounded-full" style="width:${pct}%"></div>
+              </div>
+            </div>`;
+          }).join('')
+        : '<p class="text-gray-400 text-center py-6">لا توجد بيانات بعد</p>';
+
+    } catch (_) {
+      document.getElementById('fFunnelBars').innerHTML = '<p class="text-gray-400 text-sm">تعذّر تحميل البيانات</p>';
+    }
+  }
 </script>
 </body>
 </html>

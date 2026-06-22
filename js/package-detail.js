@@ -68,6 +68,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Prices & Sidebar
     document.getElementById('priceAdult').innerText = window.formatCurrency(data.price_per_person);
+
+    // Funnel tracking: package_view
+    if (window.trackEvent) {
+      window.trackEvent('package_view', {
+        package_id:    data.id,
+        package_title: data.title
+      });
+    }
+
+    // Currency hint (uses currency-hint.js)
+    const hintEl = document.getElementById('priceHint');
+    if (hintEl && window.getCurrencyHint) {
+        hintEl.dataset.egp = data.price_per_person;
+        hintEl.innerHTML = `<span class="price-hint">${window.getCurrencyHint(data.price_per_person)}</span>`;
+        // Wrap parent for updateAllHints compatibility
+        hintEl.closest('[data-egp]') || hintEl.setAttribute('data-egp', data.price_per_person);
+        if (window.fetchLiveHintRates) window.fetchLiveHintRates();
+    }
+
     if (data.price_child) {
         const childElem = document.getElementById('priceChild');
         childElem.innerHTML = `سعر الطفل المرافق: <strong>${window.formatCurrency(data.price_child)}</strong>`;

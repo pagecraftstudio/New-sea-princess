@@ -188,9 +188,10 @@ function renderPackages(packages) {
                 </div>
 
                 <div class="border-t border-gray-100 pt-4 flex justify-between items-center mt-auto">
-                    <div>
+                    <div data-egp="${pkg.price_per_person}">
                         <div class="text-gold font-bold text-xl">${window.formatCurrency(pkg.price_per_person)}</div>
                         <div class="text-xs text-gray-400">للفرد الواحد</div>
+                        <div class="price-hint" style="font-size:11px;color:#B8860B;font-weight:700;min-height:16px;margin-top:2px;">${window.getCurrencyHint ? window.getCurrencyHint(pkg.price_per_person) : ''}</div>
                     </div>
                     <a href="/package-detail.html?id=${pkg.id}" class="btn-outline px-4 py-2 text-sm">التفاصيل</a>
                     <button data-compare-id="${pkg.id}" onclick="toggleCompare('${pkg.id}','${pkg.title.replace(/'/g,"\\'")}' )" class="bg-gray-100 text-gray-600 hover:bg-primary hover:text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">

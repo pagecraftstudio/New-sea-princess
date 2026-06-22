@@ -282,9 +282,9 @@
         <td class="p-4">
           <div class="flex flex-col gap-1 items-center">
             ${!r.is_approved
-              ? `<button onclick="approveReview('${r.id}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold w-full transition">اعتماد</button>`
-              : `<button onclick="unapproveReview('${r.id}')" class="bg-orange-400 hover:bg-orange-500 text-white px-3 py-1 rounded text-xs font-bold w-full transition">إلغاء الاعتماد</button>`}
-            <button onclick="deleteReview('${r.id}')" class="bg-red-100 hover:bg-red-500 hover:text-white text-red-600 px-3 py-1 rounded text-xs font-bold w-full transition">
+              ? `<button onclick="if(!requireRole('admin'))return;approveReview('${r.id}')" data-role="admin" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold w-full transition">اعتماد</button>`
+              : `<button onclick="if(!requireRole('admin'))return;unapproveReview('${r.id}')" data-role="admin" class="bg-orange-400 hover:bg-orange-500 text-white px-3 py-1 rounded text-xs font-bold w-full transition">إلغاء الاعتماد</button>`}
+            <button onclick="if(!requireRole('super_admin'))return;deleteReview('${r.id}')" data-role="super_admin" class="bg-red-100 hover:bg-red-500 hover:text-white text-red-600 px-3 py-1 rounded text-xs font-bold w-full transition">
               <i class="fa-solid fa-trash ml-1"></i>حذف
             </button>
           </div>
@@ -293,6 +293,7 @@
   }
 
   async function approveReview(id) {
+    if (!requireRole('admin')) return;
     const r = allReviews.find(x => x.id === id);
     await window.db.from('reviews').update({ is_approved: true }).eq('id', id);
     logAudit('update', 'reviews', id, r?.customer_name, { field: 'is_approved', to: true });
@@ -326,6 +327,7 @@
   }
 
   async function deleteReview(id) {
+    if (!requireRole('super_admin')) return;
     if (confirm('حذف التقييم نهائياً؟')) {
       const r = allReviews.find(x => x.id === id);
       await window.db.from('reviews').delete().eq('id', id);

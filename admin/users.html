@@ -278,6 +278,7 @@
   }
 
   async function confirmToggleBlock() {
+    if (!requireRole('super_admin')) return;
     if (!pendingToggle || !window.db) return;
     const { id, name, nextState } = pendingToggle;
     const { error } = await window.db.from('profiles').update({ is_blocked: nextState }).eq('id', id);

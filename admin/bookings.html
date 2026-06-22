@@ -367,7 +367,7 @@
       <h3 class="text-xl font-bold text-gray-800 mb-2">تأكيد الحذف</h3>
       <p class="text-gray-500 text-sm mb-6">هل أنت متأكد من حذف هذا الحجز؟ لا يمكن التراجع عن هذه العملية.</p>
       <div class="flex gap-3 justify-center">
-        <button id="confirmDeleteBtn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition">نعم، احذف</button>
+        <button id="confirmDeleteBtn" data-role="super_admin" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition">نعم، احذف</button>
         <button onclick="document.getElementById('deleteModal').classList.add('hidden'); document.getElementById('deleteModal').classList.remove('flex')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold transition">إلغاء</button>
       </div>
     </div>
@@ -553,7 +553,7 @@
             <button class="text-white bg-amber-500 px-3 py-1 rounded text-xs hover:bg-amber-600 transition w-full invoiceBtn" data-idx="${idx}">
               <i class="fa-solid fa-file-invoice"></i> فاتورة
             </button>
-            <button class="text-white bg-red-500 px-3 py-1 rounded text-xs hover:bg-red-700 transition w-full deleteBtn" data-id="${b.id}">
+            <button class="text-white bg-red-500 px-3 py-1 rounded text-xs hover:bg-red-700 transition w-full deleteBtn" data-role="super_admin" data-id="${b.id}">
               <i class="fa-solid fa-trash"></i> حذف
             </button>
           </div>
@@ -821,13 +821,13 @@
       { icon:'fa-money-bill-wave', title:'المالي', html:`
         <div class="grid grid-cols-3 gap-2 mb-3">
           <div class="bg-green-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-400">الإجمالي</p><p class="font-bold text-green-700">${total.toLocaleString()} ج.م</p></div>
-          <div class="bg-blue-50 rounded-lg p-2 text-center cursor-pointer hover:bg-blue-100 transition" onclick="openPaidModal(currentBookingData)" title="اضغط للتعديل">
+          <div class="bg-blue-50 rounded-lg p-2 text-center cursor-pointer hover:bg-blue-100 transition" onclick="if(!requireRole('admin'))return; openPaidModal(currentBookingData)" data-role="admin" title="اضغط للتعديل">
             <p class="text-xs text-gray-400">المدفوع <i class="fa-solid fa-pen text-blue-400 text-[10px]"></i></p>
             <p class="font-bold text-blue-700">${paid.toLocaleString()} ج.م</p>
           </div>
           <div class="bg-red-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-400">المتبقي</p><p class="font-bold text-red-600">${remaining.toLocaleString()} ج.م</p></div>
         </div>
-        <button onclick="openPaidModal(currentBookingData)"
+        <button onclick="if(!requireRole('admin'))return; openPaidModal(currentBookingData)"
                 class="w-full border-2 border-dashed border-blue-300 hover:border-blue-500 text-blue-600 hover:text-blue-800 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
           <i class="fa-solid fa-pen-to-square"></i> تحديث المبلغ المدفوع
         </button>
