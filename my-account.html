@@ -343,9 +343,28 @@ function renderStats(bookings) {
     <div class="stat-box"><div class="stat-num" style="color:#d97706;">${pending}</div><div class="stat-lbl">قيد المراجعة</div></div>`;
 }
 
+const STATUS_LABEL = {
+  awaiting_payment: 'في انتظار الدفع',
+  pending:          'قيد المراجعة',
+  confirmed:        'مؤكد',
+  visa_processing:  'جاري التأشيرة',
+  tickets_issued:   'تذاكر صادرة',
+  travelling:       'في السفر',
+  completed:        'مكتمل',
+  cancelled:        'ملغي'
+};
+
+function statusLabel(s) {
+  return STATUS_LABEL[s] || s || 'قيد المراجعة';
+}
+
 function statusClass(s) {
-  if (s==='مؤكد') return 'status-confirmed';
-  if (s==='ملغي') return 'status-cancelled';
+  if (s === 'confirmed')        return 'status-confirmed';
+  if (s === 'cancelled')        return 'status-cancelled';
+  if (s === 'completed')        return 'status-confirmed';
+  if (s === 'travelling')       return 'status-confirmed';
+  if (s === 'tickets_issued')   return 'status-confirmed';
+  if (s === 'visa_processing')  return 'status-pending';
   return 'status-pending';
 }
 function fmtDate(d) {
@@ -371,7 +390,7 @@ function renderBookingList(elId, bookings) {
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-          <span class="booking-status ${statusClass(b.status)}">${b.status || 'قيد المراجعة'}</span>
+          <span class="booking-status ${statusClass(b.status)}">${statusLabel(b.status)}</span>
           <a href="/tracking.html?booking=${b.booking_number}" style="font-size:11px;color:#B8860B;font-weight:700;text-decoration:none;">تفاصيل الحجز ←</a>
         </div>
       </div>
