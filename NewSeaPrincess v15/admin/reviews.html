@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة التقييمات | نيو سي برنسيس للسياحة</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    .nav-link { display:flex; align-items:center; gap:10px; padding:12px 24px; color:#9ca3af; transition:.2s; }
+    .nav-link:hover { background:#1f2937; color:#fff; }
+    .nav-link.active { background:#1B5E20; border-right:4px solid #B8860B; color:#fff; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- ══ MOBILE TOP BAR ══ -->
+  <header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg">
+    <div class="flex items-center gap-2 font-bold text-lg text-gold">
+      <i class="fa-solid fa-moon"></i> الإدارة
+    </div>
+    <button id="mobileMenuBtn" class="text-white text-2xl p-1">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </header>
+  <!-- MOBILE DRAWER -->
+  <div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
+    <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
+    <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl" style="font-family:'Cairo',sans-serif;">
+      <div class="h-16 flex items-center justify-between px-5 border-b border-gray-800">
+        <span class="font-bold text-gold text-lg"><i class="fa-solid fa-moon ml-1"></i> الإدارة</span>
+        <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto py-3">
+        <a href="/admin/dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+        <a href="/admin/bookings.html"  class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+        <a href="/admin/packages.html"  class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+        <a href="/admin/reviews.html"   class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+        <a href="/admin/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+        <a href="/admin/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
+        <a href="/admin/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      </div>
+      <div class="p-4 border-t border-gray-800">
+        <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
+          <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-darkBg text-white hidden md:flex flex-col sticky top-0 h-screen">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto object-contain ml-2"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-4">
+      <ul class="space-y-1">
+        <li><a href="/admin/dashboard.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a></li>
+        <li><a href="/admin/bookings.html"  class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a></li>
+        <li><a href="/admin/packages.html"  class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a></li>
+        <li><a href="/admin/reviews.html"   class="flex px-6 py-3 bg-primary border-r-4 border-gold text-white items-center gap-2"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a></li>
+        <li><a href="/admin/newsletter.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-envelope w-5"></i>النشرة البريدية</a></li>
+        <li><a href="/admin/users.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-users w-5"></i>المستخدمون</a></li>
+        <li><a href="/admin/audit-log.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a></li>
+      </ul>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
+
+  <main class="flex-1 flex flex-col p-6">
+    <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+      <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-primary pb-2">إدارة الآراء والتقييمات</h2>
+      <button onclick="openAddModal()" class="bg-primary hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow flex items-center gap-2 transition">
+        <i class="fa-solid fa-plus"></i> إضافة تقييم يدوياً
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="bg-white rounded-xl border border-gray-200 shadow p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">إجمالي التقييمات</p>
+        <p id="statTotal" class="text-2xl font-bold text-primary">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">معتمدة</p>
+        <p id="statApproved" class="text-2xl font-bold text-green-600">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">قيد الانتظار</p>
+        <p id="statPending" class="text-2xl font-bold text-yellow-500">—</p>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto">
+      <table class="w-full text-right text-sm">
+        <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
+          <tr>
+            <th class="p-4">العميل</th>
+            <th class="p-4">التقييم</th>
+            <th class="p-4 w-1/3">نص التقييم</th>
+            <th class="p-4">الحالة</th>
+            <th class="p-4 text-center">ظهور رئيسي</th>
+            <th class="p-4 text-center">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="revsBody" class="divide-y divide-gray-100">
+          <tr><td colspan="6" class="p-6 text-center text-gray-400">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Add Review Modal -->
+  <div id="addModal" class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+      <div class="flex justify-between items-center p-5 border-b">
+        <h3 class="text-xl font-bold text-primary">إضافة تقييم يدوياً</h3>
+        <button onclick="closeAddModal()" class="text-gray-400 hover:text-red-500 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-bold mb-1">اسم العميل <span class="text-red-500">*</span></label>
+            <input type="text" id="rName" placeholder="أحمد محمد" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-bold mb-1">المدينة</label>
+            <input type="text" id="rCity" placeholder="القاهرة" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary text-sm">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-bold mb-1">اسم البرنامج</label>
+            <input type="text" id="rPackage" placeholder="برنامج العمرة المتميز" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-bold mb-1">سنة السفر</label>
+            <input type="number" id="rYear" placeholder="2026" min="2020" max="2030" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-bold mb-2">التقييم <span class="text-red-500">*</span></label>
+          <div class="flex gap-2" id="starSelector">
+            <button type="button" onclick="setRating(1)" class="starBtn text-3xl text-gray-300 hover:text-gold transition" data-val="1">★</button>
+            <button type="button" onclick="setRating(2)" class="starBtn text-3xl text-gray-300 hover:text-gold transition" data-val="2">★</button>
+            <button type="button" onclick="setRating(3)" class="starBtn text-3xl text-gray-300 hover:text-gold transition" data-val="3">★</button>
+            <button type="button" onclick="setRating(4)" class="starBtn text-3xl text-gray-300 hover:text-gold transition" data-val="4">★</button>
+            <button type="button" onclick="setRating(5)" class="starBtn text-3xl text-gray-300 hover:text-gold transition" data-val="5">★</button>
+          </div>
+          <input type="hidden" id="rRating" value="5">
+        </div>
+        <div>
+          <label class="block text-sm font-bold mb-1">نص التقييم <span class="text-red-500">*</span></label>
+          <textarea id="rText" rows="4" placeholder="اكتب رأي العميل هنا..." class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary text-sm"></textarea>
+        </div>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="rApproved" checked class="w-4 h-4 accent-primary">
+            <span class="text-sm font-bold">معتمد (ظاهر للعملاء)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="rFeatured" class="w-4 h-4 accent-primary">
+            <span class="text-sm font-bold">مميز (الصفحة الرئيسية)</span>
+          </label>
+        </div>
+      </div>
+      <div class="p-5 border-t bg-gray-50 flex justify-between">
+        <button onclick="closeAddModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2 rounded-lg font-bold transition">إلغاء</button>
+        <button onclick="saveReview()" class="bg-primary hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold transition flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i> حفظ التقييم
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let selectedRating = 5;
+  let allReviews = [];
+  setRating(5);
+
+  function setRating(val) {
+    selectedRating = val;
+    document.getElementById('rRating').value = val;
+    document.querySelectorAll('.starBtn').forEach(btn => {
+      btn.style.color = Number(btn.dataset.val) <= val ? '#B8860B' : '#d1d5db';
+    });
+  }
+
+  function openAddModal() {
+    ['rName','rCity','rPackage','rText'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('rYear').value = new Date().getFullYear();
+    document.getElementById('rApproved').checked = true;
+    document.getElementById('rFeatured').checked = false;
+    setRating(5);
+    document.getElementById('addModal').classList.remove('hidden');
+  }
+
+  function closeAddModal() {
+    document.getElementById('addModal').classList.add('hidden');
+  }
+
+  async function saveReview() {
+    const name = document.getElementById('rName').value.trim();
+    const text = document.getElementById('rText').value.trim();
+    if (!name || !text) { alert('يرجى إدخال اسم العميل ونص التقييم'); return; }
+
+    const payload = {
+      customer_name: name,
+      customer_city: document.getElementById('rCity').value.trim() || null,
+      package_title: document.getElementById('rPackage').value.trim() || null,
+      travel_year:   parseInt(document.getElementById('rYear').value) || null,
+      rating:        selectedRating,
+      review_text:   text,
+      is_approved:   document.getElementById('rApproved').checked,
+      is_featured:   document.getElementById('rFeatured').checked,
+    };
+
+    const { error } = await window.db.from('reviews').insert(payload);
+    if (error) { alert('فشل الحفظ: ' + error.message); return; }
+    logAudit('create', 'reviews', null, payload.customer_name);
+    closeAddModal();
+    loadAdminReviews();
+  }
+
+  function stars(rating) {
+    return Array.from({length:5}, (_,i) =>
+      `<i class="fa-${i < rating ? 'solid' : 'regular'} fa-star text-${i < rating ? 'gold' : 'gray-300'} text-xs"></i>`
+    ).join('');
+  }
+
+  async function loadAdminReviews() {
+    if (!window.db) { setTimeout(loadAdminReviews, 500); return; }
+    const { data, error } = await window.db.from('reviews').select('*').order('created_at', { ascending: false });
+    if (error) return;
+    allReviews = data;
+
+    const approved = data.filter(r => r.is_approved).length;
+    const pending  = data.filter(r => !r.is_approved).length;
+    document.getElementById('statTotal').textContent    = data.length;
+    document.getElementById('statApproved').textContent = approved;
+    document.getElementById('statPending').textContent  = pending;
+
+    const tbody = document.getElementById('revsBody');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400">لا توجد تقييمات بعد</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(r => `
+      <tr class="hover:bg-gray-50">
+        <td class="p-4">
+          <p class="font-bold text-darkBg">${r.customer_name}</p>
+          <p class="text-xs text-gray-400">${r.customer_city || ''}</p>
+          <p class="text-xs text-gray-400">${new Date(r.created_at).toLocaleDateString('ar-EG')}</p>
+        </td>
+        <td class="p-4">${stars(r.rating)}</td>
+        <td class="p-4 text-gray-700 leading-relaxed text-xs max-w-xs">
+          <p class="line-clamp-3">"${r.review_text}"</p>
+          ${r.package_title ? `<p class="text-primary font-bold mt-1 text-[11px]">${r.package_title}</p>` : ''}
+        </td>
+        <td class="p-4">
+          ${r.is_approved
+            ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">معتمد</span>'
+            : '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold">قيد الانتظار</span>'}
+        </td>
+        <td class="p-4 text-center">
+          <input type="checkbox" onchange="toggleFeatured('${r.id}', this.checked)" ${r.is_featured ? 'checked' : ''}
+                 class="w-4 h-4 accent-primary cursor-pointer">
+        </td>
+        <td class="p-4">
+          <div class="flex flex-col gap-1 items-center">
+            ${!r.is_approved
+              ? `<button onclick="approveReview('${r.id}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold w-full transition">اعتماد</button>`
+              : `<button onclick="unapproveReview('${r.id}')" class="bg-orange-400 hover:bg-orange-500 text-white px-3 py-1 rounded text-xs font-bold w-full transition">إلغاء الاعتماد</button>`}
+            <button onclick="deleteReview('${r.id}')" class="bg-red-100 hover:bg-red-500 hover:text-white text-red-600 px-3 py-1 rounded text-xs font-bold w-full transition">
+              <i class="fa-solid fa-trash ml-1"></i>حذف
+            </button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  async function approveReview(id) {
+    const r = allReviews.find(x => x.id === id);
+    await window.db.from('reviews').update({ is_approved: true }).eq('id', id);
+    logAudit('update', 'reviews', id, r?.customer_name, { field: 'is_approved', to: true });
+
+    // WhatsApp notification — only if reviewer shared their phone
+    if (r?.customer_phone) {
+      const rawPhone = r.customer_phone.replace(/\s|-/g, '');
+      // Normalize: strip leading 0 and prepend country code if missing
+      const intlPhone = rawPhone.startsWith('2')
+        ? rawPhone
+        : '2' + rawPhone.replace(/^0/, '');
+      const pkgLabel = r.package_title ? `برنامج "${r.package_title}"` : 'برامجنا';
+      const msg = `مرحباً ${r.customer_name} 🌟\nشكراً لتقييمك لـ${pkgLabel}.\nيسعدنا إعلامك أن تقييمك تم نشره الآن على موقع نيو سي برنسيس للسياحة 🕌\nنتمنى لك رحلة مباركة مقبولة إن شاء الله 🤲`;
+      window.open(`https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    loadAdminReviews();
+  }
+
+  async function unapproveReview(id) {
+    const r = allReviews.find(x => x.id === id);
+    await window.db.from('reviews').update({ is_approved: false }).eq('id', id);
+    logAudit('update', 'reviews', id, r?.customer_name, { field: 'is_approved', to: false });
+    loadAdminReviews();
+  }
+
+  async function toggleFeatured(id, val) {
+    const r = allReviews.find(x => x.id === id);
+    await window.db.from('reviews').update({ is_featured: val }).eq('id', id);
+    logAudit('update', 'reviews', id, r?.customer_name, { field: 'is_featured', to: val });
+  }
+
+  async function deleteReview(id) {
+    if (confirm('حذف التقييم نهائياً؟')) {
+      const r = allReviews.find(x => x.id === id);
+      await window.db.from('reviews').delete().eq('id', id);
+      logAudit('delete', 'reviews', id, r?.customer_name);
+      loadAdminReviews();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    adminCheckAuth().then(() => loadAdminReviews());
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+      document.getElementById('mobileDrawer').classList.remove('hidden');
+    });
+  });
+  function closeDrawer() { document.getElementById('mobileDrawer').classList.add('hidden'); }
+</script>
+</div><!-- /flex wrapper -->
+</body>
+</html>
