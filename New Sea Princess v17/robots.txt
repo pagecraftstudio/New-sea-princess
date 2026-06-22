@@ -1,0 +1,27 @@
+# robots.txt — نيو سي برنسيس للسياحة
+# https://newseaprincess.vercel.app
+
+User-agent: *
+
+# صفحات عامة مسموح بزحفها
+Allow: /
+Allow: /packages.html
+Allow: /package-detail.html
+Allow: /guide.html
+Allow: /visa.html
+Allow: /about.html
+Allow: /contact.html
+Allow: /reviews.html
+Allow: /tracking.html
+Allow: /currency.html
+
+# صفحات خاصة — لا تُفهرس
+Disallow: /admin/
+Disallow: /booking.html
+Disallow: /my-account.html
+Disallow: /login.html
+Disallow: /compare.html
+Disallow: /404.html
+
+# Sitemap
+Sitemap: https://newseaprincess.vercel.app/sitemap.xml
