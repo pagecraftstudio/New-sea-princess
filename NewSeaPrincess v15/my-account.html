@@ -322,8 +322,8 @@ async function loadBookings() {
   try {
     if (window.db) {
       const { data } = await window.db.from('bookings').select('*')
-        .eq('contact_email', currentUser.email)
-        .order('created_at', { ascending:false });
+        .eq('customer_email', currentUser.email)
+        .order('booking_date', { ascending:false });
       if (data) bookings = data;
     }
   } catch(_) {}
@@ -334,8 +334,8 @@ async function loadBookings() {
 }
 
 function renderStats(bookings) {
-  const confirmed  = bookings.filter(b => b.status === 'مؤكد').length;
-  const pending    = bookings.filter(b => b.status === 'قيد المراجعة').length;
+  const confirmed  = bookings.filter(b => b.status === 'confirmed').length;
+  const pending    = bookings.filter(b => b.status === 'pending' || b.status === 'awaiting_payment').length;
   const total      = bookings.length;
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-lbl">إجمالي الحجوزات</div></div>
