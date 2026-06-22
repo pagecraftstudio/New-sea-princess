@@ -18,6 +18,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/supabase-config.js"></script>
   <script src="/js/contact-config.js"></script>
+  <script src="/js/currency-hint.js"></script>
+  <script src="/js/analytics.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/darkmode.js"></script>
 </head>
@@ -233,13 +235,25 @@
       <!-- Main Content Area -->
       <main class="flex-1 text-center" id="mainPackagesArea">
         <!-- Toolbar -->
-        <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-right">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-right">
           <p class="text-gray-600 font-semibold">يتم عرض <span id="resultsCount" class="text-primary font-bold">0</span> برنامج</p>
-          <select id="sortOptions" class="border p-2 rounded-lg text-sm bg-gray-50 focus:border-primary text-right">
-            <option value="newest">الأحدث</option>
-            <option value="price_asc">السعر: الأقل أولاً</option>
-            <option value="price_desc">السعر: الأعلى أولاً</option>
-          </select>
+          <div class="flex items-center gap-3 flex-wrap">
+            <select id="currencyPicker"
+                    onchange="updateAllHints(this.value)"
+                    class="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:border-gold focus:outline-none font-bold"
+                    style="color:#B8860B;font-family:'Cairo',sans-serif;">
+              <option value="SAR">🇸🇦 ريال سعودي</option>
+              <option value="AED">🇦🇪 درهم إماراتي</option>
+              <option value="KWD">🇰🇼 دينار كويتي</option>
+              <option value="USD">🇺🇸 دولار</option>
+              <option value="">بدون تحويل</option>
+            </select>
+            <select id="sortOptions" class="border p-2 rounded-lg text-sm bg-gray-50 focus:border-primary text-right">
+              <option value="newest">الأحدث</option>
+              <option value="price_asc">السعر: الأقل أولاً</option>
+              <option value="price_desc">السعر: الأعلى أولاً</option>
+            </select>
+          </div>
         </div>
 
         <!-- Grid -->
@@ -252,6 +266,12 @@
   </div>
 
   <script src="/js/packages.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.fetchLiveHintRates) window.fetchLiveHintRates();
+      if (window.trackEvent) window.trackEvent('page_view', { package_title: 'packages-listing' });
+    });
+  </script>
 
   <script>
   // ── Inline Currency Converter ─────────────────────────

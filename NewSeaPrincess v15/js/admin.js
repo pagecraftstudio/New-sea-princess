@@ -10,29 +10,94 @@ async function adminCheckAuth() {
         await new Promise(r => setTimeout(r, 500));
         attempts++;
     }
-    if (!window.db) {
-        window.location.href = '/admin/login.html';
-        return false;
-    }
-    const { data: { session } } = await window.db.auth.getSession();
-    if (!session) {
-        window.location.href = '/admin/login.html';
-        return false;
-    }
+    if (!window.db) { window.location.href = '/admin/login.html'; return false; }
 
-    // تحقق فعلي إن الحساب أدمن (مش مجرد عميل مسجل دخول)
-    const { data: isAdmin, error: adminErr } = await window.db.rpc('is_admin');
-    if (adminErr || !isAdmin) {
+    const { data: { session } } = await window.db.auth.getSession();
+    if (!session) { window.location.href = '/admin/login.html'; return false; }
+
+    // جلب الدور من قاعدة البيانات
+    const { data: role, error: roleErr } = await window.db.rpc('get_admin_role');
+    if (roleErr || !role) {
         await window.db.auth.signOut();
         window.location.href = '/admin/login.html';
         return false;
     }
 
+    // حفظ الدور عالمياً
+    window.ADMIN_ROLE = role; // 'super_admin' | 'admin' | 'viewer'
+
+    // تحديث UI باسم المستخدم + شارة الدور
     const userDisplay = document.getElementById('adminUserEmail');
     if (userDisplay) {
-        userDisplay.innerHTML = `<i class="fa-solid fa-circle-user ml-1"></i> ${session.user.email}`;
+        const roleLabel = { super_admin: 'مدير عام', admin: 'مشرف', viewer: 'مشاهد' }[role] || role;
+        const roleColor = { super_admin: '#DAA520', admin: '#3b82f6', viewer: '#9ca3af' }[role];
+        userDisplay.innerHTML = `
+            <i class="fa-solid fa-circle-user ml-1"></i> ${session.user.email}
+            <span style="display:block;margin-top:4px;font-size:10px;font-weight:800;color:${roleColor};">
+                ${roleLabel}
+            </span>`;
+    }
+
+    // تطبيق إخفاء العناصر حسب الدور
+    applyRoleUI();
+
+    return true;
+}
+
+// ── التحقق قبل أي عملية حساسة ──
+function requireRole(minimumRole) {
+    const hierarchy = { viewer: 0, admin: 1, super_admin: 2 };
+    const current   = hierarchy[window.ADMIN_ROLE] ?? -1;
+    const required  = hierarchy[minimumRole]       ?? 99;
+    if (current < required) {
+        // عرض toast إذا كانت الدالة موجودة، وإلا alert
+        if (typeof showToast === 'function') {
+            showToast('ليس لديك صلاحية لهذه العملية', true);
+        } else {
+            alert('ليس لديك صلاحية لهذه العملية');
+        }
+        return false;
     }
     return true;
+}
+
+// ── إخفاء/تعطيل العناصر الحساسة حسب الدور ──
+function applyRoleUI() {
+    const role = window.ADMIN_ROLE;
+
+    // super_admin فقط
+    if (role !== 'super_admin') {
+        document.querySelectorAll('[data-role="super_admin"]').forEach(el => {
+            el.style.display = 'none';
+        });
+    }
+
+    // admin أو أعلى
+    if (role === 'viewer') {
+        document.querySelectorAll('[data-role="admin"]').forEach(el => {
+            el.style.display = 'none';
+        });
+        // تعطيل كل أزرار الإجراءات للـ viewer
+        document.querySelectorAll('[data-role="admin"], [data-role="super_admin"]').forEach(el => {
+            el.disabled = true;
+            el.style.opacity = '0.4';
+            el.style.cursor  = 'not-allowed';
+            el.title = 'ليس لديك صلاحية لهذه العملية';
+        });
+    }
+
+    // إضافة رابط إدارة الأدمن للـ super_admin فقط
+    if (role === 'super_admin') {
+        document.querySelectorAll('.admin-sidebar-nav, .sidebar-nav').forEach(nav => {
+            if (!nav.querySelector('a[href="/admin/admins.html"]')) {
+                const link = document.createElement('a');
+                link.href = '/admin/admins.html';
+                link.className = 'nav-link';
+                link.innerHTML = '<i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن';
+                nav.appendChild(link);
+            }
+        });
+    }
 }
 
 async function adminLogout() {

@@ -745,13 +745,13 @@
         </td>
         <td class="p-4">
           <div class="flex items-center justify-center gap-2">
-            <button class="editBtn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1" data-id="${pkg.id}">
+            <button class="editBtn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1" data-role="admin" data-id="${pkg.id}">
               <i class="fa-solid fa-pen"></i> تعديل
             </button>
             <button class="toggleBtn text-xs px-3 py-1.5 rounded-lg font-bold transition ${pkg.is_active ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' : 'bg-green-100 hover:bg-green-200 text-green-700'}" data-id="${pkg.id}" data-active="${!pkg.is_active}">
               ${pkg.is_active ? 'إخفاء' : 'إظهار'}
             </button>
-            <button class="deleteBtn bg-red-100 hover:bg-red-500 hover:text-white text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition" data-id="${pkg.id}">
+            <button class="deleteBtn bg-red-100 hover:bg-red-500 hover:text-white text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition" data-role="super_admin" data-id="${pkg.id}">
               <i class="fa-solid fa-trash"></i>
             </button>
             <button class="pdfBtn bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1" data-id="${pkg.id}">
@@ -764,6 +764,7 @@
 
     // Attach events
     document.querySelectorAll('.editBtn').forEach(btn => {
+      if (!requireRole('admin')) return;
       btn.addEventListener('click', () => {
         const pkg = data.find(p => p.id === btn.dataset.id);
         if (pkg) openModal(pkg);
@@ -792,6 +793,7 @@
   }
 
   async function deletePackage(id) {
+    if (!requireRole('super_admin')) return;
     if (!confirm('تحذير: سيتم حذف البرنامج نهائياً! هل توافق؟')) return;
     const pkg = allPackages.find(p => p.id === id);
     await window.db.from('packages').delete().eq('id', id);

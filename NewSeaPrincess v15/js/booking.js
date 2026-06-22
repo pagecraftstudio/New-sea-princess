@@ -40,6 +40,11 @@ const bookingController = {
             document.getElementById('summaryTitle').innerText = data.title;
             document.getElementById('summaryDate').innerText = 'المغادرة: ' + window.formatDate(data.departure_date);
             document.getElementById('summaryBasePrice').innerText = window.formatCurrency(data.price_per_person) + ' / للفرد';
+
+            // Funnel: booking_start
+            if (window.trackEvent) window.trackEvent('booking_start', {
+              package_id: data.id, package_title: data.title
+            });
             
             if(!data.price_child) {
                 document.getElementById('childPriceNotice').innerText = 'سعر الطفل غير متاح لهذا البرنامج؛ يُحسب كفرد بالغ.';
@@ -121,6 +126,13 @@ const bookingController = {
             document.getElementById(`stepLabel${this.step}`).classList.add('text-primary');
             document.getElementById('progressBar').style.width = (this.step * 33) + '%';
             if (this.step === 3) this.buildDocumentsForm();
+
+            // Funnel: booking_step
+            if (window.trackEvent) window.trackEvent('booking_step', {
+              package_id:    this.packageData?.id,
+              package_title: this.packageData?.title,
+              step_number:   this.step
+            });
         }
     },
 
@@ -404,6 +416,12 @@ const bookingController = {
 
             // حذف المسودة بعد إتمام الحجز بنجاح
             localStorage.removeItem(DRAFT_KEY);
+
+            // Funnel: booking_complete
+            if (window.trackEvent) window.trackEvent('booking_complete', {
+              package_id:    this.packageData?.id,
+              package_title: this.packageData?.title
+            });
 
             // Set up button redirection and auto-whatsapp
             document.getElementById('goToTrackingBtn').onclick = () => {
@@ -697,4 +715,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // حفظ تلقائي كل 30 ثانية
     setInterval(saveDraft, 30_000);
+
+    // Funnel: booking_abandon (fires when user leaves mid-flow)
+    window.addEventListener('beforeunload', () => {
+      const ctrl = bookingController;
+      if (ctrl.step && ctrl.step < 3 && ctrl.packageData) {
+        window.trackEvent && window.trackEvent('booking_abandon', {
+          package_id:    ctrl.packageData.id,
+          package_title: ctrl.packageData.title,
+          step_number:   ctrl.step
+        });
+      }
+    });
 });

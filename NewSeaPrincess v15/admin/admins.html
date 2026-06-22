@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة الأدمن | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;text-decoration:none;font-size:14px;}
+    .nav-link:hover{background:#1f2937;color:#fff;}
+    .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
+    .role-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:800;}
+    .role-super{background:#fef9c3;color:#92400e;}
+    .role-admin{background:#dbeafe;color:#1e40af;}
+    .role-viewer{background:#f3f4f6;color:#6b7280;}
+    .field-input{width:100%;border:1.5px solid #e2dfd8;border-radius:9px;padding:10px 14px;font-family:'Cairo',sans-serif;font-size:14px;outline:none;transition:border-color .2s;background:#fafaf8;}
+    .field-input:focus{border-color:#B8860B;}
+    .btn-gold{background:linear-gradient(135deg,#B8860B,#9a7209);color:#fff;padding:10px 22px;border-radius:9px;font-family:'Cairo',sans-serif;font-weight:800;font-size:14px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:box-shadow .2s;}
+    .btn-gold:hover{box-shadow:0 6px 18px rgba(184,134,11,.4);}
+    .btn-danger{background:#fef2f2;color:#dc2626;padding:7px 14px;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;border:1px solid #fecaca;cursor:pointer;}
+    .btn-danger:hover{background:#fee2e2;}
+    th{font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;padding:12px 14px;background:#f9fafb;border-bottom:1px solid #e5e7eb;white-space:nowrap;}
+    td{padding:13px 14px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#374151;vertical-align:middle;}
+    tr:hover td{background:#fafaf8;}
+    tr:last-child td{border-bottom:none;}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;}
+    .modal-box{background:#fff;border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.3);}
+    .modal-header{background:linear-gradient(135deg,#0D1B0E,#1a3c1e);padding:20px 24px;display:flex;justify-content:space-between;align-items:center;}
+    .skel{background:linear-gradient(90deg,#f3f4f6 25%,#e9ebee 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;}
+    @keyframes shimmer{to{background-position:-200% 0;}}
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- MOBILE TOP BAR -->
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg">
+  <span class="font-bold text-lg text-gold"><i class="fa-solid fa-user-shield ml-2"></i>إدارة الأدمن</span>
+  <button onclick="openDrawer()" class="text-white text-2xl p-1"><i class="fa-solid fa-bars"></i></button>
+</header>
+
+<!-- MOBILE DRAWER -->
+<div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl admin-sidebar-nav">
+    <div class="h-16 flex items-center justify-between px-5 border-b border-gray-800">
+      <span class="font-bold text-gold text-lg">الإدارة</span>
+      <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="flex-1 overflow-y-auto py-3">
+      <a href="/admin/dashboard.html"  class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/admin/bookings.html"   class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/admin/packages.html"   class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/admin/reviews.html"    class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/admin/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      <a href="/admin/users.html"      class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
+      <a href="/admin/audit-log.html"  class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/admin/admins.html"     class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+    </div>
+    <div class="p-4 border-t border-gray-800">
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded text-sm font-bold flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </nav>
+</div>
+
+<!-- DESKTOP LAYOUT -->
+<div class="flex min-h-screen">
+  <!-- SIDEBAR -->
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto object-contain ml-2" onerror="this.style.display='none'"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3 admin-sidebar-nav">
+      <a href="/admin/dashboard.html"  class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/admin/bookings.html"   class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/admin/packages.html"   class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/admin/reviews.html"    class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/admin/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      <a href="/admin/users.html"      class="nav-link"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
+      <a href="/admin/audit-log.html"  class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/admin/admins.html"     class="nav-link active"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+    </nav>
+    <div class="p-3 border-t border-gray-800 text-xs text-gray-500 text-center" id="adminUserEmail"></div>
+    <div class="p-4 border-t border-gray-800">
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition text-sm font-bold flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+
+    <!-- Page header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div>
+        <h1 class="text-2xl font-black text-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-user-shield text-gold"></i> إدارة الأدمن
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">إضافة وتعديل وحذف حسابات المشرفين — متاح لـ <span class="font-bold text-yellow-700">المدير العام</span> فقط</p>
+      </div>
+      <button class="btn-gold" onclick="openAddModal()">
+        <i class="fa-solid fa-user-plus"></i> إضافة مشرف جديد
+      </button>
+    </div>
+
+    <!-- Role permissions table -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
+      <h2 class="text-sm font-black text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-table-list text-gold"></i> جدول الصلاحيات</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-center text-sm">
+          <thead>
+            <tr>
+              <th class="text-right">الصلاحية</th>
+              <th><span class="role-badge role-super">مدير عام</span></th>
+              <th><span class="role-badge role-admin">مشرف</span></th>
+              <th><span class="role-badge role-viewer">مشاهد</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="text-right py-2 pr-4 text-gray-600">عرض الحجوزات والإحصائيات</td><td>✅</td><td>✅</td><td>✅</td></tr>
+            <tr class="bg-gray-50"><td class="text-right py-2 pr-4 text-gray-600">تغيير حالة الحجز</td><td>✅</td><td>✅</td><td>❌</td></tr>
+            <tr><td class="text-right py-2 pr-4 text-gray-600">إضافة وتعديل الباقات</td><td>✅</td><td>✅</td><td>❌</td></tr>
+            <tr class="bg-gray-50"><td class="text-right py-2 pr-4 text-gray-600">الموافقة على التقييمات</td><td>✅</td><td>✅</td><td>❌</td></tr>
+            <tr><td class="text-right py-2 pr-4 text-gray-600">حذف الباقات والتقييمات</td><td>✅</td><td>❌</td><td>❌</td></tr>
+            <tr class="bg-gray-50"><td class="text-right py-2 pr-4 text-gray-600">إيقاف وتفعيل حسابات المستخدمين</td><td>✅</td><td>❌</td><td>❌</td></tr>
+            <tr><td class="text-right py-2 pr-4 text-gray-600">إدارة الأدمن وتغيير الأدوار</td><td>✅</td><td>❌</td><td>❌</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Admins table -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+        <h2 class="font-black text-gray-800 flex items-center gap-2"><i class="fa-solid fa-users-gear text-gold"></i> قائمة المشرفين</h2>
+        <span class="text-xs text-gray-400" id="adminsCount"></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-right">
+          <thead>
+            <tr>
+              <th>المشرف</th>
+              <th>الدور</th>
+              <th>تاريخ الإضافة</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="adminsTableBody">
+            <tr><td colspan="4"><div class="skel h-10 m-4 rounded-lg"></div></td></tr>
+            <tr><td colspan="4"><div class="skel h-10 m-4 rounded-lg"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div id="adminModal" class="modal-bg" style="display:none;" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modalTitle" class="text-white font-black text-lg"></h2>
+      <button onclick="closeModal()" class="text-white/60 hover:text-white text-xl border-none bg-transparent cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-6">
+      <div id="modalAlert" style="display:none;" class="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 mb-4 text-sm font-bold"></div>
+
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-gray-500 mb-2">البريد الإلكتروني</label>
+        <input type="email" id="modalEmail" class="field-input" placeholder="admin@example.com" style="direction:ltr;text-align:right;">
+        <p class="text-xs text-gray-400 mt-1">يجب أن يكون البريد مسجلاً مسبقاً في auth.users</p>
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-xs font-bold text-gray-500 mb-2">الدور</label>
+        <select id="modalRole" class="field-input">
+          <option value="viewer">مشاهد — عرض فقط</option>
+          <option value="admin">مشرف — تعديل وإضافة</option>
+          <option value="super_admin">مدير عام — صلاحيات كاملة</option>
+        </select>
+      </div>
+
+      <div class="flex gap-3">
+        <button class="btn-gold flex-1" id="modalSaveBtn" onclick="saveAdmin()">
+          <i class="fa-solid fa-floppy-disk"></i> حفظ
+        </button>
+        <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg font-bold text-sm border border-gray-200 hover:bg-gray-200 transition">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999;background:#1B5E20;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;display:none;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;">
+  <i id="toastIcon" class="fa-solid fa-circle-check"></i><span id="toastMsg"></span>
+</div>
+
+<script>
+function openDrawer()  { document.getElementById('mobileDrawer').classList.remove('hidden'); }
+function closeDrawer() { document.getElementById('mobileDrawer').classList.add('hidden'); }
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').className = 'fa-solid ' + (isError ? 'fa-circle-exclamation' : 'fa-circle-check');
+  t.style.background = isError ? '#dc2626' : '#1B5E20';
+  t.style.display = 'flex';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' }); } catch { return d; }
+}
+
+let admins     = [];
+let editingId  = null;
+let myUserId   = null;
+
+async function loadAdmins() {
+  const ok = await adminCheckAuth();
+  if (!ok) return;
+
+  // Only super_admin can access this page
+  if (window.ADMIN_ROLE !== 'super_admin') {
+    document.querySelector('main').innerHTML = `
+      <div style="text-align:center;padding:80px 20px;">
+        <i class="fa-solid fa-lock" style="font-size:56px;color:#d1d5db;margin-bottom:16px;display:block;"></i>
+        <h2 style="font-size:20px;font-weight:800;color:#374151;margin-bottom:8px;">وصول مقيّد</h2>
+        <p style="color:#9ca3af;font-size:14px;">هذه الصفحة متاحة للمدير العام فقط</p>
+        <a href="/admin/dashboard.html" style="display:inline-block;margin-top:20px;background:#1B5E20;color:#fff;padding:10px 24px;border-radius:9px;font-weight:800;text-decoration:none;font-size:14px;">العودة للوحة</a>
+      </div>`;
+    return;
+  }
+
+  // Get current user id to prevent self-deletion
+  const { data: { session } } = await window.db.auth.getSession();
+  myUserId = session?.user?.id;
+
+  try {
+    const { data, error } = await window.db
+      .from('admin_users')
+      .select('id, email, role, created_at')
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    admins = data || [];
+    document.getElementById('adminsCount').textContent = admins.length + ' مشرف';
+    renderAdmins();
+  } catch(e) {
+    document.getElementById('adminsTableBody').innerHTML =
+      `<tr><td colspan="4" class="text-center p-6 text-red-500 text-sm font-bold">
+        <i class="fa-solid fa-triangle-exclamation ml-2"></i>
+        تعذّر التحميل — تأكد من تنفيذ migration SQL أولاً
+      </td></tr>`;
+  }
+}
+
+function roleBadge(role) {
+  const map = {
+    super_admin: ['role-super', 'مدير عام', 'fa-crown'],
+    admin:       ['role-admin', 'مشرف',     'fa-user-tie'],
+    viewer:      ['role-viewer','مشاهد',    'fa-eye'],
+  };
+  const [cls, label, icon] = map[role] || ['role-viewer', role, 'fa-user'];
+  return `<span class="role-badge ${cls}"><i class="fa-solid ${icon} text-xs"></i> ${label}</span>`;
+}
+
+function renderAdmins() {
+  const tbody = document.getElementById('adminsTableBody');
+  if (!admins.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-gray-400">لا يوجد مشرفون بعد</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = admins.map(a => `
+    <tr>
+      <td>
+        <div class="flex items-center gap-3">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;">
+            ${(a.email || '?').charAt(0).toUpperCase()}
+          </div>
+          <span class="font-mono text-xs text-gray-600" dir="ltr">${a.email}</span>
+          ${a.id === myUserId ? '<span style="background:#fef9c3;color:#92400e;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:800;margin-right:6px;">أنت</span>' : ''}
+        </div>
+      </td>
+      <td>${roleBadge(a.role)}</td>
+      <td class="text-xs text-gray-400">${fmtDate(a.created_at)}</td>
+      <td>
+        <div class="flex gap-2 justify-end">
+          <button onclick="openEditModal('${a.id}')"
+                  style="background:#eff6ff;color:#2563eb;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:'Cairo',sans-serif;"
+                  title="تعديل الدور">
+            <i class="fa-solid fa-pen-to-square"></i> تعديل
+          </button>
+          ${a.id !== myUserId ? `
+          <button class="btn-danger" onclick="deleteAdmin('${a.id}','${a.email.replace(/'/g,"\\'")}')">
+            <i class="fa-solid fa-trash"></i> حذف
+          </button>` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+// ── Modal ──
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'إضافة مشرف جديد';
+  document.getElementById('modalEmail').value = '';
+  document.getElementById('modalEmail').disabled = false;
+  document.getElementById('modalRole').value = 'admin';
+  document.getElementById('modalAlert').style.display = 'none';
+  document.getElementById('adminModal').style.display = 'flex';
+}
+
+function openEditModal(id) {
+  const admin = admins.find(a => a.id === id);
+  if (!admin) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'تعديل الدور';
+  document.getElementById('modalEmail').value = admin.email;
+  document.getElementById('modalEmail').disabled = true;
+  document.getElementById('modalRole').value = admin.role;
+  document.getElementById('modalAlert').style.display = 'none';
+  document.getElementById('adminModal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('adminModal').style.display = 'none'; }
+
+async function saveAdmin() {
+  const email = document.getElementById('modalEmail').value.trim();
+  const role  = document.getElementById('modalRole').value;
+  const alert = document.getElementById('modalAlert');
+  alert.style.display = 'none';
+
+  if (!email || !role) { alert.textContent = 'يرجى ملء جميع الحقول'; alert.style.display = 'block'; return; }
+
+  const btn = document.getElementById('modalSaveBtn');
+  btn.disabled = true; btn.innerHTML = '<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto;"></div>';
+
+  try {
+    if (editingId) {
+      // Update role
+      const { error } = await window.db.from('admin_users').update({ role }).eq('id', editingId);
+      if (error) throw error;
+      const idx = admins.findIndex(a => a.id === editingId);
+      if (idx > -1) admins[idx].role = role;
+      await logAudit('update', 'admin_users', editingId, email, { role });
+      showToast('تم تحديث الدور بنجاح');
+    } else {
+      // Find user by email in auth.users via profiles table
+      const { data: profile, error: pErr } = await window.db
+        .from('profiles').select('id').eq('email', email).single();
+
+      let userId = profile?.id;
+
+      if (!userId) {
+        // Try auth users directly
+        const { data: authData } = await window.db.rpc('get_user_id_by_email', { email_input: email });
+        userId = authData;
+      }
+
+      if (!userId) {
+        throw new Error('لم يُعثر على حساب بهذا البريد — يجب أن يكون مسجلاً في الموقع أولاً');
+      }
+
+      const { error } = await window.db.from('admin_users').insert({ id: userId, email, role });
+      if (error) {
+        if (error.code === '23505') throw new Error('هذا الحساب مضاف بالفعل كمشرف');
+        throw error;
+      }
+      admins.push({ id: userId, email, role, created_at: new Date().toISOString() });
+      await logAudit('create', 'admin_users', userId, email, { role });
+      showToast('تم إضافة المشرف بنجاح');
+    }
+
+    document.getElementById('adminsCount').textContent = admins.length + ' مشرف';
+    renderAdmins();
+    closeModal();
+
+  } catch(e) {
+    alert.textContent = e.message || 'حدث خطأ أثناء الحفظ';
+    alert.style.display = 'block';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ';
+}
+
+async function deleteAdmin(id, email) {
+  if (!confirm(`هل أنت متأكد من حذف المشرف "${email}"؟\nلن يتمكن من الوصول للوحة بعد ذلك.`)) return;
+  try {
+    const { error } = await window.db.from('admin_users').delete().eq('id', id);
+    if (error) throw error;
+    admins = admins.filter(a => a.id !== id);
+    document.getElementById('adminsCount').textContent = admins.length + ' مشرف';
+    renderAdmins();
+    await logAudit('delete', 'admin_users', id, email, {});
+    showToast('تم حذف المشرف');
+  } catch(e) {
+    showToast(e.message || 'حدث خطأ', true);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadAdmins);
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>

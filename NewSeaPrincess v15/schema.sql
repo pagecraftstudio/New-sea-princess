@@ -101,6 +101,29 @@ CREATE TABLE reviews (
 -- ALTER TABLE reviews ADD COLUMN IF NOT EXISTS customer_phone TEXT;
 
 -- ═══════════════════════════════
+-- TABLE: page_events (Funnel Analytics)
+-- ═══════════════════════════════
+CREATE TABLE page_events (
+  id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  event_type    TEXT NOT NULL,   -- 'page_view'|'package_view'|'booking_start'|'booking_step'|'booking_complete'|'booking_abandon'
+  package_id    UUID REFERENCES packages(id) ON DELETE SET NULL,
+  package_title TEXT,
+  step_number   INT,             -- booking step (1,2,3) for booking_step / booking_abandon
+  session_id    TEXT,            -- random UUID kept in sessionStorage
+  user_id       UUID,            -- null for anonymous visitors
+  referrer      TEXT,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE page_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anyone can insert events" ON page_events FOR INSERT WITH CHECK (true);
+CREATE POLICY "admin can read events"    ON page_events FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Migration (run if table already exists):
+-- (just run the full CREATE TABLE above; use IF NOT EXISTS to be safe)
+-- CREATE TABLE IF NOT EXISTS page_events ( ... );
+
+-- ═══════════════════════════════
 -- TABLE 4: religious_guides (Umrah & Hajj Guides)
 -- ═══════════════════════════════
 CREATE TABLE religious_guides (
