@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حسابي | نيو سي برنسيس للسياحة</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/contact-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <style>
+    :root { --gold:#B8860B; --green:#1B5E20; --green-deep:#0D1B0E; --cream:#F8F5EC; }
+    body { font-family:'Cairo',sans-serif; background:var(--cream); }
+
+    /* header */
+    .site-header { background:linear-gradient(180deg,#0D1B0E,#0f2211); border-bottom:1px solid rgba(184,134,11,.2); position:sticky; top:0; z-index:100; }
+    .header-inner { max-width:1200px; margin:0 auto; padding:0 20px; height:64px; display:flex; align-items:center; justify-content:space-between; }
+    nav a { color:rgba(255,255,255,.7); font-size:13px; font-weight:600; text-decoration:none; padding:5px 2px; border-bottom:2px solid transparent; transition:color .2s,border-color .2s; }
+    nav a:hover { color:#DAA520; border-bottom-color:rgba(218,165,32,.4); }
+    .btn-wa { background:linear-gradient(135deg,#B8860B,#9a7209); color:#fff; padding:8px 16px; border-radius:8px; font-weight:700; text-decoration:none; font-size:13px; display:flex; align-items:center; gap:6px; }
+
+    /* page layout */
+    .page-wrap { max-width:1100px; margin:0 auto; padding:36px 20px 60px; display:grid; grid-template-columns:280px 1fr; gap:24px; align-items:start; }
+    @media(max-width:768px) { .page-wrap { grid-template-columns:1fr; } }
+
+    /* sidebar */
+    .sidebar { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 2px 14px rgba(0,0,0,.07); border:1px solid rgba(0,0,0,.06); position:sticky; top:80px; }
+    .sidebar-profile { background:linear-gradient(135deg,#0D1B0E,#1a3c1e); padding:28px 20px; text-align:center; }
+    .avatar { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#B8860B,#9a7209); display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:28px; color:#fff; border:3px solid rgba(255,255,255,.2); }
+    .sidebar-name { color:#fff; font-weight:800; font-size:16px; margin-bottom:4px; }
+    .sidebar-email { color:rgba(255,255,255,.5); font-size:12px; }
+
+    .nav-item { display:flex; align-items:center; gap:10px; padding:13px 20px; font-size:13px; font-weight:700; color:#4b5563; cursor:pointer; border-left:3px solid transparent; transition:all .2s; border-bottom:1px solid #f5f3ef; text-decoration:none; }
+    .nav-item:hover { background:#f9f7f3; color:#1B5E20; border-left-color:rgba(27,94,32,.3); }
+    .nav-item.active { background:#f0fdf1; color:#1B5E20; border-left-color:#1B5E20; }
+    .nav-item i { width:16px; text-align:center; color:#B8860B; }
+    .nav-item.danger { color:#dc2626; }
+    .nav-item.danger i { color:#dc2626; }
+    .nav-item.danger:hover { background:#fef2f2; border-left-color:#dc2626; }
+
+    /* content panels */
+    .panel { display:none; }
+    .panel.active { display:block; }
+
+    /* card */
+    .card { background:#fff; border-radius:16px; padding:28px; box-shadow:0 2px 14px rgba(0,0,0,.06); border:1px solid rgba(0,0,0,.05); margin-bottom:20px; }
+    .card-title { font-size:17px; font-weight:800; color:#0D1B0E; margin-bottom:20px; display:flex; align-items:center; gap:8px; padding-bottom:14px; border-bottom:1px solid #f0ede6; }
+    .card-title i { color:#B8860B; }
+
+    /* stats */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin-bottom:20px; }
+    .stat-box { background:linear-gradient(135deg,#f0fdf1,#e8f5e9); border:1px solid rgba(27,94,32,.15); border-radius:12px; padding:18px 14px; text-align:center; }
+    .stat-num { font-size:28px; font-weight:900; color:#1B5E20; line-height:1; }
+    .stat-lbl { font-size:11px; color:#6b7280; margin-top:5px; }
+
+    /* booking card */
+    .booking-item { border:1px solid #e8e5de; border-radius:12px; padding:18px; margin-bottom:12px; transition:box-shadow .2s; }
+    .booking-item:hover { box-shadow:0 4px 16px rgba(0,0,0,.09); }
+    .booking-status { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:800; }
+    .status-pending  { background:#fef9c3; color:#92400e; }
+    .status-confirmed{ background:#dcfce7; color:#166534; }
+    .status-cancelled{ background:#fee2e2; color:#991b1b; }
+
+    /* form inputs */
+    .field-wrap { margin-bottom:16px; }
+    .field-label { font-size:12px; font-weight:700; color:#6b7280; margin-bottom:6px; display:block; }
+    .field-input { width:100%; border:1.5px solid #e2dfd8; border-radius:10px; padding:11px 14px; font-family:'Cairo',sans-serif; font-size:14px; color:#111; outline:none; transition:border-color .2s; background:#fafaf8; }
+    .field-input:focus { border-color:#B8860B; background:#fff; }
+    .field-input:disabled { background:#f3f0ea; color:#9ca3af; }
+
+    /* btn */
+    .btn-gold { background:linear-gradient(135deg,#B8860B,#9a7209); color:#fff; padding:11px 24px; border-radius:9px; font-family:'Cairo',sans-serif; font-weight:800; font-size:14px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:box-shadow .2s; }
+    .btn-gold:hover { box-shadow:0 6px 20px rgba(184,134,11,.4); }
+    .btn-outline { background:transparent; color:#1B5E20; padding:11px 24px; border-radius:9px; font-family:'Cairo',sans-serif; font-weight:700; font-size:14px; border:1.5px solid #1B5E20; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:background .2s; }
+    .btn-outline:hover { background:#f0fdf1; }
+
+    /* alert */
+    .alert { border-radius:8px; padding:10px 14px; font-size:13px; font-weight:700; margin-bottom:14px; display:none; align-items:center; gap:8px; }
+    .alert-success { background:#f0fdf4; border:1px solid #bbf7d0; color:#16a34a; }
+    .alert-error   { background:#fef2f2; border:1px solid #fecaca; color:#dc2626; }
+    .alert.show { display:flex; }
+
+    /* skeleton */
+    .skel { background:linear-gradient(90deg,#ece9e2 25%,#f5f2eb 50%,#ece9e2 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:8px; }
+    @keyframes shimmer { to { background-position:-200% 0; } }
+
+    /* empty state */
+    .empty-box { text-align:center; padding:48px 20px; }
+    .empty-box .icon { font-size:56px; color:#d1d5db; margin-bottom:14px; }
+    .empty-box h3 { font-size:17px; font-weight:800; color:#374151; margin-bottom:6px; }
+    .empty-box p { font-size:13px; color:#9ca3af; }
+
+    /* page hero bar */
+    .page-bar { background:linear-gradient(135deg,#0D1B0E,#1a3c1e); padding:28px 20px; color:#fff; }
+    .page-bar-inner { max-width:1100px; margin:0 auto; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/index.html" style="display:flex;align-items:center;gap:6px;color:#fff;font-size:16px;font-weight:900;text-decoration:none;">
+      <img src="/assets/logo-white.png" alt="نيو سي برنسيس" style="height:38px;" onerror="this.style.display='none'">
+    </a>
+    <nav class="hidden md:flex" style="gap:18px;">
+      <a href="/index.html">الرئيسية</a>
+      <a href="/packages.html">برامجنا</a>
+      <a href="/tracking.html">تتبع حجزك</a>
+      <a href="/guide.html">دليل العمرة</a>
+      <a href="/contact.html">تواصل معنا</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <a href="https://wa.me/201555154996" target="_blank" class="btn-wa"><i class="fa-brands fa-whatsapp"></i> تحدث معنا</a>
+    </div>
+  </div>
+</header>
+
+<!-- PAGE BAR -->
+<div class="page-bar">
+  <div class="page-bar-inner">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(184,134,11,.15);border:1px solid rgba(184,134,11,.3);border-radius:20px;padding:4px 14px;margin-bottom:10px;">
+      <i class="fa-solid fa-user" style="color:#DAA520;font-size:11px;"></i>
+      <span style="font-size:11px;font-weight:700;color:#DAA520;">منطقة المعتمر</span>
+    </div>
+    <h1 style="font-size:clamp(22px,4vw,32px);font-weight:900;">حسابي</h1>
+    <p style="color:rgba(255,255,255,.55);font-size:13px;margin-top:4px;">إدارة بياناتك وحجوزاتك في مكان واحد</p>
+  </div>
+</div>
+
+<!-- PAGE BODY -->
+<div class="page-wrap" id="pageContent" style="display:none;">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-profile">
+      <div class="avatar" id="avatarEl">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <div class="sidebar-name" id="sidebarName">…</div>
+      <div class="sidebar-email" id="sidebarEmail">…</div>
+    </div>
+
+    <nav>
+      <a class="nav-item active" data-panel="overview" onclick="showPanel('overview')">
+        <i class="fa-solid fa-house"></i> نظرة عامة
+      </a>
+      <a class="nav-item" data-panel="bookings" onclick="showPanel('bookings')">
+        <i class="fa-solid fa-suitcase-rolling"></i> حجوزاتي
+      </a>
+      <a class="nav-item" data-panel="profile" onclick="showPanel('profile')">
+        <i class="fa-solid fa-pen-to-square"></i> بياناتي الشخصية
+      </a>
+      <a class="nav-item" data-panel="password" onclick="showPanel('password')">
+        <i class="fa-solid fa-key"></i> تغيير كلمة المرور
+      </a>
+      <a class="nav-item danger" onclick="confirmLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main panels -->
+  <main>
+
+    <!-- ── Overview ── -->
+    <div class="panel active" id="panel-overview">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-box"><div class="skel" style="height:32px;width:50%;margin:0 auto 8px;"></div><div class="skel" style="height:12px;width:70%;margin:0 auto;"></div></div>
+        <div class="stat-box"><div class="skel" style="height:32px;width:50%;margin:0 auto 8px;"></div><div class="skel" style="height:12px;width:70%;margin:0 auto;"></div></div>
+        <div class="stat-box"><div class="skel" style="height:32px;width:50%;margin:0 auto 8px;"></div><div class="skel" style="height:12px;width:70%;margin:0 auto;"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> آخر الحجوزات</div>
+        <div id="recentBookings"><div class="skel" style="height:70px;margin-bottom:10px;"></div><div class="skel" style="height:70px;"></div></div>
+      </div>
+
+      <div class="card" style="background:linear-gradient(135deg,#0D1B0E,#1a3c1e);border:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h3 style="color:#fff;font-size:16px;font-weight:800;margin-bottom:5px;">جاهز للرحلة المقدسة؟</h3>
+            <p style="color:rgba(255,255,255,.6);font-size:13px;">استعرض أحدث برامج العمرة المتاحة الآن</p>
+          </div>
+          <a href="/packages.html" style="background:linear-gradient(135deg,#B8860B,#9a7209);color:#fff;padding:10px 22px;border-radius:9px;font-weight:800;font-size:13px;text-decoration:none;white-space:nowrap;">استعرض البرامج ←</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Bookings ── -->
+    <div class="panel" id="panel-bookings">
+      <div class="card">
+        <div class="card-title"><i class="fa-solid fa-suitcase-rolling"></i> جميع حجوزاتي</div>
+        <div id="allBookings"><div class="skel" style="height:80px;margin-bottom:10px;"></div><div class="skel" style="height:80px;"></div></div>
+      </div>
+    </div>
+
+    <!-- ── Profile ── -->
+    <div class="panel" id="panel-profile">
+      <div class="card">
+        <div class="card-title"><i class="fa-solid fa-id-card"></i> بياناتي الشخصية</div>
+        <div class="alert alert-success" id="profileSuccess"><i class="fa-solid fa-circle-check"></i><span>تم حفظ البيانات بنجاح</span></div>
+        <div class="alert alert-error"   id="profileError"><i class="fa-solid fa-circle-exclamation"></i><span id="profileErrorText"></span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="md:grid-cols-2">
+          <div class="field-wrap" style="grid-column:span 2;">
+            <label class="field-label">الاسم الكامل</label>
+            <input type="text" id="pName" class="field-input" placeholder="اسمك الكامل">
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">البريد الإلكتروني</label>
+            <input type="email" id="pEmail" class="field-input" disabled>
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">رقم الهاتف (واتساب)</label>
+            <input type="tel" id="pPhone" class="field-input" placeholder="01xxxxxxxxx" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9+]/g,'')">
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">المدينة</label>
+            <input type="text" id="pCity" class="field-input" placeholder="القاهرة، الإسكندرية…">
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">رقم جواز السفر</label>
+            <input type="text" id="pPassport" class="field-input" placeholder="A1234567" style="direction:ltr;text-align:right;" oninput="this.value=this.value.replace(/[^\x00-\x7F]/g,'').toUpperCase()">
+          </div>
+        </div>
+        <button class="btn-gold" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> حفظ التغييرات</button>
+      </div>
+    </div>
+
+    <!-- ── Password ── -->
+    <div class="panel" id="panel-password">
+      <div class="card">
+        <div class="card-title"><i class="fa-solid fa-key"></i> تغيير كلمة المرور</div>
+        <div class="alert alert-success" id="pwSuccess"><i class="fa-solid fa-circle-check"></i><span>تم تغيير كلمة المرور بنجاح</span></div>
+        <div class="alert alert-error"   id="pwError"><i class="fa-solid fa-circle-exclamation"></i><span id="pwErrorText"></span></div>
+        <div class="field-wrap">
+          <label class="field-label">كلمة المرور الجديدة</label>
+          <input type="password" id="newPass" class="field-input" placeholder="8 أحرف على الأقل" style="direction:ltr;">
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">تأكيد كلمة المرور</label>
+          <input type="password" id="confirmPass" class="field-input" placeholder="••••••••" style="direction:ltr;">
+        </div>
+        <button class="btn-gold" onclick="changePassword()"><i class="fa-solid fa-key"></i> تحديث كلمة المرور</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" style="min-height:60vh;display:flex;align-items:center;justify-content:center;">
+  <div style="text-align:center;">
+    <div style="width:44px;height:44px;border:3px solid #e5e7eb;border-top-color:#1B5E20;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px;"></div>
+    <p style="color:#6b7280;font-size:14px;">جارٍ تحميل بياناتك…</p>
+  </div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<!-- Logout confirm modal -->
+<div id="logoutModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <i class="fa-solid fa-right-from-bracket" style="font-size:36px;color:#dc2626;margin-bottom:12px;"></i>
+    <h3 style="font-size:17px;font-weight:800;margin-bottom:8px;">تسجيل الخروج</h3>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:22px;">هل أنت متأكد أنك تريد تسجيل الخروج من حسابك؟</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button onclick="NSPAuth.signOut()" style="background:#dc2626;color:#fff;padding:10px 24px;border-radius:9px;font-family:'Cairo',sans-serif;font-weight:800;font-size:14px;border:none;cursor:pointer;">نعم، خروج</button>
+      <button onclick="closeLogoutModal()" style="background:#f3f4f6;color:#374151;padding:10px 24px;border-radius:9px;font-family:'Cairo',sans-serif;font-weight:700;font-size:14px;border:none;cursor:pointer;">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentUser = null;
+
+/* ── panels ── */
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item[data-panel]').forEach(a => a.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.querySelector(`[data-panel="${name}"]`)?.classList.add('active');
+}
+
+/* ── logout modal ── */
+function confirmLogout()  { document.getElementById('logoutModal').style.display='flex'; }
+function closeLogoutModal(){ document.getElementById('logoutModal').style.display='none'; }
+
+/* ── load user ── */
+async function loadUser() {
+  currentUser = await NSPAuth.requireAuth();
+  if (!currentUser) return;
+
+  const meta = currentUser.user_metadata || {};
+  const name = meta.full_name || currentUser.email.split('@')[0];
+
+  // sidebar
+  document.getElementById('sidebarName').textContent  = name;
+  document.getElementById('sidebarEmail').textContent = currentUser.email;
+  document.getElementById('avatarEl').innerHTML = `<span style="font-size:26px;font-weight:900;">${name.charAt(0)}</span>`;
+
+  // profile form
+  document.getElementById('pName').value    = name;
+  document.getElementById('pEmail').value   = currentUser.email;
+  document.getElementById('pPhone').value   = meta.phone || '';
+  document.getElementById('pCity').value    = meta.city  || '';
+  document.getElementById('pPassport').value= meta.passport || '';
+
+  document.getElementById('loadingOverlay').style.display = 'none';
+  document.getElementById('pageContent').style.display    = '';
+
+  await loadBookings();
+}
+
+/* ── bookings ── */
+async function loadBookings() {
+  let bookings = [];
+  try {
+    if (window.db) {
+      const { data } = await window.db.from('bookings').select('*')
+        .eq('customer_email', currentUser.email)
+        .order('booking_date', { ascending:false });
+      if (data) bookings = data;
+    }
+  } catch(_) {}
+
+  renderStats(bookings);
+  renderBookingList('recentBookings',  bookings.slice(0,3));
+  renderBookingList('allBookings',     bookings);
+}
+
+function renderStats(bookings) {
+  const confirmed  = bookings.filter(b => b.status === 'confirmed').length;
+  const pending    = bookings.filter(b => b.status === 'pending' || b.status === 'awaiting_payment').length;
+  const total      = bookings.length;
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-lbl">إجمالي الحجوزات</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:#16a34a;">${confirmed}</div><div class="stat-lbl">حجوزات مؤكدة</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:#d97706;">${pending}</div><div class="stat-lbl">قيد المراجعة</div></div>`;
+}
+
+function statusClass(s) {
+  if (s==='مؤكد') return 'status-confirmed';
+  if (s==='ملغي') return 'status-cancelled';
+  return 'status-pending';
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'}); } catch { return d; }
+}
+
+function renderBookingList(elId, bookings) {
+  const el = document.getElementById(elId);
+  if (!bookings.length) {
+    el.innerHTML = `<div class="empty-box"><div class="icon"><i class="fa-solid fa-suitcase-rolling"></i></div><h3>لا توجد حجوزات بعد</h3><p>ابدأ رحلتك المقدسة الآن</p><a href="/packages.html" style="display:inline-block;margin-top:14px;background:linear-gradient(135deg,#B8860B,#9a7209);color:#fff;padding:10px 22px;border-radius:9px;font-weight:800;text-decoration:none;font-size:13px;">استعرض البرامج</a></div>`;
+    return;
+  }
+  el.innerHTML = bookings.map(b => `
+    <div class="booking-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#111;margin-bottom:4px;">${b.package_title || 'برنامج عمرة'}</div>
+          <div style="font-size:12px;color:#6b7280;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span><i class="fa-solid fa-hashtag" style="color:#B8860B;"></i> ${b.booking_number || '—'}</span>
+            <span><i class="fa-solid fa-plane-departure" style="color:#1B5E20;"></i> ${fmtDate(b.package_departure)}</span>
+            <span><i class="fa-solid fa-users" style="color:#6b7280;"></i> ${b.traveler_count || 1} مسافر</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <span class="booking-status ${statusClass(b.status)}">${b.status || 'قيد المراجعة'}</span>
+          <a href="/tracking.html?booking=${b.booking_number}" style="font-size:11px;color:#B8860B;font-weight:700;text-decoration:none;">تفاصيل الحجز ←</a>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ── save profile ── */
+async function saveProfile() {
+  const name     = document.getElementById('pName').value.trim();
+  const phone    = document.getElementById('pPhone').value.trim();
+  const city     = document.getElementById('pCity').value.trim();
+  const passport = document.getElementById('pPassport').value.trim();
+  document.getElementById('profileSuccess').classList.remove('show');
+  document.getElementById('profileError').classList.remove('show');
+  try {
+    const { error } = await window.db.auth.updateUser({ data:{ full_name:name, phone, city, passport } });
+    if (error) throw error;
+    document.getElementById('profileSuccess').classList.add('show');
+    document.getElementById('sidebarName').textContent = name;
+    document.getElementById('avatarEl').innerHTML = `<span style="font-size:26px;font-weight:900;">${name.charAt(0)}</span>`;
+    setTimeout(() => document.getElementById('profileSuccess').classList.remove('show'), 3500);
+  } catch(e) {
+    document.getElementById('profileErrorText').textContent = e.message || 'حدث خطأ أثناء الحفظ';
+    document.getElementById('profileError').classList.add('show');
+  }
+}
+
+/* ── change password ── */
+async function changePassword() {
+  const np = document.getElementById('newPass').value;
+  const cp = document.getElementById('confirmPass').value;
+  document.getElementById('pwSuccess').classList.remove('show');
+  document.getElementById('pwError').classList.remove('show');
+  if (np.length < 8) { document.getElementById('pwErrorText').textContent='كلمة المرور يجب أن تكون 8 أحرف على الأقل'; document.getElementById('pwError').classList.add('show'); return; }
+  if (np !== cp) { document.getElementById('pwErrorText').textContent='كلمتا المرور غير متطابقتين'; document.getElementById('pwError').classList.add('show'); return; }
+  try {
+    const { error } = await window.db.auth.updateUser({ password: np });
+    if (error) throw error;
+    document.getElementById('pwSuccess').classList.add('show');
+    document.getElementById('newPass').value = '';
+    document.getElementById('confirmPass').value = '';
+    setTimeout(() => document.getElementById('pwSuccess').classList.remove('show'), 3500);
+  } catch(e) {
+    document.getElementById('pwErrorText').textContent = e.message || 'حدث خطأ أثناء التحديث';
+    document.getElementById('pwError').classList.add('show');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadUser);
+</script>
+</body>
+</html>
