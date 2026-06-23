@@ -206,7 +206,11 @@ CREATE POLICY "Public read guides" ON religious_guides FOR SELECT USING (is_publ
 CREATE POLICY "Public read faqs" ON faqs FOR SELECT USING (is_published = true);
 CREATE POLICY "Public read settings" ON site_settings FOR SELECT USING (true);
 CREATE POLICY "Public insert bookings" ON bookings FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public read own booking" ON bookings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public read own booking" ON bookings;
+CREATE POLICY "Public read own booking" ON bookings FOR SELECT USING (
+  user_id = auth.uid()
+  OR public.is_admin()
+);
 CREATE POLICY "Public insert newsletter" ON newsletter_subscribers FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public insert reviews" ON reviews FOR INSERT WITH CHECK (true);
 

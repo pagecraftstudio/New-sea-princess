@@ -1,0 +1,44 @@
+**1. `robots.txt` — still mentions Netlify**
+Line `Disallow: /.netlify/` should be removed since you moved to Vercel.
+
+---
+
+**2. `sitemap.xml` — dates are outdated**
+All `<lastmod>` entries say `2025-01-01`. Update them to today's date, and add `package-detail.html` as a note pointing to the dynamic sitemap from `api/sitemap-packages.js`.
+
+---
+
+**3. `api/sitemap-packages.js` — uses `require()` not `import`**
+Vercel Serverless Functions support both, but since the rest of your project has no `package.json`, you need to create one in the root so Vercel installs `@supabase/supabase-js` for the function. Otherwise it will crash at runtime.
+
+Create `package.json` in the project root:
+```json
+{
+  "name": "new-sea-princess",
+  "version": "1.0.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  }
+}
+```
+
+Also make sure `SUPABASE_URL` and `SUPABASE_ANON_KEY` are added in **Vercel → Settings → Environment Variables** — the function reads them from `process.env`, not from `supabase-config.js`.
+
+---
+
+**4. `supabase-config.js` — anon key is hardcoded and public**
+This is expected for a frontend-only project since the anon key is public by design. But make sure your RLS policies are tight (they are — Query #10 is in place), so the key being visible causes no risk.
+
+---
+
+**5. `print-utils.js` — logo path will break**
+`LOGO_URL` is set to `/assets/logo-white.png`. Make sure that file actually exists in your `assets/` folder before deploying, otherwise the logo in all printed PDFs will silently disappear (it has an `onerror` fallback that hides it, so it won't crash — but it will look unprofessional).
+
+---
+
+**6. `vercel.json` — `_redirects` file can be deleted**
+It's harmless but dead weight. You can remove it since Vercel ignores it completely.
+
+---
+
+**Most critical of the above:** items **3** (missing `package.json`) and **5** (missing logo asset) will cause real runtime failures. The rest are polish.

@@ -158,7 +158,49 @@
     </main>
   </div>
 
+<<<<<<< HEAD
   <!-- Block/Unblock Confirm Modal -->
+=======
+  <!-- User Booking History Modal -->
+  <div id="historyModal" class="fixed inset-0 z-[70] hidden bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col" style="max-height:90vh;">
+      <!-- Header -->
+      <div class="flex justify-between items-center px-5 py-4 border-b border-gray-100 shrink-0">
+        <div>
+          <h3 class="text-lg font-bold text-primary flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-gold text-base"></i>
+            سجل الحجوزات والمدفوعات
+          </h3>
+          <p id="historyUserName" class="text-xs text-gray-500 mt-0.5"></p>
+        </div>
+        <button onclick="closeHistoryModal()" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <!-- KPIs -->
+      <div class="grid grid-cols-3 gap-3 px-5 py-3 border-b border-gray-100 shrink-0 bg-gray-50">
+        <div class="text-center">
+          <p class="text-xs text-gray-500">إجمالي الحجوزات</p>
+          <p id="histKpiCount" class="text-xl font-bold text-gray-800">—</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xs text-gray-500">إجمالي المدفوع</p>
+          <p id="histKpiPaid" class="text-xl font-bold text-green-700">—</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xs text-gray-500">إجمالي المتبقي</p>
+          <p id="histKpiRemain" class="text-xl font-bold text-red-600">—</p>
+        </div>
+      </div>
+      <!-- Body -->
+      <div id="historyBody" class="flex-1 overflow-y-auto px-5 py-4" style="-webkit-overflow-scrolling:touch;"></div>
+      <!-- Footer -->
+      <div class="shrink-0 border-t border-gray-100 px-5 py-3 bg-white rounded-b-2xl text-left">
+        <button onclick="closeHistoryModal()" class="text-sm text-gray-500 hover:text-gray-800 font-bold transition">إغلاق</button>
+      </div>
+    </div>
+  </div>
+>>>>>>> 9797ec1 (initial commit v17)
   <div id="blockModal" class="fixed inset-0 z-50 bg-black/50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center">
       <i id="blockModalIcon" class="fa-solid fa-ban text-red-400 text-4xl mb-3"></i>
@@ -227,7 +269,16 @@
             : '<span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded">نشط</span>'}
         </td>
         <td class="px-4 py-3">
+<<<<<<< HEAD
           <div class="flex gap-2">
+=======
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="openUserHistory('${u.id}', '${(u.full_name||u.email||'').replace(/'/g,"\\'")}', '${u.email||''}')"
+                    title="سجل الحجوزات والمدفوعات"
+                    class="text-xs px-2 py-1 rounded bg-primary text-white hover:bg-green-700 transition flex items-center gap-1">
+              <i class="fa-solid fa-clock-rotate-left"></i> سجل
+            </button>
+>>>>>>> 9797ec1 (initial commit v17)
             <button onclick="openToggleBlock('${u.id}', ${u.is_blocked})"
                     title="${u.is_blocked ? 'إلغاء الإيقاف' : 'إيقاف الحساب'}"
                     class="text-xs px-2 py-1 rounded ${u.is_blocked ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-600 hover:bg-red-200'} transition">
@@ -316,6 +367,93 @@
 
   function closeDrawer() { document.getElementById('mobileDrawer').classList.add('hidden'); }
 
+<<<<<<< HEAD
+=======
+  // ── User Booking History ──────────────────────────────
+  const statusLabelsHist = {
+    awaiting_payment:'في انتظار الدفع', pending:'قيد التلقي', confirmed:'مؤكد',
+    visa_processing:'جاري التأشيرة', tickets_issued:'تذاكر صادرة',
+    travelling:'في السفر', completed:'مكتمل', cancelled:'ملغي'
+  };
+  const statusColorsHist = {
+    awaiting_payment:'bg-orange-100 text-orange-800', pending:'bg-yellow-100 text-yellow-800',
+    confirmed:'bg-green-100 text-green-800', visa_processing:'bg-blue-100 text-blue-800',
+    tickets_issued:'bg-indigo-100 text-indigo-800', completed:'bg-purple-100 text-purple-800',
+    cancelled:'bg-red-100 text-red-800', travelling:'bg-teal-100 text-teal-800'
+  };
+
+  async function openUserHistory(userId, userName, userEmail) {
+    document.getElementById('historyUserName').textContent = `${userName || '—'} — ${userEmail || ''}`;
+    document.getElementById('histKpiCount').textContent = '...';
+    document.getElementById('histKpiPaid').textContent = '...';
+    document.getElementById('histKpiRemain').textContent = '...';
+    document.getElementById('historyBody').innerHTML = '<div class="py-10 text-center text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>';
+    document.getElementById('historyModal').classList.remove('hidden');
+
+    if (!window.db) return;
+    const { data, error } = await window.db.from('bookings')
+      .select('booking_number, booking_date, package_title, package_departure, status, total_price, paid_amount, remaining_amount, adults_count, children_count')
+      .eq('user_id', userId)
+      .order('booking_date', { ascending: false });
+
+    if (error || !data) {
+      document.getElementById('historyBody').innerHTML = '<p class="text-center text-red-500 py-8">تعذّر تحميل البيانات</p>';
+      return;
+    }
+
+    const totalPaid   = data.reduce((s, b) => s + Number(b.paid_amount || 0), 0);
+    const totalRemain = data.reduce((s, b) => s + Number(b.remaining_amount ?? (Number(b.total_price||0) - Number(b.paid_amount||0))), 0);
+    document.getElementById('histKpiCount').textContent  = data.length;
+    document.getElementById('histKpiPaid').textContent   = totalPaid.toLocaleString('ar-EG') + ' ج.م';
+    document.getElementById('histKpiRemain').textContent = totalRemain.toLocaleString('ar-EG') + ' ج.م';
+
+    if (!data.length) {
+      document.getElementById('historyBody').innerHTML = '<p class="text-center text-gray-400 py-10">لا توجد حجوزات لهذا المستخدم</p>';
+      return;
+    }
+
+    const fmt = n => Number(n||0).toLocaleString('ar-EG');
+    const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG') : '—';
+
+    document.getElementById('historyBody').innerHTML = data.map(b => {
+      const total   = Number(b.total_price || 0);
+      const paid    = Number(b.paid_amount || 0);
+      const remain  = Number(b.remaining_amount ?? (total - paid));
+      const pct     = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+      const badge   = statusColorsHist[b.status] || 'bg-gray-100 text-gray-700';
+      const label   = statusLabelsHist[b.status] || b.status;
+      return `
+        <div class="border border-gray-200 rounded-xl p-4 mb-3 hover:shadow transition">
+          <div class="flex justify-between items-start mb-2 gap-2 flex-wrap">
+            <div>
+              <span class="font-mono font-bold text-primary text-sm">${b.booking_number || '—'}</span>
+              <span class="text-xs text-gray-400 mr-2">${fmtDate(b.booking_date)}</span>
+            </div>
+            <span class="text-xs font-bold px-2 py-0.5 rounded ${badge}">${label}</span>
+          </div>
+          <p class="font-bold text-gray-800 mb-1">${b.package_title || '—'}</p>
+          <p class="text-xs text-gray-500 mb-3">المغادرة: ${fmtDate(b.package_departure)} &nbsp;·&nbsp; ${b.adults_count} بالغ / ${b.children_count} طفل</p>
+          <!-- Payment progress -->
+          <div class="bg-gray-50 rounded-lg p-3">
+            <div class="flex justify-between text-xs mb-1.5">
+              <span class="text-gray-500">المدفوع: <strong class="text-green-700">${fmt(paid)} ج.م</strong></span>
+              <span class="text-gray-500">الإجمالي: <strong>${fmt(total)} ج.م</strong></span>
+              <span class="text-gray-500">المتبقي: <strong class="text-red-600">${fmt(remain)} ج.م</strong></span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="h-2 rounded-full ${remain <= 0 ? 'bg-green-500' : 'bg-amber-400'}" style="width:${pct}%"></div>
+            </div>
+            <p class="text-xs text-gray-400 mt-1 text-left">${pct}% مدفوع</p>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function closeHistoryModal() {
+    document.getElementById('historyModal').classList.add('hidden');
+  }
+
+>>>>>>> 9797ec1 (initial commit v17)
   document.addEventListener('DOMContentLoaded', async () => {
     adminCheckAuth().then(ok => { if (ok) loadUsers(); });
     document.getElementById('mobileMenuBtn').addEventListener('click', () => {

@@ -32,14 +32,15 @@ async function trackBooking() {
     }
 
     try {
+        // Use the RPC function instead of direct table access.
+        // The RLS policy no longer allows public SELECT on bookings —
+        // get_booking_status() is a SECURITY DEFINER function that returns
+        // only safe fields (no passport numbers, national IDs, or admin notes).
         const { data, error } = await window.db
-            .from('bookings')
-            .select('*')
-            .eq('booking_number', input)
-            .single();
+            .rpc('get_booking_status', { p_booking_number: input });
 
-        if (error || !data) throw error;
-        renderResults(data);
+        if (error || !data || data.length === 0) throw error;
+        renderResults(data[0]);
 
     } catch (err) {
         document.getElementById('errorArea').classList.remove('hidden');

@@ -29,7 +29,7 @@ ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 -- STEP 2: ضيف حساب/حسابات الأدمن هنا (غيّر الإيميل)
 -- ───────────────────────────────────────────────
 INSERT INTO admin_users (id, email)
-SELECT id, email FROM auth.users WHERE email = 'PUT_YOUR_ADMIN_EMAIL_HERE@example.com'
+SELECT id, email FROM auth.users WHERE email = 'pagecraftstudio@gmail.com'
 ON CONFLICT (id) DO NOTHING;
 
 -- لو عندك أكتر من حساب أدمن، كرر السطر فوق بإيميل مختلف كل مرة.
@@ -71,6 +71,13 @@ CREATE POLICY "Admin insert bookings" ON bookings FOR INSERT WITH CHECK (public.
 CREATE POLICY "Admin update bookings" ON bookings FOR UPDATE USING (public.is_admin());
 CREATE POLICY "Admin delete bookings" ON bookings FOR DELETE USING (public.is_admin());
 CREATE POLICY "Admin select bookings" ON bookings FOR SELECT USING (public.is_admin());
+
+-- Fix critical: customers were able to read all bookings
+DROP POLICY IF EXISTS "Public read own booking" ON bookings;
+CREATE POLICY "Public read own booking" ON bookings FOR SELECT USING (
+  user_id = auth.uid()
+  OR public.is_admin()
+);
 
 -- reviews
 DROP POLICY IF EXISTS "Admin insert reviews" ON reviews;
@@ -145,3 +152,76 @@ CREATE POLICY "Admin can read documents" ON storage.objects
   FOR SELECT USING (bucket_id = 'booking-documents' AND public.is_admin());
 -- سياسة الرفع "Authenticated users can upload" فضلت زي ما هي عمداً —
 -- لازم تفضل عامة عشان نموذج الحجز للعملاء (غير المسجلين) يقدر يرفع جواز السفر.
+
+-- ═══════════════════════════════════════════════════════
+-- STEP 5: Server-side coupon validation (removes coupon from public API)
+-- Call from booking.js via: supabase.rpc('validate_coupon', {p_package_id, p_code})
+-- ═══════════════════════════════════════════════════════
+CREATE OR REPLACE FUNCTION validate_coupon(p_package_id UUID, p_code TEXT)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_coupon   TEXT;
+  v_discount DECIMAL;
+BEGIN
+  SELECT coupon_code, coupon_discount
+    INTO v_coupon, v_discount
+    FROM packages WHERE id = p_package_id;
+  IF v_coupon IS NOT DISTINCT FROM p_code AND p_code IS NOT NULL AND p_code <> '' THEN
+    RETURN jsonb_build_object('valid', true, 'discount', v_discount);
+  END IF;
+  RETURN jsonb_build_object('valid', false, 'discount', 0);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION validate_coupon(UUID, TEXT) TO authenticated, anon;
+
+-- ═══════════════════════════════════════════════════════
+-- STEP 6: Server-side price recalculation trigger
+-- Prevents browser-manipulated total_price / discount_amount
+-- ═══════════════════════════════════════════════════════
+CREATE OR REPLACE FUNCTION recalculate_booking_price()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE pkg RECORD;
+BEGIN
+  SELECT adult_price, child_price
+    INTO pkg
+    FROM packages WHERE id = NEW.package_id;
+
+  IF FOUND THEN
+    NEW.total_price := (NEW.adults_count * COALESCE(pkg.adult_price, 0))
+                     + (NEW.children_count * COALESCE(pkg.child_price, 0));
+    -- Discount is capped at total_price to prevent negative totals
+    NEW.discount_amount  := LEAST(COALESCE(NEW.discount_amount, 0), NEW.total_price);
+    NEW.remaining_amount := NEW.total_price
+                          - COALESCE(NEW.discount_amount, 0)
+                          - COALESCE(NEW.paid_amount, 0);
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS enforce_booking_price ON bookings;
+CREATE TRIGGER enforce_booking_price
+  BEFORE INSERT ON bookings
+  FOR EACH ROW EXECUTE FUNCTION recalculate_booking_price();
+
+-- ═══════════════════════════════════════════════════════
+-- STEP 7: Storage RLS — scope passport reads to owner + admin
+-- ═══════════════════════════════════════════════════════
+DROP POLICY IF EXISTS "Admin can read documents"      ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload" ON storage.objects;
+
+CREATE POLICY "Owner or admin reads documents" ON storage.objects
+  FOR SELECT USING (
+    bucket_id = 'booking-documents'
+    AND (
+      public.is_admin()
+      OR (storage.foldername(name))[1] = auth.uid()::text
+    )
+  );
+
+CREATE POLICY "Authenticated users can upload" ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'booking-documents'
+    AND auth.role() = 'authenticated'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );

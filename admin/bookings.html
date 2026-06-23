@@ -195,6 +195,7 @@
             <th class="p-4">رقم الحجز</th>
             <th class="p-4">تاريخ الطلب</th>
             <th class="p-4">اسم العميل ورقم الهاتف</th>
+            <th class="p-4">منشئ الطلب</th>
             <th class="p-4">البرنامج وتاريخ مغادرته</th>
             <th class="p-4">الأفراد (ب/ط)</th>
             <th class="p-4">الحالة</th>
@@ -202,7 +203,7 @@
           </tr>
         </thead>
         <tbody id="booksBody" class="divide-y divide-gray-100">
-          <tr><td colspan="7" class="p-6 text-center text-gray-400">جاري التحميل...</td></tr>
+          <tr><td colspan="8" class="p-6 text-center text-gray-400">جاري التحميل...</td></tr>
         </tbody>
       </table>
     </div>
@@ -407,7 +408,16 @@
   async function loadAdminBookings() {
     if (!window.db) { setTimeout(loadAdminBookings, 500); return; }
     const { data, error } = await window.db.from('bookings').select('*').order('booking_date', { ascending: false });
-    if (error) { console.error(error); return; }
+    if (error) {
+      console.error('loadAdminBookings error:', error);
+      document.getElementById('booksBody').innerHTML = `
+        <tr><td colspan="8" class="p-8 text-center text-red-600">
+          <i class="fa-solid fa-triangle-exclamation ml-2"></i>
+          فشل تحميل البيانات — ${error.message || ''}
+          <button onclick="loadAdminBookings()" class="mr-3 underline text-primary font-semibold">إعادة المحاولة</button>
+        </td></tr>`;
+      return;
+    }
     allBookings = data || [];
     window.allBookings = allBookings; // ✅
     applyFilters();
@@ -511,7 +521,7 @@
   function renderTable(data) {
     const tbody = document.getElementById('booksBody');
     if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-gray-400">لا توجد نتائج مطابقة</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-400">لا توجد نتائج مطابقة</td></tr>';
       return;
     }
 
@@ -526,6 +536,14 @@
         <td class="p-4">
           <p class="font-bold text-darkBg">${b.customer_name}</p>
           <p class="text-xs text-gray-500" dir="ltr">${b.customer_phone}</p>
+        </td>
+        <td class="p-4">
+          ${b.customer_name
+            ? `<p class="font-bold text-xs text-gray-700">${b.customer_name || '—'}</p>
+               <p class="text-xs text-gray-400" dir="ltr">${b.customer_email || ''}</p>`
+            : b.user_id
+              ? `<p class="text-xs text-gray-400 font-mono">${b.user_id.slice(0,8)}…</p>`
+              : '<p class="text-xs text-gray-300 italic">زائر / غير مسجل</p>'}
         </td>
         <td class="p-4">
           <p class="font-bold text-primary max-w-[180px] truncate" title="${b.package_title}">${b.package_title}</p>
@@ -805,6 +823,20 @@
 
     const sections = [
       { icon:'fa-hashtag', title:'رقم الحجز', html:`<p class="font-mono font-bold text-primary text-lg">${b.booking_number}</p><p class="text-xs text-gray-400">${new Date(b.booking_date).toLocaleDateString('ar-EG')}</p>` },
+      { icon:'fa-user-shield', title:'منشئ الطلب (الحساب المسجّل)', html:
+        b.customer_name
+          ? `<div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+               <div class="w-9 h-9 rounded-full bg-blue-200 flex items-center justify-center flex-shrink-0 text-blue-700 font-bold text-sm">${(b.customer_name||'?')[0]}</div>
+               <div>
+                 <p class="font-bold text-gray-800">${b.customer_name || '—'}</p>
+                 <p class="text-xs text-gray-500" dir="ltr">${b.customer_email || ''}</p>
+                 ${b.customer_phone ? `<p class="text-xs text-gray-500" dir="ltr">${b.customer_phone}</p>` : ''}
+               </div>
+             </div>`
+          : b.user_id
+            ? `<p class="text-xs text-gray-400 font-mono bg-gray-50 rounded p-2">ID: ${b.user_id}</p>`
+            : '<p class="text-xs text-gray-400 italic">تم الحجز كزائر (بدون حساب مسجّل)</p>'
+      },
       { icon:'fa-user', title:'بيانات العميل', html:`
         <div class="grid grid-cols-2 gap-2">
           <div><p class="text-xs text-gray-400">الاسم</p><p class="font-bold">${b.customer_name}</p></div>

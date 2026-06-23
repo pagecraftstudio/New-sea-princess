@@ -23,8 +23,11 @@ Disallow: /login.html
 Disallow: /compare.html
 Disallow: /404.html
 
+<<<<<<< HEAD
 # Netlify internals
 Disallow: /.netlify/
 
+=======
+>>>>>>> 9797ec1 (initial commit v17)
 # Sitemap
 Sitemap: https://newseaprincess.vercel.app/sitemap.xml

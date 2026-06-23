@@ -6,73 +6,117 @@
 
   <url>
     <loc>https://newseaprincess.vercel.app/</loc>
+<<<<<<< HEAD
     <lastmod>2025-01-01</lastmod>
+=======
+    <lastmod>2026-06-22</lastmod>
+>>>>>>> 9797ec1 (initial commit v17)
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
     <loc>https://newseaprincess.vercel.app/packages.html</loc>
+<<<<<<< HEAD
     <lastmod>2025-01-01</lastmod>
+=======
+    <lastmod>2026-06-22</lastmod>
+>>>>>>> 9797ec1 (initial commit v17)
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://newseaprincess.vercel.app/guide.html</loc>
+<<<<<<< HEAD
     <lastmod>2025-01-01</lastmod>
+=======
+    <lastmod>2026-06-22</lastmod>
+>>>>>>> 9797ec1 (initial commit v17)
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://newseaprincess.vercel.app/visa.html</loc>
+<<<<<<< HEAD
     <lastmod>2025-01-01</lastmod>
+=======
+    <lastmod>2026-06-22</lastmod>
+>>>>>>> 9797ec1 (initial commit v17)
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
     <loc>https://newseaprincess.vercel.app/about.html</loc>
+<<<<<<< HEAD
     <lastmod>2025-01-01</lastmod>
+=======
+    <lastmod>2026-06-22</lastmod>
+>>>>>>> 9797ec1 (initial commit v17)
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://newseaprincess.vercel.app/contact.html</loc>
+<<<<<<< HEAD
     <lastmod>2025-01-01</lastmod>
+=======
+    <lastmod>2026-06-22</lastmod>
+>>>>>>> 9797ec1 (initial commit v17)
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://newseaprincess.vercel.app/reviews.html</loc>
+<<<<<<< HEAD
     <lastmod>2025-01-01</lastmod>
+=======
+    <lastmod>2026-06-22</lastmod>
+>>>>>>> 9797ec1 (initial commit v17)
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://newseaprincess.vercel.app/tracking.html</loc>
+<<<<<<< HEAD
     <lastmod>2025-01-01</lastmod>
+=======
+    <lastmod>2026-06-22</lastmod>
+>>>>>>> 9797ec1 (initial commit v17)
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
     <loc>https://newseaprincess.vercel.app/currency.html</loc>
+<<<<<<< HEAD
     <lastmod>2025-01-01</lastmod>
+=======
+    <lastmod>2026-06-22</lastmod>
+>>>>>>> 9797ec1 (initial commit v17)
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
 
   <!--
+<<<<<<< HEAD
     ملاحظة: صفحات تفاصيل الباقات ديناميكية (?id=...)
     استخدم Netlify Function لتوليد سيتماب ديناميكي يشمل كل الباقات.
     الملف: netlify/functions/sitemap-packages.js
     المسار: https://newseaprincess.vercel.app/api/sitemap-packages
     أضف رابط السيتماب الديناميكي لـ Google Search Console بشكل منفصل.
+=======
+    ملاحظة: لا تُدرج package-detail.html هنا لأنها صفحة ديناميكية (?id=...).
+    روابط جميع الباقات تُولَّد تلقائيًا عبر:
+    الملف: api/sitemap-packages.js
+    المسار المباشر: https://newseaprincess.vercel.app/api/sitemap-packages
+    أضف رابط السيتماب الديناميكي هذا في Google Search Console بشكل منفصل عن هذا الملف.
+>>>>>>> 9797ec1 (initial commit v17)
   -->
 
 </urlset>

@@ -9,6 +9,9 @@
   <meta name="keywords" content="عمرة, حج, برامج عمرة, رحلات مكة, نيو سي برنسيس">
   <meta property="og:title" content="حجز البرنامج | نيو سي برنسيس للسياحة">
   <meta property="og:description" content="نيو سي برنسيس للسياحة - أفضل برامج العمرة والحج بأسعار تنافسية وخدمة ممتازة">
+  <meta property="og:image" content="https://uptaqdldbvmiigsfndtm.supabase.co/storage/v1/object/public/assets/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <link rel="canonical" href="https://newseaprincess.com/booking.html">
   <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -22,6 +25,9 @@
   <script src="/js/analytics.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/darkmode.js"></script>
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
 </head>
 <body class="bg-offWhite">
   <!-- Header -->
@@ -204,7 +210,7 @@
       <div class="mb-8 p-4 bg-primary/5 rounded-lg border border-primary/20">
         <h3 class="font-bold mb-4 text-primary">بيانات صاحب الحجز (للتواصل)</h3>
         <div class="grid md:grid-cols-2 gap-4">
-          <input type="text" id="contactPhone" placeholder="رقم الهاتف الأساسي (أو واتساب)" class="border p-3 rounded focus:border-primary w-full" required>
+          <input type="tel" inputmode="numeric" id="contactPhone" placeholder="رقم الهاتف الأساسي (أو واتساب)" pattern="[0-9+\s\-]{8,20}" class="border p-3 rounded focus:border-primary w-full" required>
           <input type="email" id="contactEmail" placeholder="البريد الإلكتروني (اختياري)" class="border p-3 rounded focus:border-primary w-full">
         </div>
       </div>
@@ -233,6 +239,10 @@
         <h3 class="font-bold text-center text-primary text-xl mb-2">تأكيد الحجز النهائي</h3>
         <p class="text-center text-sm text-gray-500 mb-6">سيتم تسجيل طلبك وإرسال إشعار فوري عبر واتساب.</p>
         <button id="finalSubmitBtn" onclick="bookingController.submitBooking()" class="w-full btn-gold py-4 text-xl">تأكيد طلب الحجز</button>
+        <div id="booking-submit-error" class="hidden mt-4 bg-red-50 border border-red-300 rounded-lg p-4 text-red-700 text-sm text-center">
+          <i class="fa-solid fa-circle-exclamation ml-2"></i>
+          <span id="booking-submit-error-msg">حدث خطأ أثناء إرسال طلب الحجز. يرجى المحاولة لاحقاً.</span>
+        </div>
       </div>
 
       <div class="mt-6 flex justify-start">

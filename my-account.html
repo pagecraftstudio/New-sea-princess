@@ -85,6 +85,30 @@
     .alert-error   { background:#fef2f2; border:1px solid #fecaca; color:#dc2626; }
     .alert.show { display:flex; }
 
+<<<<<<< HEAD
+=======
+
+    /* payment history */
+    .pay-item { border:1px solid #e8e5de; border-radius:12px; padding:16px 18px; margin-bottom:10px; display:flex; align-items:center; gap:14px; transition:box-shadow .2s; }
+    .pay-item:hover { box-shadow:0 4px 16px rgba(0,0,0,.09); }
+    .pay-icon { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; }
+    .pay-icon.paid    { background:#dcfce7; color:#16a34a; }
+    .pay-icon.partial { background:#fef9c3; color:#b45309; }
+    .pay-icon.pending { background:#fee2e2; color:#dc2626; }
+    .pay-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:10px; font-size:10px; font-weight:800; }
+    .pay-badge.paid    { background:#dcfce7; color:#15803d; }
+    .pay-badge.partial { background:#fef9c3; color:#92400e; }
+    .pay-badge.none    { background:#fee2e2; color:#991b1b; }
+    .pay-progress { height:5px; border-radius:3px; background:#e5e7eb; margin-top:6px; overflow:hidden; }
+    .pay-progress-bar { height:100%; border-radius:3px; transition:width .5s; }
+    .pay-summary { background:linear-gradient(135deg,#f0fdf1,#e8f5e9); border:1px solid rgba(27,94,32,.15); border-radius:14px; padding:20px; margin-bottom:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; }
+    .pay-kpi { text-align:center; }
+    .pay-kpi-val { font-size:22px; font-weight:900; line-height:1; }
+    .pay-kpi-lbl { font-size:11px; color:#6b7280; margin-top:4px; }
+    .filter-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+    .filter-tab { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; border:1.5px solid #e2dfd8; color:#6b7280; cursor:pointer; transition:all .2s; background:#fff; font-family:'Cairo',sans-serif; }
+    .filter-tab.active { background:#1B5E20; border-color:#1B5E20; color:#fff; }
+>>>>>>> 9797ec1 (initial commit v17)
     /* skeleton */
     .skel { background:linear-gradient(90deg,#ece9e2 25%,#f5f2eb 50%,#ece9e2 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:8px; }
     @keyframes shimmer { to { background-position:-200% 0; } }
@@ -99,6 +123,9 @@
     .page-bar { background:linear-gradient(135deg,#0D1B0E,#1a3c1e); padding:28px 20px; color:#fff; }
     .page-bar-inner { max-width:1100px; margin:0 auto; }
   </style>
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
 </head>
 <body>
 
@@ -156,6 +183,12 @@
       <a class="nav-item" data-panel="profile" onclick="showPanel('profile')">
         <i class="fa-solid fa-pen-to-square"></i> بياناتي الشخصية
       </a>
+<<<<<<< HEAD
+=======
+      <a class="nav-item" data-panel="payments" onclick="showPanel('payments')">
+        <i class="fa-solid fa-receipt"></i> سجل المدفوعات
+      </a>
+>>>>>>> 9797ec1 (initial commit v17)
       <a class="nav-item" data-panel="password" onclick="showPanel('password')">
         <i class="fa-solid fa-key"></i> تغيير كلمة المرور
       </a>
@@ -232,6 +265,39 @@
       </div>
     </div>
 
+<<<<<<< HEAD
+=======
+    <!-- ── Payments ── -->
+    <div class="panel" id="panel-payments">
+      <div class="card">
+        <div class="card-title"><i class="fa-solid fa-receipt"></i> سجل المدفوعات</div>
+
+        <!-- KPI Summary -->
+        <div class="pay-summary" id="payKpis">
+          <div class="pay-kpi"><div class="skel" style="height:26px;width:60%;margin:0 auto 6px;"></div><div class="skel" style="height:11px;width:80%;margin:0 auto;"></div></div>
+          <div class="pay-kpi"><div class="skel" style="height:26px;width:60%;margin:0 auto 6px;"></div><div class="skel" style="height:11px;width:80%;margin:0 auto;"></div></div>
+          <div class="pay-kpi"><div class="skel" style="height:26px;width:60%;margin:0 auto 6px;"></div><div class="skel" style="height:11px;width:80%;margin:0 auto;"></div></div>
+          <div class="pay-kpi"><div class="skel" style="height:26px;width:60%;margin:0 auto 6px;"></div><div class="skel" style="height:11px;width:80%;margin:0 auto;"></div></div>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="filter-tabs" id="payFilters">
+          <button class="filter-tab active" data-filter="all"    onclick="filterPayments('all')">الكل</button>
+          <button class="filter-tab"        data-filter="paid"   onclick="filterPayments('paid')">مدفوع بالكامل</button>
+          <button class="filter-tab"        data-filter="partial" onclick="filterPayments('partial')">مدفوع جزئياً</button>
+          <button class="filter-tab"        data-filter="none"   onclick="filterPayments('none')">لم يُدفع</button>
+        </div>
+
+        <!-- List -->
+        <div id="paymentsList">
+          <div class="skel" style="height:80px;margin-bottom:10px;border-radius:12px;"></div>
+          <div class="skel" style="height:80px;margin-bottom:10px;border-radius:12px;"></div>
+          <div class="skel" style="height:80px;border-radius:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+>>>>>>> 9797ec1 (initial commit v17)
     <!-- ── Password ── -->
     <div class="panel" id="panel-password">
       <div class="card">
@@ -331,16 +397,29 @@ async function loadBookings() {
   renderStats(bookings);
   renderBookingList('recentBookings',  bookings.slice(0,3));
   renderBookingList('allBookings',     bookings);
+<<<<<<< HEAD
+=======
+  renderPayments(bookings);
+>>>>>>> 9797ec1 (initial commit v17)
 }
 
 function renderStats(bookings) {
   const confirmed  = bookings.filter(b => b.status === 'confirmed').length;
   const pending    = bookings.filter(b => b.status === 'pending' || b.status === 'awaiting_payment').length;
   const total      = bookings.length;
+<<<<<<< HEAD
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-lbl">إجمالي الحجوزات</div></div>
     <div class="stat-box"><div class="stat-num" style="color:#16a34a;">${confirmed}</div><div class="stat-lbl">حجوزات مؤكدة</div></div>
     <div class="stat-box"><div class="stat-num" style="color:#d97706;">${pending}</div><div class="stat-lbl">قيد المراجعة</div></div>`;
+=======
+  const totalPaid  = bookings.reduce((s,b) => s + Number(b.paid_amount||0), 0);
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-lbl">إجمالي الحجوزات</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:#16a34a;">${confirmed}</div><div class="stat-lbl">حجوزات مؤكدة</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:#d97706;">${pending}</div><div class="stat-lbl">قيد المراجعة</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:#B8860B;font-size:20px;">${totalPaid.toLocaleString('ar-EG')}</div><div class="stat-lbl">إجمالي المدفوع (ج.م)</div></div>`;
+>>>>>>> 9797ec1 (initial commit v17)
 }
 
 const STATUS_LABEL = {
@@ -439,6 +518,111 @@ async function changePassword() {
   }
 }
 
+<<<<<<< HEAD
+=======
+
+/* ── payments ── */
+let _allPaymentBookings = [];
+
+async function loadPayments() {
+  // reuse already-fetched bookings stored in _allPaymentBookings
+  // They'll be populated from loadBookings()
+}
+
+function renderPayments(bookings) {
+  _allPaymentBookings = bookings;
+  const totalPrice = bookings.reduce((s,b) => s + Number(b.total_price||0), 0);
+  const totalPaid  = bookings.reduce((s,b) => s + Number(b.paid_amount||0), 0);
+  const totalRemain= bookings.reduce((s,b) => {
+    const rem = b.remaining_amount !== null && b.remaining_amount !== undefined
+      ? Number(b.remaining_amount)
+      : Number(b.total_price||0) - Number(b.paid_amount||0);
+    return s + rem;
+  }, 0);
+  const fullyPaid  = bookings.filter(b => Number(b.remaining_amount ?? (Number(b.total_price||0) - Number(b.paid_amount||0))) <= 0 && Number(b.total_price||0) > 0).length;
+
+  document.getElementById('payKpis').innerHTML = `
+    <div class="pay-kpi"><div class="pay-kpi-val" style="color:#1B5E20;">${bookings.length}</div><div class="pay-kpi-lbl">إجمالي الحجوزات</div></div>
+    <div class="pay-kpi"><div class="pay-kpi-val" style="color:#B8860B;">${totalPrice.toLocaleString('ar-EG')} ج.م</div><div class="pay-kpi-lbl">إجمالي التكلفة</div></div>
+    <div class="pay-kpi"><div class="pay-kpi-val" style="color:#16a34a;">${totalPaid.toLocaleString('ar-EG')} ج.م</div><div class="pay-kpi-lbl">إجمالي المدفوع</div></div>
+    <div class="pay-kpi"><div class="pay-kpi-val" style="color:#dc2626;">${totalRemain.toLocaleString('ar-EG')} ج.م</div><div class="pay-kpi-lbl">إجمالي المتبقي</div></div>`;
+
+  filterPayments('all');
+}
+
+function filterPayments(filter) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.toggle('active', t.dataset.filter === filter));
+  const list = document.getElementById('paymentsList');
+
+  const filtered = _allPaymentBookings.filter(b => {
+    const total  = Number(b.total_price || 0);
+    const paid   = Number(b.paid_amount || 0);
+    const remain = b.remaining_amount !== null && b.remaining_amount !== undefined
+      ? Number(b.remaining_amount) : (total - paid);
+    if (filter === 'paid')    return remain <= 0 && total > 0;
+    if (filter === 'partial') return paid > 0 && remain > 0;
+    if (filter === 'none')    return paid <= 0;
+    return true;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-box"><div class="icon"><i class="fa-solid fa-receipt"></i></div><h3>لا توجد نتائج</h3><p>لا توجد حجوزات تطابق هذا التصفية</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(b => {
+    const total  = Number(b.total_price || 0);
+    const paid   = Number(b.paid_amount || 0);
+    const remain = b.remaining_amount !== null && b.remaining_amount !== undefined
+      ? Number(b.remaining_amount) : (total - paid);
+    const pct    = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+
+    let payType, iconClass, badgeClass, barColor;
+    if (remain <= 0 && total > 0) {
+      payType = 'مدفوع بالكامل'; iconClass = 'paid'; badgeClass = 'paid'; barColor = '#16a34a';
+    } else if (paid > 0) {
+      payType = 'مدفوع جزئياً';  iconClass = 'partial'; badgeClass = 'partial'; barColor = '#d97706';
+    } else {
+      payType = 'لم يُدفع';       iconClass = 'pending'; badgeClass = 'none'; barColor = '#dc2626';
+    }
+
+    return `
+      <div class="pay-item">
+        <div class="pay-icon ${iconClass}">
+          <i class="fa-solid ${iconClass === 'paid' ? 'fa-circle-check' : iconClass === 'partial' ? 'fa-hourglass-half' : 'fa-circle-xmark'}"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+            <div>
+              <p style="font-size:14px;font-weight:800;color:#111;margin-bottom:2px;">${b.package_title || 'برنامج عمرة'}</p>
+              <p style="font-size:11px;color:#9ca3af;">
+                <span class="font-mono">${b.booking_number || '—'}</span>
+                &nbsp;·&nbsp;
+                ${fmtDate(b.booking_date)}
+              </p>
+            </div>
+            <span class="pay-badge ${badgeClass}">${payType}</span>
+          </div>
+          <!-- Amounts row -->
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:6px;">
+            <span style="color:#6b7280;">الإجمالي: <strong style="color:#111;">${total.toLocaleString('ar-EG')} ج.م</strong></span>
+            <span style="color:#6b7280;">المدفوع: <strong style="color:#16a34a;">${paid.toLocaleString('ar-EG')} ج.م</strong></span>
+            <span style="color:#6b7280;">المتبقي: <strong style="color:${remain > 0 ? '#dc2626' : '#16a34a'};">${remain.toLocaleString('ar-EG')} ج.م</strong></span>
+          </div>
+          <!-- Progress bar -->
+          <div class="pay-progress">
+            <div class="pay-progress-bar" style="width:${pct}%;background:${barColor};"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span style="font-size:10px;color:#9ca3af;">${pct}% مدفوع</span>
+            <a href="/tracking.html?booking=${b.booking_number}" style="font-size:10px;color:#B8860B;font-weight:700;text-decoration:none;">عرض الحجز ←</a>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+>>>>>>> 9797ec1 (initial commit v17)
 document.addEventListener('DOMContentLoaded', loadUser);
 </script>
 </body>

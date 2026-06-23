@@ -98,20 +98,30 @@ const bookingController = {
     async applyCoupon() {
         const inputStr = document.getElementById('couponCode').value.trim();
         const msgEl = document.getElementById('couponMsg');
-        
+
         if (!inputStr) return;
 
-        if (inputStr.toUpperCase() === this.packageData.coupon_code?.toUpperCase()) {
-            this.appliedCoupon = inputStr;
-            msgEl.innerText = 'تم تطبيق كود الخصم بنجاح';
-            msgEl.className = 'text-sm -mt-6 mb-6 px-4 text-green-600 block';
-            this.updatePricing();
-        } else {
+        // Validate server-side so the coupon code is never exposed in the browser
+        msgEl.innerText = '...جاري التحقق';
+        msgEl.className = 'text-sm -mt-6 mb-6 px-4 text-gray-400 block';
+
+        const { data, error } = await supabase.rpc('validate_coupon', {
+            p_package_id: this.packageData.id,
+            p_code: inputStr.toUpperCase()
+        });
+
+        if (error || !data?.valid) {
             this.appliedCoupon = null;
+            this.couponDiscount = 0;
             msgEl.innerText = 'الكود غير صحيح أو لا ينطبق على هذا البرنامج';
             msgEl.className = 'text-sm -mt-6 mb-6 px-4 text-red-600 block';
-            this.updatePricing();
+        } else {
+            this.appliedCoupon = inputStr;
+            this.couponDiscount = data.discount ?? this.packageData.coupon_discount ?? 0;
+            msgEl.innerText = 'تم تطبيق كود الخصم بنجاح';
+            msgEl.className = 'text-sm -mt-6 mb-6 px-4 text-green-600 block';
         }
+        this.updatePricing();
     },
 
     nextStep() {
@@ -319,7 +329,9 @@ const bookingController = {
 
             const ext      = file.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-            const filePath = `passports/${fileName}`;
+            // Path scoped to user so storage RLS policy (passports/<user_id>/...) is satisfied
+            const userId   = this.currentUser?.id || 'anon';
+            const filePath = `passports/${userId}/${fileName}`;
 
             const { data, error } = await window.db.storage
               .from('booking-documents')
@@ -403,7 +415,8 @@ const bookingController = {
                 coupon_code: this.appliedCoupon,
                 discount_amount: this.discountAmount,
                 documents: uploadedDocs,
-                special_requests: document.getElementById('specialRequests').value
+                special_requests: document.getElementById('specialRequests').value,
+                user_id: this.currentUser?.id || null
             };
 
             // 4. API Insert
@@ -433,7 +446,14 @@ const bookingController = {
 
         } catch(err) {
             console.error("Booking Error:", err);
-            alert("حدث خطأ أثناء إرسال طلب الحجز. يرجى المحاولة لاحقاً.");
+            // Show inline error card instead of blocking alert()
+            const errCard = document.getElementById('booking-submit-error');
+            const errMsg  = document.getElementById('booking-submit-error-msg');
+            if (errCard && errMsg) {
+                errMsg.textContent = err?.message || 'حدث خطأ أثناء إرسال طلب الحجز. يرجى المحاولة لاحقاً.';
+                errCard.classList.remove('hidden');
+                errCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             btn.innerHTML = 'تأكيد طلب الحجز';
             btn.disabled = false;
         }
