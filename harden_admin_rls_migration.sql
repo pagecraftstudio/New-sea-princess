@@ -209,6 +209,7 @@ CREATE TRIGGER enforce_booking_price
 -- ═══════════════════════════════════════════════════════
 DROP POLICY IF EXISTS "Admin can read documents"      ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can upload" ON storage.objects;
+DROP POLICY IF EXISTS "Owner or admin reads documents" ON storage.objects;
 
 CREATE POLICY "Owner or admin reads documents" ON storage.objects
   FOR SELECT USING (
@@ -236,7 +237,7 @@ BEGIN
   IF (
     SELECT COUNT(*) FROM bookings
     WHERE customer_phone = NEW.customer_phone
-      AND created_at > NOW() - INTERVAL '10 minutes'
+      AND booking_date > NOW() - INTERVAL '10 minutes'
   ) >= 3 THEN
     RAISE EXCEPTION 'Too many booking attempts. Please wait and try again.';
   END IF;
