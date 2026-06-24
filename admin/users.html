@@ -391,15 +391,33 @@
     document.getElementById('historyModal').classList.remove('hidden');
 
     if (!window.db) return;
-    const { data, error } = await window.db.from('bookings')
-      .select('booking_number, booking_date, package_title, package_departure, status, total_price, paid_amount, remaining_amount, adults_count, children_count')
-      .eq('user_id', userId)
-      .order('booking_date', { ascending: false });
 
-    if (error || !data) {
+    // Fetch by user_id AND by customer_email in parallel, then deduplicate.
+    // This covers: (1) bookings made while logged in, (2) bookings made as guest
+    // before the account existed, and (3) bookings linked via email by admin.
+    const COLS = 'booking_number, booking_date, package_title, package_departure, status, total_price, paid_amount, remaining_amount, adults_count, children_count';
+
+    const [byId, byEmail] = await Promise.all([
+      window.db.from('bookings').select(COLS).eq('user_id', userId),
+      userEmail
+        ? window.db.from('bookings').select(COLS).eq('customer_email', userEmail)
+        : Promise.resolve({ data: [], error: null })
+    ]);
+
+    if (byId.error && byEmail.error) {
       document.getElementById('historyBody').innerHTML = '<p class="text-center text-red-500 py-8">تعذّر تحميل البيانات</p>';
       return;
     }
+
+    // Merge and deduplicate by booking_number
+    const seen = new Set();
+    const data = [...(byId.data || []), ...(byEmail.data || [])]
+      .filter(b => {
+        if (seen.has(b.booking_number)) return false;
+        seen.add(b.booking_number);
+        return true;
+      })
+      .sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
 
     const totalPaid   = data.reduce((s, b) => s + Number(b.paid_amount || 0), 0);
     const totalRemain = data.reduce((s, b) => s + Number(b.remaining_amount ?? (Number(b.total_price||0) - Number(b.paid_amount||0))), 0);

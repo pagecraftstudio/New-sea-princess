@@ -973,7 +973,7 @@ ${pkg.notes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-ra
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
-    adminCheckAuth().then(() => loadAdminPackages());
+    adminCheckAuth().then(ok => { if (ok) loadAdminPackages(); });
     document.getElementById('mobileMenuBtn').addEventListener('click', () => {
       document.getElementById('mobileDrawer').classList.remove('hidden');
     });

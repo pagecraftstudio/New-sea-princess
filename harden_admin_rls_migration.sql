@@ -29,7 +29,7 @@ ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 -- STEP 2: ضيف حساب/حسابات الأدمن هنا (غيّر الإيميل)
 -- ───────────────────────────────────────────────
 INSERT INTO admin_users (id, email)
-SELECT id, email FROM auth.users WHERE email = 'pagecraftstudio@gmail.com'
+SELECT id, email FROM auth.users WHERE email = 'PUT_YOUR_ADMIN_EMAIL_HERE@example.com'
 ON CONFLICT (id) DO NOTHING;
 
 -- لو عندك أكتر من حساب أدمن، كرر السطر فوق بإيميل مختلف كل مرة.

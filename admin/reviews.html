@@ -337,7 +337,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
-    adminCheckAuth().then(() => loadAdminReviews());
+    adminCheckAuth().then(ok => { if (ok) loadAdminReviews(); });
     document.getElementById('mobileMenuBtn').addEventListener('click', () => {
       document.getElementById('mobileDrawer').classList.remove('hidden');
     });
