@@ -238,23 +238,6 @@
     return d.toLocaleDateString('ar-EG') + ' — ' + d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
   }
 
-<<<<<<< HEAD
-  function detailsToText(details) {
-    if (!details) return '—';
-    try {
-      const parts = [];
-      if (details.field) {
-        const fieldLabels = { is_active: 'الحالة', is_approved: 'الاعتماد', is_featured: 'مميز', paid_amount: 'المبلغ المدفوع', status: 'حالة الحجز' };
-        const label = fieldLabels[details.field] || details.field;
-        if (details.from !== undefined && details.to !== undefined) {
-          parts.push(`${label}: ${details.from} ← ${details.to}`);
-        } else if (details.to !== undefined) {
-          parts.push(`${label} ← ${details.to}`);
-        }
-      }
-      if (details.reason) parts.push(`السبب: ${details.reason}`);
-      return parts.length ? parts.join(' | ') : JSON.stringify(details);
-=======
   // أسماء الحقول بالعربي
   const FIELD_LABELS = {
     is_active:    'الحالة',
@@ -266,7 +249,6 @@
     role:         'الصلاحية',
   };
 
-  // قيم حالة الحجز بالعربي (مطابقة لما هو مستخدم في bookings.html / dashboard.html)
   const STATUS_VALUE_LABELS = {
     awaiting_payment: 'في انتظار الدفع',
     pending:          'قيد التلقي',
@@ -278,7 +260,6 @@
     cancelled:        'ملغي',
   };
 
-  // قيم الصلاحيات بالعربي
   const ROLE_VALUE_LABELS = {
     super_admin: 'مدير عام',
     admin:       'مدير',
@@ -286,7 +267,6 @@
     viewer:      'مشاهد',
   };
 
-  // ترجمة أي قيمة (بوليانية / حالة حجز / صلاحية / رقم / نص) لعرض بشري مناسب
   function formatValue(field, value) {
     if (value === null || value === undefined || value === '') return '—';
     if (typeof value === 'boolean' || value === 'true' || value === 'false') {
@@ -314,12 +294,10 @@
           parts.push(`تعديل ${label} إلى ${formatValue(details.field, details.to)}`);
         }
       } else if (details.role) {
-        // شكل بديل: { role: 'admin' } بدون field/to (مستخدم في صفحة المسؤولين)
         parts.push(`${FIELD_LABELS.role}: ${formatValue('role', details.role)}`);
       }
       if (details.reason) parts.push(`السبب: ${details.reason}`);
       return parts.length ? parts.join(' | ') : '—';
->>>>>>> 9797ec1 (initial commit v17)
     } catch (e) {
       return '—';
     }
