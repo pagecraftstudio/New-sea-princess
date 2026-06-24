@@ -182,13 +182,13 @@ CREATE OR REPLACE FUNCTION recalculate_booking_price()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE pkg RECORD;
 BEGIN
-  SELECT adult_price, child_price
+  SELECT price_per_person, price_child
     INTO pkg
     FROM packages WHERE id = NEW.package_id;
 
   IF FOUND THEN
-    NEW.total_price := (NEW.adults_count * COALESCE(pkg.adult_price, 0))
-                     + (NEW.children_count * COALESCE(pkg.child_price, 0));
+    NEW.total_price := (NEW.adults_count * COALESCE(pkg.price_per_person, 0))
+                     + (NEW.children_count * COALESCE(pkg.price_child, 0));
     -- Discount is capped at total_price to prevent negative totals
     NEW.discount_amount  := LEAST(COALESCE(NEW.discount_amount, 0), NEW.total_price);
     NEW.remaining_amount := NEW.total_price
