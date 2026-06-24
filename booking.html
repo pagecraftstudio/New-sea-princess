@@ -28,6 +28,7 @@
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body class="bg-offWhite">
   <!-- Header -->
@@ -240,6 +241,7 @@
       <div class="bg-gray-50 p-6 rounded-lg border mt-8">
         <h3 class="font-bold text-center text-primary text-xl mb-2">تأكيد الحجز النهائي</h3>
         <p class="text-center text-sm text-gray-500 mb-6">سيتم تسجيل طلبك وإرسال إشعار فوري عبر واتساب.</p>
+        <div class="g-recaptcha" data-sitekey="6LdZszEtAAAAABEvHLs1lX-5aVr7-lMONeSOSE_y" style="margin-bottom:16px;display:flex;justify-content:center;"></div>
         <button id="finalSubmitBtn" onclick="bookingController.submitBooking()" class="w-full btn-gold py-4 text-xl">تأكيد طلب الحجز</button>
         <div id="booking-submit-error" class="hidden mt-4 bg-red-50 border border-red-300 rounded-lg p-4 text-red-700 text-sm text-center">
           <i class="fa-solid fa-circle-exclamation ml-2"></i>

@@ -373,11 +373,26 @@ const bookingController = {
             return;
         }
 
+        const recaptchaToken = grecaptcha.getResponse();
+        if (!recaptchaToken) {
+            showInlineError('booking-validation-error', 'يرجى التحقق من أنك لست روبوتاً');
+            return;
+        }
+
         const btn = document.getElementById('finalSubmitBtn');
         btn.innerHTML = '<div class="loader mx-auto" style="width:24px;height:24px;border-width:3px;"></div>';
         btn.disabled = true;
 
         try {
+            // Server-side reCAPTCHA verification
+            const { data: captchaData, error: captchaError } = await window.db.functions.invoke('verify-recaptcha', { body: { token: recaptchaToken } });
+            if (captchaError || !captchaData?.success) {
+                showInlineError('booking-validation-error', 'فشل التحقق من reCAPTCHA. يرجى المحاولة مرة أخرى.');
+                btn.innerHTML = 'تأكيد طلب الحجز';
+                btn.disabled = false;
+                grecaptcha.reset();
+                return;
+            }
             // 1. Gather files and upload sequentially
             let uploadedDocs = [];
             const fileInputs = document.querySelectorAll('#documentsContainer input[type="file"]');
@@ -471,6 +486,7 @@ const bookingController = {
             }
             btn.innerHTML = 'تأكيد طلب الحجز';
             btn.disabled = false;
+            grecaptcha.reset();
         }
     },
 
