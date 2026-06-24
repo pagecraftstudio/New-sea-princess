@@ -85,111 +85,9 @@
     .alert-error   { background:#fef2f2; border:1px solid #fecaca; color:#dc2626; }
     .alert.show { display:flex; }
 
-<<<<<<< HEAD
-=======
-
-    /* payment history */
-    .pay-item { border:1px solid #e8e5de; border-radius:12px; padding:16px 18px; margin-bottom:10px; display:flex; align-items:center; gap:14px; transition:box-shadow .2s; }
-    .pay-item:hover { box-shadow:0 4px 16px rgba(0,0,0,.09); }
-    .pay-icon { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; }
-    .pay-icon.paid    { background:#dcfce7; color:#16a34a; }
-    .pay-icon.partial { background:#fef9c3; color:#b45309; }
-    .pay-icon.pending { background:#fee2e2; color:#dc2626; }
-    .pay-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:10px; font-size:10px; font-weight:800; }
-    .pay-badge.paid    { background:#dcfce7; color:#15803d; }
-    .pay-badge.partial { background:#fef9c3; color:#92400e; }
-    .pay-badge.none    { background:#fee2e2; color:#991b1b; }
-    .pay-progress { height:5px; border-radius:3px; background:#e5e7eb; margin-top:6px; overflow:hidden; }
-    .pay-progress-bar { height:100%; border-radius:3px; transition:width .5s; }
-    .pay-summary { background:linear-gradient(135deg,#f0fdf1,#e8f5e9); border:1px solid rgba(27,94,32,.15); border-radius:14px; padding:20px; margin-bottom:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; }
-    .pay-kpi { text-align:center; }
-    .pay-kpi-val { font-size:22px; font-weight:900; line-height:1; }
-    .pay-kpi-lbl { font-size:11px; color:#6b7280; margin-top:4px; }
-    .filter-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
-    .filter-tab { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; border:1.5px solid #e2dfd8; color:#6b7280; cursor:pointer; transition:all .2s; background:#fff; font-family:'Cairo',sans-serif; }
-    .filter-tab.active { background:#1B5E20; border-color:#1B5E20; color:#fff; }
->>>>>>> 9797ec1 (initial commit v17)
-    /* skeleton */
-    .skel { background:linear-gradient(90deg,#ece9e2 25%,#f5f2eb 50%,#ece9e2 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:8px; }
-    @keyframes shimmer { to { background-position:-200% 0; } }
-
-    /* empty state */
-    .empty-box { text-align:center; padding:48px 20px; }
-    .empty-box .icon { font-size:56px; color:#d1d5db; margin-bottom:14px; }
-    .empty-box h3 { font-size:17px; font-weight:800; color:#374151; margin-bottom:6px; }
-    .empty-box p { font-size:13px; color:#9ca3af; }
-
-    /* page hero bar */
-    .page-bar { background:linear-gradient(135deg,#0D1B0E,#1a3c1e); padding:28px 20px; color:#fff; }
-    .page-bar-inner { max-width:1100px; margin:0 auto; }
-  </style>
-  <link rel="icon" type="image/png" href="/assets/favicon.png">
-  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.json">
-</head>
-<body>
-
-<!-- HEADER -->
-<header class="site-header">
-  <div class="header-inner">
-    <a href="/index.html" style="display:flex;align-items:center;gap:6px;color:#fff;font-size:16px;font-weight:900;text-decoration:none;">
-      <img src="/assets/logo-white.png" alt="نيو سي برنسيس" style="height:38px;" onerror="this.style.display='none'">
-    </a>
-    <nav class="hidden md:flex" style="gap:18px;">
-      <a href="/index.html">الرئيسية</a>
-      <a href="/packages.html">برامجنا</a>
-      <a href="/tracking.html">تتبع حجزك</a>
-      <a href="/guide.html">دليل العمرة</a>
-      <a href="/contact.html">تواصل معنا</a>
-    </nav>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <a href="https://wa.me/201555154996" target="_blank" class="btn-wa"><i class="fa-brands fa-whatsapp"></i> تحدث معنا</a>
-    </div>
-  </div>
-</header>
-
-<!-- PAGE BAR -->
-<div class="page-bar">
-  <div class="page-bar-inner">
-    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(184,134,11,.15);border:1px solid rgba(184,134,11,.3);border-radius:20px;padding:4px 14px;margin-bottom:10px;">
-      <i class="fa-solid fa-user" style="color:#DAA520;font-size:11px;"></i>
-      <span style="font-size:11px;font-weight:700;color:#DAA520;">منطقة المعتمر</span>
-    </div>
-    <h1 style="font-size:clamp(22px,4vw,32px);font-weight:900;">حسابي</h1>
-    <p style="color:rgba(255,255,255,.55);font-size:13px;margin-top:4px;">إدارة بياناتك وحجوزاتك في مكان واحد</p>
-  </div>
-</div>
-
-<!-- PAGE BODY -->
-<div class="page-wrap" id="pageContent" style="display:none;">
-
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-profile">
-      <div class="avatar" id="avatarEl">
-        <i class="fa-solid fa-user"></i>
-      </div>
-      <div class="sidebar-name" id="sidebarName">…</div>
-      <div class="sidebar-email" id="sidebarEmail">…</div>
-    </div>
-
-    <nav>
-      <a class="nav-item active" data-panel="overview" onclick="showPanel('overview')">
-        <i class="fa-solid fa-house"></i> نظرة عامة
-      </a>
-      <a class="nav-item" data-panel="bookings" onclick="showPanel('bookings')">
-        <i class="fa-solid fa-suitcase-rolling"></i> حجوزاتي
-      </a>
-      <a class="nav-item" data-panel="profile" onclick="showPanel('profile')">
-        <i class="fa-solid fa-pen-to-square"></i> بياناتي الشخصية
-      </a>
-<<<<<<< HEAD
-=======
       <a class="nav-item" data-panel="payments" onclick="showPanel('payments')">
         <i class="fa-solid fa-receipt"></i> سجل المدفوعات
-      </a>
->>>>>>> 9797ec1 (initial commit v17)
-      <a class="nav-item" data-panel="password" onclick="showPanel('password')">
+      </a>      <a class="nav-item" data-panel="password" onclick="showPanel('password')">
         <i class="fa-solid fa-key"></i> تغيير كلمة المرور
       </a>
       <a class="nav-item danger" onclick="confirmLogout()">
@@ -265,162 +163,18 @@
       </div>
     </div>
 
-<<<<<<< HEAD
-=======
-    <!-- ── Payments ── -->
-    <div class="panel" id="panel-payments">
-      <div class="card">
-        <div class="card-title"><i class="fa-solid fa-receipt"></i> سجل المدفوعات</div>
-
-        <!-- KPI Summary -->
-        <div class="pay-summary" id="payKpis">
-          <div class="pay-kpi"><div class="skel" style="height:26px;width:60%;margin:0 auto 6px;"></div><div class="skel" style="height:11px;width:80%;margin:0 auto;"></div></div>
-          <div class="pay-kpi"><div class="skel" style="height:26px;width:60%;margin:0 auto 6px;"></div><div class="skel" style="height:11px;width:80%;margin:0 auto;"></div></div>
-          <div class="pay-kpi"><div class="skel" style="height:26px;width:60%;margin:0 auto 6px;"></div><div class="skel" style="height:11px;width:80%;margin:0 auto;"></div></div>
-          <div class="pay-kpi"><div class="skel" style="height:26px;width:60%;margin:0 auto 6px;"></div><div class="skel" style="height:11px;width:80%;margin:0 auto;"></div></div>
-        </div>
-
-        <!-- Filter tabs -->
-        <div class="filter-tabs" id="payFilters">
-          <button class="filter-tab active" data-filter="all"    onclick="filterPayments('all')">الكل</button>
-          <button class="filter-tab"        data-filter="paid"   onclick="filterPayments('paid')">مدفوع بالكامل</button>
-          <button class="filter-tab"        data-filter="partial" onclick="filterPayments('partial')">مدفوع جزئياً</button>
-          <button class="filter-tab"        data-filter="none"   onclick="filterPayments('none')">لم يُدفع</button>
-        </div>
-
-        <!-- List -->
-        <div id="paymentsList">
-          <div class="skel" style="height:80px;margin-bottom:10px;border-radius:12px;"></div>
-          <div class="skel" style="height:80px;margin-bottom:10px;border-radius:12px;"></div>
-          <div class="skel" style="height:80px;border-radius:12px;"></div>
-        </div>
-      </div>
-    </div>
-
->>>>>>> 9797ec1 (initial commit v17)
-    <!-- ── Password ── -->
-    <div class="panel" id="panel-password">
-      <div class="card">
-        <div class="card-title"><i class="fa-solid fa-key"></i> تغيير كلمة المرور</div>
-        <div class="alert alert-success" id="pwSuccess"><i class="fa-solid fa-circle-check"></i><span>تم تغيير كلمة المرور بنجاح</span></div>
-        <div class="alert alert-error"   id="pwError"><i class="fa-solid fa-circle-exclamation"></i><span id="pwErrorText"></span></div>
-        <div class="field-wrap">
-          <label class="field-label">كلمة المرور الجديدة</label>
-          <input type="password" id="newPass" class="field-input" placeholder="8 أحرف على الأقل" style="direction:ltr;">
-        </div>
-        <div class="field-wrap">
-          <label class="field-label">تأكيد كلمة المرور</label>
-          <input type="password" id="confirmPass" class="field-input" placeholder="••••••••" style="direction:ltr;">
-        </div>
-        <button class="btn-gold" onclick="changePassword()"><i class="fa-solid fa-key"></i> تحديث كلمة المرور</button>
-      </div>
-    </div>
-
-  </main>
-</div>
-
-<!-- Loading overlay -->
-<div id="loadingOverlay" style="min-height:60vh;display:flex;align-items:center;justify-content:center;">
-  <div style="text-align:center;">
-    <div style="width:44px;height:44px;border:3px solid #e5e7eb;border-top-color:#1B5E20;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px;"></div>
-    <p style="color:#6b7280;font-size:14px;">جارٍ تحميل بياناتك…</p>
-  </div>
-</div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-
-<!-- Logout confirm modal -->
-<div id="logoutModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-    <i class="fa-solid fa-right-from-bracket" style="font-size:36px;color:#dc2626;margin-bottom:12px;"></i>
-    <h3 style="font-size:17px;font-weight:800;margin-bottom:8px;">تسجيل الخروج</h3>
-    <p style="font-size:13px;color:#6b7280;margin-bottom:22px;">هل أنت متأكد أنك تريد تسجيل الخروج من حسابك؟</p>
-    <div style="display:flex;gap:10px;justify-content:center;">
-      <button onclick="NSPAuth.signOut()" style="background:#dc2626;color:#fff;padding:10px 24px;border-radius:9px;font-family:'Cairo',sans-serif;font-weight:800;font-size:14px;border:none;cursor:pointer;">نعم، خروج</button>
-      <button onclick="closeLogoutModal()" style="background:#f3f4f6;color:#374151;padding:10px 24px;border-radius:9px;font-family:'Cairo',sans-serif;font-weight:700;font-size:14px;border:none;cursor:pointer;">إلغاء</button>
-    </div>
-  </div>
-</div>
-
-<script>
-let currentUser = null;
-
-/* ── panels ── */
-function showPanel(name) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item[data-panel]').forEach(a => a.classList.remove('active'));
-  document.getElementById('panel-'+name).classList.add('active');
-  document.querySelector(`[data-panel="${name}"]`)?.classList.add('active');
-}
-
-/* ── logout modal ── */
-function confirmLogout()  { document.getElementById('logoutModal').style.display='flex'; }
-function closeLogoutModal(){ document.getElementById('logoutModal').style.display='none'; }
-
-/* ── load user ── */
-async function loadUser() {
-  currentUser = await NSPAuth.requireAuth();
-  if (!currentUser) return;
-
-  const meta = currentUser.user_metadata || {};
-  const name = meta.full_name || currentUser.email.split('@')[0];
-
-  // sidebar
-  document.getElementById('sidebarName').textContent  = name;
-  document.getElementById('sidebarEmail').textContent = currentUser.email;
-  document.getElementById('avatarEl').innerHTML = `<span style="font-size:26px;font-weight:900;">${name.charAt(0)}</span>`;
-
-  // profile form
-  document.getElementById('pName').value    = name;
-  document.getElementById('pEmail').value   = currentUser.email;
-  document.getElementById('pPhone').value   = meta.phone || '';
-  document.getElementById('pCity').value    = meta.city  || '';
-  document.getElementById('pPassport').value= meta.passport || '';
-
-  document.getElementById('loadingOverlay').style.display = 'none';
-  document.getElementById('pageContent').style.display    = '';
-
-  await loadBookings();
-}
-
-/* ── bookings ── */
-async function loadBookings() {
-  let bookings = [];
-  try {
-    if (window.db) {
-      const { data } = await window.db.from('bookings').select('*')
-        .eq('customer_email', currentUser.email)
-        .order('booking_date', { ascending:false });
-      if (data) bookings = data;
-    }
-  } catch(_) {}
-
-  renderStats(bookings);
-  renderBookingList('recentBookings',  bookings.slice(0,3));
-  renderBookingList('allBookings',     bookings);
-<<<<<<< HEAD
-=======
-  renderPayments(bookings);
->>>>>>> 9797ec1 (initial commit v17)
-}
+  renderPayments(bookings);}
 
 function renderStats(bookings) {
   const confirmed  = bookings.filter(b => b.status === 'confirmed').length;
   const pending    = bookings.filter(b => b.status === 'pending' || b.status === 'awaiting_payment').length;
   const total      = bookings.length;
-<<<<<<< HEAD
-  document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-lbl">إجمالي الحجوزات</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:#16a34a;">${confirmed}</div><div class="stat-lbl">حجوزات مؤكدة</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:#d97706;">${pending}</div><div class="stat-lbl">قيد المراجعة</div></div>`;
-=======
   const totalPaid  = bookings.reduce((s,b) => s + Number(b.paid_amount||0), 0);
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-lbl">إجمالي الحجوزات</div></div>
     <div class="stat-box"><div class="stat-num" style="color:#16a34a;">${confirmed}</div><div class="stat-lbl">حجوزات مؤكدة</div></div>
     <div class="stat-box"><div class="stat-num" style="color:#d97706;">${pending}</div><div class="stat-lbl">قيد المراجعة</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:#B8860B;font-size:20px;">${totalPaid.toLocaleString('ar-EG')}</div><div class="stat-lbl">إجمالي المدفوع (ج.م)</div></div>`;
->>>>>>> 9797ec1 (initial commit v17)
-}
+    <div class="stat-box"><div class="stat-num" style="color:#B8860B;font-size:20px;">${totalPaid.toLocaleString('ar-EG')}</div><div class="stat-lbl">إجمالي المدفوع (ج.م)</div></div>`;}
 
 const STATUS_LABEL = {
   awaiting_payment: 'في انتظار الدفع',
@@ -517,9 +271,6 @@ async function changePassword() {
     document.getElementById('pwError').classList.add('show');
   }
 }
-
-<<<<<<< HEAD
-=======
 
 /* ── payments ── */
 let _allPaymentBookings = [];
@@ -622,7 +373,6 @@ function filterPayments(filter) {
   }).join('');
 }
 
->>>>>>> 9797ec1 (initial commit v17)
 document.addEventListener('DOMContentLoaded', loadUser);
 </script>
 </body>
