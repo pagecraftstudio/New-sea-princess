@@ -3,6 +3,15 @@
  * Multi-step booking flow and Supabase integrations
  */
 
+function showInlineError(id, msg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const msgEl = el.querySelector("[data-msg]") || el;
+    msgEl.textContent = msg;
+    el.classList.remove("hidden");
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 const bookingController = {
     step: 1,
     packageData: null,
@@ -26,13 +35,15 @@ const bookingController = {
         const urlParams = new URLSearchParams(window.location.search);
         const pkgId = urlParams.get('package');
         if (!pkgId) {
-            alert('الرجاء اختيار برنامج أولاً');
+            showInlineError('booking-validation-error', 'الرجاء اختيار برنامج أولاً');
             window.location.href = '/packages.html';
             return;
         }
 
         try {
-            const { data, error } = await window.db.from('packages').select('*').eq('id', pkgId).single();
+            const { data, error } = await window.db.from('packages')
+                .select('id, title, departure_date, price_per_person, price_child, discount_percent, coupon_discount, max_capacity, available_seats, description, inclusions, exclusions, itinerary, images, is_active')
+                .eq('id', pkgId).single();
             if (error) throw error;
             this.packageData = data;
             
@@ -60,7 +71,7 @@ const bookingController = {
 
         } catch(err) {
             console.error(err);
-            alert('خطأ في استرجاع بيانات البرنامج');
+            showInlineError('booking-validation-error', 'خطأ في استرجاع بيانات البرنامج');
         }
     },
 
@@ -258,14 +269,14 @@ const bookingController = {
     validateAndNext() {
         const phone = document.getElementById('contactPhone').value;
         if(!phone || phone.length < 8) {
-            alert("يرجى إدخال رقم هاتف صحيح للتواصل");
+            showInlineError("booking-validation-error", "يرجى إدخال رقم هاتف صحيح للتواصل");
             return;
         }
         const inputs = Array.from(document.querySelectorAll('.traveler-adult-block input[required], .traveler-child-block input[required]'));
         let isValid = inputs.every(i => i.value.trim() !== '');
         
         if(!isValid) {
-            alert("يرجى ملء كافة الحقول الإلزامية للمسافرين.");
+            showInlineError("booking-validation-error", "يرجى ملء كافة الحقول الإلزامية للمسافرين.");
             return;
         }
 
@@ -358,7 +369,7 @@ const bookingController = {
         if (!this.validateAllPassports()) {
             const first = document.querySelector('.passport-warning div');
             first?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            alert('يوجد جواز سفر غير صالح للسفر. يرجى المراجعة قبل المتابعة.');
+            showInlineError('booking-validation-error', 'يوجد جواز سفر غير صالح للسفر. يرجى المراجعة قبل المتابعة.');
             return;
         }
 
@@ -420,6 +431,10 @@ const bookingController = {
             };
 
             // 4. API Insert
+            // TODO (Issue #5): Integrate online payment gateway (Paymob or Fawry)
+            // before inserting the booking, redirect to payment page and only
+            // insert with payment_status = "paid" upon successful callback.
+            // Requires merchant registration outside the codebase.
             const { data, error } = await window.db.from('bookings').insert(payload).select().single();
             if (error) throw error;
 

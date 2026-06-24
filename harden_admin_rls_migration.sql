@@ -225,3 +225,26 @@ CREATE POLICY "Authenticated users can upload" ON storage.objects
     AND auth.role() = 'authenticated'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
+
+
+-- ═══════════════════════════════════════════════════════
+-- STEP 8: Rate limiting — max 3 booking attempts per phone per 10 minutes
+-- ═══════════════════════════════════════════════════════
+CREATE OR REPLACE FUNCTION public.rate_limit_bookings()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  IF (
+    SELECT COUNT(*) FROM bookings
+    WHERE customer_phone = NEW.customer_phone
+      AND created_at > NOW() - INTERVAL '10 minutes'
+  ) >= 3 THEN
+    RAISE EXCEPTION 'Too many booking attempts. Please wait and try again.';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS booking_rate_limit ON bookings;
+CREATE TRIGGER booking_rate_limit
+  BEFORE INSERT ON bookings
+  FOR EACH ROW EXECUTE FUNCTION public.rate_limit_bookings();
