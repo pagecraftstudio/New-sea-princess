@@ -659,7 +659,7 @@ function showDraftBanner(savedAt) {
         animation: slideDownBanner .35s cubic-bezier(.4,0,.2,1);
     `;
 
-    banner.innerHTML = \`
+    banner.innerHTML = `
         <style>
           @keyframes slideDownBanner {
             from { opacity:0; transform:translateY(-12px); }
@@ -711,7 +711,7 @@ function showDraftBanner(savedAt) {
                     تجاهل
                 </button>
             </div>
-        </div>\`;
+        </div>`;
 
     document.body.appendChild(banner);
 }
