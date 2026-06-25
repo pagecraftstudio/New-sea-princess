@@ -33,7 +33,6 @@ SELECT id, email FROM auth.users WHERE email = 'PUT_YOUR_ADMIN_EMAIL_HERE@exampl
 ON CONFLICT (id) DO NOTHING;
 
 -- لو عندك أكتر من حساب أدمن، كرر السطر فوق بإيميل مختلف كل مرة.
-
 -- ═══════════════════════════════════════════════
 -- STEP 3: دالة is_admin() — الفحص الحقيقي
 -- ═══════════════════════════════════════════════
