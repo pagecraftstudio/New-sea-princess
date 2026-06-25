@@ -649,45 +649,71 @@ function showDraftBanner(savedAt) {
 
     const banner = document.createElement('div');
     banner.id = 'draftBanner';
-    banner.style.cssText = 'margin-bottom:16px;';
-    banner.innerHTML = `
-        <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:14px 18px;
-                    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-                    box-shadow:0 2px 8px rgba(22,163,74,.1);">
-            <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:38px;height:38px;background:#dcfce7;border-radius:50%;display:flex;
-                            align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fa-solid fa-rotate-right" style="color:#16a34a;font-size:15px;"></i>
+    banner.style.cssText = `
+        position: fixed;
+        top: 64px;
+        left: 0;
+        right: 0;
+        z-index: 40;
+        padding: 0 16px;
+        animation: slideDownBanner .35s cubic-bezier(.4,0,.2,1);
+    `;
+
+    banner.innerHTML = \`
+        <style>
+          @keyframes slideDownBanner {
+            from { opacity:0; transform:translateY(-12px); }
+            to   { opacity:1; transform:translateY(0); }
+          }
+        </style>
+        <div style="
+            max-width:900px;
+            margin:0 auto;
+            background:linear-gradient(135deg,#0D1B0E 0%,#132816 100%);
+            border:1px solid rgba(184,134,11,.45);
+            border-top:none;
+            border-radius:0 0 16px 16px;
+            padding:14px 20px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            flex-wrap:wrap;
+            box-shadow:0 8px 24px rgba(0,0,0,.35);
+            direction:rtl;
+        ">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:40px;height:40px;background:rgba(184,134,11,.15);border:1px solid rgba(184,134,11,.4);
+                            border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fa-solid fa-rotate-right" style="color:#DAA520;font-size:15px;"></i>
                 </div>
                 <div>
-                    <p style="font-weight:800;color:#166534;font-size:14px;margin:0 0 2px;">
-                        لديك مسودة حجز محفوظة
+                    <p style="font-weight:800;color:#F8F5EC;font-size:14px;margin:0 0 3px;font-family:'Cairo',sans-serif;">
+                        لديك حجز غير مكتمل
                     </p>
-                    <p style="font-size:12px;color:#4b7c5a;margin:0;">
-                        آخر حفظ: ${formatRelativeTime(savedAt)}
+                    <p style="font-size:12px;color:rgba(184,134,11,.8);margin:0;font-family:'Cairo',sans-serif;">
+                        <i class="fa-regular fa-clock" style="margin-left:4px;"></i>آخر حفظ: \${formatRelativeTime(savedAt)}
                     </p>
                 </div>
             </div>
-            <div style="display:flex;gap:8px;flex-shrink:0;">
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
                 <button onclick="restoreDraft()"
-                        style="background:#16a34a;color:#fff;padding:8px 18px;border-radius:8px;
-                               font-weight:800;font-size:13px;border:none;cursor:pointer;
-                               font-family:'Cairo',sans-serif;white-space:nowrap;">
-                    نكمل من حيث توقفنا ←
+                        style="background:linear-gradient(135deg,#B8860B,#DAA520);color:#0D1B0E;
+                               padding:9px 20px;border-radius:8px;font-weight:800;font-size:13px;
+                               border:none;cursor:pointer;font-family:'Cairo',sans-serif;
+                               white-space:nowrap;box-shadow:0 2px 8px rgba(184,134,11,.3);">
+                    <i class="fa-solid fa-arrow-left ml-1" style="font-size:11px;"></i> اكمل حجزك
                 </button>
                 <button onclick="discardDraft()"
-                        style="background:transparent;color:#9ca3af;padding:8px 12px;border:none;
+                        style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);
+                               padding:9px 14px;border:1px solid rgba(255,255,255,.1);border-radius:8px;
                                cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif;white-space:nowrap;">
-                    ابدأ من جديد
+                    تجاهل
                 </button>
             </div>
-        </div>`;
+        </div>\`;
 
-    // إدراج البانر أعلى محتوى الصفحة مباشرةً
-    const container = document.querySelector('.max-w-3xl') 
-                   || document.querySelector('.container')
-                   || document.querySelector('main');
-    if (container) container.prepend(banner);
+    document.body.appendChild(banner);
 }
 
 /* استعادة البيانات من المسودة */
