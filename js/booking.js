@@ -314,6 +314,11 @@ const bookingController = {
                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-id-card ml-1 text-amber-600"></i>صورة بطاقة الرقم القومي (PDF, JPG)</label>
                       <input type="file" id="file_nid_${idx}" data-traveler="${name}" data-doctype="national_id" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png,application/pdf">
                     </div>
+                    <div class="md:col-span-2">
+                      <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-camera ml-1 text-rose-500"></i>صورة شخصية (6×4 خلفية بيضاء) <span class="text-gray-400">— JPG/PNG فقط</span></label>
+                      <p class="text-xs text-blue-600 mb-1"><i class="fa-solid fa-circle-info ml-1"></i>الصورة يجب أن تكون على خلفية بيضاء خالصة، حديثة، وواضحة الوجه</p>
+                      <input type="file" id="file_photo_${idx}" data-traveler="${name}" data-doctype="personal_photo" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png">
+                    </div>
                   </div>
               </div>
             `;
