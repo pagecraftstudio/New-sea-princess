@@ -55,6 +55,24 @@ function goCompare() {
   window.location.href = `/compare.html?a=${compareList[0]}&b=${compareList[1]}`;
 }
 
+function startCompareFlow() {
+  const grid = document.getElementById('mainPackagesArea') || document.querySelector('[data-compare-id]');
+  if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  updateCompareBanner();
+  if (compareList.length === 0) {
+    let banner = document.getElementById('compareBanner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'compareBanner';
+      banner.className = 'fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-darkBg text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 transition-all duration-300';
+      document.body.appendChild(banner);
+    }
+    banner.style.display = 'flex';
+    banner.innerHTML = `<i class="fa-solid fa-code-compare text-gold text-lg"></i><span class="text-sm font-bold">اختر برنامجين من القائمة بالضغط على "قارن"</span>`;
+    setTimeout(() => { if (compareList.length === 0) banner.style.display = 'none'; }, 4000);
+  }
+}
+
 
 async function loadPackages() {
     if (!window.db) return;

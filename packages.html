@@ -65,7 +65,7 @@
   <header style="position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#0D1B0E 0%,#102213 100%);box-shadow:0 2px 16px rgba(0,0,0,.25);border-bottom:1px solid rgba(184,134,11,.25);">
     <div class="container mx-auto px-4 flex justify-between items-center" style="height:68px;">
       <a href="/index.html" style="display:flex;align-items:center;text-decoration:none;flex-shrink:0;">
-        <img src="/assets/logo-white.png" alt="نيو سي برنسيس لسياحة" style="height:46px;width:auto;">
+        <img loading="lazy" src="/assets/logo-white.png" alt="نيو سي برنسيس لسياحة" style="height:46px;width:auto;">
       </a>
 
       <nav class="hidden md:flex items-center" style="gap:22px;">
@@ -263,6 +263,9 @@
         </div>
 
         <!-- Grid -->
+        <div id="packagesCap" style="display:none;" class="col-span-full mb-4 text-center text-sm text-gray-500 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
+          <i class="fa-solid fa-circle-info ml-1 text-yellow-500"></i> يتم عرض أول 50 برنامجاً — استخدم الفلتر للتضييق
+        </div>
         <div id="packagesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 text-right">
             <div class="col-span-full py-12"><div class="loader mx-auto"></div></div>
         </div>
