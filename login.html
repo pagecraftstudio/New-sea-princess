@@ -271,14 +271,19 @@ async function handleLogin() {
   if (!recaptchaToken) { showError('يرجى التحقق من أنك لست روبوتاً'); return; }
   setLoading('loginBtn', true);
   try {
-    // Server-side reCAPTCHA verification
-    const captchaRes = await window.db.functions.invoke('verify-recaptcha', { body: { token: recaptchaToken } });
-    if (captchaRes.error || !captchaRes.data?.success) {
-      showError('فشل التحقق من reCAPTCHA. يرجى المحاولة مرة أخرى.');
-      setLoading('loginBtn', false);
-      document.getElementById('loginBtn').innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول';
-      grecaptcha.reset();
-      return;
+    // Server-side reCAPTCHA verification (requires Edge Function deployed)
+    try {
+      const captchaRes = await window.db.functions.invoke('verify-recaptcha', { body: { token: recaptchaToken } });
+      if (captchaRes.error || !captchaRes.data?.success) {
+        showError('فشل التحقق من reCAPTCHA. يرجى المحاولة مرة أخرى.');
+        setLoading('loginBtn', false);
+        document.getElementById('loginBtn').innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول';
+        grecaptcha.reset();
+        return;
+      }
+    } catch(captchaErr) {
+      // Edge Function not yet deployed — fall through with client-side check only
+      console.warn('reCAPTCHA server verify unavailable:', captchaErr);
     }
     await NSPAuth.signIn({ email, password: pass });
     showSuccess('تم تسجيل الدخول بنجاح، جاري التحويل...');

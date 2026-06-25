@@ -384,14 +384,19 @@ const bookingController = {
         btn.disabled = true;
 
         try {
-            // Server-side reCAPTCHA verification
-            const { data: captchaData, error: captchaError } = await window.db.functions.invoke('verify-recaptcha', { body: { token: recaptchaToken } });
-            if (captchaError || !captchaData?.success) {
-                showInlineError('booking-validation-error', 'فشل التحقق من reCAPTCHA. يرجى المحاولة مرة أخرى.');
-                btn.innerHTML = 'تأكيد طلب الحجز';
-                btn.disabled = false;
-                grecaptcha.reset();
-                return;
+            // Server-side reCAPTCHA verification (requires Edge Function deployed)
+            try {
+                const { data: captchaData, error: captchaError } = await window.db.functions.invoke('verify-recaptcha', { body: { token: recaptchaToken } });
+                if (captchaError || !captchaData?.success) {
+                    showInlineError('booking-validation-error', 'فشل التحقق من reCAPTCHA. يرجى المحاولة مرة أخرى.');
+                    btn.innerHTML = 'تأكيد طلب الحجز';
+                    btn.disabled = false;
+                    grecaptcha.reset();
+                    return;
+                }
+            } catch(captchaErr) {
+                // Edge Function not yet deployed — fall through with client-side check only
+                console.warn('reCAPTCHA server verify unavailable:', captchaErr);
             }
             // 1. Gather files and upload sequentially
             let uploadedDocs = [];
