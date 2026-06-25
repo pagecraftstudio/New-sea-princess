@@ -135,7 +135,7 @@
   <main class="max-w-6xl mx-auto px-4 py-10">
     <div class="text-center mb-8">
       <h1 class="text-3xl font-bold text-primary mb-2">مقارنة البرامج</h1>
-      <p class="text-gray-500">قارن بين برنامجين واختر الأنسب لك</p>
+      <p class="text-gray-500">قارن بين برامجنا واختر الأنسب لك — <span class="text-primary font-bold">الأفضل يُضاء بالأخضر</span></p>
     </div>
 
     <!-- Loading -->
@@ -146,28 +146,47 @@
 
     <!-- Error -->
     <div id="errorState" class="hidden text-center py-20">
-      <i class="fa-solid fa-triangle-exclamation text-5xl text-red-400 mb-4"></i>
-      <p class="text-xl font-bold text-gray-600 mb-4">تعذّر تحميل البرامج</p>
+      <i id="errorIcon" class="fa-solid fa-triangle-exclamation text-5xl text-red-400 mb-4"></i>
+      <p id="errorMessage" class="text-xl font-bold text-gray-600 mb-4">تعذّر تحميل البرامج</p>
       <a href="/packages.html" class="btn-primary px-6 py-3 rounded-lg inline-block">العودة للبرامج</a>
     </div>
 
     <!-- Comparison Table -->
     <div id="compareContent" class="hidden">
 
-      <!-- Package Headers -->
+      <!-- Package Switchers + Headers -->
       <div class="grid grid-cols-3 gap-4 mb-0">
-        <div class="col-span-1"></div>
-        <div id="headerA" class="bg-white rounded-t-xl border border-gray-200 border-b-0 p-5 text-center relative">
-          <span class="absolute top-3 right-3 bg-primary text-white text-xs px-2 py-0.5 rounded font-bold">أ</span>
+        <div class="col-span-1 flex items-end pb-3">
+          <span class="text-xs text-gray-400 font-bold">معيار المقارنة</span>
         </div>
-        <div id="headerB" class="bg-white rounded-t-xl border border-gray-200 border-b-0 p-5 text-center relative">
-          <span class="absolute top-3 right-3 bg-gold text-white text-xs px-2 py-0.5 rounded font-bold">ب</span>
+
+        <!-- Column A -->
+        <div id="headerA" class="bg-white rounded-t-xl border border-gray-200 border-b-0 p-4 text-center relative flex flex-col gap-2">
+          <span class="absolute top-3 right-3 bg-primary text-white text-xs px-2 py-0.5 rounded font-bold z-10">أ</span>
+          <!-- Switcher A -->
+          <div class="mt-1 mb-1">
+            <select id="switcherA" onchange="switchPackage('A', this.value)"
+              class="w-full text-xs border border-primary/30 rounded-lg px-2 py-1.5 bg-green-50 text-primary font-bold focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer">
+            </select>
+          </div>
+          <div id="headerAContent"></div>
+        </div>
+
+        <!-- Column B -->
+        <div id="headerB" class="bg-white rounded-t-xl border border-gray-200 border-b-0 p-4 text-center relative flex flex-col gap-2">
+          <span class="absolute top-3 right-3 bg-gold text-white text-xs px-2 py-0.5 rounded font-bold z-10">ب</span>
+          <!-- Switcher B -->
+          <div class="mt-1 mb-1">
+            <select id="switcherB" onchange="switchPackage('B', this.value)"
+              class="w-full text-xs border border-gold/40 rounded-lg px-2 py-1.5 bg-amber-50 text-amber-800 font-bold focus:outline-none focus:ring-2 focus:ring-gold/40 cursor-pointer">
+            </select>
+          </div>
+          <div id="headerBContent"></div>
         </div>
       </div>
 
       <!-- Rows -->
       <div id="compareRows" class="rounded-b-xl overflow-hidden border border-gray-200 shadow-md">
-        <!-- Rows injected by JS -->
       </div>
 
       <!-- CTA -->
@@ -199,41 +218,263 @@
     <p>📞 01555154996 &nbsp;|&nbsp; 01031777295</p>
   </footer>
 
+<style>
+  .best-cell {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7) !important;
+    border-right: 3px solid #16a34a;
+  }
+  .best-cell-left {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7) !important;
+    border-left: 3px solid #16a34a;
+  }
+  .best-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #16a34a;
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .switcher-select {
+    transition: box-shadow .2s;
+  }
+  .switcher-select:focus {
+    box-shadow: 0 0 0 3px rgba(27,94,32,.2);
+  }
+  @keyframes fadeRow { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+  .compare-row { animation: fadeRow .25s ease both; }
+</style>
+
 <script>
 const params = new URLSearchParams(location.search);
-const idA = params.get('a');
-const idB = params.get('b');
+let currentA = params.get('a');
+let currentB = params.get('b');
+let allPackages = [];
+let pkgA = null, pkgB = null;
 
+// ─── Row definitions with best-value logic ───
+// bestFn(a, b) returns 'A' | 'B' | null
 const ROWS = [
-  { label: 'التصنيف',        key: p => p.category || '—' },
-  { label: 'المدة',          key: p => `${p.duration_nights} ليالي / ${p.duration_days || (p.duration_nights+1)} أيام` },
-  { label: 'تاريخ المغادرة', key: p => p.departure_date ? new Date(p.departure_date).toLocaleDateString('ar-EG') : '—' },
-  { label: 'السعر للفرد',    key: p => window.formatCurrency(p.price_per_person), highlight: true },
-  { label: 'فندق مكة',       key: p => `${p.mecca_hotel} ${'★'.repeat(p.mecca_hotel_stars||0)}` },
-  { label: 'فندق المدينة',   key: p => `${p.medina_hotel} ${'★'.repeat(p.medina_hotel_stars||0)}` },
-  { label: 'المقاعد المتاحة',key: p => `${p.available_seats} من ${p.max_seats}` },
-  { label: 'الموسم',         key: p => p.season || 'طوال العام' },
-  { label: 'يشمل التأشيرة',  key: p => p.includes_visa ? '<span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> نعم</span>' : '<span class="text-red-500"><i class="fa-solid fa-xmark"></i> لا</span>', html: true },
-  { label: 'يشمل التذاكر',   key: p => p.includes_tickets ? '<span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> نعم</span>' : '<span class="text-red-500"><i class="fa-solid fa-xmark"></i> لا</span>', html: true },
-  { label: 'يشمل المواصلات', key: p => p.includes_transport ? '<span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> نعم</span>' : '<span class="text-red-500"><i class="fa-solid fa-xmark"></i> لا</span>', html: true },
+  {
+    label: 'التصنيف',
+    key: p => p.category || '—',
+    bestFn: null
+  },
+  {
+    label: 'المدة',
+    key: p => `${p.duration_nights} ليالي / ${p.duration_days || (p.duration_nights+1)} أيام`,
+    bestFn: (a, b) => a.duration_nights > b.duration_nights ? 'A' : b.duration_nights > a.duration_nights ? 'B' : null
+  },
+  {
+    label: 'تاريخ المغادرة',
+    key: p => p.departure_date ? new Date(p.departure_date).toLocaleDateString('ar-EG') : '—',
+    bestFn: null
+  },
+  {
+    label: 'السعر للفرد',
+    key: p => window.formatCurrency ? window.formatCurrency(p.price_per_person) : p.price_per_person + ' ج.م.',
+    bestFn: (a, b) => a.price_per_person < b.price_per_person ? 'A' : b.price_per_person < a.price_per_person ? 'B' : null,
+    bestLabel: { A: 'الأقل سعراً', B: 'الأقل سعراً' }
+  },
+  {
+    label: 'فندق مكة',
+    key: p => `${p.mecca_hotel} ${'★'.repeat(p.mecca_hotel_stars||0)}`,
+    bestFn: (a, b) => (a.mecca_hotel_stars||0) > (b.mecca_hotel_stars||0) ? 'A' : (b.mecca_hotel_stars||0) > (a.mecca_hotel_stars||0) ? 'B' : null,
+    bestLabel: { A: 'تصنيف أعلى', B: 'تصنيف أعلى' }
+  },
+  {
+    label: 'فندق المدينة',
+    key: p => `${p.medina_hotel} ${'★'.repeat(p.medina_hotel_stars||0)}`,
+    bestFn: (a, b) => (a.medina_hotel_stars||0) > (b.medina_hotel_stars||0) ? 'A' : (b.medina_hotel_stars||0) > (a.medina_hotel_stars||0) ? 'B' : null,
+    bestLabel: { A: 'تصنيف أعلى', B: 'تصنيف أعلى' }
+  },
+  {
+    label: 'المقاعد المتاحة',
+    key: p => `${p.available_seats} من ${p.max_seats}`,
+    bestFn: (a, b) => a.available_seats > b.available_seats ? 'A' : b.available_seats > a.available_seats ? 'B' : null,
+    bestLabel: { A: 'توافر أعلى', B: 'توافر أعلى' }
+  },
+  {
+    label: 'الموسم',
+    key: p => p.season || 'طوال العام',
+    bestFn: null
+  },
+  {
+    label: 'يشمل التأشيرة',
+    key: p => p.visa_included ? '<i class="fa-solid fa-check text-green-600 text-base"></i>' : '<i class="fa-solid fa-xmark text-red-400 text-base"></i>',
+    html: true,
+    bestFn: (a, b) => a.visa_included && !b.visa_included ? 'A' : b.visa_included && !a.visa_included ? 'B' : null,
+    bestLabel: { A: 'يشمل التأشيرة', B: 'يشمل التأشيرة' }
+  },
+  {
+    label: 'خصم متاح',
+    key: p => p.discount_percent > 0 ? `<span class="text-green-600 font-bold">${p.discount_percent}% خصم</span>` : '<span class="text-gray-400 text-xs">لا يوجد</span>',
+    html: true,
+    bestFn: (a, b) => (a.discount_percent||0) > (b.discount_percent||0) ? 'A' : (b.discount_percent||0) > (a.discount_percent||0) ? 'B' : null,
+    bestLabel: { A: 'خصم أكبر', B: 'خصم أكبر' }
+  },
+  {
+    label: 'ليالي مكة',
+    key: p => `${p.nights_mecca} ليالٍ`,
+    bestFn: (a, b) => a.nights_mecca > b.nights_mecca ? 'A' : b.nights_mecca > a.nights_mecca ? 'B' : null,
+    bestLabel: { A: 'أطول إقامة', B: 'أطول إقامة' }
+  },
+  {
+    label: 'ليالي المدينة',
+    key: p => `${p.nights_medina} ليالٍ`,
+    bestFn: (a, b) => a.nights_medina > b.nights_medina ? 'A' : b.nights_medina > a.nights_medina ? 'B' : null,
+    bestLabel: { A: 'أطول إقامة', B: 'أطول إقامة' }
+  },
 ];
 
-async function init() {
-  if (!idA || !idB) { showError(); return; }
+// ─── Populate switcher dropdowns ───
+function populateSwitchers() {
+  ['A','B'].forEach(col => {
+    const sel = document.getElementById('switcher' + col);
+    const currentId = col === 'A' ? currentA : currentB;
+    sel.innerHTML = allPackages.map(p =>
+      `<option value="${p.id}" ${p.id === currentId ? 'selected' : ''}>${p.title}</option>`
+    ).join('');
+  });
+}
 
+// ─── Switch package for a column ───
+function switchPackage(col, newId) {
+  if (col === 'A') {
+    if (newId === currentB) {
+      // swap if same as other column
+      currentB = currentA;
+      currentA = newId;
+      document.getElementById('switcherB').value = currentB;
+    } else {
+      currentA = newId;
+    }
+  } else {
+    if (newId === currentA) {
+      currentA = currentB;
+      currentB = newId;
+      document.getElementById('switcherA').value = currentA;
+    } else {
+      currentB = newId;
+    }
+  }
+  pkgA = allPackages.find(p => p.id === currentA);
+  pkgB = allPackages.find(p => p.id === currentB);
+  renderHeaderContent('A', pkgA);
+  renderHeaderContent('B', pkgB);
+  renderRows(pkgA, pkgB);
+  document.getElementById('bookA').href = `/booking.html?package=${pkgA.id}`;
+  document.getElementById('bookB').href = `/booking.html?package=${pkgB.id}`;
+  // Update URL without reload
+  const url = new URL(location.href);
+  url.searchParams.set('a', currentA);
+  url.searchParams.set('b', currentB);
+  history.replaceState(null, '', url);
+}
+
+// ─── Render header content (below switcher) ───
+function renderHeaderContent(col, pkg) {
+  const el = document.getElementById('headerAContent,headerBContent'.split(',')[col==='A'?0:1]);
+  const fallback = 'https://images.unsplash.com/photo-1565552643982-2d18ca2bf7fa?auto=format&fit=crop&q=80&w=400';
+  el.innerHTML = `
+    <img src="${pkg.thumbnail_url || fallback}" class="w-full h-32 object-cover rounded-lg mb-2"
+         onerror="this.src='${fallback}'">
+    <p class="font-bold text-primary text-sm leading-snug">${pkg.title}</p>
+    <p class="text-xs text-gray-400 mt-0.5">${pkg.category || ''}</p>
+  `;
+}
+
+// ─── Render comparison rows ───
+function renderRows(pA, pB) {
+  const container = document.getElementById('compareRows');
+  // Count wins for each
+  let winsA = 0, winsB = 0;
+
+  const rowsHtml = ROWS.map((row, i) => {
+    const valA = row.key(pA);
+    const valB = row.key(pB);
+    const best = row.bestFn ? row.bestFn(pA, pB) : null;
+    if (best === 'A') winsA++;
+    if (best === 'B') winsB++;
+
+    const bg = i % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+
+    const cellClass = (side) => {
+      if (best === side) return side === 'A' ? 'best-cell' : 'best-cell-left';
+      return '';
+    };
+
+    const badge = (side) => {
+      if (best !== side) return '';
+      const label = (row.bestLabel && row.bestLabel[side]) || 'الأفضل';
+      return `<span class="best-badge"><i class="fa-solid fa-trophy" style="font-size:8px;"></i> ${label}</span>`;
+    };
+
+    const renderVal = (val, side) => {
+      const badgeHtml = badge(side);
+      if (row.html) {
+        return `<div class="flex flex-col items-center gap-1">${val}${badgeHtml}</div>`;
+      }
+      return `<div class="flex flex-col items-center gap-1"><span class="text-sm font-semibold ${best===side?'text-green-700':''}">${val}</span>${badgeHtml}</div>`;
+    };
+
+    return `
+      <div class="compare-row grid grid-cols-3 gap-0 ${bg} border-b border-gray-100 last:border-0" style="animation-delay:${i*25}ms">
+        <div class="px-4 py-3 text-xs font-bold text-gray-500 flex items-center border-l border-gray-100">${row.label}</div>
+        <div class="px-4 py-3 border-l border-gray-100 flex items-center justify-center ${cellClass('A')}">${renderVal(valA,'A')}</div>
+        <div class="px-4 py-3 flex items-center justify-center ${cellClass('B')}">${renderVal(valB,'B')}</div>
+      </div>`;
+  }).join('');
+
+  // Score summary row
+  const scoreRow = `
+    <div class="grid grid-cols-3 gap-0 bg-gray-900 border-t-2 border-primary">
+      <div class="px-4 py-3 text-xs font-bold text-gray-300 flex items-center">نتيجة المقارنة</div>
+      <div class="px-4 py-3 border-l border-gray-700 flex flex-col items-center justify-center ${winsA>winsB?'best-cell':''}">
+        <span class="text-2xl font-black ${winsA>=winsB?'text-green-400':'text-gray-400'}">${winsA}</span>
+        <span class="text-xs text-gray-400">ميزة</span>
+        ${winsA>winsB?'<span class="best-badge mt-1"><i class="fa-solid fa-crown" style="font-size:8px;"></i> الأفضل عموماً</span>':''}
+      </div>
+      <div class="px-4 py-3 flex flex-col items-center justify-center ${winsB>winsA?'best-cell-left':''}">
+        <span class="text-2xl font-black ${winsB>=winsA?'text-green-400':'text-gray-400'}">${winsB}</span>
+        <span class="text-xs text-gray-400">ميزة</span>
+        ${winsB>winsA?'<span class="best-badge mt-1"><i class="fa-solid fa-crown" style="font-size:8px;"></i> الأفضل عموماً</span>':''}
+      </div>
+    </div>`;
+
+  container.innerHTML = rowsHtml + scoreRow;
+}
+
+// ─── Init ───
+async function init() {
   let attempts = 0;
   while (!window.db && attempts < 15) { await new Promise(r => setTimeout(r, 400)); attempts++; }
   if (!window.db) { showError(); return; }
 
   try {
-    const { data, error } = await window.db.from('packages').select('*').in('id', [idA, idB]);
+    const { data, error } = await window.db.from('packages').select('*').eq('is_active', true).order('created_at', { ascending: false });
     if (error || !data || data.length < 2) { showError(); return; }
 
-    const pkgA = data.find(p => p.id == idA) || data[0];
-    const pkgB = data.find(p => p.id == idB) || data[1];
+    allPackages = data;
 
-    renderHeader('headerA', pkgA, 'border-primary');
-    renderHeader('headerB', pkgB, 'border-gold');
+    // If no URL params, default to first two packages
+    if (!currentA) currentA = data[0].id;
+    if (!currentB) currentB = data[1] ? data[1].id : data[0].id;
+
+    pkgA = allPackages.find(p => p.id === currentA) || data[0];
+    pkgB = allPackages.find(p => p.id === currentB) || data[1];
+
+    // Add border-top color to headers
+    document.getElementById('headerA').classList.add('border-t-4', 'border-primary');
+    document.getElementById('headerB').classList.add('border-t-4', 'border-gold');
+
+    populateSwitchers();
+    renderHeaderContent('A', pkgA);
+    renderHeaderContent('B', pkgB);
     renderRows(pkgA, pkgB);
 
     document.getElementById('bookA').href = `/booking.html?package=${pkgA.id}`;
@@ -245,45 +486,6 @@ async function init() {
     console.error(e);
     showError();
   }
-}
-
-function renderHeader(elId, pkg, borderClass) {
-  const el = document.getElementById(elId);
-  el.classList.add('border-t-4', borderClass);
-  el.innerHTML = `
-    <span class="absolute top-3 right-3 ${borderClass==='border-primary'?'bg-primary':'bg-gold'} text-white text-xs px-2 py-0.5 rounded font-bold">${borderClass==='border-primary'?'أ':'ب'}</span>
-    <img src="${pkg.thumbnail_url || 'https://images.unsplash.com/photo-1565552643982-2d18ca2bf7fa?auto=format&fit=crop&q=80&w=400'}"
-         class="w-full h-36 object-cover rounded-lg mb-3" onerror="this.src='https://images.unsplash.com/photo-1565552643982-2d18ca2bf7fa?auto=format&fit=crop&q=80&w=400'">
-    <h2 class="font-bold text-primary text-base leading-snug">${pkg.title}</h2>
-    <p class="text-xs text-gray-400 mt-1">${pkg.category || ''}</p>
-  `;
-}
-
-function renderRows(pkgA, pkgB) {
-  const container = document.getElementById('compareRows');
-  const priceA = pkgA.price_per_person;
-  const priceB = pkgB.price_per_person;
-
-  container.innerHTML = ROWS.map((row, i) => {
-    const valA = row.key(pkgA);
-    const valB = row.key(pkgB);
-    let highlightA = '', highlightB = '';
-    if (row.highlight) {
-      if (priceA < priceB) { highlightA = 'text-green-600'; highlightB = 'text-red-500'; }
-      else if (priceB < priceA) { highlightB = 'text-green-600'; highlightA = 'text-red-500'; }
-    }
-    const bg = i % 2 === 0 ? 'bg-white' : 'bg-gray-50';
-    const setCell = (val, cls) => row.html
-      ? `<div class="text-center text-sm ${cls}">${val}</div>`
-      : `<div class="text-center text-sm font-semibold ${cls}">${val}</div>`;
-
-    return `
-      <div class="grid grid-cols-3 gap-0 ${bg} border-b border-gray-100 last:border-0">
-        <div class="px-4 py-3 text-xs font-bold text-gray-500 flex items-center">${row.label}</div>
-        <div class="px-4 py-3 border-r border-l border-gray-100 flex items-center justify-center">${setCell(valA, highlightA)}</div>
-        <div class="px-4 py-3 flex items-center justify-center">${setCell(valB, highlightB)}</div>
-      </div>`;
-  }).join('');
 }
 
 function showError() {
