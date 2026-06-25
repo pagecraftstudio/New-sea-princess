@@ -180,9 +180,13 @@ const bookingController = {
                  <h4 class="font-bold mb-3 border-b pb-2"><span class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-sm ml-2">بالغ ${i}</span></h4>
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input type="text" class="t-name border p-2 rounded w-full" placeholder="الاسم الرباعي (مطلوب)" required>
-                    <input type="text" class="t-nid border p-2 rounded w-full" placeholder="الرقم القومي (14 رقم)" required maxlength="14">
-                    <input type="text" class="t-passport border p-2 rounded w-full" placeholder="رقم جواز السفر (مطلوب)" required>
-                    <input type="date" class="t-passport-exp border p-2 rounded w-full text-gray-600" title="تاريخ انتهاء الجواز">
+                    <input type="text" inputmode="numeric" pattern="[0-9]{14}" class="t-nid border p-2 rounded w-full" placeholder="الرقم القومي (14 رقم - أرقام إنجليزية فقط)" required maxlength="14" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                    <input type="text" inputmode="numeric" class="t-passport border p-2 rounded w-full" placeholder="رقم جواز السفر (أرقام وحروف إنجليزية فقط)" required oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase()">
+                    <div class="field-wrap col-span-1">
+                      <label class="block text-xs text-gray-500 mb-1 font-medium">تاريخ انتهاء صلاحية جواز السفر <span class="text-red-500">*</span></label>
+                      <input type="date" class="t-passport-exp border p-2 rounded w-full text-gray-600" title="تاريخ انتهاء صلاحية جواز السفر">
+                      <p class="text-xs text-amber-600 mt-1"><i class="fa-solid fa-triangle-exclamation ml-1"></i>يجب أن يكون الجواز صالحاً 6 أشهر على الأقل بعد تاريخ المغادرة (اشتراط سعودي)</p>
+                    </div>
                  </div>
                </div>
             `;
@@ -299,13 +303,17 @@ const bookingController = {
         names.forEach((name, idx) => {
             if(!name) return;
             container.innerHTML += `
-              <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg flex justify-between items-center">
-                  <div>
-                      <p class="font-bold text-primary">${name}</p>
-                      <p class="text-xs text-gray-500">صورة جواز السفر (PDF, JPG)</p>
-                  </div>
-                  <div>
-                    <input type="file" id="file_${idx}" data-traveler="${name}" class="text-sm bg-white border border-gray-300 rounded" accept="image/jpeg,image/png,application/pdf">
+              <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+                  <p class="font-bold text-primary mb-3">${name}</p>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-passport ml-1 text-primary"></i>صورة جواز السفر (PDF, JPG)</label>
+                      <input type="file" id="file_passport_${idx}" data-traveler="${name}" data-doctype="passport" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png,application/pdf">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-id-card ml-1 text-amber-600"></i>صورة بطاقة الرقم القومي (PDF, JPG)</label>
+                      <input type="file" id="file_nid_${idx}" data-traveler="${name}" data-doctype="national_id" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png,application/pdf">
+                    </div>
                   </div>
               </div>
             `;
@@ -351,7 +359,7 @@ const bookingController = {
 
             // Bucket is private — store path only; admin uses signed URL on demand
             return {
-                type: 'passport',
+                type: fileObj._doctype || 'passport',
                 traveler_name: travelerName,
                 path: filePath,
                 url: null,
@@ -402,7 +410,9 @@ const bookingController = {
             const fileInputs = document.querySelectorAll('#documentsContainer input[type="file"]');
             for(let input of fileInputs) {
                 if(input.files && input.files[0]) {
-                    const docRec = await this.uploadDocument(input.files[0], input.dataset.traveler);
+                    const fileWithType = input.files[0];
+                    if (fileWithType) fileWithType._doctype = input.dataset.doctype || 'passport';
+                    const docRec = await this.uploadDocument(fileWithType, input.dataset.traveler);
                     if(docRec) uploadedDocs.push(docRec);
                 }
             }
