@@ -1,6 +1,13 @@
 /**
  * contact-config.js
  * مصدر واحد للأرقام — كل wa.me في الموقع يمر من هنا
+  *
+ * ─────────────────────────────────────────────────────────
+ * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
+ * Unauthorized copying, modification, or distribution of
+ * this file or any part of this project, via any medium,
+ * is strictly prohibited without written permission.
+ * ─────────────────────────────────────────────────────────
  */
 window.NSP_CONTACTS = {
   general:  '201555154996',  // استفسارات عامة — الهيدر، صفحة "من نحن"، "تواصل معنا"

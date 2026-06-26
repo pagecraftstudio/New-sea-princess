@@ -1,12 +1,31 @@
 {
-          "rewrites": [
-            { "source": "/admin", "destination": "/admin/login.html" },
-            { "source": "/admin/", "destination": "/admin/login.html" }
-          ],
-          "cleanUrls": true,
-          "trailingSlash": false,
-          "routes": [
-            { "handle": "filesystem" },
-            { "src": "/(.*)", "dest": "/404.html", "status": 404 }
-          ]
-        }
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/js/supabase-config.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/nsp-control-8x4k", "destination": "/nsp-control-8x4k/login.html" },
+    { "source": "/nsp-control-8x4k/", "destination": "/nsp-control-8x4k/login.html" }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)\\.sql", "dest": "/404.html", "status": 404 },
+    { "src": "/README\\.md", "dest": "/404.html", "status": 404 },
+    { "src": "/(.*)", "dest": "/404.html", "status": 404 }
+  ]
+}

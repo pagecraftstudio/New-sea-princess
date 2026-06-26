@@ -1,6 +1,13 @@
 /**
  * admin.js
  * Common logic for admin dashboard, auth control, and simple stats loading.
+  *
+ * ─────────────────────────────────────────────────────────
+ * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
+ * Unauthorized copying, modification, or distribution of
+ * this file or any part of this project, via any medium,
+ * is strictly prohibited without written permission.
+ * ─────────────────────────────────────────────────────────
  */
 
 async function adminCheckAuth() {
@@ -10,16 +17,16 @@ async function adminCheckAuth() {
         await new Promise(r => setTimeout(r, 500));
         attempts++;
     }
-    if (!window.db) { window.location.href = '/admin/login.html'; return false; }
+    if (!window.db) { window.location.href = '/nsp-control-8x4k/login.html'; return false; }
 
     const { data: { session } } = await window.db.auth.getSession();
-    if (!session) { window.location.href = '/admin/login.html'; return false; }
+    if (!session) { window.location.href = '/nsp-control-8x4k/login.html'; return false; }
 
     // جلب الدور من قاعدة البيانات
     const { data: role, error: roleErr } = await window.db.rpc('get_admin_role');
     if (roleErr || !role) {
         await window.db.auth.signOut();
-        window.location.href = '/admin/login.html';
+        window.location.href = '/nsp-control-8x4k/login.html';
         return false;
     }
 
@@ -89,9 +96,9 @@ function applyRoleUI() {
     // إضافة رابط إدارة الأدمن للـ super_admin فقط
     if (role === 'super_admin') {
         document.querySelectorAll('.admin-sidebar-nav, .sidebar-nav').forEach(nav => {
-            if (!nav.querySelector('a[href="/admin/admins.html"]')) {
+            if (!nav.querySelector('a[href="/nsp-control-8x4k/admins.html"]')) {
                 const link = document.createElement('a');
-                link.href = '/admin/admins.html';
+                link.href = '/nsp-control-8x4k/admins.html';
                 link.className = 'nav-link';
                 link.innerHTML = '<i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن';
                 nav.appendChild(link);
@@ -103,7 +110,7 @@ function applyRoleUI() {
 async function adminLogout() {
     if (!window.db) return;
     await window.db.auth.signOut();
-    window.location.href = '/admin/login.html';
+    window.location.href = '/nsp-control-8x4k/login.html';
 }
 
 // ══════════════════════════════════════════════════════════

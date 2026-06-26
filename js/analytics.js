@@ -2,6 +2,13 @@
  * analytics.js
  * Funnel event tracking for New Sea Princess.
  * Fire-and-forget: errors are silently swallowed so tracking never breaks UX.
+  *
+ * ─────────────────────────────────────────────────────────
+ * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
+ * Unauthorized copying, modification, or distribution of
+ * this file or any part of this project, via any medium,
+ * is strictly prohibited without written permission.
+ * ─────────────────────────────────────────────────────────
  */
 (function () {
   const SESSION_KEY = 'nsp_session_id';

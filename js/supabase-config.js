@@ -1,3 +1,13 @@
+/**
+ * supabase-config.js — نيو سي برنسيس للسياحة
+ *
+ * ─────────────────────────────────────────────────────────
+ * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
+ * Unauthorized copying, modification, or distribution of
+ * this file or any part of this project, via any medium,
+ * is strictly prohibited without written permission.
+ * ─────────────────────────────────────────────────────────
+ */
 // Supabase Configuration
 // Note: In a real environment, replace these placeholders with your actual Supabase Project URL and Anon Key.
 // For the AI Studio preview to avoid immediate crashes, we expose a mock or require manual setup.

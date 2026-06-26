@@ -1,6 +1,13 @@
 /**
  * packages.js
  * Handles fetching, filtering, and displaying packages on packages.html
+  *
+ * ─────────────────────────────────────────────────────────
+ * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
+ * Unauthorized copying, modification, or distribution of
+ * this file or any part of this project, via any medium,
+ * is strictly prohibited without written permission.
+ * ─────────────────────────────────────────────────────────
  */
 
 let allPackages = [];
