@@ -94,7 +94,7 @@
 
         if (error) throw error;
         // Success
-        window.location.href = '/admin/dashboard.html';
+        window.location.href = '/nsp-control-8x4k/dashboard.html';
       } catch(e) {
         console.error(e);
         err.innerText = "بيانات الدخول غير صحيحة.";
@@ -106,7 +106,7 @@
 
     // Auto-redirect if already logged in
     window.db.auth.getSession().then(({data}) => {
-       if(data.session) window.location.href = '/admin/dashboard.html';
+       if(data.session) window.location.href = '/nsp-control-8x4k/dashboard.html';
     });
   </script>
 <script>
