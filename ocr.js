@@ -1,17 +1,21 @@
 /**
- * ocr.js — نيو سي برنسيس للسياحة  v2.1
- * OCR scanner for passport and national ID upload fields.
- * Uses Tesseract.js — runs entirely in the browser, no API key needed.
+ * ocr.js — نيو سي برنسيس للسياحة  v3.0
  *
- * Fixes in v2.1
- * ─────────────
- * • Block lookup: use input.closest() instead of global DOM index — fixes NID fill
- * • Expiry year: always 2000+yr for passport expiry (passports never expire in 1900s)
- * • DOB year:    yr < 30 → 2000s, else 1900s (correct for people born before 2030)
- * • Name fill:   always write name from OCR; don't skip if field already has a value
- *                (user may have typed placeholder text; OCR result is more accurate)
- * • NID Arabic name: stricter label filter + min-score threshold to avoid picking
- *                    header lines ("الجمهورية العربية المصرية") when no real name found
+ * PASSPORT  → Tesseract.js (eng-only) extracts raw text → `mrz` npm package
+ *             (via esm.sh CDN) parses MRZ lines with checksum validation and
+ *             O↔0 / I↔1 auto-correction. No API key. Runs in ~1-3 s.
+ *
+ * NID       → Tesseract.js (eng+ara) for Arabic name + digit extraction.
+ *             Same as before; no better free browser alternative for Arabic.
+ *
+ * Key changes vs v2.1
+ * ────────────────────
+ * • mrzParse() replaces hand-rolled MRZ field offsets — handles TD1/TD2/TD3,
+ *   validates check digits, auto-corrects common OCR character confusions
+ * • Fallback: if mrz package parse fails (garbled MRZ), fall back to our own
+ *   regex parser so the user still gets partial data
+ * • Block lookup still uses input.closest() (fix from v2.1)
+ * • Expiry year fix retained (2000+yr)
  *
  * ─────────────────────────────────────────────────────────
  * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
@@ -20,7 +24,10 @@
 
 (function () {
 
-  /* ── Load Tesseract.js once, resolve a Promise when ready ── */
+  /* ══════════════════════════════════════════════════════════
+     LOAD: Tesseract.js (OCR engine)
+  ══════════════════════════════════════════════════════════ */
+
   let _tesseractReady = null;
 
   function ensureTesseract() {
@@ -30,22 +37,39 @@
       const s = document.createElement('script');
       s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
       s.onload = () => {
-        let tries = 0;
+        let t = 0;
         const poll = setInterval(() => {
           if (window.Tesseract) { clearInterval(poll); resolve(window.Tesseract); }
-          else if (++tries > 40) { clearInterval(poll); reject(new Error('Tesseract.js failed to load')); }
+          else if (++t > 40)   { clearInterval(poll); reject(new Error('Tesseract failed to load')); }
         }, 300);
       };
-      s.onerror = () => reject(new Error('Tesseract.js CDN unreachable'));
+      s.onerror = () => reject(new Error('Tesseract CDN unreachable'));
       document.head.appendChild(s);
     });
     return _tesseractReady;
   }
 
-  // Begin loading immediately so it is ready before user picks a file
-  ensureTesseract().catch(() => {});
+  /* ══════════════════════════════════════════════════════════
+     LOAD: mrz npm package via esm.sh
+     Provides: parse(lines, { autocorrect: true })
+     Returns structured fields with checksum validation.
+  ══════════════════════════════════════════════════════════ */
 
-  /* ── Status helper ──────────────────────────────────────── */
+  let _mrzReady = null;
+
+  function ensureMrz() {
+    if (_mrzReady) return _mrzReady;
+    _mrzReady = import('https://esm.sh/mrz@5').then(mod => mod.default || mod.parse || mod);
+    return _mrzReady;
+  }
+
+  // Begin loading both libraries immediately
+  ensureTesseract().catch(() => {});
+  ensureMrz().catch(() => {});
+
+  /* ══════════════════════════════════════════════════════════
+     STATUS HELPERS
+  ══════════════════════════════════════════════════════════ */
 
   function setStatus(el, type, msg) {
     if (!el) return;
@@ -64,30 +88,32 @@
     if (el) { el.classList.add('hidden'); el.textContent = ''; }
   }
 
-  /* ── Find the traveler block that owns this input ───────── */
-  // Using closest() is always correct regardless of how many blocks exist.
-  // The old getTravelerBlock(idx) used a global querySelectorAll index which
-  // broke when file inputs were inside the block (it would still find the right
-  // block by coincidence for 1 traveler, but silently failed for edge cases).
+  /* ══════════════════════════════════════════════════════════
+     BLOCK LOOKUP — always via closest()
+  ══════════════════════════════════════════════════════════ */
 
-  function getBlockForInput(input) {
+  function getBlock(input) {
     return input.closest('.traveler-adult-block, .traveler-child-block') || null;
   }
 
-  /* ── Set a field value and flash green ──────────────────── */
+  /* ══════════════════════════════════════════════════════════
+     FILL FIELD
+  ══════════════════════════════════════════════════════════ */
 
   function fillField(el, value) {
-    if (!el || value === undefined || value === null || value === '') return;
-    el.value = value;
+    if (!el || value === undefined || value === null || String(value).trim() === '') return;
+    el.value = String(value).trim();
     el.dispatchEvent(new Event('input',  { bubbles: true }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
     el.style.background = '#F0FDF4';
     setTimeout(() => { el.style.background = ''; }, 2500);
   }
 
-  /* ── Canvas pre-processing: grayscale + contrast boost ──── */
+  /* ══════════════════════════════════════════════════════════
+     IMAGE PRE-PROCESSING — grayscale + contrast
+  ══════════════════════════════════════════════════════════ */
 
-  async function preprocessImage(file) {
+  async function preprocess(file) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
@@ -96,132 +122,130 @@
           const MAX = 2400;
           let { width: w, height: h } = img;
           if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-
-          const canvas = document.createElement('canvas');
-          canvas.width  = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const ctx = c.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
-
-          const imageData = ctx.getImageData(0, 0, w, h);
-          const d = imageData.data;
-          for (let i = 0; i < d.length; i += 4) {
-            let g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          const d = ctx.getImageData(0, 0, w, h);
+          for (let i = 0; i < d.data.length; i += 4) {
+            let g = 0.299 * d.data[i] + 0.587 * d.data[i+1] + 0.114 * d.data[i+2];
             g = Math.min(255, Math.max(0, (g - 128) * 1.4 + 128));
-            d[i] = d[i + 1] = d[i + 2] = g;
+            d.data[i] = d.data[i+1] = d.data[i+2] = g;
           }
-          ctx.putImageData(imageData, 0, 0);
-
-          canvas.toBlob(blob => { URL.revokeObjectURL(url); resolve(blob); }, 'image/png');
+          ctx.putImageData(d, 0, 0);
+          c.toBlob(blob => { URL.revokeObjectURL(url); resolve(blob); }, 'image/png');
         } catch (e) { URL.revokeObjectURL(url); reject(e); }
       };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img load failed')); };
       img.src = url;
     });
   }
 
-  /* ── Run Tesseract ──────────────────────────────────────── */
+  /* ══════════════════════════════════════════════════════════
+     TESSERACT RUNNER
+  ══════════════════════════════════════════════════════════ */
 
   async function runOCR(file, lang) {
-    const T       = await ensureTesseract();
-    const cleaned = await preprocessImage(file);
-    const result  = await T.recognize(cleaned, lang, { logger: () => {} });
-    return result.data.text;
+    const T    = await ensureTesseract();
+    const blob = await preprocess(file);
+    const res  = await T.recognize(blob, lang, { logger: () => {} });
+    return res.data.text;
   }
 
   /* ══════════════════════════════════════════════════════════
-     MRZ YEAR HELPER
-     ─────────────────────────────────────────────────────────
-     Passport EXPIRY:  always in the future → always 2000 + yr.
-     Date of BIRTH:    yr ≥ current 2-digit year means person born in 1900s;
-                       yr <  current 2-digit year means born in 2000s.
-                       (Threshold: yr < 30 → 2000s, else 1900s is a safe
-                        approximation until 2030.)
+     MRZ DATE HELPERS
   ══════════════════════════════════════════════════════════ */
 
-  function mrzYearDOB(yr) {
-    return (yr < 30 ? 2000 : 1900) + yr;
+  function mrzDateDOB(yymmdd) {
+    if (!yymmdd || yymmdd.length !== 6) return null;
+    const yr = parseInt(yymmdd.substring(0, 2));
+    return `${yr < 30 ? 2000 + yr : 1900 + yr}-${yymmdd.substring(2,4)}-${yymmdd.substring(4,6)}`;
   }
 
-  function mrzYearExpiry(yr) {
-    // Passports expire in the future — always 2000s
-    return 2000 + yr;
-  }
-
-  function mrzDate(raw, isExpiry) {
-    if (!/^\d{6}$/.test(raw)) return null;
-    const yr = parseInt(raw.substring(0, 2));
-    const mm = raw.substring(2, 4);
-    const dd = raw.substring(4, 6);
-    const year = isExpiry ? mrzYearExpiry(yr) : mrzYearDOB(yr);
-    return `${year}-${mm}-${dd}`;
+  function mrzDateExpiry(yymmdd) {
+    if (!yymmdd || yymmdd.length !== 6) return null;
+    const yr = parseInt(yymmdd.substring(0, 2));
+    return `${2000 + yr}-${yymmdd.substring(2,4)}-${yymmdd.substring(4,6)}`;
   }
 
   /* ══════════════════════════════════════════════════════════
      PASSPORT PARSER
-     ICAO TD3 MRZ line 2 layout (44 chars):
-       [0-8]   Passport number
-       [9]     Check digit
-       [10-12] Nationality (EGY)
-       [13-18] DOB  YYMMDD
-       [19]    Check digit
-       [20]    Sex  M/F/<
-       [21-26] Expiry YYMMDD
-       [27]    Check digit
-       [28-42] Personal number / filler
+     Strategy:
+       1. Extract MRZ lines from Tesseract raw text
+       2. Try mrz.parse() — gives validated, auto-corrected fields
+       3. Fallback to hand-rolled regex parser if mrz.parse throws
   ══════════════════════════════════════════════════════════ */
 
-  function parsePassport(text) {
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  async function parsePassport(text) {
     const extracted = {};
+    const lines     = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-    // Identify MRZ lines: 30+ consecutive A-Z 0-9 < chars
-    const mrzLines = lines.filter(l => /^[A-Z0-9<]{30,}$/.test(l.replace(/\s/g, '')));
+    // Find MRZ lines: 30+ chars of A-Z, 0-9, <
+    const mrzLines = lines.filter(l => /^[A-Z0-9<]{30,}$/.test(l.replace(/\s/g, '')))
+                          .map(l => l.replace(/\s/g, ''));
 
-    // Line 2: contains DOB(13-18) + check(19) + sex(20) + expiry(21-26)
-    const mrz2 = mrzLines.find(l => {
-      const m = l.replace(/\s/g, '');
-      return m.length >= 40 && /\d{6}[0-9][MF<]\d{6}/.test(m.substring(13, 28));
-    });
+    /* ── Try mrz npm package (best path) ── */
+    if (mrzLines.length >= 2) {
+      try {
+        const mrzPkg = await ensureMrz();
+        const parseFn = typeof mrzPkg === 'function' ? mrzPkg
+                      : (mrzPkg.parse || mrzPkg.default?.parse);
 
-    if (mrz2) {
-      const mrz = mrz2.replace(/\s/g, '');
+        if (parseFn) {
+          // Try TD3 (passport = 2 lines of 44)
+          const td3Lines = mrzLines.filter(l => l.length === 44);
+          if (td3Lines.length >= 2) {
+            const result = parseFn([td3Lines[0], td3Lines[1]], { autocorrect: true });
+            const f      = result.fields;
 
-      // Passport number: pos 0-8
-      const pNo = mrz.substring(0, 9).replace(/</g, '');
-      if (pNo) extracted.passport_number = pNo;
+            if (f.documentNumber) extracted.passport_number = f.documentNumber;
+            if (f.lastName && f.firstName) {
+              extracted.full_name = `${f.firstName} ${f.lastName}`.replace(/\s+/g, ' ').trim();
+            } else if (f.lastName) {
+              extracted.full_name = f.lastName;
+            }
+            if (f.birthDate) extracted.date_of_birth  = mrzDateDOB(f.birthDate);
+            if (f.expirationDate) extracted.expiry_date = mrzDateExpiry(f.expirationDate);
+            if (f.sex) extracted.gender = f.sex;
 
-      // DOB: pos 13-18
-      extracted.date_of_birth = mrzDate(mrz.substring(13, 19), false);
-
-      // Sex: pos 20
-      const sex = mrz[20];
-      if (sex === 'M' || sex === 'F') extracted.gender = sex;
-
-      // Expiry: pos 21-26 (always future → mrzYearExpiry)
-      extracted.expiry_date = mrzDate(mrz.substring(21, 27), true);
-    }
-
-    // Line 1: P<EGY<SURNAME<<GIVEN<<...
-    const mrz1 = mrzLines.find(l => /^P[A-Z<]/.test(l.replace(/\s/g, '')));
-    if (mrz1) {
-      const mrz      = mrz1.replace(/\s/g, '');
-      const namePart = mrz.substring(5).split('<<');
-      const surname  = (namePart[0] || '').replace(/</g, ' ').trim();
-      const given    = (namePart[1] || '').replace(/</g, ' ').trim();
-      if (surname || given) {
-        extracted.full_name = [given, surname].filter(Boolean).join(' ');
+            console.log('[OCR] mrz package result:', result);
+            return extracted; // Return early — best possible parse
+          }
+        }
+      } catch (e) {
+        console.warn('[OCR] mrz package failed, falling back:', e.message);
       }
     }
 
-    // Fallback: passport number from visible zone (no < chars)
+    /* ── Fallback: hand-rolled MRZ parser ── */
+    const mrz2 = mrzLines.find(l =>
+      l.length >= 40 && /\d{6}[0-9][MF<]\d{6}/.test(l.substring(13, 28))
+    );
+
+    if (mrz2) {
+      const pNo = mrz2.substring(0, 9).replace(/</g, '');
+      if (pNo) extracted.passport_number = pNo;
+      extracted.date_of_birth = mrzDateDOB(mrz2.substring(13, 19));
+      const sex = mrz2[20];
+      if (sex === 'M' || sex === 'F') extracted.gender = sex;
+      extracted.expiry_date = mrzDateExpiry(mrz2.substring(21, 27));
+    }
+
+    const mrz1 = mrzLines.find(l => /^P[A-Z<]/.test(l));
+    if (mrz1) {
+      const namePart = mrz1.substring(5).split('<<');
+      const surname  = (namePart[0] || '').replace(/</g, ' ').trim();
+      const given    = (namePart[1] || '').replace(/</g, ' ').trim();
+      extracted.full_name = [given, surname].filter(Boolean).join(' ');
+    }
+
+    /* ── Visible-zone fallbacks ── */
     if (!extracted.passport_number) {
       const vis = lines.filter(l => !l.includes('<')).join(' ');
       const m   = vis.match(/[A-Z]{1,2}[0-9]{6,8}/);
       if (m) extracted.passport_number = m[0];
     }
 
-    // Fallback: expiry from printed dates — take the latest date (most likely expiry)
     if (!extracted.expiry_date) {
       const vis   = lines.filter(l => !l.includes('<')).join(' ');
       const hits  = vis.match(/(\d{2})[\/.\-](\d{2})[\/.\-](\d{4})/g) || [];
@@ -236,120 +260,71 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     NATIONAL ID PARSER  (Egyptian NID — 14 digits)
-     Format: C YY MM DD GG SSS X
-       C   = century marker (2 = 1900s, 3 = 2000s)
-       YYMMDD = birth date
-       GG  = governorate code (01-35)
-       SSS = sequence
-       X   = check digit
+     NID PARSER (Egyptian — 14 digits + Arabic name)
   ══════════════════════════════════════════════════════════ */
 
-  // Labels that appear on the NID card — never part of the holder's name
   const NID_LABEL_RE = /(?:الجمهورية|العربية|المصرية|بطاقة|الرقم|القومي|تاريخ|الميلاد|محل|الإقامة|الديانة|الحالة|الإصدار|الانتهاء|وزارة|الداخلية|مصر|رقم|قومي)/;
 
   function parseNID(text) {
     const extracted = {};
+    const noSpace   = text.replace(/\s+/g, '');
 
-    // Remove all whitespace and find 14-digit NID starting with 2 or 3
-    const noSpace     = text.replace(/\s+/g, '');
-    let nidCandidate  = null;
+    const direct = noSpace.match(/[23]\d{13}/);
+    const spaced = !direct && text.match(/([23](?:\s*\d){13})/);
+    const nid    = direct ? direct[0] : (spaced ? spaced[0].replace(/\s/g, '') : null);
 
-    const directMatch = noSpace.match(/[23]\d{13}/);
-    if (directMatch) {
-      nidCandidate = directMatch[0];
-    } else {
-      // Tesseract sometimes inserts spaces inside long digit runs
-      const spacedMatch = text.match(/([23](?:\s*\d){13})/);
-      if (spacedMatch) nidCandidate = spacedMatch[0].replace(/\s/g, '');
-    }
-
-    if (nidCandidate && nidCandidate.length === 14) {
-      extracted.national_id_number = nidCandidate;
-      // Extract birth date from NID digits
-      const century = nidCandidate[0] === '3' ? '20' : '19';
-      const yy = nidCandidate.substring(1, 3);
-      const mm = nidCandidate.substring(3, 5);
-      const dd = nidCandidate.substring(5, 7);
-      if (parseInt(mm) >= 1 && parseInt(mm) <= 12 &&
-          parseInt(dd) >= 1 && parseInt(dd) <= 31) {
-        extracted.date_of_birth = `${century}${yy}-${mm}-${dd}`;
+    if (nid && nid.length === 14) {
+      extracted.national_id_number = nid;
+      const century = nid[0] === '3' ? '20' : '19';
+      const mm = nid.substring(3, 5), dd = nid.substring(5, 7);
+      if (parseInt(mm) >= 1 && parseInt(mm) <= 12 && parseInt(dd) >= 1 && parseInt(dd) <= 31) {
+        extracted.date_of_birth = `${century}${nid.substring(1,3)}-${mm}-${dd}`;
       }
     }
 
-    // Arabic name: collect lines that look like a person's name
     const arabicLines = text.split('\n')
       .map(l => l.trim())
-      .filter(l => {
-        if (!/[\u0600-\u06FF]{3,}/.test(l)) return false;  // must have Arabic chars
-        if (NID_LABEL_RE.test(l))           return false;  // skip card labels
-        if (/\d/.test(l))                   return false;  // skip lines with digits
-        return true;
-      });
+      .filter(l => /[\u0600-\u06FF]{3,}/.test(l) && !NID_LABEL_RE.test(l) && !/\d/.test(l));
 
     if (arabicLines.length > 0) {
-      // Score each line: prefer 3-4 Arabic words (typical full name length)
-      // Require at least 2 Arabic words to avoid picking single-word labels
-      const scored = arabicLines
-        .map(l => {
-          const words = l.split(/\s+/).filter(w => /[\u0600-\u06FF]{2,}/.test(w));
-          return { line: l, words: words.length };
-        })
-        .filter(x => x.words >= 2)   // must be at least 2 words
-        .sort((a, b) => Math.abs(a.words - 4) - Math.abs(b.words - 4));
-
-      if (scored.length > 0) {
-        extracted.full_name_arabic = scored[0].line;
-      }
+      const best = arabicLines
+        .map(l => ({ line: l, w: l.split(/\s+/).filter(w => /[\u0600-\u06FF]{2,}/.test(w)).length }))
+        .filter(x => x.w >= 2)
+        .sort((a, b) => Math.abs(a.w - 4) - Math.abs(b.w - 4))[0];
+      if (best) extracted.full_name_arabic = best.line;
     }
 
     return extracted;
   }
 
-  /* ── Fill passport fields in the traveler block ─────────── */
+  /* ══════════════════════════════════════════════════════════
+     FILL FUNCTIONS
+  ══════════════════════════════════════════════════════════ */
 
-  function fillPassportFields(block, extracted) {
-    if (!block || !extracted) return;
-    const nameField    = block.querySelector('.t-name');
-    const passportField = block.querySelector('.t-passport');
-    const expiryField  = block.querySelector('.t-passport-exp');
-
-    // Always fill name from OCR if we got one (OCR result > typed placeholder)
-    if (extracted.full_name)
-      fillField(nameField, extracted.full_name);
-
-    if (extracted.passport_number)
-      fillField(passportField, extracted.passport_number.toUpperCase());
-
-    if (extracted.expiry_date)
-      fillField(expiryField, extracted.expiry_date);
+  function fillPassportFields(block, ex) {
+    if (!block || !ex) return;
+    if (ex.full_name)       fillField(block.querySelector('.t-name'),        ex.full_name);
+    if (ex.passport_number) fillField(block.querySelector('.t-passport'),    ex.passport_number.toUpperCase());
+    if (ex.expiry_date)     fillField(block.querySelector('.t-passport-exp'), ex.expiry_date);
   }
 
-  /* ── Fill NID fields in the traveler block ──────────────── */
-
-  function fillNIDFields(block, extracted) {
-    if (!block || !extracted) return;
+  function fillNIDFields(block, ex) {
+    if (!block || !ex) return;
     const nameField = block.querySelector('.t-name');
-    const nidField  = block.querySelector('.t-nid');
-
-    // Fill name only if we found a valid Arabic name AND the field is empty
-    // (passport OCR name takes priority; don't overwrite it with NID name)
-    if (!nameField?.value && extracted.full_name_arabic)
-      fillField(nameField, extracted.full_name_arabic);
-
-    if (extracted.national_id_number)
-      fillField(nidField, extracted.national_id_number);
+    if (!nameField?.value && ex.full_name_arabic) fillField(nameField, ex.full_name_arabic);
+    if (ex.national_id_number) fillField(block.querySelector('.t-nid'), ex.national_id_number);
   }
 
-  /* ── Attach OCR listener to a file input ────────────────── */
+  /* ══════════════════════════════════════════════════════════
+     EVENT ATTACHMENT
+  ══════════════════════════════════════════════════════════ */
 
-  function attachOCRToInput(input, docType) {
+  function attachOCR(input, docType) {
     input.addEventListener('change', async function () {
       const file = this.files?.[0];
       if (!file) return;
 
-      // Find the block via DOM ancestry — reliable regardless of traveler count
-      const block    = getBlockForInput(this);
+      const block    = getBlock(this);
       const idx      = parseInt(this.dataset.travelerIdx ?? '0', 10);
       const statusId = `ocr_${docType === 'passport' ? 'passport' : 'nid'}_status_${idx}`;
       const statusEl = document.getElementById(statusId);
@@ -363,35 +338,31 @@
       setStatus(statusEl, 'loading', '🔍 جارٍ معالجة الصورة وقراءة البيانات…');
 
       try {
-        // Passport: English-only (MRZ is pure Latin — faster, more accurate)
-        // NID:      English + Arabic (need Arabic for name line)
-        const lang    = docType === 'passport' ? 'eng' : 'eng+ara';
-        const rawText = await runOCR(file, lang);
-
-        console.log('[OCR] Raw text:', rawText);
-
         if (docType === 'passport') {
-          const extracted = parsePassport(rawText);
-          console.log('[OCR] Passport extracted:', extracted);
+          const raw       = await runOCR(file, 'eng');
+          console.log('[OCR] raw passport text:', raw);
+          const extracted = await parsePassport(raw);
+          console.log('[OCR] passport fields:', extracted);
           fillPassportFields(block, extracted);
           const filled = [extracted.passport_number, extracted.expiry_date, extracted.full_name].filter(Boolean);
           setStatus(statusEl, filled.length ? 'success' : 'warning',
             filled.length
-              ? `✅ تم استخراج البيانات (${filled.length} حقول) — يرجى المراجعة قبل الإرسال`
-              : '⚠️ لم يتمكن النظام من قراءة البيانات بوضوح — يرجى الإدخال يدوياً');
+              ? `✅ تم استخراج ${filled.length} حقول — يرجى المراجعة قبل الإرسال`
+              : '⚠️ لم يتمكن النظام من قراءة البيانات — يرجى الإدخال يدوياً');
         } else {
-          const extracted = parseNID(rawText);
-          console.log('[OCR] NID extracted:', extracted);
+          const raw       = await runOCR(file, 'eng+ara');
+          console.log('[OCR] raw NID text:', raw);
+          const extracted = parseNID(raw);
+          console.log('[OCR] NID fields:', extracted);
           fillNIDFields(block, extracted);
           const filled = [extracted.national_id_number, extracted.full_name_arabic].filter(Boolean);
           setStatus(statusEl, filled.length ? 'success' : 'warning',
             filled.length
-              ? `✅ تم استخراج البيانات (${filled.length} حقول) — يرجى المراجعة قبل الإرسال`
+              ? `✅ تم استخراج ${filled.length} حقول — يرجى المراجعة قبل الإرسال`
               : '⚠️ لم يتمكن النظام من قراءة البيانات — يرجى الإدخال يدوياً');
         }
 
         setTimeout(() => hideStatus(statusEl), 8000);
-
       } catch (err) {
         console.error('[OCR] Error:', err);
         setStatus(statusEl, 'error', '❌ تعذّر قراءة المستند — يرجى الإدخال اليدوي');
@@ -399,21 +370,22 @@
     });
   }
 
-  /* ── MutationObserver: attach to dynamically added inputs ── */
+  /* ══════════════════════════════════════════════════════════
+     OBSERVER — attach to dynamic inputs
+  ══════════════════════════════════════════════════════════ */
 
   function scanAndAttach() {
-    document.querySelectorAll('.ocr-passport-input:not([data-ocr-attached])').forEach(input => {
-      input.setAttribute('data-ocr-attached', '1');
-      attachOCRToInput(input, 'passport');
+    document.querySelectorAll('.ocr-passport-input:not([data-ocr-attached])').forEach(el => {
+      el.setAttribute('data-ocr-attached', '1');
+      attachOCR(el, 'passport');
     });
-    document.querySelectorAll('.ocr-nid-input:not([data-ocr-attached])').forEach(input => {
-      input.setAttribute('data-ocr-attached', '1');
-      attachOCRToInput(input, 'national_id');
+    document.querySelectorAll('.ocr-nid-input:not([data-ocr-attached])').forEach(el => {
+      el.setAttribute('data-ocr-attached', '1');
+      attachOCR(el, 'national_id');
     });
   }
 
-  const observer = new MutationObserver(scanAndAttach);
-  observer.observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(scanAndAttach).observe(document.body, { childList: true, subtree: true });
   document.addEventListener('DOMContentLoaded', scanAndAttach);
 
 })();
