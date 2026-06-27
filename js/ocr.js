@@ -60,60 +60,27 @@
 
   /* ── Claude Vision API call ─────────────────────────────── */
 
+  // Supabase project URL — matches your supabase-config.js
+  const SUPABASE_URL = 'https://uptaqdldbvmiigsfndtm.supabase.co';
+
   async function runOCR(file, docType) {
-    const base64 = await fileToBase64(file);
+    const base64    = await fileToBase64(file);
     const mediaType = file.type || 'image/jpeg';
 
-    const prompts = {
-      passport: `You are an OCR assistant. Extract data from this passport image.
-Return ONLY a JSON object with these exact keys (use null for any field you cannot read clearly):
-{
-  "full_name": "full name as written in the passport (Latin characters)",
-  "full_name_arabic": "full name in Arabic if present",
-  "passport_number": "passport number (letters and digits only, no spaces)",
-  "nationality": "nationality",
-  "date_of_birth": "YYYY-MM-DD format",
-  "expiry_date": "YYYY-MM-DD format",
-  "gender": "M or F"
-}
-Return ONLY the JSON object. No explanation, no markdown, no code fences.`,
-
-      national_id: `You are an OCR assistant. Extract data from this Egyptian National ID card.
-Return ONLY a JSON object with these exact keys (use null for any field you cannot read clearly):
-{
-  "full_name_arabic": "full name in Arabic as printed on the card",
-  "full_name": "full name transliterated to English if back of card is shown",
-  "national_id_number": "the 14-digit national ID number",
-  "date_of_birth": "YYYY-MM-DD format derived from NID number or printed date",
-  "gender": "M or F",
-  "governorate": "governorate of issue in Arabic"
-}
-Return ONLY the JSON object. No explanation, no markdown, no code fences.`,
-    };
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/ocr-scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 400,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text',  text: prompts[docType] }
-          ]
-        }]
-      })
+      body: JSON.stringify({ imageBase64: base64, mediaType, docType })
     });
 
-    if (!response.ok) throw new Error(`API error ${response.status}`);
-    const data = await response.json();
-    const text = data.content.map(b => b.text || '').join('').trim();
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${response.status}`);
+    }
 
-    // Strip any accidental markdown fences
-    const clean = text.replace(/^```json\s*/i, '').replace(/```$/,'').trim();
-    return JSON.parse(clean);
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error || 'unknown_error');
+    return result.data;
   }
 
   /* ── Auto-fill logic ────────────────────────────────────── */
