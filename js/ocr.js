@@ -3,8 +3,8 @@
  * OCR scanner for passport and national ID upload fields.
  *
  * Sends the uploaded image to our /api/ocr-scan serverless endpoint, which
- * calls Google Cloud Vision's DOCUMENT_TEXT_DETECTION. Replaces the previous
- * client-side Tesseract.js pipeline, which was unreliable on the
+ * calls the OCR.space API (Engine 2, auto language detection). Replaces the
+ * previous client-side Tesseract.js pipeline, which was unreliable on the
  * Arabic-Indic numerals (٠-٩) printed on Egyptian national ID cards.
  *
  * ─────────────────────────────────────────────────────────
@@ -158,30 +158,56 @@
     }
   }
 
-  /* ── Image resize (keep uploads small/fast — Vision doesn't need the
-        grayscale+contrast boost the old Tesseract pipeline used) ───── */
+  /* ── Image resize (OCR.space's free tier caps uploads at 1MB) ────── */
+
+  function canvasToBlob(canvas, quality) {
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+  }
 
   async function resizeImage(file) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      img.onload = () => {
-        try {
-          const MAX = 2400; // longest side, px
-          let { width: w, height: h } = img;
-          if (w > MAX || h > MAX) {
-            if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
-            else        { w = Math.round(w * MAX / h); h = MAX; }
-          }
-          const c = document.createElement('canvas');
-          c.width = w; c.height = h;
-          c.getContext('2d').drawImage(img, 0, 0, w, h);
-          c.toBlob(blob => { URL.revokeObjectURL(url); resolve(blob); }, 'image/jpeg', 0.92);
-        } catch (e) { URL.revokeObjectURL(url); reject(e); }
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img load failed')); };
-      img.src = url;
-    });
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    try {
+      await new Promise((resolve, reject) => {
+        img.onload  = resolve;
+        img.onerror = () => reject(new Error('img load failed'));
+        img.src = url;
+      });
+
+      // Start at a moderate size — most ID/passport photos don't need to be
+      // huge for OCR — then step down further only if still over budget.
+      const MAX_BUDGET_BYTES = 950 * 1024; // leave headroom under the 1MB cap
+      let maxSide  = 1800;
+      let quality  = 0.85;
+
+      for (let attempt = 0; attempt < 4; attempt++) {
+        let { width: w, height: h } = img;
+        if (w > maxSide || h > maxSide) {
+          if (w >= h) { h = Math.round(h * maxSide / w); w = maxSide; }
+          else        { w = Math.round(w * maxSide / h); h = maxSide; }
+        }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        const blob = await canvasToBlob(c, quality);
+
+        if (blob && blob.size <= MAX_BUDGET_BYTES) return blob;
+
+        // Still too big — shrink dimensions and quality further, try again.
+        maxSide  = Math.round(maxSide * 0.75);
+        quality  = Math.max(0.5, quality - 0.15);
+      }
+
+      // Last attempt, whatever size it ended up at — let the server-side
+      // size check catch it if it's still genuinely too large.
+      const c = document.createElement('canvas');
+      c.width = Math.min(img.width, maxSide);
+      c.height = Math.round(img.height * (c.width / img.width));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return await canvasToBlob(c, quality);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   }
 
   function blobToBase64(blob) {
@@ -193,7 +219,7 @@
     });
   }
 
-  /* ── Cloud Vision OCR (via our serverless proxy) ──────────────────── */
+  /* ── OCR (via our serverless proxy to OCR.space) ──────────────────── */
 
   async function runOCR(file) {
     const resized      = await resizeImage(file);
