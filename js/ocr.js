@@ -1,7 +1,7 @@
 /**
  * ocr.js — نيو سي برنسيس للسياحة
- * AI-powered OCR scanner for passport and national ID upload fields.
- * Uses Claude Vision API to extract and auto-fill traveler data.
+ * OCR scanner for passport and national ID upload fields.
+ * Uses Tesseract.js — runs entirely in the browser, no API key needed.
  *
  * ─────────────────────────────────────────────────────────
  * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
@@ -12,6 +12,15 @@
  */
 
 (function () {
+
+  /* ── Load Tesseract.js from CDN ─────────────────────────── */
+  (function loadTesseract() {
+    if (window.Tesseract) return;
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
+    s.async = true;
+    document.head.appendChild(s);
+  })();
 
   /* ── Helpers ────────────────────────────────────────────── */
 
@@ -32,23 +41,13 @@
     if (el) { el.classList.add('hidden'); el.textContent = ''; }
   }
 
-  /* Convert File → base64 string (strips the data-URL prefix) */
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload  = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  /* Find the traveler block that owns a given file input (by traveler index) */
+  /* Find the traveler block by index */
   function getTravelerBlock(idx) {
     const blocks = document.querySelectorAll('.traveler-adult-block, .traveler-child-block');
     return blocks[idx] || null;
   }
 
-  /* Safely set a field value and trigger input/change events */
+  /* Safely set a field value and flash it green */
   function fillField(el, value) {
     if (!el || !value) return;
     el.value = value;
@@ -58,41 +57,110 @@
     setTimeout(() => { el.style.background = ''; }, 2500);
   }
 
-  /* ── Claude Vision API call ─────────────────────────────── */
+  /* ── Tesseract OCR ──────────────────────────────────────── */
 
-  // Supabase project URL — matches your supabase-config.js
-  const SUPABASE_URL = 'https://uptaqdldbvmiigsfndtm.supabase.co';
+  async function waitForTesseract() {
+    let attempts = 0;
+    while (!window.Tesseract && attempts < 20) {
+      await new Promise(r => setTimeout(r, 300));
+      attempts++;
+    }
+    if (!window.Tesseract) throw new Error('Tesseract.js failed to load');
+  }
 
-  async function runOCR(file, docType) {
-    const base64    = await fileToBase64(file);
-    const mediaType = file.type || 'image/jpeg';
+  async function runOCR(file) {
+    await waitForTesseract();
 
-    // Supabase Edge Functions require the anon key as Bearer token
-    // Exposed on window by supabase-config.js
-    const anonKey = window.SUPABASE_ANON_KEY || '';
-
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/ocr-scan`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${anonKey}`,
-        'apikey': anonKey,
-      },
-      body: JSON.stringify({ imageBase64: base64, mediaType, docType })
+    // Run with English + Arabic language packs for best passport/NID coverage
+    const result = await Tesseract.recognize(file, 'eng+ara', {
+      logger: () => {} // suppress progress logs
     });
 
-    const rawText = await response.text();
-    console.log('[OCR] Edge Function raw response:', response.status, rawText);
+    return result.data.text;
+  }
 
-    if (!response.ok) {
-      let errDetail = rawText;
-      try { errDetail = JSON.parse(rawText)?.error || rawText; } catch(_) {}
-      throw new Error(`HTTP ${response.status}: ${errDetail}`);
+  /* ── Text Parsers ───────────────────────────────────────── */
+
+  function parsePassport(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const extracted = {};
+
+    // Passport number: typically 1-2 letters followed by 6-7 digits (e.g. A12345678)
+    const passportMatch = text.match(/\b([A-Z]{1,2}[0-9]{6,8})\b/);
+    if (passportMatch) extracted.passport_number = passportMatch[1];
+
+    // MRZ lines (bottom 2 lines of passport — most reliable source)
+    // MRZ line 2 format: PASSPORT_NO + CHECK + NATIONALITY + DOB + CHECK + SEX + EXPIRY + CHECK
+    const mrzLine = lines.find(l => /^[A-Z0-9<]{40,44}$/.test(l.replace(/\s/g, '')));
+    if (mrzLine) {
+      const mrz = mrzLine.replace(/\s/g, '');
+      // Passport number from MRZ (chars 1-9)
+      const mrzPassport = mrz.substring(0, 9).replace(/</g, '');
+      if (mrzPassport) extracted.passport_number = mrzPassport;
+      // DOB from MRZ (chars 14-19): YYMMDD
+      const dobRaw = mrz.substring(13, 19);
+      if (/^\d{6}$/.test(dobRaw)) {
+        const yr = parseInt(dobRaw.substring(0, 2));
+        const fullYr = yr > 30 ? 1900 + yr : 2000 + yr;
+        extracted.date_of_birth = `${fullYr}-${dobRaw.substring(2,4)}-${dobRaw.substring(4,6)}`;
+      }
+      // Expiry from MRZ (chars 21-26): YYMMDD
+      const expRaw = mrz.substring(20, 26);
+      if (/^\d{6}$/.test(expRaw)) {
+        const yr = parseInt(expRaw.substring(0, 2));
+        const fullYr = yr > 30 ? 1900 + yr : 2000 + yr;
+        extracted.expiry_date = `${fullYr}-${expRaw.substring(2,4)}-${expRaw.substring(4,6)}`;
+      }
+      // Gender from MRZ (char 21)
+      const sex = mrz[20];
+      if (sex === 'M' || sex === 'F') extracted.gender = sex;
     }
 
-    const result = JSON.parse(rawText);
-    if (!result.success) throw new Error(result.error || 'unknown_error');
-    return result.data;
+    // Fallback expiry date: look for date patterns like 01/01/2030 or 2030-01-01
+    if (!extracted.expiry_date) {
+      const dateMatch = text.match(/(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/g);
+      if (dateMatch) {
+        // Take the latest date as expiry
+        const dates = dateMatch.map(d => {
+          const parts = d.split(/[\/\-\.]/);
+          return parts[2] ? `${parts[2]}-${parts[1]}-${parts[0]}` : null;
+        }).filter(Boolean).sort();
+        extracted.expiry_date = dates[dates.length - 1];
+      }
+    }
+
+    // Name: look for "Surname / Given Names" pattern or name after "Name" label
+    const nameMatch = text.match(/(?:Name|الاسم)[:\s]+([A-Z\s]+)/i);
+    if (nameMatch) extracted.full_name = nameMatch[1].trim();
+
+    return extracted;
+  }
+
+  function parseNID(text) {
+    const extracted = {};
+
+    // Egyptian NID: exactly 14 digits
+    const nidMatch = text.match(/\b(\d{14})\b/);
+    if (nidMatch) {
+      extracted.national_id_number = nidMatch[1];
+      // Derive DOB from NID: digits 2-7 = YYMMDD, digit 1 = century (2=1900s, 3=2000s)
+      const century = nidMatch[1][0] === '3' ? '20' : '19';
+      const yy = nidMatch[1].substring(1, 3);
+      const mm = nidMatch[1].substring(3, 5);
+      const dd = nidMatch[1].substring(5, 7);
+      extracted.date_of_birth = `${century}${yy}-${mm}-${dd}`;
+    }
+
+    // Arabic name: look for Arabic text lines
+    const arabicLines = text.split('\n')
+      .map(l => l.trim())
+      .filter(l => /[\u0600-\u06FF]/.test(l) && l.length > 3);
+    if (arabicLines.length > 0) {
+      // Usually the longest Arabic line is the full name
+      extracted.full_name_arabic = arabicLines.sort((a, b) => b.length - a.length)[0];
+    }
+
+    return extracted;
   }
 
   /* ── Auto-fill logic ────────────────────────────────────── */
@@ -100,21 +168,18 @@
   function fillPassportFields(block, extracted) {
     if (!block || !extracted) return;
 
-    // Name (prefer Arabic, fall back to Latin)
-    const nameField = block.querySelector('.t-name');
-    if (!nameField?.value && (extracted.full_name_arabic || extracted.full_name)) {
-      fillField(nameField, extracted.full_name_arabic || extracted.full_name);
-    }
-
-    // Passport number
+    const nameField    = block.querySelector('.t-name');
     const passportField = block.querySelector('.t-passport');
-    if (extracted.passport_number) fillField(passportField, extracted.passport_number.toUpperCase());
+    const expiryField  = block.querySelector('.t-passport-exp');
 
-    // Expiry date
-    const expiryField = block.querySelector('.t-passport-exp');
+    if (!nameField?.value && extracted.full_name)
+      fillField(nameField, extracted.full_name);
+
+    if (extracted.passport_number)
+      fillField(passportField, extracted.passport_number.toUpperCase());
+
     if (extracted.expiry_date) {
       fillField(expiryField, extracted.expiry_date);
-      // Trigger the built-in passport expiry validator
       expiryField?.dispatchEvent(new Event('input', { bubbles: true }));
     }
   }
@@ -122,15 +187,14 @@
   function fillNIDFields(block, extracted) {
     if (!block || !extracted) return;
 
-    // Name
     const nameField = block.querySelector('.t-name');
-    if (!nameField?.value && extracted.full_name_arabic) {
-      fillField(nameField, extracted.full_name_arabic);
-    }
+    const nidField  = block.querySelector('.t-nid');
 
-    // National ID number
-    const nidField = block.querySelector('.t-nid');
-    if (extracted.national_id_number) fillField(nidField, extracted.national_id_number);
+    if (!nameField?.value && extracted.full_name_arabic)
+      fillField(nameField, extracted.full_name_arabic);
+
+    if (extracted.national_id_number)
+      fillField(nidField, extracted.national_id_number);
   }
 
   /* ── Event attachment ───────────────────────────────────── */
@@ -140,28 +204,31 @@
       const file = this.files?.[0];
       if (!file) return;
 
-      const idx       = parseInt(this.dataset.travelerIdx ?? '0', 10);
-      const statusEl  = document.getElementById(`ocr_${docType === 'passport' ? 'passport' : 'nid'}_status_${idx}`);
-      const block     = getTravelerBlock(idx);
+      const idx      = parseInt(this.dataset.travelerIdx ?? '0', 10);
+      const statusId = `ocr_${docType === 'passport' ? 'passport' : 'nid'}_status_${idx}`;
+      const statusEl = document.getElementById(statusId);
+      const block    = getTravelerBlock(idx);
 
-      // Only process images (not PDFs — can't send PDF as vision)
       if (file.type === 'application/pdf') {
-        setStatus(statusEl, 'warning', '⚠️ ملفات PDF لا تدعم المسح الضوئي — يرجى رفع صورة JPG/PNG للملء التلقائي');
+        setStatus(statusEl, 'warning', '⚠️ ملفات PDF لا تدعم المسح — يرجى رفع صورة JPG/PNG للملء التلقائي');
         return;
       }
-
       if (!file.type.startsWith('image/')) return;
 
-      setStatus(statusEl, 'loading', '🔍 جارٍ قراءة المستند بالذكاء الاصطناعي…');
+      setStatus(statusEl, 'loading', '🔍 جارٍ قراءة المستند… (قد يستغرق بضع ثوانٍ)');
 
       try {
-        const extracted = await runOCR(file, docType);
+        const rawText  = await runOCR(file);
+        const extracted = docType === 'passport' ? parsePassport(rawText) : parseNID(rawText);
+
+        console.log('[OCR] Raw text:', rawText);
+        console.log('[OCR] Extracted:', extracted);
 
         if (docType === 'passport') {
           fillPassportFields(block, extracted);
-          const filled = [extracted.passport_number, extracted.expiry_date, extracted.full_name_arabic || extracted.full_name].filter(Boolean);
+          const filled = [extracted.passport_number, extracted.expiry_date, extracted.full_name].filter(Boolean);
           if (filled.length) {
-            setStatus(statusEl, 'success', `✅ تم استخراج البيانات تلقائياً — يرجى المراجعة قبل الإرسال`);
+            setStatus(statusEl, 'success', '✅ تم استخراج البيانات تلقائياً — يرجى المراجعة قبل الإرسال');
           } else {
             setStatus(statusEl, 'warning', '⚠️ لم يتمكن النظام من قراءة البيانات بوضوح — يرجى الإدخال يدوياً');
           }
@@ -169,26 +236,22 @@
           fillNIDFields(block, extracted);
           const filled = [extracted.national_id_number, extracted.full_name_arabic].filter(Boolean);
           if (filled.length) {
-            setStatus(statusEl, 'success', `✅ تم استخراج البيانات تلقائياً — يرجى المراجعة قبل الإرسال`);
+            setStatus(statusEl, 'success', '✅ تم استخراج البيانات تلقائياً — يرجى المراجعة قبل الإرسال');
           } else {
             setStatus(statusEl, 'warning', '⚠️ لم يتمكن النظام من قراءة البيانات — يرجى الإدخال يدوياً');
           }
         }
 
-        // Auto-hide success message after 6 seconds
-        setTimeout(() => hideStatus(statusEl), 6000);
+        setTimeout(() => hideStatus(statusEl), 8000);
 
       } catch (err) {
-        console.error('[OCR] Full error:', err);
-        // Show the actual error message to help diagnose
-        const msg = err?.message || String(err);
-        setStatus(statusEl, 'error', `❌ خطأ: ${msg} — افتح Console (F12) لمزيد من التفاصيل`);
+        console.error('[OCR] Error:', err);
+        setStatus(statusEl, 'error', '❌ تعذّر قراءة المستند — يرجى الإدخال اليدوي');
       }
     });
   }
 
-  /* ── Observer: attach OCR whenever new upload inputs are added ── */
-  // (The booking form renders inputs dynamically when travelers are added)
+  /* ── Observer: attach OCR to dynamically added inputs ───── */
 
   function scanAndAttach() {
     document.querySelectorAll('.ocr-passport-input:not([data-ocr-attached])').forEach(input => {
@@ -203,8 +266,6 @@
 
   const observer = new MutationObserver(scanAndAttach);
   observer.observe(document.body, { childList: true, subtree: true });
-
-  // Also run once on load in case inputs already exist
   document.addEventListener('DOMContentLoaded', scanAndAttach);
 
 })();
