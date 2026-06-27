@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سجل العمليات | نيو سي برنسيس للسياحة</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    .nav-link { display:flex; align-items:center; gap:10px; padding:12px 24px; color:#9ca3af; transition:.2s; }
+    .nav-link:hover { background:#1f2937; color:#fff; }
+    .nav-link.active { background:#1B5E20; border-right:4px solid #B8860B; color:#fff; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- ══ MOBILE TOP BAR ══ -->
+  <header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg">
+    <div class="flex items-center gap-2 font-bold text-lg text-gold">
+      <i class="fa-solid fa-moon"></i> الإدارة
+    </div>
+    <button id="mobileMenuBtn" class="text-white text-2xl p-1">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </header>
+  <!-- MOBILE DRAWER -->
+  <div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
+    <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
+    <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl" style="font-family:'Cairo',sans-serif;">
+      <div class="h-16 flex items-center justify-between px-5 border-b border-gray-800">
+        <span class="font-bold text-gold text-lg"><i class="fa-solid fa-moon ml-1"></i> الإدارة</span>
+        <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto py-3">
+        <a href="/admin/dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+        <a href="/admin/bookings.html"  class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+        <a href="/admin/packages.html"  class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+        <a href="/admin/reviews.html"   class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+        <a href="/admin/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-envelope w-5"></i>النشرة البريدية</a>
+        <a href="/admin/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
+        <a href="/admin/audit-log.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      </div>
+      <div class="p-4 border-t border-gray-800">
+        <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
+          <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-darkBg text-white hidden md:flex flex-col sticky top-0 h-screen">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto object-contain ml-2"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-4">
+      <ul class="space-y-1">
+        <li><a href="/admin/dashboard.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a></li>
+        <li><a href="/admin/bookings.html"  class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a></li>
+        <li><a href="/admin/packages.html"  class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a></li>
+        <li><a href="/admin/reviews.html"   class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a></li>
+        <li><a href="/admin/newsletter.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-envelope w-5"></i>النشرة البريدية</a></li>
+        <li><a href="/admin/users.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-users w-5"></i>المستخدمون</a></li>
+        <li><a href="/admin/audit-log.html" class="flex px-6 py-3 bg-primary border-r-4 border-gold text-white items-center gap-2"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a></li>
+      </ul>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
+
+  <main class="flex-1 flex flex-col p-6">
+    <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+      <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-primary pb-2">سجل العمليات</h2>
+      <button onclick="loadAuditLogs()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition text-sm">
+        <i class="fa-solid fa-rotate"></i> تحديث
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl border border-gray-200 shadow p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">إجمالي العمليات</p>
+        <p id="statTotal" class="text-2xl font-bold text-primary">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">إضافة</p>
+        <p id="statCreate" class="text-2xl font-bold text-green-600">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">تعديل</p>
+        <p id="statUpdate" class="text-2xl font-bold text-blue-600">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow p-4 text-center">
+        <p class="text-xs text-gray-400 mb-1">حذف</p>
+        <p id="statDelete" class="text-2xl font-bold text-red-600">—</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow p-4 mb-5 grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label class="block text-xs text-gray-400 font-bold mb-1">نوع العملية</label>
+        <select id="filterAction" onchange="applyFilter()" class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          <option value="">الكل</option>
+          <option value="create">إضافة</option>
+          <option value="update">تعديل</option>
+          <option value="delete">حذف</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 font-bold mb-1">الجدول</label>
+        <select id="filterTable" onchange="applyFilter()" class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          <option value="">الكل</option>
+          <option value="packages">برامج الرحلات</option>
+          <option value="bookings">الحجوزات</option>
+          <option value="reviews">التقييمات</option>
+          <option value="newsletter_subscribers">النشرة البريدية</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 font-bold mb-1">الأدمن</label>
+        <select id="filterAdmin" onchange="applyFilter()" class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          <option value="">الكل</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 font-bold mb-1">بحث (الوصف)</label>
+        <input type="text" id="searchInput" oninput="applyFilter()" placeholder="مثال: اسم برنامج أو رقم حجز..."
+               class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-primary">
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+          <tr>
+            <th class="p-4 text-right">الوقت</th>
+            <th class="p-4 text-right">الأدمن</th>
+            <th class="p-4 text-right">العملية</th>
+            <th class="p-4 text-right">الجدول</th>
+            <th class="p-4 text-right">الوصف</th>
+            <th class="p-4 text-right">تفاصيل</th>
+          </tr>
+        </thead>
+        <tbody id="logsBody">
+          <tr><td colspan="6" class="p-6 text-center text-gray-400">جارٍ التحميل...</td></tr>
+        </tbody>
+      </table>
+      <div id="noResults" class="hidden p-10 text-center text-gray-400">
+        <i class="fa-solid fa-clipboard-list text-3xl mb-2"></i>
+        <p>لا توجد عمليات مطابقة</p>
+      </div>
+    </div>
+
+    <!-- Load more -->
+    <div class="text-center mt-5">
+      <button id="loadMoreBtn" onclick="loadMore()" class="hidden bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-lg text-sm transition">
+        تحميل المزيد
+      </button>
+    </div>
+
+  </main>
+  </div>
+
+<script>
+  let allLogs = [];
+  let filtered = [];
+  const PAGE_SIZE = 50;
+  let visibleCount = PAGE_SIZE;
+
+  const TABLE_LABELS = {
+    packages: 'برامج الرحلات',
+    bookings: 'الحجوزات',
+    reviews: 'التقييمات',
+    newsletter_subscribers: 'النشرة البريدية',
+  };
+
+  const ACTION_BADGES = {
+    create: '<span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded">إضافة</span>',
+    update: '<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded">تعديل</span>',
+    delete: '<span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded">حذف</span>',
+  };
+
+  async function loadAuditLogs() {
+    if (!window.db) { setTimeout(loadAuditLogs, 500); return; }
+    document.getElementById('logsBody').innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400">جارٍ التحميل...</td></tr>';
+
+    const { data, error } = await window.db
+      .from('audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1000);
+
+    if (error) {
+      document.getElementById('logsBody').innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-400">فشل تحميل السجل: ${error.message}</td></tr>`;
+      return;
+    }
+
+    allLogs = data || [];
+    filtered = [...allLogs];
+    visibleCount = PAGE_SIZE;
+
+    // Build admin filter dropdown dynamically
+    const admins = [...new Set(allLogs.map(l => l.admin_email).filter(Boolean))];
+    const adminSelect = document.getElementById('filterAdmin');
+    adminSelect.innerHTML = '<option value="">الكل</option>' +
+      admins.map(a => `<option value="${a}">${a}</option>`).join('');
+
+    document.getElementById('statTotal').textContent  = allLogs.length;
+    document.getElementById('statCreate').textContent = allLogs.filter(l => l.action === 'create').length;
+    document.getElementById('statUpdate').textContent = allLogs.filter(l => l.action === 'update').length;
+    document.getElementById('statDelete').textContent = allLogs.filter(l => l.action === 'delete').length;
+
+    renderTable();
+  }
+
+  function timeAgo(dateStr) {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMin = Math.floor((now - d) / 60000);
+    if (diffMin < 1)   return 'الآن';
+    if (diffMin < 60)  return `منذ ${diffMin} دقيقة`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24)   return `منذ ${diffHr} ساعة`;
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay < 7)   return `منذ ${diffDay} يوم`;
+    return d.toLocaleDateString('ar-EG') + ' — ' + d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // أسماء الحقول بالعربي
+  const FIELD_LABELS = {
+    is_active:    'الحالة',
+    is_approved:  'الاعتماد',
+    is_featured:  'مميز',
+    is_blocked:   'الحظر',
+    paid_amount:  'المبلغ المدفوع',
+    status:       'حالة الحجز',
+    role:         'الصلاحية',
+  };
+
+  const STATUS_VALUE_LABELS = {
+    awaiting_payment: 'في انتظار الدفع',
+    pending:          'قيد التلقي',
+    confirmed:        'مؤكد',
+    visa_processing:  'جاري التأشيرة',
+    tickets_issued:   'تذاكر صادرة',
+    travelling:       'في السفر',
+    completed:        'مكتمل',
+    cancelled:        'ملغي',
+  };
+
+  const ROLE_VALUE_LABELS = {
+    super_admin: 'مدير عام',
+    admin:       'مدير',
+    editor:      'محرّر',
+    viewer:      'مشاهد',
+  };
+
+  function formatValue(field, value) {
+    if (value === null || value === undefined || value === '') return '—';
+    if (typeof value === 'boolean' || value === 'true' || value === 'false') {
+      const boolVal = value === true || value === 'true';
+      return boolVal ? 'نعم' : 'لا';
+    }
+    if (field === 'status' && STATUS_VALUE_LABELS[value]) return STATUS_VALUE_LABELS[value];
+    if (field === 'role' && ROLE_VALUE_LABELS[value]) return ROLE_VALUE_LABELS[value];
+    if (field === 'paid_amount') {
+      const n = Number(value);
+      return Number.isNaN(n) ? value : `${n.toLocaleString('ar-EG')} ج.م`;
+    }
+    return value;
+  }
+
+  function detailsToText(details) {
+    if (!details || (typeof details === 'object' && !Object.keys(details).length)) return '—';
+    try {
+      const parts = [];
+      if (details.field) {
+        const label = FIELD_LABELS[details.field] || details.field;
+        if (details.from !== undefined && details.to !== undefined) {
+          parts.push(`${label}: ${formatValue(details.field, details.from)} ← ${formatValue(details.field, details.to)}`);
+        } else if (details.to !== undefined) {
+          parts.push(`تعديل ${label} إلى ${formatValue(details.field, details.to)}`);
+        }
+      } else if (details.role) {
+        parts.push(`${FIELD_LABELS.role}: ${formatValue('role', details.role)}`);
+      }
+      if (details.reason) parts.push(`السبب: ${details.reason}`);
+      return parts.length ? parts.join(' | ') : '—';
+    } catch (e) {
+      return '—';
+    }
+  }
+
+  function renderTable() {
+    const rows = filtered.slice(0, visibleCount);
+    const tbody = document.getElementById('logsBody');
+    const noRes = document.getElementById('noResults');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+    if (!rows.length) {
+      tbody.innerHTML = '';
+      noRes.classList.remove('hidden');
+      loadMoreBtn.classList.add('hidden');
+      return;
+    }
+    noRes.classList.add('hidden');
+
+    tbody.innerHTML = rows.map(l => `
+      <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
+        <td class="p-4 text-xs text-gray-500 whitespace-nowrap">${timeAgo(l.created_at)}</td>
+        <td class="p-4 text-xs text-gray-700 dir-ltr" dir="ltr">${l.admin_email || '—'}</td>
+        <td class="p-4">${ACTION_BADGES[l.action] || l.action}</td>
+        <td class="p-4 text-xs text-gray-600">${TABLE_LABELS[l.table_name] || l.table_name}</td>
+        <td class="p-4 text-sm font-medium text-gray-800">${l.record_label || '<span class="text-gray-300">—</span>'}</td>
+        <td class="p-4 text-xs text-gray-500">${detailsToText(l.details)}</td>
+      </tr>`).join('');
+
+    loadMoreBtn.classList.toggle('hidden', visibleCount >= filtered.length);
+  }
+
+  function loadMore() {
+    visibleCount += PAGE_SIZE;
+    renderTable();
+  }
+
+  function applyFilter() {
+    const action = document.getElementById('filterAction').value;
+    const table  = document.getElementById('filterTable').value;
+    const admin  = document.getElementById('filterAdmin').value;
+    const q      = document.getElementById('searchInput').value.toLowerCase().trim();
+
+    filtered = allLogs.filter(l => {
+      const matchAction = !action || l.action === action;
+      const matchTable  = !table  || l.table_name === table;
+      const matchAdmin  = !admin  || l.admin_email === admin;
+      const matchQ      = !q || (l.record_label || '').toLowerCase().includes(q);
+      return matchAction && matchTable && matchAdmin && matchQ;
+    });
+    visibleCount = PAGE_SIZE;
+    renderTable();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    adminCheckAuth().then(ok => { if (ok) loadAuditLogs(); });
+
+    document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+      document.getElementById('mobileDrawer').classList.remove('hidden');
+    });
+  });
+
+  function closeDrawer() {
+    document.getElementById('mobileDrawer').classList.add('hidden');
+  }
+</script>
+</body>
+</html>

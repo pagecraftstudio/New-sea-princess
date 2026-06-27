@@ -4,6 +4,7 @@
 
 const SUPABASE_URL = 'https://uptaqdldbvmiigsfndtm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwdGFxZGxkYnZtaWlnc2ZuZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2OTI1NTcsImV4cCI6MjA5NjI2ODU1N30.3bMA9N6rTEaHcH3yOq8sr1udsE7ahthCME3MpRzVwDg';
+window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 
 if (!window.supabase) {
   console.warn("Supabase library not loaded. Ensure the CDN script is included.");

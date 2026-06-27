@@ -2,6 +2,13 @@
  * auth.js — نيو سي برنسيس للسياحة
  * User authentication helpers (login, register, logout, session guard)
  * Requires: supabase-config.js loaded first (window.db)
+  *
+ * ─────────────────────────────────────────────────────────
+ * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
+ * Unauthorized copying, modification, or distribution of
+ * this file or any part of this project, via any medium,
+ * is strictly prohibited without written permission.
+ * ─────────────────────────────────────────────────────────
  */
 
 /* ─── wait for db ─── */

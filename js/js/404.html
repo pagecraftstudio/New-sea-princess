@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الصفحة غير موجودة | نيو سي برنسيس</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Cairo',sans-serif;
+      background:#0D1B0E;
+      min-height:100vh;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      color:#fff; overflow:hidden; position:relative; direction:rtl;
+    }
+    #stars { position:absolute; inset:0; pointer-events:none; }
+    .pattern {
+      position:absolute; inset:0; opacity:.08;
+      background-image:repeating-linear-gradient(45deg,#B8860B 0,#B8860B 1px,transparent 0,transparent 50%);
+      background-size:30px 30px;
+    }
+    .content { position:relative; z-index:1; text-align:center; padding:20px; max-width:520px; }
+    .kaaba-wrap { animation:float 4s ease-in-out infinite; margin-bottom:20px; }
+    .kaaba-icon { font-size:80px; color:#B8860B; filter:drop-shadow(0 0 12px rgba(184,134,11,.5)); animation:glow 3s ease-in-out infinite; }
+    @keyframes float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+    @keyframes glow    { 0%,100%{filter:drop-shadow(0 0 8px rgba(184,134,11,.4))} 50%{filter:drop-shadow(0 0 22px rgba(184,134,11,.8))} }
+    @keyframes twinkle { 0%,100%{opacity:0;transform:scale(.5)} 50%{opacity:1;transform:scale(1)} }
+    .num   { font-size:90px; font-weight:900; color:#B8860B; line-height:1; margin-bottom:8px; }
+    .title { font-size:26px; font-weight:700; color:#fff; margin-bottom:10px; }
+    .sub   { font-size:14px; color:#9ca3af; margin-bottom:8px; line-height:1.6; }
+    .verse { font-size:13px; color:#B8860B; font-style:italic; margin-bottom:32px; }
+    .btns  { display:flex; flex-direction:column; gap:12px; align-items:center; margin-bottom:32px; }
+    @media(min-width:480px){ .btns { flex-direction:row; flex-wrap:wrap; justify-content:center; } }
+    .btn {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:12px 22px; border-radius:12px; font-family:'Cairo',sans-serif;
+      font-size:14px; font-weight:700; cursor:pointer; text-decoration:none;
+      border:1.5px solid transparent; transition:.2s; min-width:160px; justify-content:center;
+    }
+    .btn-green { background:#1B5E20; color:#fff; border-color:#1B5E20; }
+    .btn-green:hover { background:#2E7D32; }
+    .btn-gold  { background:rgba(184,134,11,.15); color:#DAA520; border-color:#B8860B; }
+    .btn-gold:hover  { background:rgba(184,134,11,.28); }
+    .btn-wa    { background:rgba(37,211,102,.12); color:#25D366; border-color:#25D366; }
+    .btn-wa:hover    { background:rgba(37,211,102,.25); }
+    .quick { font-size:12px; color:#6b7280; display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; }
+    .quick a { color:#6b7280; text-decoration:none; } .quick a:hover { color:#B8860B; }
+    .quick span { color:#374151; }
+    .footer-bar { position:absolute; bottom:16px; font-size:11px; color:#374151; }
+  </style>
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="canonical" href="https://newseaprincess.vercel.app/404.html">
+  <meta name="description" content="الصفحة التي تبحث عنها غير موجودة — نيو سي برنسيس لسياحة">
+</head>
+<body>
+  <div id="stars"></div>
+  <div class="pattern"></div>
+
+  <div class="content">
+    <div class="kaaba-wrap">
+      <i class="fa-solid fa-kaaba kaaba-icon"></i>
+    </div>
+    <div class="num">٤٠٤</div>
+    <h1 class="title">الصفحة غير موجودة</h1>
+    <p class="sub">يبدو أن هذه الصفحة ضلّت طريقها!<br>ربما تم نقل الرابط أو حذفه.</p>
+    <p class="verse">"وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ"</p>
+
+    <div class="btns">
+      <a href="/index.html"    class="btn btn-green"><i class="fa-solid fa-house"></i> الرئيسية</a>
+      <a href="/packages.html" class="btn btn-gold"><i class="fa-solid fa-suitcase-rolling"></i> البرامج</a>
+      <a href="https://wa.me/201555154996" target="_blank" class="btn btn-wa"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>
+    </div>
+
+    <div class="quick">
+      <a href="/guide.html">دليل العمرة</a><span>•</span>
+      <a href="/tracking.html">تتبع حجزك</a><span>•</span>
+      <a href="/reviews.html">آراء العملاء</a><span>•</span>
+      <a href="/contact.html">تواصل معنا</a>
+    </div>
+  </div>
+
+  <div class="footer-bar">نيو سي برنسيس لسياحة | د. شيماء السعداوي ود. محمد دحروج</div>
+
+  <script>
+    // Stars
+    const c = document.getElementById('stars');
+    for(let i=0;i<60;i++){
+      const s=document.createElement('div');
+      const sz=Math.random()*3+1;
+      s.style.cssText=`position:absolute;width:${sz}px;height:${sz}px;background:#B8860B;border-radius:50%;top:${Math.random()*100}%;left:${Math.random()*100}%;animation:twinkle ${(Math.random()*3+2).toFixed(1)}s ease-in-out ${(Math.random()*4).toFixed(1)}s infinite;`;
+      c.appendChild(s);
+    }
+    // Auto redirect after 30s
+    let t=30;
+    setInterval(()=>{ if(--t<=0) window.location.href='/index.html'; },1000);
+  </script>
+<script src="/js/nav-component.js"></script>
+</body>
+</html>

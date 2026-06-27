@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل دخول الإدارة | نيو سي برنسيس للسياحة</title>
+
+  <meta name="description" content="نيو سي برنسيس للسياحة - أفضل برامج العمرة والحج بأسعار تنافسية وخدمة ممتازة">
+  <meta name="keywords" content="عمرة, حج, برامج عمرة, رحلات مكة, نيو سي برنسيس">
+  <meta property="og:title" content="تسجيل دخول الإدارة | نيو سي برنسيس للسياحة">
+  <meta property="og:description" content="نيو سي برنسيس للسياحة - أفضل برامج العمرة والحج بأسعار تنافسية وخدمة ممتازة">
+  <link rel="canonical" href="https://newseaprincess.com/login.html">
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen">
+<!-- Header -->
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur shadow-sm border-b border-gold/20">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <a href="/index.html" class="flex items-center gap-2 text-primary font-bold text-2xl">
+        <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-10 w-auto object-contain">
+      </a>
+      
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center gap-6 text-darkBg font-semibold">
+        <a href="/index.html" class="hover:text-gold transition">الرئيسية</a>
+        <a href="/packages.html" class="hover:text-gold transition">برامجنا</a>
+        <a href="/about.html" class="hover:text-gold transition">من نحن</a>
+        <a href="/guide.html" class="hover:text-gold transition">دليل العمرة</a>
+        <a href="/tracking.html" class="hover:text-gold transition">تتبع حجزك</a>
+        <a href="/reviews.html" class="hover:text-gold transition">آراء العملاء</a>
+        <a href="/contact.html" class="hover:text-gold transition">تواصل معنا</a>
+      </nav>
+
+      <a href="https://wa.me/201555154996" target="_blank" class="hidden md:flex btn-primary items-center gap-2 text-sm">
+        <i class="fa-brands fa-whatsapp text-lg"></i>
+        تحدث معنا
+      </a>
+
+      <!-- Mobile Menu Button -->
+      <button class="md:hidden text-primary text-2xl" id="mobileMenuBtn">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </header>
+  <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border-t-4 border-gold text-center">
+    
+    <div class="flex justify-center mb-6">
+      <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-gold text-3xl shadow-lg border-2 border-gold">
+        <i class="fa-solid fa-moon"></i>
+      </div>
+    </div>
+    
+    <h1 class="text-2xl font-bold text-darkBg mb-2">لوحة الإدارة</h1>
+    <p class="text-gray-500 mb-8 text-sm">أدخل بيانات الدخول للوصول إلى لوحة التحكم</p>
+
+    <div class="space-y-4 mb-6">
+      <input type="email" id="emailInput" placeholder="البريد الإلكتروني للإدارة" class="w-full border-2 border-gray-200 p-3 rounded focus:outline-none focus:border-gold text-left dir-ltr">
+      <input type="password" id="passInput" placeholder="كلمة المرور" class="w-full border-2 border-gray-200 p-3 rounded focus:outline-none focus:border-gold text-left dir-ltr">
+    </div>
+
+    <button id="loginBtn" onclick="handleLogin()" class="w-full btn-gold py-3 text-lg relative font-bold mb-4">
+      تسجيل الدخول
+    </button>
+    <p id="errorMsg" class="text-error text-sm font-bold hidden bg-red-50 p-2 rounded border border-red-200"></p>
+
+    <a href="/index.html" class="block mt-6 text-sm text-gray-400 hover:text-white transition">العودة للموقع</a>
+  </div>
+
+  <script src="/js/admin.js"></script>
+  <script>
+    async function handleLogin() {
+      const email = document.getElementById('emailInput').value;
+      const pass = document.getElementById('passInput').value;
+      const btn = document.getElementById('loginBtn');
+      const err = document.getElementById('errorMsg');
+
+      err.classList.add('hidden');
+      if(!email || !pass) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="loader mx-auto" style="width:24px;height:24px;border-width:3px;border-top-color:white;"></div>';
+
+      try {
+        const { data, error } = await window.db.auth.signInWithPassword({
+          email: email,
+          password: pass
+        });
+
+        if (error) throw error;
+        // Success
+        window.location.href = '/nsp-control-8x4k/dashboard.html';
+      } catch(e) {
+        console.error(e);
+        err.innerText = "بيانات الدخول غير صحيحة.";
+        err.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = 'تسجيل الدخول';
+      }
+    }
+
+    // Auto-redirect if already logged in
+    window.db.auth.getSession().then(({data}) => {
+       if(data.session) window.location.href = '/nsp-control-8x4k/dashboard.html';
+    });
+  </script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('mobileMenuBtn');
+      if (btn) {
+          btn.addEventListener('click', () => {
+             const nav = document.querySelector('header nav');
+             nav.classList.toggle('hidden');
+             nav.classList.toggle('flex');
+             nav.classList.toggle('flex-col');
+             nav.classList.toggle('absolute');
+             nav.classList.toggle('top-full');
+             nav.classList.toggle('left-0');
+             nav.classList.toggle('w-full');
+             nav.classList.toggle('bg-white');
+             nav.classList.toggle('p-4');
+             nav.classList.toggle('shadow-lg');
+          });
+      }
+    });
+  </script>
+</body>
+</html>
