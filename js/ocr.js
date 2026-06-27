@@ -252,8 +252,25 @@
     return extracted;
   }
 
-  function parseNID(text) {
+  // Egyptian NID cards print the ID number, address numerals, etc. in Arabic-Indic
+  // digits (٠١٢٣٤٥٦٧٨٩, U+0660–U+0669), not ASCII 0-9. \d never matches those, so
+  // without this conversion the 14-digit NID regex silently fails on every real
+  // Egyptian card. Convert Arabic-Indic (and Extended/Persian variant ۰-۹ for safety)
+  // to ASCII before any digit-matching runs.
+  function toAsciiDigits(s) {
+    return s.replace(/[٠-٩۰-۹]/g, ch => {
+      const code = ch.codePointAt(0);
+      // Arabic-Indic block: U+0660-0669 maps to 0-9
+      if (code >= 0x0660 && code <= 0x0669) return String(code - 0x0660);
+      // Extended Arabic-Indic (Persian/Urdu) block: U+06F0-06F9 maps to 0-9
+      if (code >= 0x06F0 && code <= 0x06F9) return String(code - 0x06F0);
+      return ch;
+    });
+  }
+
+  function parseNID(rawText) {
     const extracted = {};
+    const text = toAsciiDigits(rawText);
 
     // Strip whitespace AND common OCR noise characters (Arabic diacritics, dots,
     // dashes, RTL/LTR marks) that Tesseract sometimes inserts inside digit runs
