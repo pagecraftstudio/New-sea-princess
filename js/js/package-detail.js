@@ -1,13 +1,3 @@
-/**
- * package-detail.js — نيو سي برنسيس للسياحة
- *
- * ─────────────────────────────────────────────────────────
- * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
- * Unauthorized copying, modification, or distribution of
- * this file or any part of this project, via any medium,
- * is strictly prohibited without written permission.
- * ─────────────────────────────────────────────────────────
- */
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const packageId = urlParams.get('id');

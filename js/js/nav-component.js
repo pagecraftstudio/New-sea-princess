@@ -5,13 +5,6 @@
  *
  * Usage: include this script in every page's <head> or just before </body>.
  * The script replaces any href matching /wa.me/20[0-9]+/ with the canonical number.
-  *
- * ─────────────────────────────────────────────────────────
- * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
- * Unauthorized copying, modification, or distribution of
- * this file or any part of this project, via any medium,
- * is strictly prohibited without written permission.
- * ─────────────────────────────────────────────────────────
  */
 
 (function () {

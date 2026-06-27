@@ -180,33 +180,9 @@ const bookingController = {
                  <h4 class="font-bold mb-3 border-b pb-2"><span class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-sm ml-2">بالغ ${i}</span></h4>
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input type="text" class="t-name border p-2 rounded w-full" placeholder="الاسم الرباعي (مطلوب)" required>
-                    <input type="text" inputmode="numeric" pattern="[0-9]{14}" class="t-nid border p-2 rounded w-full" placeholder="الرقم القومي (14 رقم - أرقام إنجليزية فقط)" required maxlength="14" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-                    <input type="text" inputmode="numeric" class="t-passport border p-2 rounded w-full" placeholder="رقم جواز السفر (أرقام وحروف إنجليزية فقط)" required oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase()">
-                    <div class="field-wrap col-span-1">
-                      <label class="block text-xs text-gray-500 mb-1 font-medium">تاريخ انتهاء صلاحية جواز السفر <span class="text-red-500">*</span></label>
-                      <input type="date" class="t-passport-exp border p-2 rounded w-full text-gray-600" title="تاريخ انتهاء صلاحية جواز السفر">
-                      <p class="text-xs text-amber-600 mt-1"><i class="fa-solid fa-triangle-exclamation ml-1"></i>يجب أن يكون الجواز صالحاً 6 أشهر على الأقل بعد تاريخ المغادرة (اشتراط سعودي)</p>
-                    </div>
-                 </div>
-                 <div class="mt-4 pt-4 border-t border-dashed border-gray-200">
-                   <p class="text-xs font-semibold text-gray-500 mb-3"><i class="fa-solid fa-file-arrow-up ml-1 text-primary"></i>المستندات (اختياري — يمكن رفعها لاحقاً عبر واتساب)</p>
-                   <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                     <div>
-                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-passport ml-1 text-primary"></i>صورة جواز السفر</label>
-                       <input type="file" id="file_passport_${i-1}" data-traveler="" data-doctype="passport" data-traveler-idx="${i-1}" class="text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-passport-input" accept="image/jpeg,image/png,application/pdf">
-                       <div id="ocr_passport_status_${i-1}" class="ocr-status mt-1 hidden"></div>
-                     </div>
-                     <div>
-                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-id-card ml-1 text-amber-600"></i>بطاقة الرقم القومي</label>
-                       <input type="file" id="file_nid_${i-1}" data-traveler="" data-doctype="national_id" data-traveler-idx="${i-1}" class="text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-nid-input" accept="image/jpeg,image/png,application/pdf">
-                       <div id="ocr_nid_status_${i-1}" class="ocr-status mt-1 hidden"></div>
-                     </div>
-                     <div class="md:col-span-2">
-                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-camera ml-1 text-rose-500"></i>صورة شخصية (6×4 خلفية بيضاء)</label>
-                       <input type="file" id="file_photo_${i-1}" data-traveler="" data-doctype="personal_photo" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png">
-                     </div>
-                   </div>
-                   <div id="ocr_cross_${i-1}" class="hidden"></div>
+                    <input type="text" class="t-nid border p-2 rounded w-full" placeholder="الرقم القومي (14 رقم)" required maxlength="14">
+                    <input type="text" class="t-passport border p-2 rounded w-full" placeholder="رقم جواز السفر (مطلوب)" required>
+                    <input type="date" class="t-passport-exp border p-2 rounded w-full text-gray-600" title="تاريخ انتهاء الجواز">
                  </div>
                </div>
             `;
@@ -316,31 +292,20 @@ const bookingController = {
     },
 
     buildDocumentsForm() {
-        // Documents are now rendered inline in step 2 — nothing to do here
+        const container = document.getElementById('documentsContainer');
+        container.innerHTML = '';
         const names = Array.from(document.querySelectorAll('.traveler-adult-block .t-name')).map(inp => inp.value);
-        if (!names.length) return;
         
         names.forEach((name, idx) => {
             if(!name) return;
             container.innerHTML += `
-              <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-                  <p class="font-bold text-primary mb-3">${name}</p>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-passport ml-1 text-primary"></i>صورة جواز السفر (PDF, JPG)</label>
-                      <input type="file" id="file_passport_${idx}" data-traveler="${name}" data-doctype="passport" data-traveler-idx="${idx}" class="text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-passport-input" accept="image/jpeg,image/png,application/pdf">
-                      <div id="ocr_passport_status_${idx}" class="ocr-status mt-1 hidden"></div>
-                    </div>
-                    <div>
-                      <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-id-card ml-1 text-amber-600"></i>صورة بطاقة الرقم القومي (PDF, JPG)</label>
-                      <input type="file" id="file_nid_${idx}" data-traveler="${name}" data-doctype="national_id" data-traveler-idx="${idx}" class="text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-nid-input" accept="image/jpeg,image/png,application/pdf">
-                      <div id="ocr_nid_status_${idx}" class="ocr-status mt-1 hidden"></div>
-                    </div>
-                    <div class="md:col-span-2">
-                      <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-camera ml-1 text-rose-500"></i>صورة شخصية (6×4 خلفية بيضاء) <span class="text-gray-400">— JPG/PNG فقط</span></label>
-                      <p class="text-xs text-blue-600 mb-1"><i class="fa-solid fa-circle-info ml-1"></i>الصورة يجب أن تكون على خلفية بيضاء خالصة، حديثة، وواضحة الوجه</p>
-                      <input type="file" id="file_photo_${idx}" data-traveler="${name}" data-doctype="personal_photo" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png">
-                    </div>
+              <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg flex justify-between items-center">
+                  <div>
+                      <p class="font-bold text-primary">${name}</p>
+                      <p class="text-xs text-gray-500">صورة جواز السفر (PDF, JPG)</p>
+                  </div>
+                  <div>
+                    <input type="file" id="file_${idx}" data-traveler="${name}" class="text-sm bg-white border border-gray-300 rounded" accept="image/jpeg,image/png,application/pdf">
                   </div>
               </div>
             `;
@@ -386,7 +351,7 @@ const bookingController = {
 
             // Bucket is private — store path only; admin uses signed URL on demand
             return {
-                type: fileObj._doctype || 'passport',
+                type: 'passport',
                 traveler_name: travelerName,
                 path: filePath,
                 url: null,
@@ -434,12 +399,10 @@ const bookingController = {
             }
             // 1. Gather files and upload sequentially
             let uploadedDocs = [];
-            const fileInputs = document.querySelectorAll('#travelersFormContainer input[type="file"]');
+            const fileInputs = document.querySelectorAll('#documentsContainer input[type="file"]');
             for(let input of fileInputs) {
                 if(input.files && input.files[0]) {
-                    const fileWithType = input.files[0];
-                    if (fileWithType) fileWithType._doctype = input.dataset.doctype || 'passport';
-                    const docRec = await this.uploadDocument(fileWithType, input.dataset.traveler);
+                    const docRec = await this.uploadDocument(input.files[0], input.dataset.traveler);
                     if(docRec) uploadedDocs.push(docRec);
                 }
             }
@@ -671,71 +634,45 @@ function showDraftBanner(savedAt) {
 
     const banner = document.createElement('div');
     banner.id = 'draftBanner';
-    banner.style.cssText = `
-        position: fixed;
-        top: 64px;
-        left: 0;
-        right: 0;
-        z-index: 40;
-        padding: 0 16px;
-        animation: slideDownBanner .35s cubic-bezier(.4,0,.2,1);
-    `;
-
+    banner.style.cssText = 'margin-bottom:16px;';
     banner.innerHTML = `
-        <style>
-          @keyframes slideDownBanner {
-            from { opacity:0; transform:translateY(-12px); }
-            to   { opacity:1; transform:translateY(0); }
-          }
-        </style>
-        <div style="
-            max-width:900px;
-            margin:0 auto;
-            background:linear-gradient(135deg,#0D1B0E 0%,#132816 100%);
-            border:1px solid rgba(184,134,11,.45);
-            border-top:none;
-            border-radius:0 0 16px 16px;
-            padding:14px 20px;
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:12px;
-            flex-wrap:wrap;
-            box-shadow:0 8px 24px rgba(0,0,0,.35);
-            direction:rtl;
-        ">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:40px;height:40px;background:rgba(184,134,11,.15);border:1px solid rgba(184,134,11,.4);
-                            border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fa-solid fa-rotate-right" style="color:#DAA520;font-size:15px;"></i>
+        <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:14px 18px;
+                    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+                    box-shadow:0 2px 8px rgba(22,163,74,.1);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:38px;height:38px;background:#dcfce7;border-radius:50%;display:flex;
+                            align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fa-solid fa-rotate-right" style="color:#16a34a;font-size:15px;"></i>
                 </div>
                 <div>
-                    <p style="font-weight:800;color:#F8F5EC;font-size:14px;margin:0 0 3px;font-family:'Cairo',sans-serif;">
-                        لديك حجز غير مكتمل
+                    <p style="font-weight:800;color:#166534;font-size:14px;margin:0 0 2px;">
+                        لديك مسودة حجز محفوظة
                     </p>
-                    <p style="font-size:12px;color:rgba(184,134,11,.8);margin:0;font-family:'Cairo',sans-serif;">
-                        <i class="fa-regular fa-clock" style="margin-left:4px;"></i>آخر حفظ: \${formatRelativeTime(savedAt)}
+                    <p style="font-size:12px;color:#4b7c5a;margin:0;">
+                        آخر حفظ: ${formatRelativeTime(savedAt)}
                     </p>
                 </div>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+            <div style="display:flex;gap:8px;flex-shrink:0;">
                 <button onclick="restoreDraft()"
-                        style="background:linear-gradient(135deg,#B8860B,#DAA520);color:#0D1B0E;
-                               padding:9px 20px;border-radius:8px;font-weight:800;font-size:13px;
-                               border:none;cursor:pointer;font-family:'Cairo',sans-serif;
-                               white-space:nowrap;box-shadow:0 2px 8px rgba(184,134,11,.3);">
-                    <i class="fa-solid fa-arrow-left ml-1" style="font-size:11px;"></i> اكمل حجزك
+                        style="background:#16a34a;color:#fff;padding:8px 18px;border-radius:8px;
+                               font-weight:800;font-size:13px;border:none;cursor:pointer;
+                               font-family:'Cairo',sans-serif;white-space:nowrap;">
+                    نكمل من حيث توقفنا ←
                 </button>
                 <button onclick="discardDraft()"
-                        style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);
-                               padding:9px 14px;border:1px solid rgba(255,255,255,.1);border-radius:8px;
+                        style="background:transparent;color:#9ca3af;padding:8px 12px;border:none;
                                cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif;white-space:nowrap;">
-                    تجاهل
+                    ابدأ من جديد
                 </button>
             </div>
         </div>`;
 
-    document.body.appendChild(banner);
+    // إدراج البانر أعلى محتوى الصفحة مباشرةً
+    const container = document.querySelector('.max-w-3xl') 
+                   || document.querySelector('.container')
+                   || document.querySelector('main');
+    if (container) container.prepend(banner);
 }
 
 /* استعادة البيانات من المسودة */

@@ -147,8 +147,8 @@
       </div>
       <div class="flex justify-between text-sm font-bold text-gray-500">
         <span id="stepLabel1" class="text-primary">1. الأفراد والأسعار</span>
-        <span id="stepLabel2">2. بيانات المسافرين والمستندات</span>
-        <span id="stepLabel3">3. تأكيد الحجز</span>
+        <span id="stepLabel2">2. بيانات المسافرين</span>
+        <span id="stepLabel3">3. المستندات والتأكيد</span>
       </div>
     </div>
 
@@ -233,7 +233,10 @@
 
     <!-- STEP 3: Upload Documents -->
     <div id="step3" class="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-100 step-container hidden">
-      <h2 class="text-2xl font-bold mb-6 text-darkBg border-b pb-2"><i class="fa-solid fa-circle-check ml-2 text-primary"></i>تأكيد الحجز</h2>
+      <h2 class="text-2xl font-bold mb-6 text-darkBg border-b pb-2"><i class="fa-solid fa-file-arrow-up ml-2 text-primary"></i>رفع المستندات (اختياري الآن)</h2>
+      <p class="text-sm text-gray-600 mb-6 bg-yellow-50 border-r-4 border-yellow-400 p-3">يمكنك تخطي هذا الجزء ورفعه لاحقاً عبر واتساب، لكن لضمان سرعة الإجراءات يفضل رفع صورة لجواز السفر الآن.</p>
+      
+      <div id="documentsContainer" class="space-y-6"></div>
 
       <div class="bg-gray-50 p-6 rounded-lg border mt-8">
         <h3 class="font-bold text-center text-primary text-xl mb-2">تأكيد الحجز النهائي</h3>
@@ -266,17 +269,7 @@
     </div>
   </div>
 
-  <script src="/js/ocr.js"></script>
   <script src="/js/booking.js"></script>
 <script src="/js/nav-component.js"></script>
-  <div style="background:#070f08;border-top:1px solid #1a2e1b;padding:10px 0;text-align:center;font-family:'Cairo',sans-serif;font-size:13px;color:#6b7c6c;letter-spacing:0.01em;position:relative;z-index:9999;">
-    Crafted with ♥ by&nbsp;
-    <a href="https://wa.me/201029198346" target="_blank" rel="noopener noreferrer"
-       style="color:#B8860B;font-weight:700;text-decoration:none;"
-       onmouseover="this.style.color='#DAA520'" onmouseout="this.style.color='#B8860B'">
-      Pagecraft Studio
-    </a>
-    &nbsp;— Founded by <span style="color:#c9a84c;font-weight:600;">Moaaz &amp; Malak</span>
-  </div>
 </body>
 </html>

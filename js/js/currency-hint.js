@@ -2,13 +2,6 @@
  * currency-hint.js
  * Lightweight in-card currency hint for packages.html and package-detail.html.
  * Shared fallback rates + optional live fetch (once per page load).
-  *
- * ─────────────────────────────────────────────────────────
- * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
- * Unauthorized copying, modification, or distribution of
- * this file or any part of this project, via any medium,
- * is strictly prohibited without written permission.
- * ─────────────────────────────────────────────────────────
  */
 (function () {
   const RATES = { SAR: 0.074, AED: 0.073, KWD: 0.0061, USD: 0.020 };

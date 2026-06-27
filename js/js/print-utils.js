@@ -1,13 +1,6 @@
 /**
  * print-utils.js — New Sea Princess Tourism
  * Redesigned professional print templates v2
-  *
- * ─────────────────────────────────────────────────────────
- * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
- * Unauthorized copying, modification, or distribution of
- * this file or any part of this project, via any medium,
- * is strictly prohibited without written permission.
- * ─────────────────────────────────────────────────────────
  */
 
 const LOGO_URL = '/assets/logo-white.png';
