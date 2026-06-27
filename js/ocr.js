@@ -105,9 +105,11 @@
         .replace(/ck/g, 'k').replace(/[aeiou]/g, '')  // strip vowels
         .replace(/\s+/g, '');
 
-      // Rough Arabic consonant map → Latin for comparison
+      // Rough Arabic consonant map → Latin for comparison.
+      // (Fixed: 'م' and 'د' were each listed twice in the original map, silently
+      // dropping a mapping — every key below now appears exactly once.)
       const arabicToLatin = {
-        'م':'m','ح':'h','م':'m','د':'d','ع':'a','ب':'b','د':'d',
+        'م':'m','ح':'h','د':'d','ع':'a','ب':'b',
         'أ':'a','إ':'i','ا':'a','ى':'a','ة':'h','ت':'t','ن':'n',
         'ر':'r','س':'s','ي':'y','و':'w','ك':'k','ل':'l','ف':'f',
         'ق':'q','ز':'z','خ':'kh','ش':'sh','ص':'s','ض':'d',
@@ -117,17 +119,31 @@
         .split('').map(c => arabicToLatin[c] || '').join('')
         .replace(/[aeiou]/g, '').replace(/\s+/g, '');
 
-      // If consonant skeletons share less than 40% similarity → warn
-      const shorter = Math.min(latinNormalized.length, arabicNormalized.length);
-      let matches = 0;
-      for (let i = 0; i < shorter; i++) {
-        if (latinNormalized[i] === arabicNormalized[i]) matches++;
+      // The original check compared consonants index-by-index, which lets two
+      // unrelated names "match" by coincidental alignment (especially on short
+      // strings) and is thrown off by any extra/missing letter shifting the rest
+      // out of alignment. Instead, score by longest common subsequence (LCS),
+      // which tolerates re-ordering/transliteration drift but still correctly
+      // separates names that don't share most of their consonants.
+      function lcsLength(a, b) {
+        const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+        for (let i = 1; i <= a.length; i++) {
+          for (let j = 1; j <= b.length; j++) {
+            dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+          }
+        }
+        return dp[a.length][b.length];
       }
-      const similarity = shorter > 0 ? matches / shorter : 1;
-      if (similarity < 0.4 && shorter > 3) {
-        warnings.push(
-          `👤 الاسم قد لا يتطابق — الجواز: ${passport.full_name} | البطاقة: ${nid.full_name_arabic} — يرجى التحقق`
-        );
+
+      const longer = Math.max(latinNormalized.length, arabicNormalized.length);
+      if (longer > 3) {
+        const lcs = lcsLength(latinNormalized, arabicNormalized);
+        const similarity = lcs / longer;
+        if (similarity < 0.6) {
+          warnings.push(
+            `👤 الاسم قد لا يتطابق — الجواز: ${passport.full_name} | البطاقة: ${nid.full_name_arabic} — يرجى التحقق`
+          );
+        }
       }
     }
 
@@ -191,10 +207,12 @@
         const yr = parseInt(dobRaw.substring(0, 2));
         extracted.date_of_birth = `${yr > 30 ? 1900+yr : 2000+yr}-${dobRaw.substring(2,4)}-${dobRaw.substring(4,6)}`;
       }
-      const expRaw = mrz.substring(20, 26);
+      const expRaw = mrz.substring(21, 27);
       if (/^\d{6}$/.test(expRaw)) {
         const yr = parseInt(expRaw.substring(0, 2));
-        extracted.expiry_date = `${yr > 30 ? 1900+yr : 2000+yr}-${expRaw.substring(2,4)}-${expRaw.substring(4,6)}`;
+        // Expiry dates are always in the future relative to issuance, so unlike
+        // DOB we don't need the "yr > 30 => 1900s" heuristic — always 2000+yr.
+        extracted.expiry_date = `${2000+yr}-${expRaw.substring(2,4)}-${expRaw.substring(4,6)}`;
       }
       const sex = mrz[20];
       if (sex === 'M' || sex === 'F') extracted.gender = sex;
@@ -237,44 +255,54 @@
   function parseNID(text) {
     const extracted = {};
 
-    // Strip all whitespace and look for 14 consecutive digits anywhere
-    // Tesseract sometimes inserts spaces inside long number sequences
-    const digitsOnly = text.replace(/\s+/g, '');
-    const nidMatch = digitsOnly.match(/[23]\d{13}/); // Egyptian NID starts with 2 or 3
+    // Strip whitespace AND common OCR noise characters (Arabic diacritics, dots,
+    // dashes, RTL/LTR marks) that Tesseract sometimes inserts inside digit runs
+    // when scanning Arabic-script documents, before searching for the 14-digit NID.
+    const cleaned = text.replace(/[\s\u200e\u200f\u064b-\u065f.\-_|]+/g, '');
+    const nidMatch = cleaned.match(/[23]\d{13}/); // Egyptian NID starts with 2 or 3
     if (nidMatch) {
       extracted.national_id_number = nidMatch[0];
       const n = nidMatch[0];
       const century = n[0] === '3' ? '20' : '19';
       extracted.date_of_birth = `${century}${n.substring(1,3)}-${n.substring(3,5)}-${n.substring(5,7)}`;
     } else {
-      // Fallback: try to find 14 digits even with spaces between them
-      const spacedMatch = text.match(/([23](?:\s*\d){13})/);
+      // Fallback: allow noise characters between individual digits too
+      const spacedMatch = text.match(/([23](?:[\s\u200e\u200f\u064b-\u065f.\-_|]*\d){13})/);
       if (spacedMatch) {
-        const n = spacedMatch[0].replace(/\s/g, '');
+        const n = spacedMatch[0].replace(/[\s\u200e\u200f\u064b-\u065f.\-_|]/g, '');
         extracted.national_id_number = n;
         const century = n[0] === '3' ? '20' : '19';
         extracted.date_of_birth = `${century}${n.substring(1,3)}-${n.substring(3,5)}-${n.substring(5,7)}`;
       }
     }
 
-    // Arabic name: collect Arabic lines, exclude lines that are just labels
-    const arabicLabels = /(?:الجمهورية|العربية|المصرية|بطاقة|الرقم|القومي|تاريخ|الميلاد|محل|الإقامة|الديانة|الحالة)/;
+    // Arabic name: collect Arabic lines, exclude lines that are just labels/headers.
+    // Previous list missed several common ID-card header words (e.g. "الشخصية" as in
+    // "بطاقة الرقم القومي الشخصية"), which let header text get picked up as the name.
+    const arabicLabels = /(?:الجمهورية|العربية|المصرية|بطاقة|الرقم|القومي|تاريخ|الميلاد|محل|الإقامة|الديانة|الحالة|الشخصية|الإصدار|الانتهاء|وزارة|الداخلية|مصر|قومي|النوع|الجنس|العنوان|المهنة)/;
     const arabicLines = text.split('\n')
       .map(l => l.trim())
-      .filter(l => /[\u0600-\u06FF]{4,}/.test(l) && !arabicLabels.test(l));
+      // Require: real Arabic words, not a label line, no digits, and no leftover
+      // Latin/garbled tokens (e.g. "pid") that indicate a misread header line.
+      .filter(l =>
+        /[\u0600-\u06FF]{4,}/.test(l) &&
+        !arabicLabels.test(l) &&
+        !/\d/.test(l) &&
+        !/[A-Za-z]{2,}/.test(l)
+      );
 
     if (arabicLines.length > 0) {
-      // Name is usually 3-4 Arabic words — pick the line that looks most like a name
+      // Name is usually 2-4 Arabic words — pick the line that looks most like a name
       const nameLine = arabicLines
-        .sort((a, b) => {
-          const aWords = a.split(/\s+/).filter(w => /[\u0600-\u06FF]/.test(w)).length;
-          const bWords = b.split(/\s+/).filter(w => /[\u0600-\u06FF]/.test(w)).length;
-          // Prefer lines with 3-5 Arabic words (typical full name length)
-          const aScore = Math.abs(aWords - 4);
-          const bScore = Math.abs(bWords - 4);
-          return aScore - bScore;
-        })[0];
-      extracted.full_name_arabic = nameLine;
+        .map(l => ({
+          line: l,
+          words: l.split(/\s+/).filter(w => /[\u0600-\u06FF]{2,}/.test(w)).length
+        }))
+        // A real name line has at least 2 proper words; anything with just 1 word
+        // is almost always a stray label fragment, not a full name.
+        .filter(x => x.words >= 2)
+        .sort((a, b) => Math.abs(a.words - 3) - Math.abs(b.words - 3))[0];
+      if (nameLine) extracted.full_name_arabic = nameLine.line;
     }
 
     return extracted;
