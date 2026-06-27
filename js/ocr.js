@@ -250,8 +250,13 @@
     // Egyptian passport MRZ is 2 lines of 44 chars each
     const mrzLines = lines.filter(l => /^[A-Z0-9<]{30,}$/.test(l.replace(/\s/g, '')));
 
-    // MRZ line 2 contains: passport no, nationality, DOB, sex, expiry
-    const mrz2 = mrzLines.find(l => l.replace(/\s/g,'').length >= 40 && /\d{6}[02FM]\d{6}/.test(l.replace(/\s/g,'')));
+    // MRZ line 2 contains: passport no, nationality, DOB, sex, expiry.
+    // Per ICAO 9303, the sex field is only M, F, or < (unspecified) — the
+    // previous [02FM] character class incorrectly treated digits 0 and 2 as
+    // valid "sex" characters, which could match the wrong position in a
+    // line and silently produce no match at all if the real sex character
+    // didn't happen to be 0/2/F/M at that exact spot.
+    const mrz2 = mrzLines.find(l => l.replace(/\s/g,'').length >= 40 && /\d{6}[MF<]\d{6}/.test(l.replace(/\s/g,'')));
     if (mrz2) {
       const mrz = mrz2.replace(/\s/g, '');
       const mrzPassport = mrz.substring(0, 9).replace(/</g, '');
@@ -348,33 +353,70 @@
       }
     }
 
-    // Arabic name: collect Arabic lines, exclude lines that are just labels/headers.
-    // Previous list missed several common ID-card header words (e.g. "الشخصية" as in
-    // "بطاقة الرقم القومي الشخصية"), which let header text get picked up as the name.
+    // Arabic name extraction.
+    //
+    // Egyptian NID cards print the name as a small block of one or two
+    // consecutive lines (an optional single-word nickname/"known as" line,
+    // directly followed by the 3-4 word legal name: first + father's +
+    // grandfather's + family name), positioned right after the green header
+    // text and *before* the address lines. Picking "whichever non-label line
+    // has ~3 words" can't tell a name line apart from an address line of
+    // similar length (e.g. "الشروق - القاهره" also scores as 2-3 words) —
+    // that's what caused the address to get extracted as the name. Instead:
+    //   1. Exclude lines that are governorate/city names (a closed, known
+    //      list) or contain an address-line marker (a dash separating
+    //      district from governorate, or a leading "حى"/"شارع"/number).
+    //   2. Among what's left, take the *first* qualifying single-word line
+    //      as a possible nickname, then look at the line right after it —
+    //      if that's a multi-word name line, combine them; otherwise treat
+    //      the multi-word line on its own as the full name.
     const arabicLabels = /(?:الجمهورية|العربية|المصرية|بطاقة|الرقم|القومي|تاريخ|الميلاد|محل|الإقامة|الديانة|الحالة|الشخصية|الإصدار|الانتهاء|وزارة|الداخلية|مصر|قومي|النوع|الجنس|العنوان|المهنة)/;
-    const arabicLines = text.split('\n')
+
+    // Egypt's 27 governorates plus a handful of well-known cities/new towns
+    // that commonly appear in addresses (non-exhaustive, but covers the vast
+    // majority of real cards). Matching any of these marks a line as part
+    // of the address block, not the name block.
+    const governoratesAndCities = /(?:القاهرة|القاهره|الجيزة|الجيزه|الإسكندرية|الاسكندرية|الشرقية|الشرقيه|الدقهلية|الدقهليه|البحيرة|البحيره|الغربية|الغربيه|المنوفية|المنوفيه|كفر الشيخ|دمياط|بورسعيد|الإسماعيلية|الاسماعيلية|السويس|شمال سيناء|جنوب سيناء|الفيوم|بني سويف|المنيا|أسيوط|اسيوط|سوهاج|قنا|الأقصر|الاقصر|أسوان|اسوان|الوادي الجديد|مطروح|البحر الأحمر|البحر الاحمر|الشروق|بدر|العبور|6 أكتوبر|اكتوبر|القناة|التجمع|الرحاب|مدينة نصر|حلوان|المعادي)/;
+
+    // Lines with an address-block marker: a dash separating two place names,
+    // a leading "حى/حي" (district), "شارع" (street), "ش." abbreviation, or a
+    // line that starts with digits (building/street number).
+    const addressMarker = /(?:^\s*\d|^\s*حى|^\s*حي\s|شارع|^\s*ش\.|[-–—])/;
+
+    const candidateLines = text.split('\n')
       .map(l => l.trim())
-      // Require: real Arabic words, not a label line, no digits, and no leftover
-      // Latin/garbled tokens (e.g. "pid") that indicate a misread header line.
       .filter(l =>
-        /[\u0600-\u06FF]{4,}/.test(l) &&
+        /[\u0600-\u06FF]{2,}/.test(l) &&
         !arabicLabels.test(l) &&
+        !governoratesAndCities.test(l) &&
+        !addressMarker.test(l) &&
         !/\d/.test(l) &&
         !/[A-Za-z]{2,}/.test(l)
       );
 
-    if (arabicLines.length > 0) {
-      // Name is usually 2-4 Arabic words — pick the line that looks most like a name
-      const nameLine = arabicLines
-        .map(l => ({
-          line: l,
-          words: l.split(/\s+/).filter(w => /[\u0600-\u06FF]{2,}/.test(w)).length
-        }))
-        // A real name line has at least 2 proper words; anything with just 1 word
-        // is almost always a stray label fragment, not a full name.
-        .filter(x => x.words >= 2)
-        .sort((a, b) => Math.abs(a.words - 3) - Math.abs(b.words - 3))[0];
-      if (nameLine) extracted.full_name_arabic = nameLine.line;
+    if (candidateLines.length > 0) {
+      const wordCount = l => l.split(/\s+/).filter(w => /[\u0600-\u06FF]{2,}/.test(w)).length;
+
+      // Find the first line with 3+ words — that's the legal name line.
+      const legalNameIdx = candidateLines.findIndex(l => wordCount(l) >= 3);
+
+      if (legalNameIdx !== -1) {
+        const legalName = candidateLines[legalNameIdx];
+        // If there's a single-word line immediately before it among our
+        // candidates, treat it as a nickname and prepend it — matching how
+        // it's printed on the card (nickname above, legal name below).
+        const prev = candidateLines[legalNameIdx - 1];
+        if (prev && wordCount(prev) === 1) {
+          extracted.full_name_arabic = `${prev} ${legalName}`.trim();
+        } else {
+          extracted.full_name_arabic = legalName;
+        }
+      } else {
+        // No clear 3+ word line — fall back to the longest candidate as a
+        // best-effort guess rather than returning nothing.
+        const longest = candidateLines.sort((a, b) => wordCount(b) - wordCount(a))[0];
+        if (longest) extracted.full_name_arabic = longest;
+      }
     }
 
     return extracted;
