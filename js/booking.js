@@ -206,6 +206,7 @@ const bookingController = {
                        <input type="file" id="file_photo_${i-1}" data-traveler="" data-doctype="personal_photo" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png">
                      </div>
                    </div>
+                   <div id="ocr_cross_${i-1}" class="hidden"></div>
                  </div>
                </div>
             `;

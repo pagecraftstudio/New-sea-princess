@@ -57,96 +57,6 @@
     setTimeout(() => { el.style.background = ''; }, 2500);
   }
 
-  /* ── Per-traveler OCR data store ───────────────────────── */
-  // Stores extracted data per traveler index so we can cross-check once both docs scanned
-  const ocrStore = {}; // { [idx]: { passport: {...}, nid: {...} } }
-
-  function storeOCR(idx, docType, data) {
-    if (!ocrStore[idx]) ocrStore[idx] = {};
-    ocrStore[idx][docType === 'passport' ? 'passport' : 'nid'] = data;
-  }
-
-  /* ── Cross-document validation ──────────────────────────── */
-
-  function crossCheckDocuments(idx) {
-    const store = ocrStore[idx];
-    if (!store?.passport || !store?.nid) return; // need both to compare
-
-    const warnings = [];
-    const passport = store.passport;
-    const nid      = store.nid;
-
-    // ── 1. Date of birth check ───────────────────────────────
-    if (passport.date_of_birth && nid.date_of_birth) {
-      if (passport.date_of_birth !== nid.date_of_birth) {
-        warnings.push(
-          `📅 تاريخ الميلاد غير متطابق — الجواز: ${passport.date_of_birth} | البطاقة: ${nid.date_of_birth}`
-        );
-      }
-    }
-
-    // ── 2. Gender check (NID encodes gender in digit 13: odd=M, even=F) ──
-    if (passport.gender && nid.national_id_number) {
-      const nidGenderDigit = parseInt(nid.national_id_number[12]);
-      const nidGender = nidGenderDigit % 2 !== 0 ? 'M' : 'F';
-      if (passport.gender !== nidGender) {
-        warnings.push(
-          `⚧ الجنس غير متطابق — الجواز: ${passport.gender === 'M' ? 'ذكر' : 'أنثى'} | البطاقة: ${nidGender === 'M' ? 'ذكر' : 'أنثى'}`
-        );
-      }
-    }
-
-    // ── 3. Name similarity check (transliteration-aware) ────
-    // Compare Latin passport name with Arabic NID name phonetically
-    // We normalize common Arabic→Latin sound mappings for comparison
-    if (passport.full_name && nid.full_name_arabic) {
-      const latinNormalized  = passport.full_name.toLowerCase()
-        .replace(/ou|oo/g, 'u').replace(/ph/g, 'f')
-        .replace(/ck/g, 'k').replace(/[aeiou]/g, '')  // strip vowels
-        .replace(/\s+/g, '');
-
-      // Rough Arabic consonant map → Latin for comparison
-      const arabicToLatin = {
-        'م':'m','ح':'h','م':'m','د':'d','ع':'a','ب':'b','د':'d',
-        'أ':'a','إ':'i','ا':'a','ى':'a','ة':'h','ت':'t','ن':'n',
-        'ر':'r','س':'s','ي':'y','و':'w','ك':'k','ل':'l','ف':'f',
-        'ق':'q','ز':'z','خ':'kh','ش':'sh','ص':'s','ض':'d',
-        'ط':'t','ظ':'z','غ':'gh','ج':'g','ث':'th','ذ':'z','ء':'a'
-      };
-      const arabicNormalized = nid.full_name_arabic
-        .split('').map(c => arabicToLatin[c] || '').join('')
-        .replace(/[aeiou]/g, '').replace(/\s+/g, '');
-
-      // If consonant skeletons share less than 40% similarity → warn
-      const shorter = Math.min(latinNormalized.length, arabicNormalized.length);
-      let matches = 0;
-      for (let i = 0; i < shorter; i++) {
-        if (latinNormalized[i] === arabicNormalized[i]) matches++;
-      }
-      const similarity = shorter > 0 ? matches / shorter : 1;
-      if (similarity < 0.4 && shorter > 3) {
-        warnings.push(
-          `👤 الاسم قد لا يتطابق — الجواز: ${passport.full_name} | البطاقة: ${nid.full_name_arabic} — يرجى التحقق`
-        );
-      }
-    }
-
-    // ── Show result ──────────────────────────────────────────
-    const crossEl = document.getElementById(`ocr_cross_${idx}`);
-    if (!crossEl) return;
-
-    if (warnings.length === 0) {
-      crossEl.style.cssText = 'background:#F0FDF4;border:1px solid #BBF7D0;color:#15803D;border-radius:6px;padding:8px 12px;font-size:12px;font-family:"Cairo",sans-serif;margin-top:8px;';
-      crossEl.innerHTML = '✅ البيانات متطابقة في الجواز والبطاقة';
-      crossEl.classList.remove('hidden');
-      setTimeout(() => crossEl.classList.add('hidden'), 8000);
-    } else {
-      crossEl.style.cssText = 'background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:6px;padding:8px 12px;font-size:12px;font-family:"Cairo",sans-serif;margin-top:8px;line-height:1.8;';
-      crossEl.innerHTML = '<strong>⚠️ تحذير — يرجى مراجعة البيانات:</strong><br>' + warnings.join('<br>');
-      crossEl.classList.remove('hidden');
-    }
-  }
-
   /* ── Tesseract OCR ──────────────────────────────────────── */
 
   async function waitForTesseract() {
@@ -343,7 +253,6 @@
 
         if (docType === 'passport') {
           fillPassportFields(block, extracted);
-          storeOCR(idx, 'passport', extracted);
           const filled = [extracted.passport_number, extracted.expiry_date, extracted.full_name].filter(Boolean);
           if (filled.length) {
             setStatus(statusEl, 'success', '✅ تم استخراج البيانات تلقائياً — يرجى المراجعة قبل الإرسال');
@@ -352,7 +261,6 @@
           }
         } else {
           fillNIDFields(block, extracted);
-          storeOCR(idx, 'nid', extracted);
           const filled = [extracted.national_id_number, extracted.full_name_arabic].filter(Boolean);
           if (filled.length) {
             setStatus(statusEl, 'success', '✅ تم استخراج البيانات تلقائياً — يرجى المراجعة قبل الإرسال');
@@ -362,9 +270,6 @@
         }
 
         setTimeout(() => hideStatus(statusEl), 8000);
-
-        // Cross-check passport vs NID once both are scanned
-        crossCheckDocuments(idx);
 
       } catch (err) {
         console.error('[OCR] Error:', err);
