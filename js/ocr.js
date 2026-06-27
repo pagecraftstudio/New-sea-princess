@@ -1,7 +1,11 @@
 /**
  * ocr.js — نيو سي برنسيس للسياحة
  * OCR scanner for passport and national ID upload fields.
- * Uses Tesseract.js — runs entirely in the browser, no API key needed.
+ *
+ * Sends the uploaded image to our /api/ocr-scan serverless endpoint, which
+ * calls Google Cloud Vision's DOCUMENT_TEXT_DETECTION. Replaces the previous
+ * client-side Tesseract.js pipeline, which was unreliable on the
+ * Arabic-Indic numerals (٠-٩) printed on Egyptian national ID cards.
  *
  * ─────────────────────────────────────────────────────────
  * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
@@ -12,15 +16,6 @@
  */
 
 (function () {
-
-  /* ── Load Tesseract.js from CDN ─────────────────────────── */
-  (function loadTesseract() {
-    if (window.Tesseract) return;
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
-    s.async = true;
-    document.head.appendChild(s);
-  })();
 
   /* ── Helpers ────────────────────────────────────────────── */
 
@@ -163,26 +158,60 @@
     }
   }
 
-  /* ── Tesseract OCR ──────────────────────────────────────── */
+  /* ── Image resize (keep uploads small/fast — Vision doesn't need the
+        grayscale+contrast boost the old Tesseract pipeline used) ───── */
 
-  async function waitForTesseract() {
-    let attempts = 0;
-    while (!window.Tesseract && attempts < 20) {
-      await new Promise(r => setTimeout(r, 300));
-      attempts++;
-    }
-    if (!window.Tesseract) throw new Error('Tesseract.js failed to load');
+  async function resizeImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        try {
+          const MAX = 2400; // longest side, px
+          let { width: w, height: h } = img;
+          if (w > MAX || h > MAX) {
+            if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+            else        { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          c.toBlob(blob => { URL.revokeObjectURL(url); resolve(blob); }, 'image/jpeg', 0.92);
+        } catch (e) { URL.revokeObjectURL(url); reject(e); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img load failed')); };
+      img.src = url;
+    });
   }
 
-  async function runOCR(file) {
-    await waitForTesseract();
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = () => resolve(reader.result.split(',')[1] || '');
+      reader.onerror = () => reject(new Error('file read failed'));
+      reader.readAsDataURL(blob);
+    });
+  }
 
-    // Run with English + Arabic language packs for best passport/NID coverage
-    const result = await Tesseract.recognize(file, 'eng+ara', {
-      logger: () => {} // suppress progress logs
+  /* ── Cloud Vision OCR (via our serverless proxy) ──────────────────── */
+
+  async function runOCR(file) {
+    const resized      = await resizeImage(file);
+    const imageBase64  = await blobToBase64(resized);
+
+    const res = await fetch('/api/ocr-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64 }),
     });
 
-    return result.data.text;
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data?.error || `OCR request failed (${res.status})`);
+    }
+
+    return data.text || '';
   }
 
   /* ── Text Parsers ───────────────────────────────────────── */
