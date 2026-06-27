@@ -67,9 +67,17 @@
     const base64    = await fileToBase64(file);
     const mediaType = file.type || 'image/jpeg';
 
+    // Supabase Edge Functions require the anon key as Bearer token
+    // Exposed on window by supabase-config.js
+    const anonKey = window.SUPABASE_ANON_KEY || '';
+
     const response = await fetch(`${SUPABASE_URL}/functions/v1/ocr-scan`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+        'apikey': anonKey,
+      },
       body: JSON.stringify({ imageBase64: base64, mediaType, docType })
     });
 
