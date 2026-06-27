@@ -188,6 +188,25 @@ const bookingController = {
                       <p class="text-xs text-amber-600 mt-1"><i class="fa-solid fa-triangle-exclamation ml-1"></i>يجب أن يكون الجواز صالحاً 6 أشهر على الأقل بعد تاريخ المغادرة (اشتراط سعودي)</p>
                     </div>
                  </div>
+                 <div class="mt-4 pt-4 border-t border-dashed border-gray-200">
+                   <p class="text-xs font-semibold text-gray-500 mb-3"><i class="fa-solid fa-file-arrow-up ml-1 text-primary"></i>المستندات (اختياري — يمكن رفعها لاحقاً عبر واتساب)</p>
+                   <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                     <div>
+                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-passport ml-1 text-primary"></i>صورة جواز السفر</label>
+                       <input type="file" id="file_passport_${i-1}" data-traveler="" data-doctype="passport" data-traveler-idx="${i-1}" class="text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-passport-input" accept="image/jpeg,image/png,application/pdf">
+                       <div id="ocr_passport_status_${i-1}" class="ocr-status mt-1 hidden"></div>
+                     </div>
+                     <div>
+                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-id-card ml-1 text-amber-600"></i>بطاقة الرقم القومي</label>
+                       <input type="file" id="file_nid_${i-1}" data-traveler="" data-doctype="national_id" data-traveler-idx="${i-1}" class="text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-nid-input" accept="image/jpeg,image/png,application/pdf">
+                       <div id="ocr_nid_status_${i-1}" class="ocr-status mt-1 hidden"></div>
+                     </div>
+                     <div class="md:col-span-2">
+                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-camera ml-1 text-rose-500"></i>صورة شخصية (6×4 خلفية بيضاء)</label>
+                       <input type="file" id="file_photo_${i-1}" data-traveler="" data-doctype="personal_photo" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png">
+                     </div>
+                   </div>
+                 </div>
                </div>
             `;
         }
@@ -296,9 +315,9 @@ const bookingController = {
     },
 
     buildDocumentsForm() {
-        const container = document.getElementById('documentsContainer');
-        container.innerHTML = '';
+        // Documents are now rendered inline in step 2 — nothing to do here
         const names = Array.from(document.querySelectorAll('.traveler-adult-block .t-name')).map(inp => inp.value);
+        if (!names.length) return;
         
         names.forEach((name, idx) => {
             if(!name) return;
@@ -414,7 +433,7 @@ const bookingController = {
             }
             // 1. Gather files and upload sequentially
             let uploadedDocs = [];
-            const fileInputs = document.querySelectorAll('#documentsContainer input[type="file"]');
+            const fileInputs = document.querySelectorAll('#travelersFormContainer input[type="file"]');
             for(let input of fileInputs) {
                 if(input.files && input.files[0]) {
                     const fileWithType = input.files[0];
