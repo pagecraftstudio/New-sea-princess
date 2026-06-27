@@ -13,6 +13,7 @@
   <script src="/js/supabase-config.js"></script>
   <script src="/js/admin.js"></script>
   <script src="/js/print-utils.js"></script>
+  <script src="/js/regulatory-export.js"></script>
   <style>
     .nav-link { display:flex; align-items:center; gap:10px; padding:12px 24px; color:#9ca3af; transition:.2s; }
     .nav-link:hover { background:#1f2937; color:#fff; }
@@ -101,6 +102,13 @@
                 title="تصدير البيانات المفلترة إلى Excel"
                 class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition shadow text-sm">
           <i class="fa-solid fa-file-excel text-base"></i> Excel
+        </button>
+        <button onclick="openRegulatoryExportModal('bulk')"
+                title="تصدير كشف رسمي لوزارة السياحة أو منصة نسك"
+                class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition shadow text-sm relative">
+          <i class="fa-solid fa-file-shield text-base"></i>
+          <span>تصدير تنظيمي</span>
+          <span class="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none shadow">جديد</span>
         </button>
       </div>
     </div>
@@ -271,6 +279,14 @@
             <button id="modalDeleteBtn"
                     class="bg-red-50 hover:bg-red-600 hover:text-white text-red-600 py-2.5 rounded-xl font-bold flex items-center justify-center gap-1 transition text-xs border border-red-200">
               <i class="fa-solid fa-trash"></i> حذف
+            </button>
+          </div>
+          <!-- Row 3 — Regulatory Export -->
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <button id="modalRegulatoryBtn"
+                    class="bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-bold flex items-center justify-center gap-1.5 transition text-xs col-span-1"
+                    title="تصدير كشف هذا الحجز لوزارة السياحة أو منصة نسك">
+              <i class="fa-solid fa-file-shield"></i> تصدير تنظيمي
             </button>
             <button onclick="closeModal()"
                     class="bg-gray-100 hover:bg-gray-200 text-gray-600 py-2.5 rounded-xl font-bold transition text-xs">
@@ -971,6 +987,9 @@
     document.getElementById('modalDeleteBtn').onclick = () => {
       closeModal();
       confirmDelete(b.id);
+    };
+    document.getElementById('modalRegulatoryBtn').onclick = () => {
+      openRegulatoryExportModal(b);
     };
 
     const _bm2 = document.getElementById('bookingModal');
