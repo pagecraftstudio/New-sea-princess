@@ -73,12 +73,16 @@
       body: JSON.stringify({ imageBase64: base64, mediaType, docType })
     });
 
+    const rawText = await response.text();
+    console.log('[OCR] Edge Function raw response:', response.status, rawText);
+
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error || `HTTP ${response.status}`);
+      let errDetail = rawText;
+      try { errDetail = JSON.parse(rawText)?.error || rawText; } catch(_) {}
+      throw new Error(`HTTP ${response.status}: ${errDetail}`);
     }
 
-    const result = await response.json();
+    const result = JSON.parse(rawText);
     if (!result.success) throw new Error(result.error || 'unknown_error');
     return result.data;
   }
@@ -167,8 +171,10 @@
         setTimeout(() => hideStatus(statusEl), 6000);
 
       } catch (err) {
-        console.error('[OCR]', err);
-        setStatus(statusEl, 'error', '❌ تعذّر قراءة المستند — يرجى الإدخال اليدوي');
+        console.error('[OCR] Full error:', err);
+        // Show the actual error message to help diagnose
+        const msg = err?.message || String(err);
+        setStatus(statusEl, 'error', `❌ خطأ: ${msg} — افتح Console (F12) لمزيد من التفاصيل`);
       }
     });
   }
