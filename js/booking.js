@@ -1,13 +1,6 @@
 /**
  * booking.js
  * Multi-step booking flow and Supabase integrations
-  *
- * ─────────────────────────────────────────────────────────
- * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.
- * Unauthorized copying, modification, or distribution of
- * this file or any part of this project, via any medium,
- * is strictly prohibited without written permission.
- * ─────────────────────────────────────────────────────────
  */
 
 function showInlineError(id, msg) {
@@ -315,11 +308,13 @@ const bookingController = {
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-passport ml-1 text-primary"></i>صورة جواز السفر (PDF, JPG)</label>
-                      <input type="file" id="file_passport_${idx}" data-traveler="${name}" data-doctype="passport" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png,application/pdf">
+                      <input type="file" id="file_passport_${idx}" data-traveler="${name}" data-doctype="passport" data-traveler-idx="${idx}" class="text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-passport-input" accept="image/jpeg,image/png,application/pdf">
+                      <div id="ocr_passport_status_${idx}" class="ocr-status mt-1 hidden"></div>
                     </div>
                     <div>
                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-id-card ml-1 text-amber-600"></i>صورة بطاقة الرقم القومي (PDF, JPG)</label>
-                      <input type="file" id="file_nid_${idx}" data-traveler="${name}" data-doctype="national_id" class="text-sm bg-white border border-gray-300 rounded w-full p-1" accept="image/jpeg,image/png,application/pdf">
+                      <input type="file" id="file_nid_${idx}" data-traveler="${name}" data-doctype="national_id" data-traveler-idx="${idx}" class="text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-nid-input" accept="image/jpeg,image/png,application/pdf">
+                      <div id="ocr_nid_status_${idx}" class="ocr-status mt-1 hidden"></div>
                     </div>
                     <div class="md:col-span-2">
                       <label class="block text-xs text-gray-600 mb-1 font-medium"><i class="fa-solid fa-camera ml-1 text-rose-500"></i>صورة شخصية (6×4 خلفية بيضاء) <span class="text-gray-400">— JPG/PNG فقط</span></label>
