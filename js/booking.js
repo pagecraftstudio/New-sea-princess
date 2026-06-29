@@ -338,6 +338,30 @@ const bookingController = {
                 </div>
               </div>
 
+              <!-- Nationality + Place of Birth + Date of Birth (Nusuk/Ministry required) -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label class="block text-xs font-bold text-gray-600 mb-1">
+                    <i class="fa-solid fa-flag ml-1 text-sky-500"></i>الجنسية <span class="text-red-500">*</span>
+                  </label>
+                  <input type="text" class="t-nationality border p-2 rounded w-full text-sm"
+                         placeholder="مصري / Egyptian" required value="مصري">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-600 mb-1">
+                    <i class="fa-solid fa-location-dot ml-1 text-orange-500"></i>محل الميلاد <span class="text-red-500">*</span>
+                  </label>
+                  <input type="text" class="t-place-of-birth border p-2 rounded w-full text-sm"
+                         placeholder="القاهرة" required>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-600 mb-1">
+                    <i class="fa-solid fa-cake-candles ml-1 text-pink-500"></i>تاريخ الميلاد <span class="text-red-500">*</span>
+                  </label>
+                  <input type="date" class="t-dob border p-2 rounded w-full text-sm text-gray-600">
+                </div>
+              </div>
+
               <!-- Gender + Marital Status (adults only) -->
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <div>
@@ -437,6 +461,10 @@ const bookingController = {
                            data-traveler="" data-doctype="vaccination_meningitis"
                            accept="image/jpeg,image/png,application/pdf"
                            onchange="renderDocWarnings()">
+                    <label class="flex items-center gap-2 mt-1.5 cursor-pointer select-none">
+                      <input type="checkbox" class="t-menin-confirmed w-4 h-4 accent-purple-600">
+                      <span class="text-xs text-purple-700 font-semibold">✓ تأكيد استلام تطعيم الحمى الشوكية الرباعي (MenACYW)</span>
+                    </label>
                   </div>
 
                   <!-- COVID-19 vaccine -->
@@ -739,14 +767,18 @@ const bookingController = {
             const travelers = [];
             document.querySelectorAll('.traveler-adult-block').forEach(blk => {
                 travelers.push({
-                    type:            'adult',
-                    name:            blk.querySelector('.t-name').value,
-                    national_id:     blk.querySelector('.t-nid').value,
-                    passport:        blk.querySelector('.t-passport').value,
-                    passport_expiry: blk.querySelector('.t-passport-exp').value,
-                    gender:          blk.querySelector('.t-gender')?.value || '',
-                    marital_status:  blk.querySelector('.t-marital')?.value || '',
-                    age_range:       blk.querySelector('.t-age-range')?.value || 'adult',
+                    type:                    'adult',
+                    name:                    blk.querySelector('.t-name').value,
+                    national_id:             blk.querySelector('.t-nid').value,
+                    passport:                blk.querySelector('.t-passport').value,
+                    passport_expiry:         blk.querySelector('.t-passport-exp').value,
+                    gender:                  blk.querySelector('.t-gender')?.value || '',
+                    marital_status:          blk.querySelector('.t-marital')?.value || '',
+                    age_range:               blk.querySelector('.t-age-range')?.value || 'adult',
+                    nationality:             blk.querySelector('.t-nationality')?.value || 'مصري',
+                    place_of_birth:          blk.querySelector('.t-place-of-birth')?.value || '',
+                    date_of_birth:           blk.querySelector('.t-dob')?.value || '',
+                    vaccination_meningitis:  blk.querySelector('.t-menin-confirmed')?.checked ? true : false,
                 });
             });
             document.querySelectorAll('.traveler-child-block').forEach(blk => {
@@ -877,13 +909,17 @@ const DRAFT_KEY = 'nsp_booking_draft';
 
 function collectTravelersPartial() {
     const adults = Array.from(document.querySelectorAll('.traveler-adult-block')).map(blk => ({
-        name:           blk.querySelector('.t-name')?.value         || '',
-        national_id:    blk.querySelector('.t-nid')?.value          || '',
-        passport:       blk.querySelector('.t-passport')?.value     || '',
-        passport_expiry:blk.querySelector('.t-passport-exp')?.value || '',
-        gender:         blk.querySelector('.t-gender')?.value       || '',
-        marital_status: blk.querySelector('.t-marital')?.value      || '',
-        age_range:      blk.querySelector('.t-age-range')?.value    || 'adult',
+        name:                   blk.querySelector('.t-name')?.value         || '',
+        national_id:            blk.querySelector('.t-nid')?.value          || '',
+        passport:               blk.querySelector('.t-passport')?.value     || '',
+        passport_expiry:        blk.querySelector('.t-passport-exp')?.value || '',
+        gender:                 blk.querySelector('.t-gender')?.value       || '',
+        marital_status:         blk.querySelector('.t-marital')?.value      || '',
+        age_range:              blk.querySelector('.t-age-range')?.value    || 'adult',
+        nationality:            blk.querySelector('.t-nationality')?.value  || 'مصري',
+        place_of_birth:         blk.querySelector('.t-place-of-birth')?.value || '',
+        date_of_birth:          blk.querySelector('.t-dob')?.value          || '',
+        vaccination_meningitis: blk.querySelector('.t-menin-confirmed')?.checked || false,
     }));
     const children = Array.from(document.querySelectorAll('.traveler-child-block')).map(blk => ({
         name: blk.querySelector('.t-name')?.value || '',
@@ -986,13 +1022,18 @@ function restoreTravelers(travelers) {
         const blk = adultBlocks[i];
         if (!blk) return;
         const set = (cls, val) => { const el = blk.querySelector(cls); if (el && val) el.value = val; };
-        set('.t-name',         t.name);
-        set('.t-nid',          t.national_id);
-        set('.t-passport',     t.passport);
-        set('.t-passport-exp', t.passport_expiry);
-        set('.t-gender',       t.gender);
-        set('.t-marital',      t.marital_status);
-        set('.t-age-range',    t.age_range);
+        set('.t-name',           t.name);
+        set('.t-nid',            t.national_id);
+        set('.t-passport',       t.passport);
+        set('.t-passport-exp',   t.passport_expiry);
+        set('.t-gender',         t.gender);
+        set('.t-marital',        t.marital_status);
+        set('.t-age-range',      t.age_range);
+        set('.t-nationality',    t.nationality);
+        set('.t-place-of-birth', t.place_of_birth);
+        set('.t-dob',            t.date_of_birth);
+        const meninCb = blk.querySelector('.t-menin-confirmed');
+        if (meninCb && t.vaccination_meningitis) meninCb.checked = true;
         // Trigger conditional renders
         if (t.gender || t.marital_status) onGenderChange(blk);
         if (t.age_range) onAgeRangeChange(blk);

@@ -275,25 +275,45 @@ function buildTravelerRows(bookings, nameSplit) {
   const rows = [];
   const today = new Date().toLocaleDateString('ar-EG');
 
+  // Build a package lookup map from cached allPackages if available
+  const pkgMap = {};
+  (window.allPackages || []).forEach(p => { pkgMap[p.id] = p; });
+
   bookings.forEach(b => {
-    // Primary traveler
+    const pkg = pkgMap[b.package_id] || {};
+    // Attach pkg to booking for makeTravelerRow
+    b._pkg = pkg;
+
+    // Primary traveler — pull from booking root
     rows.push(makeTravelerRow(b, {
-      name:        b.customer_name || '—',
-      type:        'adult',
-      national_id: b.customer_national_id || '',
-      passport:    b.customer_passport_number || '',
-      isPrimary:   true,
+      name:                   b.customer_name || '—',
+      type:                   'adult',
+      national_id:            b.customer_national_id || '',
+      passport:               b.customer_passport_number || '',
+      passport_expiry:        '',   // not stored at booking root; companions have it
+      gender:                 '',
+      nationality:            'مصري',
+      place_of_birth:         '',
+      date_of_birth:          '',
+      vaccination_meningitis: false,
+      isPrimary:              true,
     }, nameSplit, today));
 
     // Companions from travelers JSONB array
     const companions = Array.isArray(b.travelers) ? b.travelers : [];
     companions.forEach(t => {
       rows.push(makeTravelerRow(b, {
-        name:        t.name        || '—',
-        type:        t.type        || 'adult',
-        national_id: t.national_id || '',
-        passport:    t.passport    || '',
-        isPrimary:   false,
+        name:                   t.name        || '—',
+        type:                   t.type        || 'adult',
+        national_id:            t.national_id || '',
+        passport:               t.passport    || '',
+        passport_expiry:        t.passport_expiry || '',
+        gender:                 t.gender      || '',
+        nationality:            t.nationality || 'مصري',
+        place_of_birth:         t.place_of_birth || '',
+        date_of_birth:          t.date_of_birth  || '',
+        vaccination_meningitis: t.vaccination_meningitis || false,
+        isPrimary:              false,
       }, nameSplit, today));
     });
   });
@@ -303,38 +323,60 @@ function buildTravelerRows(bookings, nameSplit) {
 
 function makeTravelerRow(booking, traveler, nameSplit, exportDate) {
   const nameParts = splitName(traveler.name, nameSplit);
+  const pkg = booking._pkg || {};          // package-level data attached in buildTravelerRows
   return {
     // Booking meta
-    booking_number:    booking.booking_number  || '—',
-    package_title:     booking.package_title   || '—',
-    departure_date:    fmtDateSimple(booking.package_departure),
-    booking_date:      fmtDateSimple(booking.booking_date),
-    export_date:       exportDate,
+    booking_number:        booking.booking_number  || '—',
+    package_title:         booking.package_title   || '—',
+    departure_date:        fmtDateSimple(booking.package_departure),
+    return_date:           fmtDateSimple(pkg.return_date),
+    booking_date:          fmtDateSimple(booking.booking_date),
+    export_date:           exportDate,
     // Traveler identity
-    full_name:         traveler.name,
-    first_name:        nameParts[0] || '',
-    father_name:       nameParts[1] || '',
-    grandfather_name:  nameParts[2] || '',
-    family_name:       nameParts[3] || '',
-    traveler_type:     traveler.type === 'child' ? 'طفل' : 'بالغ',
-    is_primary:        traveler.isPrimary ? 'رئيسي' : 'مرافق',
+    full_name:             traveler.name,
+    first_name:            nameParts[0] || '',
+    father_name:           nameParts[1] || '',
+    grandfather_name:      nameParts[2] || '',
+    family_name:           nameParts[3] || '',
+    traveler_type:         traveler.type === 'child' ? 'طفل' : 'بالغ',
+    is_primary:            traveler.isPrimary ? 'رئيسي' : 'مرافق',
+    gender:                traveler.gender === 'male' ? 'M' : (traveler.gender === 'female' ? 'F' : ''),
+    nationality:           traveler.nationality || 'مصري',
+    place_of_birth:        traveler.place_of_birth || '',
+    date_of_birth:         traveler.date_of_birth  || '',
     // IDs
-    national_id:       traveler.national_id,
-    passport_number:   traveler.passport,
+    national_id:           traveler.national_id,
+    passport_number:       traveler.passport,
+    passport_expiry:       traveler.passport_expiry || '',
+    // Vaccination
+    vaccination_meningitis: traveler.vaccination_meningitis ? 'نعم' : 'لا',
     // Contact (primary only)
-    phone:             traveler.isPrimary ? (booking.customer_phone || '') : '',
-    email:             traveler.isPrimary ? (booking.customer_email || '') : '',
+    phone:                 traveler.isPrimary ? (booking.customer_phone || '') : '',
+    email:                 traveler.isPrimary ? (booking.customer_email || '') : '',
     // Financial (booking level)
-    total_price:       booking.total_price    || 0,
-    paid_amount:       booking.paid_amount    || 0,
-    remaining_amount:  booking.remaining_amount ?? (booking.total_price - booking.paid_amount),
+    total_price:           booking.total_price    || 0,
+    paid_amount:           booking.paid_amount    || 0,
+    remaining_amount:      booking.remaining_amount ?? (booking.total_price - booking.paid_amount),
+    // Accommodation
+    mecca_hotel:           pkg.mecca_hotel           || '',
+    mecca_hotel_stars:     pkg.mecca_hotel_stars     || '',
+    mecca_hotel_distance:  pkg.mecca_hotel_distance  || '',
+    medina_hotel:          pkg.medina_hotel          || '',
+    medina_hotel_stars:    pkg.medina_hotel_stars    || '',
+    medina_hotel_distance: pkg.medina_hotel_distance || '',
+    // Transport & Flight
+    airline:               pkg.airline               || '',
+    transport_type:        pkg.transport_type        || '',
+    // Regulatory
+    brn_reference:         pkg.brn_reference         || '',
+    religious_supervisor:  pkg.religious_supervisor  || '',
     // Adults / children counts
-    adults_count:      booking.adults_count   || 0,
-    children_count:    booking.children_count || 0,
+    adults_count:          booking.adults_count   || 0,
+    children_count:        booking.children_count || 0,
     // Company
-    company_name:      REG_COMPANY.name,
-    license_number:    REG_COMPANY.license,
-    license_type:      REG_COMPANY.type,
+    company_name:          REG_COMPANY.name,
+    license_number:        REG_COMPANY.license,
+    license_type:          REG_COMPANY.type,
   };
 }
 
@@ -354,38 +396,56 @@ function splitName(fullName, mode) {
 }
 
 // ─────────────────────────────────────────────────────────
-//  MINISTRY OF TOURISM CSV
+//  MINISTRY OF TOURISM CSV  (بوابة العمرة المصرية)
+//  Fields per: Law No. 72/2021 Safar Barcode schema
 // ─────────────────────────────────────────────────────────
 function downloadMinistryCSV(rows, bookings) {
-  const dateStr = new Date().toISOString().slice(0,10);
+  const dateStr  = new Date().toISOString().slice(0,10);
   const totalPax = rows.length;
 
-  // File meta header (2 rows before column headers)
   const metaRows = [
     ['شركة السياحة', REG_COMPANY.name, 'رقم الترخيص', REG_COMPANY.license, 'نوع الترخيص', REG_COMPANY.type],
     ['اسم المسؤول', REG_COMPANY.director, 'تاريخ التصدير', dateStr, 'إجمالي المسافرين', totalPax],
-    [], // blank spacer
+    [],
   ];
 
+  // A. بيانات المعتمرين + B. بيانات البرنامج + C. accountability
   const headers = [
     'م',
+    // A — Pilgrim Personal Manifest
     'رقم الحجز',
-    'البرنامج السياحي',
-    'تاريخ المغادرة',
-    'الاسم الكامل',
-    'الاسم الأول',
-    'اسم الأب',
-    'اسم الجد',
-    'اسم العائلة',
-    'نوع المسافر',
+    'الاسم الرباعي الكامل',
+    'الاسم الأول', 'اسم الأب', 'اسم الجد', 'اسم العائلة',
     'الرقم القومي',
     'رقم جواز السفر',
-    'رقم الهاتف',
-    'البريد الإلكتروني',
-    'إجمالي المبلغ (ج.م)',
+    'تاريخ انتهاء الجواز',
+    'الجنس',
+    'الجنسية',
+    'محل الميلاد',
+    'تاريخ الميلاد',
+    'تطعيم الحمى الشوكية (MenACYW)',
+    // B — Program & Itinerary
+    'البرنامج السياحي',
+    'تاريخ المغادرة',
+    'تاريخ العودة',
+    'فندق مكة المكرمة',
+    'نجوم فندق مكة',
+    'بعد فندق مكة عن الحرم',
+    'فندق المدينة المنورة',
+    'نجوم فندق المدينة',
+    'بعد فندق المدينة عن الحرم',
+    'شركة النقل / المواصلات',
+    'شركة الطيران',
+    // C — Company Accountability
+    'إجمالي تكلفة الحجز (ج.م)',
     'المبلغ المدفوع (ج.م)',
     'الرصيد المتبقي (ج.م)',
-    'الحالة في الحجز',
+    'اسم المشرف الديني المعتمد',
+    // Meta
+    'نوع المسافر',
+    'الحالة في الكشف',
+    'رقم الهاتف',
+    'البريد الإلكتروني',
     'تاريخ الحجز',
     'اسم شركة السياحة',
     'رقم ترخيص الشركة',
@@ -394,22 +454,35 @@ function downloadMinistryCSV(rows, bookings) {
   const dataRows = rows.map((r, i) => [
     i + 1,
     r.booking_number,
-    r.package_title,
-    r.departure_date,
     r.full_name,
-    r.first_name,
-    r.father_name,
-    r.grandfather_name,
-    r.family_name,
-    r.traveler_type,
+    r.first_name, r.father_name, r.grandfather_name, r.family_name,
     r.national_id,
     r.passport_number,
-    r.phone,
-    r.email,
+    r.passport_expiry,
+    r.gender,
+    r.nationality,
+    r.place_of_birth,
+    r.date_of_birth,
+    r.vaccination_meningitis,
+    r.package_title,
+    r.departure_date,
+    r.return_date,
+    r.mecca_hotel,
+    r.mecca_hotel_stars,
+    r.mecca_hotel_distance,
+    r.medina_hotel,
+    r.medina_hotel_stars,
+    r.medina_hotel_distance,
+    r.transport_type,
+    r.airline,
     r.total_price,
     r.paid_amount,
     r.remaining_amount,
+    r.religious_supervisor,
+    r.traveler_type,
     r.is_primary,
+    r.phone,
+    r.email,
     r.booking_date,
     r.company_name,
     r.license_number,
@@ -420,10 +493,11 @@ function downloadMinistryCSV(rows, bookings) {
 }
 
 // ─────────────────────────────────────────────────────────
-//  NUSUK PLATFORM CSV
+//  NUSUK PLATFORM CSV  (كشوفات المجموعات — Ground Services)
+//  Fields per: Saudi B2B Nusuk Masar portal MRZ-standard schema
 // ─────────────────────────────────────────────────────────
 function downloadNusukCSV(rows, bookings) {
-  const dateStr = new Date().toISOString().slice(0,10);
+  const dateStr  = new Date().toISOString().slice(0,10);
   const totalPax = rows.length;
 
   const metaRows = [
@@ -432,23 +506,34 @@ function downloadNusukCSV(rows, bookings) {
     [],
   ];
 
-  // Nusuk typically wants these columns for Umrah pilgrim lists
+  // A. Passport Logistics + B. Reservation References & Borders
   const headers = [
     'م',
+    // A — Passport Logistics (MRZ-standard)
     'رقم الحجز',
-    'البرنامج',
-    'تاريخ السفر',
-    'الاسم الكامل',
-    'الاسم الأول',
-    'اسم الأب',
-    'اسم الجد',
-    'اسم القبيلة / العائلة',
-    'نوع المسافر (بالغ / طفل)',
-    'الرقم القومي',
+    'الاسم الكامل (إنجليزي / MRZ)',
+    'الاسم الأول', 'اسم الأب', 'اسم الجد', 'اسم القبيلة / العائلة',
+    'نوع الوثيقة',   // P = Passport
+    'دولة الإصدار',
     'رقم جواز السفر',
-    'الجنسية',
+    'تاريخ انتهاء الجواز',
+    'الجنس (M/F)',
+    'تاريخ الميلاد',
+    'محل الميلاد',
+    'الجنسية الحالية',
+    'رمز صلة المحرم / ولي الأمر',
+    // B — Reservation References & Borders
+    'رقم BRN السعودي',
+    'مطار الدخول (JED/MED)',
+    'تاريخ الوصول',
+    'تاريخ المغادرة',
+    'شركة الطيران',
+    // Supporting
+    'تطعيم الحمى الشوكية',
+    'البرنامج السياحي',
+    'نوع المسافر',
+    'الحالة في الكشف',
     'رقم الجوال',
-    'حالة الحجز في الكشف',
     'اسم شركة السياحة',
     'رقم الترخيص',
     'نوع الترخيص',
@@ -458,19 +543,27 @@ function downloadNusukCSV(rows, bookings) {
   const dataRows = rows.map((r, i) => [
     i + 1,
     r.booking_number,
-    r.package_title,
-    r.departure_date,
     r.full_name,
-    r.first_name,
-    r.father_name,
-    r.grandfather_name,
-    r.family_name,
-    r.traveler_type,
-    r.national_id,
+    r.first_name, r.father_name, r.grandfather_name, r.family_name,
+    'P',                          // document type = Passport
+    'EGY',                        // country of issue (Egyptian passports)
     r.passport_number,
-    'مصري',               // nationality — adjust if multi-nationality needed
-    r.phone,
+    r.passport_expiry,
+    r.gender,
+    r.date_of_birth,
+    r.place_of_birth,
+    r.nationality,
+    '',                           // mahram code — filled manually if needed
+    r.brn_reference,
+    'JED',                        // default port of entry; override per package if needed
+    r.departure_date,
+    r.return_date,
+    r.airline,
+    r.vaccination_meningitis,
+    r.package_title,
+    r.traveler_type,
     r.is_primary,
+    r.phone,
     r.company_name,
     r.license_number,
     r.license_type,
