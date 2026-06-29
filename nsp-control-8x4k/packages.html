@@ -46,7 +46,7 @@
         <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
         <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
         <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
-        <a href="/nsp-control-8x4k/admins.html"     class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+        <a href="/nsp-control-8x4k/admins.html"     class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
       </div>
       <div class="p-4 border-t border-gray-800">
         <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
@@ -71,6 +71,7 @@
         <li><a href="/nsp-control-8x4k/newsletter.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-envelope w-5"></i>النشرة البريدية</a></li>
         <li><a href="/nsp-control-8x4k/users.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-users w-5"></i>المستخدمون</a></li>
         <li><a href="/nsp-control-8x4k/audit-log.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a></li>
+        <li><a href="/nsp-control-8x4k/admins.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a></li>
       </ul>
     </nav>
     <div class="p-4 border-t border-gray-800">
@@ -400,31 +401,6 @@
               </label>
             </div>
           </div>
-
-          <!-- ── Regulatory Fields (Ministry / Nusuk) ── -->
-          <div class="mt-4 pt-4 border-t border-dashed border-amber-300">
-            <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2 text-sm">
-              <i class="fa-solid fa-file-shield text-amber-500"></i> بيانات التصدير التنظيمي (وزارة السياحة / نسك)
-            </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-bold mb-1">
-                  رقم BRN السعودي <span class="text-xs font-normal text-gray-400">(Booking Reference Number — 12 رقم)</span>
-                </label>
-                <input type="text" id="pBRN" maxlength="20"
-                       placeholder="مثال: 202600000001"
-                       class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-amber-500 font-mono text-sm">
-              </div>
-              <div>
-                <label class="block text-sm font-bold mb-1">
-                  اسم المشرف الديني <span class="text-xs font-normal text-gray-400">(المشرف الديني المعتمد من الوزارة)</span>
-                </label>
-                <input type="text" id="pReligiousSupervisor"
-                       placeholder="مثال: الشيخ أحمد محمود"
-                       class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-amber-500 text-sm">
-              </div>
-            </div>
-          </div>
         </div>
 
       </div><!-- end scrollable body -->
@@ -576,8 +552,7 @@
     // Reset all fields
     const fields = ['pTitle','pPrice','pPriceChild','pMaxSeats','pDiscount','pDeparture',
                     'pReturn','pDuration','pMeccaHotel','pMeccaDist','pNightsMecca',
-                    'pMedinaHotel','pMedinaDist','pNightsMedina','pAirline','pThumbnail','pIncludes','pExcludes','pNotes',
-                    'pBRN','pReligiousSupervisor'];
+                    'pMedinaHotel','pMedinaDist','pNightsMedina','pAirline','pThumbnail','pIncludes','pExcludes','pNotes'];
     fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
     // Reset image upload UI
     document.getElementById('imgUploadSuccess').classList.add('hidden');
@@ -623,8 +598,6 @@
       document.getElementById('pIsFeatured').checked   = pkg.is_featured === true;
       document.getElementById('pVisaIncluded').checked = pkg.visa_included !== false;
       document.getElementById('pNotes').value          = pkg.notes || '';
-      document.getElementById('pBRN').value                = pkg.brn_reference || '';
-      document.getElementById('pReligiousSupervisor').value = pkg.religious_supervisor || '';
 
       // Arrays → textarea (one per line)
       const inc = Array.isArray(pkg.includes) ? pkg.includes : [];
@@ -705,8 +678,6 @@
       visa_included:         document.getElementById('pVisaIncluded').checked,
       is_featured:           document.getElementById('pIsFeatured').checked,
       is_active:             document.getElementById('pIsActive').checked,
-      brn_reference:         document.getElementById('pBRN').value.trim() || null,
-      religious_supervisor:  document.getElementById('pReligiousSupervisor').value.trim() || null,
     };
 
     // Remove undefined keys
