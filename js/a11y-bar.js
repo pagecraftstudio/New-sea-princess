@@ -50,26 +50,54 @@
   // ── Inject styles ───────────────────────────────────────────
   const style = document.createElement('style');
   style.textContent = `
-    #a11yBar { position:sticky; top:0; z-index:9999; display:flex; align-items:center;
-      justify-content:space-between; gap:.5rem; flex-wrap:wrap; background:#0f1f12; color:#f5f0e6;
-      font-family:'Cairo', Tahoma, sans-serif; font-size:13px; padding:6px 12px; direction:rtl; }
-    #a11yBar .a11y-group { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
-    #a11yBar button { background:transparent; border:1px solid rgba(245,240,230,.35); color:#f5f0e6;
-      border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer; line-height:1.3;
-      font-family:inherit; transition:background .15s, border-color .15s; }
-    #a11yBar button:hover { background:rgba(245,240,230,.12); }
-    #a11yBar button[aria-pressed="true"] { background:#B8860B; border-color:#B8860B; color:#0f1f12; font-weight:700; }
+    #a11yBar { position:sticky; z-index:9990; display:flex; align-items:center;
+      justify-content:space-between; gap:10px; flex-wrap:wrap; direction:rtl;
+      font-family:'Cairo', Tahoma, sans-serif; font-size:13px;
+      padding:8px 16px; color:#f5f0e6;
+      background:linear-gradient(180deg, rgba(15,31,18,.88), rgba(13,27,16,.82));
+      backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(184,134,11,.28);
+      box-shadow:0 6px 18px -8px rgba(0,0,0,.35); }
+
+    #a11yBar .a11y-group { display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+      border-radius:999px; padding:4px; }
+
+    #a11yBar button { background:transparent; border:none; color:#e9e4d8;
+      border-radius:999px; width:32px; height:32px; display:inline-flex; align-items:center;
+      justify-content:center; font-size:13px; cursor:pointer; line-height:1;
+      font-family:inherit; transition:background .18s ease, color .18s ease, transform .12s ease; }
+    #a11yBar button.a11y-text-btn { width:auto; padding:0 12px; gap:6px; font-size:12px; font-weight:600; }
+    #a11yBar button:hover { background:rgba(255,255,255,.12); transform:translateY(-1px); }
+    #a11yBar button:active { transform:translateY(0); }
+    #a11yBar button[aria-pressed="true"] {
+      background:linear-gradient(135deg, #DAA520, #B8860B); color:#10210f; font-weight:700;
+      box-shadow:0 2px 8px rgba(184,134,11,.4); }
     #a11yBar button:focus-visible, #a11yBar a:focus-visible {
-      outline:3px solid #fff; outline-offset:2px; }
-    #a11yBar .a11y-mecca { display:flex; align-items:center; gap:8px; font-weight:700; white-space:nowrap; }
-    #a11yBar .a11y-mecca .a11y-icon { opacity:.85; }
-    #a11yBar .a11y-skip { position:absolute; right:-9999px; top:auto; background:#B8860B; color:#0f1f12;
-      border:none; padding:6px 10px; border-radius:6px; font-weight:700; cursor:pointer; }
-    #a11yBar .a11y-skip:focus { position:static; right:auto; display:inline-block; }
-    #a11yBar .a11y-divider { width:1px; height:18px; background:rgba(245,240,230,.25); margin:0 2px; }
-    @media (max-width:640px) {
-      #a11yBar { font-size:12px; }
-      #a11yBar .a11y-mecca-temp { display:none; }
+      outline:2.5px solid #ffd54a; outline-offset:2px; }
+
+    #a11yBar .a11y-divider { width:1px; height:18px; background:rgba(255,255,255,.14); margin:0 2px; }
+
+    #a11yBar .a11y-mecca { display:flex; align-items:center; gap:10px; font-weight:600;
+      white-space:nowrap; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+      border-radius:999px; padding:5px 14px; }
+    #a11yBar .a11y-mecca .a11y-kaaba { font-size:15px; filter:drop-shadow(0 0 4px rgba(184,134,11,.5)); }
+    #a11yBar .a11y-mecca .a11y-mecca-label { color:#cfc8b4; font-weight:600; font-size:12px; }
+    #a11yBar .a11y-mecca .a11y-mecca-time { color:#ffd54a; font-weight:700; letter-spacing:.02em; }
+    #a11yBar .a11y-mecca .a11y-mecca-temp { display:flex; align-items:center; gap:4px; color:#f5f0e6; }
+    #a11yBar .a11y-mecca .a11y-sep { width:1px; height:14px; background:rgba(255,255,255,.18); }
+
+    #a11yBar .a11y-skip { position:absolute; right:-9999px; top:auto; width:auto; height:auto;
+      background:#DAA520; color:#10210f; border:none; padding:8px 14px; border-radius:8px;
+      font-weight:700; font-size:13px; cursor:pointer; }
+    #a11yBar .a11y-skip:focus { position:static; right:auto; display:inline-flex; }
+
+    @media (max-width:760px) {
+      #a11yBar { font-size:12px; padding:6px 10px; }
+      #a11yBar .a11y-mecca-label { display:none; }
+    }
+    @media (max-width:560px) {
+      #a11yBar .a11y-mecca .a11y-mecca-temp { display:none; }
     }
 
     /* ── Font size steps ── */
@@ -105,28 +133,66 @@
     <button type="button" id="a11ySkip" class="a11y-skip">تخطي إلى المحتوى الرئيسي</button>
 
     <div class="a11y-group" role="toolbar" aria-label="أدوات إمكانية الوصول">
-      <button type="button" id="a11yFontDec" aria-label="تصغير حجم الخط">A-</button>
-      <button type="button" id="a11yFontInc" aria-label="تكبير حجم الخط">A+</button>
+      <button type="button" id="a11yFontDec" aria-label="تصغير حجم الخط" title="تصغير الخط">
+        <i class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></i>
+      </button>
+      <button type="button" id="a11yFontInc" aria-label="تكبير حجم الخط" title="تكبير الخط">
+        <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
+      </button>
       <span class="a11y-divider" aria-hidden="true"></span>
-      <button type="button" id="a11yContrast" aria-pressed="false">تباين عالي</button>
-      <button type="button" id="a11yUnderline" aria-pressed="false">تسطير الروابط</button>
-      <button type="button" id="a11yMotion" aria-pressed="false">تقليل الحركة</button>
-      <button type="button" id="a11yDyslexia" aria-pressed="false">خط سهل القراءة</button>
+      <button type="button" id="a11yContrast" aria-pressed="false" aria-label="تباين عالي" title="تباين عالي">
+        <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+      </button>
+      <button type="button" id="a11yUnderline" aria-pressed="false" aria-label="تسطير الروابط" title="تسطير الروابط">
+        <i class="fa-solid fa-underline" aria-hidden="true"></i>
+      </button>
+      <button type="button" id="a11yMotion" aria-pressed="false" aria-label="تقليل الحركة" title="تقليل الحركة">
+        <i class="fa-solid fa-person-walking" aria-hidden="true"></i>
+      </button>
+      <button type="button" id="a11yDyslexia" aria-pressed="false" aria-label="خط سهل القراءة" title="خط سهل القراءة">
+        <i class="fa-solid fa-font" aria-hidden="true"></i>
+      </button>
       <span class="a11y-divider" aria-hidden="true"></span>
-      <button type="button" id="a11yReset">إعادة الضبط</button>
+      <button type="button" id="a11yReset" class="a11y-text-btn" aria-label="إعادة الضبط">
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> إعادة الضبط
+      </button>
     </div>
 
-    <div class="a11y-mecca" aria-live="off">
-      <span class="a11y-icon" aria-hidden="true">🕋</span>
-      <span>مكة المكرمة</span>
-      <span id="a11yMeccaTime">—</span>
-      <span class="a11y-mecca-temp" id="a11yMeccaTempWrap">
-        <span aria-hidden="true">·</span>
+    <div class="a11y-mecca">
+      <span class="a11y-kaaba" aria-hidden="true">🕋</span>
+      <span class="a11y-mecca-label">مكة المكرمة</span>
+      <span class="a11y-mecca-time" id="a11yMeccaTime">—</span>
+      <span class="a11y-sep" aria-hidden="true"></span>
+      <span class="a11y-mecca-temp">
+        <i class="fa-solid fa-temperature-half" aria-hidden="true"></i>
         <span id="a11yMeccaTemp">—</span>
       </span>
     </div>
   `;
-  document.body.insertBefore(bar, document.body.firstChild);
+
+  // ── Place bar directly under the page's navbar/header ───────
+  const header = document.querySelector('header');
+  if (header) {
+    header.insertAdjacentElement('afterend', bar);
+  } else {
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+
+  function syncStickyOffset() {
+    if (header) {
+      const rect = header.getBoundingClientRect();
+      // Header is itself sticky at top:0, so the bar should stick right beneath it.
+      bar.style.top = Math.max(0, rect.height) + 'px';
+    } else {
+      bar.style.top = '0px';
+    }
+  }
+  syncStickyOffset();
+  window.addEventListener('resize', syncStickyOffset);
+  window.addEventListener('load', syncStickyOffset);
+  if (window.ResizeObserver && header) {
+    new ResizeObserver(syncStickyOffset).observe(header);
+  }
 
   // ── Wire up toggle buttons ──────────────────────────────────
   function setPressed(btn, val) { btn.setAttribute('aria-pressed', val ? 'true' : 'false'); }
