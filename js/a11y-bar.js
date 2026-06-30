@@ -27,7 +27,7 @@
   const MECCA_TZ = 'Asia/Riyadh'; // Mecca shares Saudi Arabia's single UTC+3 zone, no DST
   const MADINA_LAT = 24.4672, MADINA_LON = 39.6112; // Madina, same UTC+3 zone as Mecca
 
-  const defaults = { fontStep: 0, contrast: false, underline: false, reduceMotion: false, dyslexia: false };
+  const defaults = { fontStep: 0, contrast: false, underline: false, reduceMotion: false, dyslexia: false, collapsed: false };
 
   function loadPrefs() {
     try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')); }
@@ -63,7 +63,20 @@
       background:linear-gradient(180deg, rgba(15,31,18,.88), rgba(13,27,16,.82));
       backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
       border-bottom:1px solid rgba(184,134,11,.28);
-      box-shadow:0 6px 18px -8px rgba(0,0,0,.35); }
+      box-shadow:0 6px 18px -8px rgba(0,0,0,.35);
+      transition:transform .28s ease, opacity .22s ease; transform:translateY(0); }
+
+    #a11yBar.a11y-bar-collapsed { transform:translateY(-100%); opacity:0; pointer-events:none; }
+
+    #a11yBarHandle { position:sticky; z-index:9989; top:0; display:flex; align-items:center;
+      justify-content:center; gap:6px; width:auto; margin-inline-start:auto; margin-inline-end:14px;
+      padding:4px 12px; font-family:'Cairo', Tahoma, sans-serif; font-size:12px; font-weight:700;
+      color:#10210f; background:linear-gradient(135deg, #DAA520, #B8860B);
+      border:none; border-radius:0 0 10px 10px; cursor:pointer;
+      box-shadow:0 4px 10px -4px rgba(0,0,0,.4);
+      transform:translateY(-100%); transition:transform .28s ease; }
+    #a11yBarHandle.a11y-handle-visible { transform:translateY(0); }
+    #a11yBarHandle:focus-visible { outline:2.5px solid #ffd54a; outline-offset:2px; }
 
     #a11yBar .a11y-group { display:flex; align-items:center; gap:6px; flex-wrap:wrap;
       background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
@@ -186,6 +199,10 @@
       <button type="button" id="a11yReset" class="a11y-text-btn" aria-label="إعادة الضبط">
         <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> إعادة الضبط
       </button>
+      <span class="a11y-divider" aria-hidden="true"></span>
+      <button type="button" id="a11yBarCollapse" aria-label="إخفاء شريط إمكانية الوصول" title="إخفاء الشريط">
+        <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+      </button>
     </div>
 
     <div class="a11y-mecca">
@@ -219,13 +236,24 @@
     document.body.insertBefore(bar, document.body.firstChild);
   }
 
+  // ── Slide-out handle (shown only while the bar is collapsed) ──
+  const handle = document.createElement('button');
+  handle.type = 'button';
+  handle.id = 'a11yBarHandle';
+  handle.setAttribute('aria-label', 'إظهار شريط إمكانية الوصول');
+  handle.title = 'إظهار شريط إمكانية الوصول';
+  handle.innerHTML = '<i class="fa-solid fa-chevron-down" aria-hidden="true"></i> إمكانية الوصول';
+  bar.insertAdjacentElement('afterend', handle);
+
   function syncStickyOffset() {
     if (header) {
       const rect = header.getBoundingClientRect();
       // Header is itself sticky at top:0, so the bar should stick right beneath it.
       bar.style.top = Math.max(0, rect.height) + 'px';
+      handle.style.top = Math.max(0, rect.height) + 'px';
     } else {
       bar.style.top = '0px';
+      handle.style.top = '0px';
     }
   }
   syncStickyOffset();
@@ -285,9 +313,25 @@
     prefs.dyslexia = !prefs.dyslexia; applyPrefs(); savePrefs(prefs); refreshButtonStates();
   });
   resetBtn.addEventListener('click', function () {
-    prefs = Object.assign({}, defaults); applyPrefs(); savePrefs(prefs); refreshButtonStates();
+    prefs = Object.assign({}, defaults); applyPrefs(); savePrefs(prefs); refreshButtonStates(); applyCollapseState();
     if (speechSupported && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
   });
+
+  // ── Slide-out collapse toggle ───────────────────────────────
+  const collapseBtn = document.getElementById('a11yBarCollapse');
+  function applyCollapseState() {
+    bar.classList.toggle('a11y-bar-collapsed', !!prefs.collapsed);
+    handle.classList.toggle('a11y-handle-visible', !!prefs.collapsed);
+    bar.setAttribute('aria-hidden', prefs.collapsed ? 'true' : 'false');
+  }
+  function setCollapsed(val) {
+    prefs.collapsed = !!val;
+    applyCollapseState();
+    savePrefs(prefs);
+  }
+  collapseBtn.addEventListener('click', function () { setCollapsed(true); });
+  handle.addEventListener('click', function () { setCollapsed(false); });
+  applyCollapseState();
 
   // ── Voice Reader (Web Speech API: SpeechSynthesis) ─────────
   const readToggleBtn = document.getElementById('a11yReadToggle');
