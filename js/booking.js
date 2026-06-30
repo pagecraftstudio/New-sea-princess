@@ -45,7 +45,7 @@ function auditTravelerDocs(block, idx, isChild) {
     const covidInput    = block.querySelector('.t-covid-file');
     const birthInput    = block.querySelector('.t-birth-cert');
 
-    if (!nidInput?.files?.[0])      warnings.push('صورة بطاقة الرقم القومي غير مرفقة');
+    // National ID is optional — no warning if missing
     if (!passportInput?.files?.[0]) warnings.push('صورة جواز السفر غير مرفقة');
     if (!photoInput?.files?.[0])    warnings.push('الصورة الشخصية غير مرفقة');
     // Vaccines (MenACYW / COVID-19) are now optional — no warning if missing.
@@ -314,7 +314,7 @@ const bookingController = {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <input type="text" class="t-name border p-2 rounded w-full" placeholder="الاسم الرباعي (مطلوب)" required>
                 <input type="text" inputmode="numeric" pattern="[0-9]{14}" class="t-nid border p-2 rounded w-full"
-                       placeholder="الرقم القومي (14 رقم)" required maxlength="14"
+                       placeholder="الرقم القومي (14 رقم) — اختياري" maxlength="14"
                        oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                 <input type="text" inputmode="numeric" class="t-passport border p-2 rounded w-full"
                        placeholder="رقم جواز السفر" required
@@ -406,7 +406,7 @@ const bookingController = {
                   <div>
                     <label class="block text-xs text-gray-600 mb-1 font-medium">
                       <i class="fa-solid fa-id-card ml-1 text-amber-600"></i>
-                      بطاقة الرقم القومي <span class="text-red-500">*</span>
+                      بطاقة الرقم القومي <span class="text-gray-400 font-normal text-xs">(اختياري)</span>
                     </label>
                     <input type="file" class="t-nid-file text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-nid-input"
                            data-traveler="" data-doctype="national_id" data-traveler-idx="${idx}"
