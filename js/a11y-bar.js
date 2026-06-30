@@ -25,6 +25,7 @@
   const STORAGE_KEY = 'nspA11y';
   const MECCA_LAT = 21.4225, MECCA_LON = 39.8262;
   const MECCA_TZ = 'Asia/Riyadh'; // Mecca shares Saudi Arabia's single UTC+3 zone, no DST
+  const MADINA_LAT = 24.4672, MADINA_LON = 39.6112; // Madina, same UTC+3 zone as Mecca
 
   const defaults = { fontStep: 0, contrast: false, underline: false, reduceMotion: false, dyslexia: false };
 
@@ -107,6 +108,7 @@
       #a11yBar button { width:30px; height:30px; flex:0 0 auto; }
       #a11yBar button.a11y-text-btn { padding:0 10px; flex:0 0 auto; white-space:nowrap; }
       #a11yBar .a11y-mecca { width:100%; justify-content:center; order:3; }
+      #a11yBar .a11y-madina { width:100%; justify-content:center; order:4; }
     }
 
     #a11yBar .a11y-hidden { display:none !important; }
@@ -194,6 +196,17 @@
       <span class="a11y-mecca-temp">
         <i class="fa-solid fa-temperature-half" aria-hidden="true"></i>
         <span id="a11yMeccaTemp">—</span>
+      </span>
+    </div>
+
+    <div class="a11y-mecca a11y-madina">
+      <span class="a11y-kaaba" aria-hidden="true">🕌</span>
+      <span class="a11y-mecca-label">المدينة المنورة</span>
+      <span class="a11y-mecca-time" id="a11yMadinaTime">—</span>
+      <span class="a11y-sep" aria-hidden="true"></span>
+      <span class="a11y-mecca-temp">
+        <i class="fa-solid fa-temperature-half" aria-hidden="true"></i>
+        <span id="a11yMadinaTemp">—</span>
       </span>
     </div>
   `;
@@ -441,6 +454,14 @@
   tickClock();
   setInterval(tickClock, 1000 * 15); // 15s is plenty for a minute-resolution clock
 
+  // ── Madina live clock (same UTC+3 zone as Mecca, reuses timeFmt) ──
+  const madinaTimeEl = document.getElementById('a11yMadinaTime');
+  function tickMadinaClock() {
+    madinaTimeEl.textContent = timeFmt.format(new Date());
+  }
+  tickMadinaClock();
+  setInterval(tickMadinaClock, 1000 * 15);
+
   // ── Mecca live temperature (Open-Meteo, free, no API key) ──
   const tempEl = document.getElementById('a11yMeccaTemp');
   async function fetchMeccaTemp() {
@@ -458,11 +479,36 @@
   fetchMeccaTemp();
   setInterval(fetchMeccaTemp, 1000 * 60 * 10); // refresh every 10 minutes
 
+  // ── Madina live temperature (Open-Meteo, free, no API key) ──
+  const madinaTempEl = document.getElementById('a11yMadinaTemp');
+  async function fetchMadinaTemp() {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${MADINA_LAT}&longitude=${MADINA_LON}&current_weather=true`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('weather fetch failed');
+      const data = await res.json();
+      const t = data && data.current_weather ? Math.round(data.current_weather.temperature) : null;
+      madinaTempEl.textContent = t !== null ? `${t}°م` : 'غير متاح';
+    } catch (e) {
+      madinaTempEl.textContent = 'غير متاح';
+    }
+  }
+  fetchMadinaTemp();
+  setInterval(fetchMadinaTemp, 1000 * 60 * 10); // refresh every 10 minutes
+
   // Update full ARIA description for the Mecca cluster (for SR users) without spamming live updates
-  const meccaCluster = bar.querySelector('.a11y-mecca');
+  const meccaCluster = timeEl.closest('.a11y-mecca');
   function updateMeccaAria() {
     meccaCluster.setAttribute('aria-label', `الوقت الآن في مكة المكرمة ${timeEl.textContent}، درجة الحرارة ${tempEl.textContent}`);
   }
   setInterval(updateMeccaAria, 1000 * 30);
   updateMeccaAria();
+
+  // Update full ARIA description for the Madina cluster (for SR users)
+  const madinaCluster = bar.querySelector('.a11y-madina');
+  function updateMadinaAria() {
+    madinaCluster.setAttribute('aria-label', `الوقت الآن في المدينة المنورة ${madinaTimeEl.textContent}، درجة الحرارة ${madinaTempEl.textContent}`);
+  }
+  setInterval(updateMadinaAria, 1000 * 30);
+  updateMadinaAria();
 })();
