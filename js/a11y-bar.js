@@ -249,7 +249,10 @@
       // that pushes header down before the user scrolls).
       const bottom = Math.max(0, rect.bottom);
       bar.style.top = bottom + 'px';
-      handle.style.top = (bottom + 8) + 'px';
+      // When the bar itself is expanded and visible, the handle must sit
+      // below the bar too, or the bar (higher z-index) covers it.
+      const barExtra = (!prefs.collapsed && bar.offsetHeight) ? bar.offsetHeight : 0;
+      handle.style.top = (bottom + barExtra + 8) + 'px';
     } else {
       bar.style.top = '0px';
       handle.style.top = '8px';
@@ -350,6 +353,7 @@
     prefs.collapsed = !!val;
     applyCollapseState();
     savePrefs(prefs);
+    syncStickyOffset();
   }
   handle.addEventListener('click', function () { setCollapsed(!prefs.collapsed); });
   applyCollapseState({ animate: false });
