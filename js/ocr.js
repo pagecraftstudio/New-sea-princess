@@ -1,5 +1,5 @@
 /**
- * ocr.js — نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق  v4.0
+ * ocr.js — نيو سي برنسيس فرع الزقازيق فرع الزقازيق  v4.0
  *
  * BOTH passport and NID:
  *   1. Compress image client-side (max 1 MB — OCR.space free-tier limit)
