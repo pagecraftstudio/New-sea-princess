@@ -360,12 +360,34 @@
             <div class="arch-medallion" style="top:-10px;left:50%;transform:translateX(-50%);"><i class="fa-solid fa-kaaba"></i></div>
             <div class="arch-medallion" style="bottom:-10px;left:-10px;width:26px;height:26px;"><i class="fa-solid fa-star" style="font-size:9px;"></i></div>
             <div class="arch-medallion" style="bottom:-10px;right:-10px;width:26px;height:26px;"><i class="fa-solid fa-star" style="font-size:9px;"></i></div>
+
+            <!-- Floating supervisor logo: Dr. Mohamed -->
+            <img loading="lazy" src="/assets/dr-mohamed.jpg" alt="الداعية د. محمد دحروج" class="floating-logo"
+                 style="position:absolute;top:30%;left:-60px;width:84px;height:84px;border-radius:50%;object-fit:cover;
+                        box-shadow:0 0 0 4px rgba(13,27,14,.9), 0 0 28px 6px rgba(46,125,50,.65);
+                        animation:floatLogo 4.5s ease-in-out infinite;z-index:20;">
+
+            <!-- Floating supervisor logo: Dr. Shaimaa -->
+            <img loading="lazy" src="/assets/dr-shaimaa.jpg" alt="د. شيماء السعداوي" class="floating-logo"
+                 style="position:absolute;top:25%;right:-60px;width:84px;height:84px;border-radius:50%;object-fit:cover;
+                        box-shadow:0 0 0 4px rgba(13,27,14,.9), 0 0 28px 6px rgba(184,134,11,.65);
+                        animation:floatLogo 4.5s ease-in-out infinite .8s;z-index:20;">
           </div>
         </div>
 
       </div>
     </div>
   </section>
+
+  <style>
+    @keyframes floatLogo {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-12px); }
+    }
+    @media (max-width: 767px) {
+      .floating-logo { width:60px !important; height:60px !important; }
+    }
+  </style>
 
   <!-- Smart Search Widget — overlaps hero bottom -->
   <section class="container mx-auto px-4 relative z-20" style="margin-top:-64px;">

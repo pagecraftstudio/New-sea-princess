@@ -171,7 +171,7 @@ const bookingController = {
 
         try {
             const { data, error } = await window.db.from('packages')
-                .select('id,title,category,season,departure_date,return_date,duration_nights,price_per_person,price_child,price_infant,discount_percent,max_seats,available_seats,departure_city,flight_type,airline,mecca_hotel,mecca_hotel_stars,medina_hotel,medina_hotel_stars,nights_mecca,nights_medina,transport_type,includes,excludes,itinerary,images,thumbnail_url,is_active,visa_included,notes')
+                .select('*')
                 .eq('id', pkgId).single();
             if (error) throw error;
             this.packageData = data;
