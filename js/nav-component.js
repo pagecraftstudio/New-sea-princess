@@ -19,6 +19,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('a[href*="wa.me/"]').forEach(function (el) {
+      if (el.href.indexOf('201029198346') !== -1) return; // Pagecraft Studio credit link — never rewrite
       el.href = el.href.replace(/wa\.me\/20\d+/, 'wa.me/' + WHATSAPP_NUMBER);
     });
   });
