@@ -107,10 +107,6 @@
       #a11yBar button { width:30px; height:30px; flex:0 0 auto; }
       #a11yBar button.a11y-text-btn { padding:0 10px; flex:0 0 auto; white-space:nowrap; }
       #a11yBar .a11y-mecca { width:100%; justify-content:center; order:3; }
-      #a11yBar .a11y-mecca-label { display:none; }
-    }
-    @media (max-width:560px) {
-      #a11yBar .a11y-mecca .a11y-mecca-temp { display:none; }
     }
 
     #a11yBar .a11y-hidden { display:none !important; }
