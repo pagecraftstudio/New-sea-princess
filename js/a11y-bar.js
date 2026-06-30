@@ -1,8 +1,13 @@
 /**
  * a11y-bar.js
  * Site-wide accessibility toolbar: font size, contrast, underline links,
- * reduce motion, dyslexia-friendly font, reset — plus a live Mecca clock
- * and real-time temperature (Open-Meteo, no API key needed).
+ * reduce motion, dyslexia-friendly font, voice reader (text-to-speech), reset
+ * — plus a live Mecca clock and real-time temperature (Open-Meteo, no API key).
+ *
+ * Voice reader uses the browser's built-in Web Speech API (SpeechSynthesis).
+ * No external service or key needed; auto-hides itself on unsupported browsers.
+ * Picks an Arabic voice if the device has one installed, reads block-by-block
+ * (paragraphs/headings/list items), highlights + auto-scrolls the active block.
  *
  * Usage: include once per page, ideally right after <body>:
  *   <script src="/js/a11y-bar.js" defer></script>
@@ -100,6 +105,15 @@
       #a11yBar .a11y-mecca .a11y-mecca-temp { display:none; }
     }
 
+    #a11yBar .a11y-hidden { display:none !important; }
+
+    /* ── Voice reader: highlight the sentence/element being read ── */
+    .a11y-reading-highlight {
+      background:rgba(184,134,11,.22) !important;
+      outline:2px solid rgba(184,134,11,.55);
+      border-radius:3px; transition:background .15s ease;
+    }
+
     /* ── Font size steps ── */
     html.a11y-fs-1 { font-size:107%; }
     html.a11y-fs-2 { font-size:115%; }
@@ -151,6 +165,16 @@
       </button>
       <button type="button" id="a11yDyslexia" aria-pressed="false" aria-label="خط سهل القراءة" title="خط سهل القراءة">
         <i class="fa-solid fa-font" aria-hidden="true"></i>
+      </button>
+      <span class="a11y-divider" aria-hidden="true"></span>
+      <button type="button" id="a11yReadToggle" aria-pressed="false" aria-label="قراءة الصفحة بصوت عالٍ" title="قراءة الصفحة">
+        <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
+      </button>
+      <button type="button" id="a11yReadStop" class="a11y-hidden" aria-label="إيقاف القراءة" title="إيقاف القراءة">
+        <i class="fa-solid fa-stop" aria-hidden="true"></i>
+      </button>
+      <button type="button" id="a11yReadSpeed" class="a11y-text-btn a11y-hidden" aria-label="تغيير سرعة القراءة" title="سرعة القراءة">
+        <i class="fa-solid fa-gauge" aria-hidden="true"></i> <span id="a11yReadSpeedLabel">1x</span>
       </button>
       <span class="a11y-divider" aria-hidden="true"></span>
       <button type="button" id="a11yReset" class="a11y-text-btn" aria-label="إعادة الضبط">
@@ -245,7 +269,162 @@
   });
   resetBtn.addEventListener('click', function () {
     prefs = Object.assign({}, defaults); applyPrefs(); savePrefs(prefs); refreshButtonStates();
+    if (speechSupported && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
   });
+
+  // ── Voice Reader (Web Speech API: SpeechSynthesis) ─────────
+  const readToggleBtn = document.getElementById('a11yReadToggle');
+  const readStopBtn   = document.getElementById('a11yReadStop');
+  const readSpeedBtn  = document.getElementById('a11yReadSpeed');
+  const readSpeedLabel = document.getElementById('a11yReadSpeedLabel');
+
+  const RATE_STEPS = [1, 1.25, 1.5, 0.75];
+  let rateIndex = 0;
+  let readerState = 'idle'; // 'idle' | 'reading' | 'paused'
+  let readQueue = [];
+  let readIndex = 0;
+  let currentHighlighted = null;
+  let arabicVoice = null;
+
+  const speechSupported = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
+
+  if (!speechSupported) {
+    // No TTS support in this browser — hide the reader controls entirely.
+    readToggleBtn.classList.add('a11y-hidden');
+    readStopBtn.classList.add('a11y-hidden');
+    readSpeedBtn.classList.add('a11y-hidden');
+  } else {
+    function pickArabicVoice() {
+      const voices = window.speechSynthesis.getVoices() || [];
+      arabicVoice = voices.find(v => /^ar/i.test(v.lang)) || null;
+    }
+    pickArabicVoice();
+    if ('onvoiceschanged' in window.speechSynthesis) {
+      window.speechSynthesis.addEventListener('voiceschanged', pickArabicVoice);
+    }
+
+    // Collect readable blocks from the main content area (skips nav/header/this bar/scripts).
+    function getReadableElements() {
+      const root = document.getElementById('main') || document.querySelector('main') || document.body;
+      const candidates = root.querySelectorAll(
+        'p, li, h1, h2, h3, h4, h5, h6, blockquote, dt, dd, figcaption, td, th, summary'
+      );
+      const blocks = [];
+      candidates.forEach(el => {
+        if (el.closest('#a11yBar, header, nav, script, style, [aria-hidden="true"]')) return;
+        if (el.offsetParent === null && el !== document.body) return; // not visible
+        const text = (el.textContent || '').trim();
+        if (text.length < 2) return;
+        blocks.push({ el, text });
+      });
+      // Fallback: if the page has no semantic blocks (rare), read the body's own text.
+      if (!blocks.length) {
+        const text = (root.textContent || '').trim();
+        if (text) blocks.push({ el: root, text });
+      }
+      return blocks;
+    }
+
+    function clearHighlight() {
+      if (currentHighlighted) {
+        currentHighlighted.classList.remove('a11y-reading-highlight');
+        currentHighlighted = null;
+      }
+    }
+
+    function speakNext() {
+      if (readIndex >= readQueue.length) {
+        stopReading();
+        return;
+      }
+      const block = readQueue[readIndex];
+      clearHighlight();
+      block.el.classList.add('a11y-reading-highlight');
+      currentHighlighted = block.el;
+      block.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      const utter = new SpeechSynthesisUtterance(block.text);
+      utter.lang = arabicVoice ? arabicVoice.lang : 'ar-SA';
+      if (arabicVoice) utter.voice = arabicVoice;
+      utter.rate = RATE_STEPS[rateIndex];
+      utter.onend = function () { readIndex++; speakNext(); };
+      utter.onerror = function () { readIndex++; speakNext(); };
+      window.speechSynthesis.speak(utter);
+    }
+
+    function startReading() {
+      readQueue = getReadableElements();
+      readIndex = 0;
+      if (!readQueue.length) return;
+      readerState = 'reading';
+      updateReadUI();
+      speakNext();
+    }
+
+    function stopReading() {
+      window.speechSynthesis.cancel();
+      clearHighlight();
+      readQueue = []; readIndex = 0;
+      readerState = 'idle';
+      updateReadUI();
+    }
+
+    function updateReadUI() {
+      const icon = readToggleBtn.querySelector('i');
+      if (readerState === 'reading') {
+        icon.className = 'fa-solid fa-pause';
+        readToggleBtn.setAttribute('aria-label', 'إيقاف القراءة مؤقتاً');
+        readToggleBtn.setAttribute('aria-pressed', 'true');
+        readStopBtn.classList.remove('a11y-hidden');
+        readSpeedBtn.classList.remove('a11y-hidden');
+      } else if (readerState === 'paused') {
+        icon.className = 'fa-solid fa-play';
+        readToggleBtn.setAttribute('aria-label', 'استئناف القراءة');
+        readToggleBtn.setAttribute('aria-pressed', 'true');
+        readStopBtn.classList.remove('a11y-hidden');
+        readSpeedBtn.classList.remove('a11y-hidden');
+      } else {
+        icon.className = 'fa-solid fa-volume-high';
+        readToggleBtn.setAttribute('aria-label', 'قراءة الصفحة بصوت عالٍ');
+        readToggleBtn.setAttribute('aria-pressed', 'false');
+        readStopBtn.classList.add('a11y-hidden');
+        readSpeedBtn.classList.add('a11y-hidden');
+      }
+    }
+
+    readToggleBtn.addEventListener('click', function () {
+      if (readerState === 'idle') {
+        startReading();
+      } else if (readerState === 'reading') {
+        window.speechSynthesis.pause();
+        readerState = 'paused';
+        updateReadUI();
+      } else if (readerState === 'paused') {
+        window.speechSynthesis.resume();
+        readerState = 'reading';
+        updateReadUI();
+      }
+    });
+
+    readStopBtn.addEventListener('click', stopReading);
+
+    readSpeedBtn.addEventListener('click', function () {
+      rateIndex = (rateIndex + 1) % RATE_STEPS.length;
+      readSpeedLabel.textContent = RATE_STEPS[rateIndex] + 'x';
+      // Rate applies from the next sentence onward (SpeechSynthesis can't
+      // change the rate of an utterance already in progress).
+    });
+
+    // Stop reading cleanly if the visitor navigates away or hides the tab.
+    window.addEventListener('beforeunload', function () { window.speechSynthesis.cancel(); });
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden && readerState === 'reading') {
+        window.speechSynthesis.pause();
+        readerState = 'paused';
+        updateReadUI();
+      }
+    });
+  }
 
   // ── Mecca live clock (updates every second, real local time, no fetch needed) ──
   const timeEl = document.getElementById('a11yMeccaTime');
