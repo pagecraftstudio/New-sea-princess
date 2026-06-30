@@ -64,8 +64,9 @@
       backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
       border-bottom:1px solid rgba(184,134,11,.28);
       box-shadow:0 6px 18px -8px rgba(0,0,0,.35);
-      transition:opacity .15s ease; }
+      transition:transform .22s ease, opacity .18s ease; transform:translateY(0); }
 
+    #a11yBar.a11y-bar-collapsing { transform:translateY(-100%); opacity:0; pointer-events:none; }
     #a11yBar.a11y-bar-collapsed { display:none; }
 
     #a11yBarHandle { position:fixed; z-index:9989; display:flex; align-items:center;
@@ -318,13 +319,32 @@
 
   // ── Slide-out collapse toggle (one button, slides bar in/out) ──
   const handleLabel = document.getElementById('a11yBarHandleLabel');
-  function applyCollapseState() {
-    bar.classList.toggle('a11y-bar-collapsed', !!prefs.collapsed);
+  function applyCollapseState(opts) {
+    const animate = !opts || opts.animate !== false;
+    bar.removeEventListener('transitionend', onCollapseTransitionEnd);
+
+    if (prefs.collapsed) {
+      if (animate) {
+        bar.classList.add('a11y-bar-collapsing');
+        bar.addEventListener('transitionend', onCollapseTransitionEnd);
+      } else {
+        bar.classList.add('a11y-bar-collapsing', 'a11y-bar-collapsed');
+      }
+    } else {
+      bar.classList.remove('a11y-bar-collapsed');
+      // force reflow so the browser registers display:flex before animating in
+      void bar.offsetHeight;
+      bar.classList.remove('a11y-bar-collapsing');
+    }
+
     handle.classList.toggle('a11y-bar-collapsed', !!prefs.collapsed);
     bar.setAttribute('aria-hidden', prefs.collapsed ? 'true' : 'false');
     handleLabel.textContent = prefs.collapsed ? 'إظهار شريط إمكانية الوصول' : 'إخفاء شريط إمكانية الوصول';
     handle.setAttribute('aria-label', handleLabel.textContent);
     handle.title = handleLabel.textContent;
+  }
+  function onCollapseTransitionEnd(e) {
+    if (e.target === bar && prefs.collapsed) bar.classList.add('a11y-bar-collapsed');
   }
   function setCollapsed(val) {
     prefs.collapsed = !!val;
@@ -332,7 +352,7 @@
     savePrefs(prefs);
   }
   handle.addEventListener('click', function () { setCollapsed(!prefs.collapsed); });
-  applyCollapseState();
+  applyCollapseState({ animate: false });
 
   // ── Voice Reader (Web Speech API: SpeechSynthesis) ─────────
   const readToggleBtn = document.getElementById('a11yReadToggle');
