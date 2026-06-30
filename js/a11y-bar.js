@@ -246,10 +246,10 @@
       const rect = header.getBoundingClientRect();
       // Header is itself sticky at top:0, so the bar should stick right beneath it.
       bar.style.top = Math.max(0, rect.height) + 'px';
-      handle.style.top = Math.max(0, rect.height) + 'px';
+      handle.style.top = (Math.max(0, rect.height) + 8) + 'px';
     } else {
       bar.style.top = '0px';
-      handle.style.top = '0px';
+      handle.style.top = '8px';
     }
   }
   syncStickyOffset();
