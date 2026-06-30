@@ -68,15 +68,12 @@
 
     #a11yBar.a11y-bar-collapsed { display:none; }
 
-    #a11yBarHandle { position:sticky; z-index:9989; top:0; display:flex; align-items:center;
-      justify-content:center; gap:6px; width:auto; margin-inline-start:auto; margin-inline-end:14px;
+    #a11yBarHandle { position:fixed; z-index:9989; display:flex; align-items:center;
+      justify-content:center; gap:6px; width:auto;
       padding:4px 12px; font-family:'Cairo', Tahoma, sans-serif; font-size:12px; font-weight:700;
       color:#10210f; background:linear-gradient(135deg, #DAA520, #B8860B);
       border:none; border-radius:0 0 10px 10px; cursor:pointer;
-      box-shadow:0 4px 10px -4px rgba(0,0,0,.4);
-      transition:transform .28s ease; }
-    #a11yBarHandle .a11y-handle-icon { transition:transform .28s ease; }
-    #a11yBarHandle.a11y-bar-collapsed .a11y-handle-icon { transform:rotate(180deg); }
+      box-shadow:0 4px 10px -4px rgba(0,0,0,.4); right:14px; }
     #a11yBarHandle:focus-visible { outline:2.5px solid #ffd54a; outline-offset:2px; }
 
     #a11yBar .a11y-group { display:flex; align-items:center; gap:6px; flex-wrap:wrap;
