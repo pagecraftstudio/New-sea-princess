@@ -317,6 +317,7 @@
   });
   resetBtn.addEventListener('click', function () {
     prefs = Object.assign({}, defaults); applyPrefs(); savePrefs(prefs); refreshButtonStates(); applyCollapseState();
+    syncStickyOffset();
     if (speechSupported && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
   });
 
