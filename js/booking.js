@@ -202,7 +202,13 @@ const bookingController = {
 
         } catch(err) {
             console.error(err);
-            showInlineError('booking-validation-error', 'خطأ في استرجاع بيانات البرنامج');
+            const el = document.getElementById('booking-validation-error');
+            if (el) {
+                const msgEl = el.querySelector('[data-msg]') || el;
+                msgEl.innerHTML = 'خطأ في استرجاع بيانات البرنامج. الرجاء <a href="/packages.html" class="underline font-bold">العودة لصفحة البرامج</a> واختيار برنامج مرة أخرى.';
+                el.classList.remove('hidden');
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
     },
 
@@ -267,6 +273,10 @@ const bookingController = {
     },
 
     nextStep() {
+        if (!this.packageData) {
+            showInlineError('booking-validation-error', 'تعذّر تحميل بيانات البرنامج. الرجاء العودة لاختيار برنامج صالح.');
+            return;
+        }
         if (this.step === 1) this.buildTravelersForm();
         if (this.step < 3) {
             document.getElementById(`step${this.step}`).classList.add('hidden');
@@ -704,6 +714,12 @@ const bookingController = {
 
     // ── Submit ──
     async submitBooking() {
+        if (!this.packageData) {
+            showInlineError('booking-validation-error', 'تعذّر تحميل بيانات البرنامج، فلا يمكن إتمام الحجز. الرجاء العودة لاختيار برنامج صالح.');
+            const btn = document.getElementById('finalSubmitBtn');
+            if (btn) { btn.innerHTML = 'تأكيد طلب الحجز'; btn.disabled = false; }
+            return;
+        }
         if (!this.validateAllPassports()) {
             const first = document.querySelector('.passport-warning div');
             first?.scrollIntoView({ behavior: 'smooth', block: 'center' });

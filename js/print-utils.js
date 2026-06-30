@@ -47,7 +47,7 @@ function _header(docType, subtitle) {
     </div>
     <div class="header-center">
       <div class="company-name">نيو سي برنسيس فرع الزقازيق فرع الزقازيق</div>
-      <div class="company-sub">إشراف د. شيماء السعداوي | الداعية د. محمد دحروج | أ. ياسمين | شركة سياحة (أ) ترخيص رقم 926</div>
+      <div class="company-sub">إشراف د. شيماء السعداوي | الداعية د. محمد دحروج | أ. ياسمين منصور | شركة سياحة (أ) ترخيص رقم 926</div>
       <div class="doc-type">${docType}</div>
     </div>
     <div class="header-right">
@@ -85,7 +85,7 @@ function _footer() {
     </div>
     <div class="footer-sign">
       <div class="sign-line"></div>
-      <div class="sign-name">أ. ياسمين</div>
+      <div class="sign-name">أ. ياسمين منصور</div>
       <div class="sign-title">مشرف رحلات — التوقيع</div>
     </div>
   </div>`;
