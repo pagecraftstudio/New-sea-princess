@@ -116,29 +116,20 @@
 
     <!-- Smart Search -->
     <div class="bg-white rounded-xl shadow border border-gray-200 p-4 mb-4">
-      <label for="smartSearch" class="block text-xs text-gray-500 font-bold mb-1.5">
-        <i class="fa-solid fa-magnifying-glass text-primary ml-1" aria-hidden="true"></i>
+      <label class="block text-xs text-gray-500 font-bold mb-1.5">
+        <i class="fa-solid fa-magnifying-glass text-primary ml-1"></i>
         بحث ذكي — رقم الجواز، الرقم القومي، رقم الحجز، أو اسم أي مرافق
       </label>
       <div class="relative">
-        <input type="text" id="smartSearch" autocomplete="off" oninput="onSmartSearchInput()"
-               onkeydown="onSmartSearchKeydown(event)"
-               onblur="setTimeout(hideSuggestions, 150)"
-               role="combobox" aria-expanded="false" aria-autocomplete="list"
-               aria-controls="smartSearchSuggestions" aria-describedby="smartSearchCorrection"
+        <input type="text" id="smartSearch" oninput="applyFilters()"
                placeholder="مثال: NSP-2026-00005 — أو رقم الجواز — أو الرقم القومي — أو اسم أحد المسافرين..."
-               class="w-full border border-gray-300 rounded-lg p-3 pr-10 text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary transition">
-        <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-300" aria-hidden="true"></i>
-        <button id="smartSearchClear" aria-label="مسح البحث" onclick="document.getElementById('smartSearch').value='';applyFilters();hideSuggestions();"
-                class="hidden absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 focus:ring-2 focus:ring-red-400 rounded transition">
-          <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
+               class="w-full border border-gray-300 rounded-lg p-3 pr-10 text-sm outline-none focus:border-primary transition">
+        <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-300"></i>
+        <button id="smartSearchClear" onclick="document.getElementById('smartSearch').value='';applyFilters();"
+                class="hidden absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 transition">
+          <i class="fa-solid fa-circle-xmark"></i>
         </button>
-        <!-- Instant suggestions dropdown -->
-        <div id="smartSearchSuggestions" role="listbox" aria-label="اقتراحات البحث"
-             class="hidden absolute z-20 top-full mt-1 right-0 left-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto text-sm"></div>
       </div>
-      <p id="smartSearchCorrection" role="status" aria-live="polite" class="hidden text-xs text-amber-700 mt-1.5"></p>
-      <p id="smartSearchResultCount" class="sr-only" role="status" aria-live="polite"></p>
 
       <!-- Quick Filter Pills -->
       <div class="flex flex-wrap gap-2 mt-3">
@@ -485,190 +476,24 @@
     });
 
     document.getElementById('filterCount').innerText = filteredBookings.length;
-    const liveEl = document.getElementById('smartSearchResultCount');
-    if (liveEl) liveEl.textContent = `${filteredBookings.length} نتيجة`;
     window.filteredBookings = filteredBookings; // ✅
     renderTable(filteredBookings);
   }
 
-  // ── Smart Search (fuzzy + typo-tolerant) ────────────────
+  // ── Smart Search ────────────────────────────────────────
   // Matches: booking number, primary customer's national ID / passport,
   // OR any companion's (traveler's) name / national ID / passport.
-  // Falls back to fuzzy distance so small typos still hit.
-
-  // Levenshtein edit distance (small strings, fine perf-wise)
-  function editDistance(a, b) {
-    a = a || ''; b = b || '';
-    const m = a.length, n = b.length;
-    if (!m) return n; if (!n) return m;
-    const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
-    for (let j = 0; j <= n; j++) dp[0][j] = j;
-    for (let i = 1; i <= m; i++) {
-      for (let j = 1; j <= n; j++) {
-        dp[i][j] = a[i - 1] === b[j - 1]
-          ? dp[i - 1][j - 1]
-          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-      }
-    }
-    return dp[m][n];
-  }
-
-  // True if q fuzzy-matches anywhere inside text (substring first, then
-  // sliding-window edit-distance for typo tolerance).
-  function fuzzyIncludes(text, q) {
-    text = (text || '').toLowerCase();
-    q = (q || '').toLowerCase().trim();
-    if (!q) return false;
-    if (text.includes(q)) return true;
-    if (q.length < 3) return false; // too short, substring-only to avoid noise
-
-    const maxDist = q.length <= 4 ? 1 : q.length <= 8 ? 2 : 3;
-    const words = text.split(/\s+/);
-    // Compare query against each word and against whole text for IDs/numbers
-    return words.some(w => editDistance(w, q) <= maxDist) ||
-           editDistance(text.slice(0, q.length + maxDist), q) <= maxDist;
-  }
-
   function matchesSmartSearch(b, q) {
-    if (fuzzyIncludes(b.booking_number, q)) return true;
-    if (fuzzyIncludes(b.customer_national_id, q)) return true;
-    if (fuzzyIncludes(b.customer_passport_number, q)) return true;
+    if ((b.booking_number || '').toLowerCase().includes(q)) return true;
+    if ((b.customer_national_id || '').toLowerCase().includes(q)) return true;
+    if ((b.customer_passport_number || '').toLowerCase().includes(q)) return true;
 
     const travelers = Array.isArray(b.travelers) ? b.travelers : [];
     return travelers.some(t =>
-      fuzzyIncludes(t.name, q) ||
-      fuzzyIncludes(t.national_id, q) ||
-      fuzzyIncludes(t.passport, q)
+      (t.name || '').toLowerCase().includes(q) ||
+      (t.national_id || '').toLowerCase().includes(q) ||
+      (t.passport || '').toLowerCase().includes(q)
     );
-  }
-
-  // ── Instant Suggestions + Typo Correction ───────────────
-  let suggestionActiveIndex = -1;
-
-  function buildSuggestionPool() {
-    const pool = new Map(); // label -> kind
-    (allBookings || []).forEach(b => {
-      if (b.booking_number) pool.set(b.booking_number, 'رقم حجز');
-      if (b.customer_name) pool.set(b.customer_name, 'عميل');
-      (Array.isArray(b.travelers) ? b.travelers : []).forEach(t => {
-        if (t.name) pool.set(t.name, 'مرافق');
-      });
-    });
-    return pool;
-  }
-
-  function onSmartSearchInput() {
-    applyFilters();
-    renderSuggestions();
-  }
-
-  function renderSuggestions() {
-    const box = document.getElementById('smartSearchSuggestions');
-    const corrEl = document.getElementById('smartSearchCorrection');
-    const input = document.getElementById('smartSearch');
-    const q = input.value.trim();
-    suggestionActiveIndex = -1;
-
-    if (!q || q.length < 2) {
-      box.classList.add('hidden'); box.innerHTML = '';
-      corrEl.classList.add('hidden');
-      input.setAttribute('aria-expanded', 'false');
-      input.removeAttribute('aria-activedescendant');
-      return;
-    }
-
-    const pool = buildSuggestionPool();
-    const ql = q.toLowerCase();
-    const scored = [];
-    pool.forEach((kind, label) => {
-      const ll = label.toLowerCase();
-      let score;
-      if (ll.startsWith(ql)) score = 0;
-      else if (ll.includes(ql)) score = 1;
-      else {
-        const d = editDistance(ll, ql);
-        if (d <= Math.max(1, Math.floor(ql.length / 3))) score = 2 + d;
-        else return;
-      }
-      scored.push({ label, kind, score });
-    });
-    scored.sort((a, b) => a.score - b.score);
-    const top = scored.slice(0, 8);
-
-    // Typo correction hint: best fuzzy hit that isn't a plain substring match
-    const bestFuzzy = top.find(s => s.score >= 2);
-    if (bestFuzzy && !top.some(s => s.score <= 1)) {
-      corrEl.textContent = `تقصد: "${bestFuzzy.label}"؟`;
-      corrEl.classList.remove('hidden');
-    } else {
-      corrEl.classList.add('hidden');
-    }
-
-    if (!top.length) {
-      box.classList.add('hidden'); box.innerHTML = '';
-      input.setAttribute('aria-expanded', 'false');
-      return;
-    }
-
-    box.innerHTML = top.map((s, i) => `
-      <div id="suggestion-opt-${i}" class="suggestion-item px-3 py-2 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 flex justify-between items-center"
-           role="option" aria-selected="false" data-index="${i}"
-           onmousedown="selectSuggestion('${s.label.replace(/'/g, "\\'")}')">
-        <span class="text-gray-700">${s.label}</span>
-        <span class="text-xs text-gray-400">${s.kind}</span>
-      </div>
-    `).join('');
-    box.dataset.values = JSON.stringify(top.map(s => s.label));
-    box.classList.remove('hidden');
-    input.setAttribute('aria-expanded', 'true');
-  }
-
-  function selectSuggestion(label) {
-    document.getElementById('smartSearch').value = label;
-    hideSuggestions();
-    applyFilters();
-    document.getElementById('smartSearch').focus();
-  }
-
-  function hideSuggestions() {
-    const box = document.getElementById('smartSearchSuggestions');
-    box.classList.add('hidden');
-    document.getElementById('smartSearchCorrection').classList.add('hidden');
-    const input = document.getElementById('smartSearch');
-    input.setAttribute('aria-expanded', 'false');
-    input.removeAttribute('aria-activedescendant');
-  }
-
-  function onSmartSearchKeydown(e) {
-    const box = document.getElementById('smartSearchSuggestions');
-    if (box.classList.contains('hidden')) return;
-    const input = document.getElementById('smartSearch');
-    const values = JSON.parse(box.dataset.values || '[]');
-    const items = box.querySelectorAll('.suggestion-item');
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      suggestionActiveIndex = Math.min(suggestionActiveIndex + 1, values.length - 1);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      suggestionActiveIndex = Math.max(suggestionActiveIndex - 1, 0);
-    } else if (e.key === 'Enter' && suggestionActiveIndex >= 0) {
-      e.preventDefault();
-      selectSuggestion(values[suggestionActiveIndex]);
-      return;
-    } else if (e.key === 'Escape') {
-      hideSuggestions();
-      return;
-    } else { return; }
-    items.forEach((it, i) => {
-      const active = i === suggestionActiveIndex;
-      it.classList.toggle('bg-gray-50', active);
-      it.setAttribute('aria-selected', active ? 'true' : 'false');
-    });
-    if (suggestionActiveIndex >= 0) {
-      input.setAttribute('aria-activedescendant', `suggestion-opt-${suggestionActiveIndex}`);
-    } else {
-      input.removeAttribute('aria-activedescendant');
-    }
   }
 
   // ── Quick Filters ───────────────────────────────────────

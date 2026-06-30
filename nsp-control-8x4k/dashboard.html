@@ -185,42 +185,7 @@
 
       </div>
 
-      <!-- ══ Charts: Revenue Trend + Cancellations + Heatmap ══ -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-
-        <!-- Monthly Revenue Trend (6 months) -->
-        <div class="bg-white rounded-xl shadow border border-gray-200 p-4 md:p-5">
-          <h3 id="revTrendHeading" class="font-bold text-gray-700 flex items-center gap-2 text-sm md:text-base mb-3">
-            <i class="fa-solid fa-chart-line text-primary" aria-hidden="true"></i> اتجاه الإيرادات (آخر 6 أشهر)
-          </h3>
-          <div style="position:relative; height:220px;">
-            <canvas id="revenueTrendChart" role="img" aria-labelledby="revTrendHeading" aria-describedby="revenueTrendTable"></canvas>
-          </div>
-          <table id="revenueTrendTable" class="sr-only"><caption>بيانات اتجاه الإيرادات الشهرية</caption><tbody></tbody></table>
-        </div>
-
-        <!-- Cancellation Trend (6 months) -->
-        <div class="bg-white rounded-xl shadow border border-gray-200 p-4 md:p-5">
-          <h3 id="cancelTrendHeading" class="font-bold text-gray-700 flex items-center gap-2 text-sm md:text-base mb-3">
-            <i class="fa-solid fa-triangle-exclamation text-red-500" aria-hidden="true"></i> اتجاه الإلغاءات (آخر 6 أشهر)
-          </h3>
-          <div style="position:relative; height:220px;">
-            <canvas id="cancellationTrendChart" role="img" aria-labelledby="cancelTrendHeading" aria-describedby="cancellationTrendTable"></canvas>
-          </div>
-          <table id="cancellationTrendTable" class="sr-only"><caption>بيانات اتجاه الإلغاءات الشهرية</caption><tbody></tbody></table>
-        </div>
-
-      </div>
-
-      <!-- Booking Heatmap (day of week × hour) -->
-      <div class="bg-white rounded-xl shadow border border-gray-200 p-4 md:p-5 mb-6">
-        <h3 id="heatmapHeading" class="font-bold text-gray-700 flex items-center gap-2 text-sm md:text-base mb-3">
-          <i class="fa-solid fa-table-cells text-gold" aria-hidden="true"></i> خريطة حرارية للحجوزات (اليوم × الساعة)
-        </h3>
-        <div id="bookingHeatmap" class="overflow-x-auto" aria-labelledby="heatmapHeading"></div>
-      </div>
-
-      </div>
+      <!-- Quick Links (mobile-friendly) -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <a href="/nsp-control-8x4k/bookings.html" class="bg-primary hover:bg-green-700 text-white rounded-xl p-4 flex flex-col items-center gap-2 transition shadow text-center">
           <i class="fa-solid fa-address-book text-2xl"></i>
@@ -440,9 +405,6 @@
 
     renderTopPackagesChart(thisMonthBookings);
     renderRevenueChart(thisMonthBookings);
-    renderRevenueTrendChart(bookings);
-    renderCancellationTrendChart(bookings);
-    renderBookingHeatmap(bookings);
   }
 
   function renderTopPackagesChart(monthBookings) {
@@ -504,162 +466,6 @@
         }
       }
     });
-  }
-
-  // ── Monthly Revenue Trend (last 6 months, total_price sum) ──
-  let revenueTrendChartInstance = null;
-  function renderRevenueTrendChart(bookings) {
-    const months = lastNMonths(6);
-    const sums = months.map(({ y, m }) =>
-      bookings.filter(b => {
-        if (b.status === 'cancelled') return false;
-        const d = b.booking_date ? new Date(b.booking_date) : null;
-        return d && !isNaN(d) && d.getFullYear() === y && d.getMonth() === m;
-      }).reduce((s, b) => s + Number(b.total_price || 0), 0)
-    );
-    fillSrTable('revenueTrendTable', months.map(monthShortLabel), sums, (v) => v.toLocaleString('ar-EG') + ' ج.م');
-
-    const canvas = document.getElementById('revenueTrendChart');
-    if (revenueTrendChartInstance) { revenueTrendChartInstance.destroy(); revenueTrendChartInstance = null; }
-
-    revenueTrendChartInstance = new Chart(canvas.getContext('2d'), {
-      type: 'line',
-      data: {
-        labels: months.map(monthShortLabel),
-        datasets: [{
-          data: sums,
-          borderColor: '#1B5E20',
-          backgroundColor: 'rgba(27,94,32,0.08)',
-          tension: 0.35,
-          fill: true,
-          pointBackgroundColor: '#B8860B',
-          pointRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { rtl: true, callbacks: { label: (item) => `${Number(item.raw).toLocaleString('ar-EG')} ج.م` } }
-        },
-        scales: {
-          x: { ticks: { font: { family: 'Cairo' } }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { font: { family: 'Cairo' } }, grid: { color: '#f3f4f6' } }
-        }
-      }
-    });
-  }
-
-  // ── Cancellation Trend (last 6 months, count) ──
-  let cancellationTrendChartInstance = null;
-  function renderCancellationTrendChart(bookings) {
-    const months = lastNMonths(6);
-    const counts = months.map(({ y, m }) =>
-      bookings.filter(b => {
-        if (b.status !== 'cancelled') return false;
-        const d = b.booking_date ? new Date(b.booking_date) : null;
-        return d && !isNaN(d) && d.getFullYear() === y && d.getMonth() === m;
-      }).length
-    );
-    fillSrTable('cancellationTrendTable', months.map(monthShortLabel), counts, (v) => v + ' حجز');
-
-    const canvas = document.getElementById('cancellationTrendChart');
-    if (cancellationTrendChartInstance) { cancellationTrendChartInstance.destroy(); cancellationTrendChartInstance = null; }
-
-    cancellationTrendChartInstance = new Chart(canvas.getContext('2d'), {
-      type: 'line',
-      data: {
-        labels: months.map(monthShortLabel),
-        datasets: [{
-          data: counts,
-          borderColor: '#dc2626',
-          backgroundColor: 'rgba(220,38,38,0.08)',
-          tension: 0.35,
-          fill: true,
-          pointBackgroundColor: '#dc2626',
-          pointRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { rtl: true, callbacks: { label: (item) => `إلغاءات: ${item.raw}` } }
-        },
-        scales: {
-          x: { ticks: { font: { family: 'Cairo' } }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { precision: 0, font: { family: 'Cairo' } }, grid: { color: '#f3f4f6' } }
-        }
-      }
-    });
-  }
-
-  // ── Booking Heatmap (day-of-week × hour) ──
-  function renderBookingHeatmap(bookings) {
-    const dayNames = ['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
-    const hourBuckets = [[0,6,'00–06'],[6,12,'06–12'],[12,18,'12–18'],[18,24,'18–24']];
-    // grid[day][bucket] = count
-    const grid = Array.from({ length: 7 }, () => Array(hourBuckets.length).fill(0));
-
-    bookings.forEach(b => {
-      const raw = b.created_at || b.booking_date;
-      const d = raw ? new Date(raw) : null;
-      if (!d || isNaN(d)) return;
-      const day = d.getDay();
-      const hour = d.getHours();
-      const bIdx = hourBuckets.findIndex(([from, to]) => hour >= from && hour < to);
-      if (bIdx >= 0) grid[day][bIdx]++;
-    });
-
-    const max = Math.max(1, ...grid.flat());
-    const heat = (v) => {
-      const pct = v / max;
-      if (v === 0) return '#f3f4f6';
-      const alpha = 0.15 + pct * 0.75;
-      return `rgba(27,94,32,${alpha.toFixed(2)})`;
-    };
-
-    let html = '<table class="w-full text-center text-xs border-collapse"><caption class="sr-only">عدد الحجوزات بحسب اليوم والساعة</caption><thead><tr>' +
-      '<th class="p-2 text-gray-400 font-normal"><span class="sr-only">اليوم</span></th>' +
-      hourBuckets.map(([,,label]) => `<th scope="col" class="p-2 text-gray-400 font-normal">${label}</th>`).join('') +
-      '</tr></thead><tbody>';
-
-    dayNames.forEach((name, day) => {
-      html += `<tr><th scope="row" class="p-2 text-gray-500 font-bold whitespace-nowrap">${name}</th>`;
-      hourBuckets.forEach((_, bIdx) => {
-        const v = grid[day][bIdx];
-        html += `<td class="p-1"><div class="rounded-lg py-3 font-bold text-gray-700" style="background:${heat(v)}" aria-label="${name}، ${hourBuckets[bIdx][2]}: ${v} حجز">${v || ''}</div></td>`;
-      });
-      html += '</tr>';
-    });
-
-    html += '</tbody></table>';
-    document.getElementById('bookingHeatmap').innerHTML = html;
-  }
-
-  // Helper: last N calendar months (oldest first), each {y, m}
-  function lastNMonths(n) {
-    const now = new Date();
-    const out = [];
-    for (let i = n - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      out.push({ y: d.getFullYear(), m: d.getMonth() });
-    }
-    return out;
-  }
-  function monthShortLabel({ y, m }) {
-    return new Date(y, m, 1).toLocaleDateString('ar-EG', { month: 'short' });
-  }
-
-  // Fills a sr-only <table> so screen readers get chart data as text
-  function fillSrTable(tableId, labels, values, formatFn) {
-    const table = document.getElementById(tableId);
-    if (!table) return;
-    table.querySelector('tbody').innerHTML = labels.map((l, i) =>
-      `<tr><th scope="row">${l}</th><td>${formatFn(values[i])}</td></tr>`
-    ).join('');
   }
 
   function renderRevenueChart(monthBookings) {
