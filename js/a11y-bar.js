@@ -73,7 +73,7 @@
       padding:4px 12px; font-family:'Cairo', Tahoma, sans-serif; font-size:12px; font-weight:700;
       color:#10210f; background:linear-gradient(135deg, #DAA520, #B8860B);
       border:none; border-radius:0 0 10px 10px; cursor:pointer;
-      box-shadow:0 4px 10px -4px rgba(0,0,0,.4); right:14px; }
+      box-shadow:0 4px 10px -4px rgba(0,0,0,.4); left:14px; }
     #a11yBarHandle:focus-visible { outline:2.5px solid #ffd54a; outline-offset:2px; }
 
     #a11yBar .a11y-group { display:flex; align-items:center; gap:6px; flex-wrap:wrap;
