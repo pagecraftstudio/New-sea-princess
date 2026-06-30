@@ -97,6 +97,8 @@
 
     #a11yBar .a11y-divider { width:1px; height:18px; background:rgba(255,255,255,.14); margin:0 2px; }
 
+    #a11yBar .a11y-holy-cities { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
     #a11yBar .a11y-mecca { display:flex; align-items:center; gap:10px; font-weight:600;
       white-space:nowrap; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
       border-radius:999px; padding:5px 14px; }
@@ -120,8 +122,8 @@
       #a11yBar .a11y-group::-webkit-scrollbar { display:none; }
       #a11yBar button { width:30px; height:30px; flex:0 0 auto; }
       #a11yBar button.a11y-text-btn { padding:0 10px; flex:0 0 auto; white-space:nowrap; }
-      #a11yBar .a11y-mecca { width:100%; justify-content:center; order:3; }
-      #a11yBar .a11y-madina { width:100%; justify-content:center; order:4; }
+      #a11yBar .a11y-holy-cities { width:100%; justify-content:center; order:3;
+        flex-wrap:wrap; }
     }
 
     #a11yBar .a11y-hidden { display:none !important; }
@@ -205,26 +207,28 @@
       </button>
     </div>
 
-    <div class="a11y-mecca">
-      <span class="a11y-kaaba" aria-hidden="true">🕋</span>
-      <span class="a11y-mecca-label">مكة المكرمة</span>
-      <span class="a11y-mecca-time" id="a11yMeccaTime">—</span>
-      <span class="a11y-sep" aria-hidden="true"></span>
-      <span class="a11y-mecca-temp">
-        <i class="fa-solid fa-temperature-half" aria-hidden="true"></i>
-        <span id="a11yMeccaTemp">—</span>
-      </span>
-    </div>
+    <div class="a11y-holy-cities">
+      <div class="a11y-mecca">
+        <span class="a11y-kaaba" aria-hidden="true">🕋</span>
+        <span class="a11y-mecca-label">مكة المكرمة</span>
+        <span class="a11y-mecca-time" id="a11yMeccaTime">—</span>
+        <span class="a11y-sep" aria-hidden="true"></span>
+        <span class="a11y-mecca-temp">
+          <i class="fa-solid fa-temperature-half" aria-hidden="true"></i>
+          <span id="a11yMeccaTemp">—</span>
+        </span>
+      </div>
 
-    <div class="a11y-mecca a11y-madina">
-      <span class="a11y-kaaba" aria-hidden="true">🕌</span>
-      <span class="a11y-mecca-label">المدينة المنورة</span>
-      <span class="a11y-mecca-time" id="a11yMadinaTime">—</span>
-      <span class="a11y-sep" aria-hidden="true"></span>
-      <span class="a11y-mecca-temp">
-        <i class="fa-solid fa-temperature-half" aria-hidden="true"></i>
-        <span id="a11yMadinaTemp">—</span>
-      </span>
+      <div class="a11y-mecca a11y-madina">
+        <span class="a11y-kaaba" aria-hidden="true">🕌</span>
+        <span class="a11y-mecca-label">المدينة المنورة</span>
+        <span class="a11y-mecca-time" id="a11yMadinaTime">—</span>
+        <span class="a11y-sep" aria-hidden="true"></span>
+        <span class="a11y-mecca-temp">
+          <i class="fa-solid fa-temperature-half" aria-hidden="true"></i>
+          <span id="a11yMadinaTemp">—</span>
+        </span>
+      </div>
     </div>
   `;
 
