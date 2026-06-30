@@ -64,9 +64,11 @@
       backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
       border-bottom:1px solid rgba(184,134,11,.28);
       box-shadow:0 6px 18px -8px rgba(0,0,0,.35);
-      transition:transform .28s ease, opacity .22s ease; transform:translateY(0); }
+      transition:transform .28s ease, opacity .22s ease, height .28s ease, padding .28s ease; transform:translateY(0); }
 
-    #a11yBar.a11y-bar-collapsed { transform:translateY(-100%); opacity:0; pointer-events:none; }
+    #a11yBar.a11y-bar-collapsed { transform:translateY(-100%); opacity:0; pointer-events:none;
+      height:0; min-height:0; padding-top:0; padding-bottom:0; border-bottom-width:0;
+      overflow:hidden; margin-bottom:0; }
 
     #a11yBarHandle { position:sticky; z-index:9989; top:0; display:flex; align-items:center;
       justify-content:center; gap:6px; width:auto; margin-inline-start:auto; margin-inline-end:14px;
