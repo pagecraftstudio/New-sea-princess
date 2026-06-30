@@ -1,4 +1,4 @@
-# نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق (New Sea Princess Tourism)
+# نيو سي برنسيس فرع الزقازيق فرع الزقازيق (New Sea Princess Tourism)
 
 A complete, production-ready website for an Egyptian Umrah and Hajj travel company. Built with HTML5, Vanilla JavaScript, Tailwind CSS, and Supabase.
 
