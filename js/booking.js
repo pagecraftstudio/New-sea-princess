@@ -870,7 +870,7 @@ const bookingController = {
             : '\n✅ جميع المستندات مرفقة';
 
         const msg =
-`🕌 *طلب حجز جديد — نيو سي برنسيس فرع الزقازيق*
+`🕌 *طلب حجز جديد — نيو سي برنسيس فرع الزقازيق فرع الزقازيق*
 
 📋 *رقم الحجز:* ${bookingRow.booking_number}
 📦 *البرنامج:* ${bookingRow.package_title}

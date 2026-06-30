@@ -1,5 +1,5 @@
 /**
- * package-detail.js — نيو سي برنسيس فرع الزقازيق فرع الزقازيق
+ * package-detail.js — نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق
  *
  * ─────────────────────────────────────────────────────────
  * © 2026 New Sea Princess Tourism & Pagecraft Studio Team. All rights reserved.

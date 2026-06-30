@@ -1,5 +1,5 @@
 /**
- * ocr.js — نيو سي برنسيس فرع الزقازيق فرع الزقازيق  v3.0
+ * ocr.js — نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق  v3.0
  *
  * PASSPORT  → Tesseract.js (eng-only) extracts raw text → `mrz` npm package
  *             (via esm.sh CDN) parses MRZ lines with checksum validation and
