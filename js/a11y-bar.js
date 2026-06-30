@@ -98,7 +98,15 @@
     #a11yBar .a11y-skip:focus { position:static; right:auto; display:inline-flex; }
 
     @media (max-width:760px) {
-      #a11yBar { font-size:12px; padding:6px 10px; }
+      #a11yBar { flex-direction:column; align-items:stretch; gap:8px;
+        font-size:12px; padding:8px 10px; }
+      #a11yBar .a11y-group { justify-content:flex-start; width:100%;
+        overflow-x:auto; -webkit-overflow-scrolling:touch; flex-wrap:nowrap;
+        scrollbar-width:none; }
+      #a11yBar .a11y-group::-webkit-scrollbar { display:none; }
+      #a11yBar button { width:30px; height:30px; flex:0 0 auto; }
+      #a11yBar button.a11y-text-btn { padding:0 10px; flex:0 0 auto; white-space:nowrap; }
+      #a11yBar .a11y-mecca { width:100%; justify-content:center; order:3; }
       #a11yBar .a11y-mecca-label { display:none; }
     }
     @media (max-width:560px) {
