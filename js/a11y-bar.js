@@ -74,8 +74,9 @@
       color:#10210f; background:linear-gradient(135deg, #DAA520, #B8860B);
       border:none; border-radius:0 0 10px 10px; cursor:pointer;
       box-shadow:0 4px 10px -4px rgba(0,0,0,.4);
-      transform:translateY(-100%); transition:transform .28s ease; }
-    #a11yBarHandle.a11y-handle-visible { transform:translateY(0); }
+      transition:transform .28s ease; }
+    #a11yBarHandle .a11y-handle-icon { transition:transform .28s ease; }
+    #a11yBarHandle.a11y-bar-collapsed .a11y-handle-icon { transform:rotate(180deg); }
     #a11yBarHandle:focus-visible { outline:2.5px solid #ffd54a; outline-offset:2px; }
 
     #a11yBar .a11y-group { display:flex; align-items:center; gap:6px; flex-wrap:wrap;
@@ -201,10 +202,6 @@
       <button type="button" id="a11yReset" class="a11y-text-btn" aria-label="إعادة الضبط">
         <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> إعادة الضبط
       </button>
-      <span class="a11y-divider" aria-hidden="true"></span>
-      <button type="button" id="a11yBarCollapse" aria-label="إخفاء شريط إمكانية الوصول" title="إخفاء الشريط">
-        <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
-      </button>
     </div>
 
     <div class="a11y-holy-cities">
@@ -240,13 +237,11 @@
     document.body.insertBefore(bar, document.body.firstChild);
   }
 
-  // ── Slide-out handle (shown only while the bar is collapsed) ──
+  // ── Single slide in/out toggle for the whole bar ──
   const handle = document.createElement('button');
   handle.type = 'button';
   handle.id = 'a11yBarHandle';
-  handle.setAttribute('aria-label', 'إظهار شريط إمكانية الوصول');
-  handle.title = 'إظهار شريط إمكانية الوصول';
-  handle.innerHTML = '<i class="fa-solid fa-chevron-down" aria-hidden="true"></i> إمكانية الوصول';
+  handle.innerHTML = '<i class="fa-solid fa-chevron-up a11y-handle-icon" aria-hidden="true"></i> <span id="a11yBarHandleLabel">إمكانية الوصول</span>';
   bar.insertAdjacentElement('afterend', handle);
 
   function syncStickyOffset() {
@@ -321,20 +316,22 @@
     if (speechSupported && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
   });
 
-  // ── Slide-out collapse toggle ───────────────────────────────
-  const collapseBtn = document.getElementById('a11yBarCollapse');
+  // ── Slide-out collapse toggle (one button, slides bar in/out) ──
+  const handleLabel = document.getElementById('a11yBarHandleLabel');
   function applyCollapseState() {
     bar.classList.toggle('a11y-bar-collapsed', !!prefs.collapsed);
-    handle.classList.toggle('a11y-handle-visible', !!prefs.collapsed);
+    handle.classList.toggle('a11y-bar-collapsed', !!prefs.collapsed);
     bar.setAttribute('aria-hidden', prefs.collapsed ? 'true' : 'false');
+    handleLabel.textContent = prefs.collapsed ? 'إظهار شريط إمكانية الوصول' : 'إخفاء شريط إمكانية الوصول';
+    handle.setAttribute('aria-label', handleLabel.textContent);
+    handle.title = handleLabel.textContent;
   }
   function setCollapsed(val) {
     prefs.collapsed = !!val;
     applyCollapseState();
     savePrefs(prefs);
   }
-  collapseBtn.addEventListener('click', function () { setCollapsed(true); });
-  handle.addEventListener('click', function () { setCollapsed(false); });
+  handle.addEventListener('click', function () { setCollapsed(!prefs.collapsed); });
   applyCollapseState();
 
   // ── Voice Reader (Web Speech API: SpeechSynthesis) ─────────
