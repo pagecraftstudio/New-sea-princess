@@ -181,7 +181,7 @@ INSERT INTO site_settings (key, value, description) VALUES
 ('phone_1', '01555154996', 'رقم هاتف 1'),
 ('phone_2', '01031777295', 'رقم هاتف 2'),
 ('phone_3', '01093475254', 'رقم هاتف 3'),
-('company_name', 'نيو سي برنسيس لسياحة', 'اسم الشركة'),
+('company_name', 'نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق', 'اسم الشركة'),
 ('director_name', 'د. شيماء السعداوي', 'مدير الشركة'),
 ('license_type', 'شركة سياحة (أ)', 'نوع الترخيص'),
 ('license_number', '926', 'رقم ترخيص وزارة السياحة'),
@@ -282,7 +282,7 @@ INSERT INTO packages (title, category, departure_date, return_date, duration_nig
 
 INSERT INTO reviews (customer_name, customer_city, package_title, travel_year, rating, review_text, is_approved, is_featured) VALUES
 ('أحمد محمود', 'القاهرة', 'برنامج VIP الفاخر', 2025, 5, 'برنامج فاخر جداً والخدمة فوق الممتازة، شكراً د. شيماء', true, true),
-('سعاد إبراهيم', 'الإسكندرية', 'برنامج العمرة الاقتصادي', 2025, 4, 'سعر مناسب وخدمة محترمة، أنصح بالتعامل مع نيو سي برنسيس', true, true),
+('سعاد إبراهيم', 'الإسكندرية', 'برنامج العمرة الاقتصادي', 2025, 4, 'سعر مناسب وخدمة محترمة، أنصح بالتعامل مع نيو سي برنسيس فرع الزقازيق فرع الزقازيق', true, true),
 ('مصطفى السيد', 'المنصورة', 'البرنامج العائلي', 2024, 5, 'أفضل تنظيم لرحلة عمرة عائلية، المندوبين كانوا في قمة التعاون', true, true);
 
 INSERT INTO faqs (question, answer, category, is_published) VALUES

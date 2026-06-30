@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>إدارة البرامج | نيو سي برنسيس للسياحة</title>
+  <title>إدارة البرامج | نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق</title>
   <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -59,7 +59,7 @@
   <!-- Sidebar -->
   <aside class="w-64 bg-darkBg text-white hidden md:flex flex-col sticky top-0 h-screen">
     <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
-      <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto object-contain ml-2"> الإدارة
+      <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق فرع الزقازيق" class="h-8 w-auto object-contain ml-2"> الإدارة
     </div>
     <nav class="flex-1 overflow-y-auto py-4">
       <ul class="space-y-1">
@@ -191,6 +191,10 @@
             <div>
               <label class="block text-sm font-bold mb-1">سعر الطفل (ج.م)</label>
               <input type="number" id="pPriceChild" min="0" placeholder="اختياري" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
+            </div>
+            <div>
+              <label class="block text-sm font-bold mb-1">سعر الرضيع (ج.م)</label>
+              <input type="number" id="pPriceInfant" min="0" placeholder="اختياري — مجاني افتراضياً" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
             </div>
             <div>
               <label class="block text-sm font-bold mb-1">أقصى عدد مقاعد</label>
@@ -548,7 +552,7 @@
     itineraryItems = [];
 
     // Reset all fields
-    const fields = ['pTitle','pPrice','pPriceChild','pMaxSeats','pDiscount','pDeparture',
+    const fields = ['pTitle','pPrice','pPriceChild','pPriceInfant','pMaxSeats','pDiscount','pDeparture',
                     'pReturn','pDuration','pMeccaHotel','pMeccaDist','pNightsMecca',
                     'pMedinaHotel','pMedinaDist','pNightsMedina','pAirline','pThumbnail','pIncludes','pExcludes','pNotes'];
     fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
@@ -578,6 +582,7 @@
       document.getElementById('pDepartureCity').value  = pkg.departure_city || 'القاهرة';
       document.getElementById('pPrice').value          = pkg.price_per_person || '';
       document.getElementById('pPriceChild').value     = pkg.price_child || '';
+      document.getElementById('pPriceInfant').value    = pkg.price_infant || '';
       document.getElementById('pMaxSeats').value       = pkg.max_seats || 40;
       document.getElementById('pDiscount').value       = pkg.discount_percent || 0;
       document.getElementById('pMeccaHotel').value     = pkg.mecca_hotel || '';
@@ -654,6 +659,7 @@
       departure_city:        document.getElementById('pDepartureCity').value,
       price_per_person:      parseFloat(price),
       price_child:           parseFloat(document.getElementById('pPriceChild').value) || null,
+      price_infant:          parseFloat(document.getElementById('pPriceInfant').value) || null,
       max_seats:             maxSeats,
       available_seats:       editingId ? undefined : maxSeats, // only set on new
       discount_percent:      parseInt(document.getElementById('pDiscount').value) || 0,
@@ -871,7 +877,7 @@
 
 <div class="header">
   <h1>${pkg.title}</h1>
-  <p>نيو سي برنسيس لسياحة &nbsp;|&nbsp; د. شيماء السعداوي ود. محمد دحروج &nbsp;|&nbsp; 01555154996</p>
+  <p>نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق &nbsp;|&nbsp; د. شيماء السعداوي | الداعية د. محمد دحروج | أ. ياسمين &nbsp;|&nbsp; 01555154996</p>
   <p style="margin-top:4px">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p>
 </div>
 
@@ -885,6 +891,7 @@
   <div class="label">سعر الفرد البالغ</div>
   <div class="amount">${currency(pkg.price_per_person)}</div>
   ${pkg.price_child ? `<div style="font-size:11px;opacity:.8;margin-top:3px">سعر الطفل: ${currency(pkg.price_child)}</div>` : ''}
+  ${pkg.price_infant ? `<div style="font-size:11px;opacity:.8;margin-top:3px">سعر الرضيع: ${currency(pkg.price_infant)}</div>` : ''}
 </div>
 
 <div class="grid2">
@@ -942,17 +949,22 @@ ${pkg.notes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-ra
   <div class="sig-box">
     <div class="sig-line"></div>
     <p style="font-size:11px;font-weight:700;color:#1B5E20;margin-top:5px">د. شيماء السعداوي</p>
-    <p style="font-size:10px;color:#9ca3af">المشرف العام — التوقيع</p>
+    <p style="font-size:10px;color:#9ca3af">المشرف الإداري — التوقيع</p>
   </div>
   <div class="sig-box">
     <div class="sig-line"></div>
-    <p style="font-size:11px;font-weight:700;color:#1B5E20;margin-top:5px">د. محمد دحروج</p>
-    <p style="font-size:10px;color:#9ca3af">المشرف العام — التوقيع</p>
+    <p style="font-size:11px;font-weight:700;color:#1B5E20;margin-top:5px">الداعية د. محمد دحروج</p>
+    <p style="font-size:10px;color:#9ca3af">المشرف الديني — التوقيع</p>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <p style="font-size:11px;font-weight:700;color:#1B5E20;margin-top:5px">أ. ياسمين</p>
+    <p style="font-size:10px;color:#9ca3af">مشرف رحلات — التوقيع</p>
   </div>
 </div>
 
 <div class="footer">
-  نيو سي برنسيس لسياحة &nbsp;|&nbsp; 01555154996 &nbsp;|&nbsp; 01031777295 &nbsp;|&nbsp; 01093475254<br>
+  نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق &nbsp;|&nbsp; 01555154996 &nbsp;|&nbsp; 01031777295 &nbsp;|&nbsp; 01093475254<br>
   للحجز تواصل معنا عبر الواتساب أو أحد أرقام التليفون المذكورة
 </div>
 

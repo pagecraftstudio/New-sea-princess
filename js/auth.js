@@ -1,5 +1,5 @@
 /**
- * auth.js — نيو سي برنسيس للسياحة
+ * auth.js — نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق
  * User authentication helpers (login, register, logout, session guard)
  * Requires: supabase-config.js loaded first (window.db)
   *

@@ -1,4 +1,4 @@
-# robots.txt — نيو سي برنسيس للسياحة
+# robots.txt — نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق
 # https://newseaprincess.vercel.app
 
 User-agent: *

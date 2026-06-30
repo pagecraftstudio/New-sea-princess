@@ -43,11 +43,11 @@ function _header(docType, subtitle) {
   return `
   <div class="doc-header">
     <div class="header-left">
-      <img src="${LOGO_URL}" alt="نيو سي برنسيس" class="header-logo" onerror="this.style.display='none'">
+      <img src="${LOGO_URL}" alt="نيو سي برنسيس فرع الزقازيق فرع الزقازيق" class="header-logo" onerror="this.style.display='none'">
     </div>
     <div class="header-center">
-      <div class="company-name">نيو سي برنسيس لسياحة</div>
-      <div class="company-sub">إشراف د. شيماء السعداوي ود. محمد دحروج | شركة سياحة (أ) ترخيص رقم 926</div>
+      <div class="company-name">نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق</div>
+      <div class="company-sub">إشراف د. شيماء السعداوي | الداعية د. محمد دحروج | أ. ياسمين | شركة سياحة (أ) ترخيص رقم 926</div>
       <div class="doc-type">${docType}</div>
     </div>
     <div class="header-right">
@@ -70,18 +70,23 @@ function _footer() {
       <div class="seal-label">الختم الرسمي</div>
     </div>
     <div class="footer-center">
-      نيو سي برنسيس لسياحة &nbsp;•&nbsp; 01555154996 &nbsp;•&nbsp; 01031777295 &nbsp;•&nbsp; 01093475254<br>
+      نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق &nbsp;•&nbsp; 01555154996 &nbsp;•&nbsp; 01031777295 &nbsp;•&nbsp; 01093475254<br>
       <span style="color:#B8860B">شكراً لاختياركم. تقبل الله طاعتكم وجعل رحلتكم مباركة 🤲</span>
     </div>
     <div class="footer-sign">
       <div class="sign-line"></div>
       <div class="sign-name">د. شيماء السعداوي</div>
-      <div class="sign-title">المشرف العام — التوقيع</div>
+      <div class="sign-title">المشرف الإداري — التوقيع</div>
     </div>
     <div class="footer-sign">
       <div class="sign-line"></div>
-      <div class="sign-name">د. محمد دحروج</div>
-      <div class="sign-title">المشرف العام — التوقيع</div>
+      <div class="sign-name">الداعية د. محمد دحروج</div>
+      <div class="sign-title">المشرف الديني — التوقيع</div>
+    </div>
+    <div class="footer-sign">
+      <div class="sign-line"></div>
+      <div class="sign-name">أ. ياسمين</div>
+      <div class="sign-title">مشرف رحلات — التوقيع</div>
     </div>
   </div>`;
 }
@@ -651,7 +656,7 @@ function exportGroupedReport() {
   if (p?.value) fParts.push('برنامج: '+p.value);
 
   const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
-<title>تقرير الحجوزات — نيو سي برنسيس</title>
+<title>تقرير الحجوزات — نيو سي برنسيس فرع الزقازيق فرع الزقازيق</title>
 ${_FONTS}
 <style>${_BASE_CSS}</style>
 </head><body>

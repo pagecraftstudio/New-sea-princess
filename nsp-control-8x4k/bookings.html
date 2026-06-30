@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>إدارة الحجوزات | نيو سي برنسيس للسياحة</title>
+  <title>إدارة الحجوزات | نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق</title>
   <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -66,7 +66,7 @@
   <!-- Sidebar -->
   <aside class="w-64 bg-darkBg text-white hidden md:flex flex-col sticky top-0 h-screen">
     <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
-      <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto object-contain ml-2"> الإدارة
+      <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق فرع الزقازيق" class="h-8 w-auto object-contain ml-2"> الإدارة
     </div>
     <nav class="flex-1 overflow-y-auto py-4">
       <ul class="space-y-1">
@@ -207,7 +207,7 @@
             <th class="p-4">اسم العميل ورقم الهاتف</th>
             <th class="p-4">منشئ الطلب</th>
             <th class="p-4">البرنامج وتاريخ مغادرته</th>
-            <th class="p-4">الأفراد (ب/ط)</th>
+            <th class="p-4">الأفراد (ب/ط/ر)</th>
             <th class="p-4">الحالة</th>
             <th class="p-4 text-center">الإجراءات</th>
           </tr>
@@ -572,7 +572,7 @@
           <p class="font-bold text-primary max-w-[180px] truncate" title="${b.package_title}">${b.package_title}</p>
           <p class="text-xs text-gray-500">${formatDateSimple(b.package_departure)}</p>
         </td>
-        <td class="p-4 text-center font-bold">${b.adults_count} / ${b.children_count}</td>
+        <td class="p-4 text-center font-bold">${b.adults_count} / ${b.children_count} / ${b.infants_count || 0}</td>
         <td class="p-4">
           <select data-id="${b.id}" onchange="updateBookingStatus(this)"
                   class="text-xs p-1 rounded outline-none font-bold cursor-pointer ${badgeClass}">
@@ -865,7 +865,7 @@
         <div class="grid grid-cols-2 gap-2">
           <div class="col-span-2"><p class="text-xs text-gray-400">اسم البرنامج</p><p class="font-bold text-primary">${b.package_title}</p></div>
           <div><p class="text-xs text-gray-400">المغادرة</p><p class="font-bold">${formatDateSimple(b.package_departure)}</p></div>
-          <div><p class="text-xs text-gray-400">الأفراد</p><p class="font-bold">${b.adults_count} بالغ / ${b.children_count} طفل</p></div>
+          <div><p class="text-xs text-gray-400">الأفراد</p><p class="font-bold">${b.adults_count} بالغ / ${b.children_count} طفل / ${b.infants_count || 0} رضيع</p></div>
         </div>` },
       { icon:'fa-money-bill-wave', title:'المالي', html:`
         <div class="grid grid-cols-3 gap-2 mb-3">
@@ -955,7 +955,7 @@
         `عزيزي/عزيزتي ${b.customer_name}،
 
 ` +
-        `نتشرف بتواصلنا معكم من شركة *نيو سي برنسيس للسياحة*.
+        `نتشرف بتواصلنا معكم من شركة *نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق*.
 
 ` +
         `نودّ تذكيركم بأن رحلتكم *${b.package_title}* قد تم تأكيدها تحت رقم الحجز *${b.booking_number}*.
@@ -1061,7 +1061,7 @@
   const docTypeLabels = {
     passport:'جواز السفر', national_id:'الرقم القومي', personal_photo:'الصورة الشخصية',
     vaccination_meningitis:'تطعيم الحمى الشوكية', vaccination_covid:'تطعيم كوفيد-19',
-    marriage_contract:'عقد الزواج', birth_certificate:'شهادة الميلاد'
+    birth_certificate:'شهادة الميلاد'
   };
 
   function buildDocControlsHtml(booking) {
@@ -1299,7 +1299,7 @@
     const msg =
 `عزيزي/عزيزتي ${booking.customer_name}،
 
-تواصل معكم فريق *نيو سي برنسيس للسياحة* بخصوص حجزكم رقم *${booking.booking_number}* — ${booking.package_title}.
+تواصل معكم فريق *نيو سي برنسيس فرع الزقازيق فرع الزقازيق فرع الزقازيق* بخصوص حجزكم رقم *${booking.booking_number}* — ${booking.package_title}.
 
 ⚠️ تم اكتشاف مشكلة في ملف حجزكم تحتاج إلى متابعة عاجلة.${warningText}
 
@@ -1349,7 +1349,7 @@
     const headers = [
       'رقم الحجز','اسم العميل','رقم الهاتف','البريد الإلكتروني',
       'البرنامج','تاريخ المغادرة','تاريخ الحجز',
-      'عدد البالغين','عدد الأطفال','إجمالي الأفراد',
+      'عدد البالغين','عدد الأطفال','عدد الرضّع','إجمالي الأفراد',
       'إجمالي المبلغ (ج.م)','المبلغ المدفوع (ج.م)','الرصيد المتبقي (ج.م)',
       'ما يعادل الإجمالي (ر.س)','ما يعادل المدفوع (ر.س)','ما يعادل المتبقي (ر.س)',
       'حالة الحجز','كود الخصم','قيمة الخصم (ج.م)','ملاحظات خاصة'
@@ -1362,6 +1362,7 @@
       const remain   = Number(b.remaining_amount ?? (total - paid));
       const adults   = Number(b.adults_count   || 0);
       const children = Number(b.children_count || 0);
+      const infants  = Number(b.infants_count  || 0);
       return [
         b.booking_number   || '—',
         b.customer_name    || '—',
@@ -1370,7 +1371,7 @@
         b.package_title    || '—',
         fmtDate(b.package_departure),
         fmtDate(b.booking_date),
-        adults, children, adults + children,
+        adults, children, infants, adults + children + infants,
         total, paid, remain,
         (total  * EGP_TO_SAR).toFixed(1),
         (paid   * EGP_TO_SAR).toFixed(1),

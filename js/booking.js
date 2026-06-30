@@ -43,19 +43,12 @@ function auditTravelerDocs(block, idx, isChild) {
     const photoInput    = block.querySelector('.t-photo-file');
     const meningInput   = block.querySelector('.t-menin-file');
     const covidInput    = block.querySelector('.t-covid-file');
-    const marriageInput = block.querySelector('.t-marriage-file');
     const birthInput    = block.querySelector('.t-birth-cert');
 
     if (!nidInput?.files?.[0])      warnings.push('صورة بطاقة الرقم القومي غير مرفقة');
     if (!passportInput?.files?.[0]) warnings.push('صورة جواز السفر غير مرفقة');
     if (!photoInput?.files?.[0])    warnings.push('الصورة الشخصية غير مرفقة');
-    if (!meningInput?.files?.[0])   warnings.push('شهادة تطعيم الحمى الشوكية (MenACYW) غير مرفقة');
-    if (!covidInput?.files?.[0])    warnings.push('شهادة تطعيم كوفيد-19 غير مرفقة');
-
-    // Marriage contract required only for married females
-    if (gender === 'female' && marital === 'married') {
-        if (!marriageInput?.files?.[0]) warnings.push('عقد الزواج غير مرفق (مطلوب للمرأة المتزوجة)');
-    }
+    // Vaccines (MenACYW / COVID-19) are now optional — no warning if missing.
 
     // Birth certificate required for youth (12–17)
     if (ageRange === 'youth') {
@@ -101,7 +94,7 @@ function renderDocWarnings() {
         }
     });
 
-    document.querySelectorAll('.traveler-child-block').forEach((block, idx) => {
+    document.querySelectorAll('.traveler-child-block, .traveler-infant-block').forEach((block, idx) => {
         const warnings = auditTravelerDocs(block, idx, true);
         let bannerEl   = block.querySelector('.doc-warnings-banner');
         if (!bannerEl) {
@@ -133,24 +126,11 @@ function renderDocWarnings() {
 // ══════════════════════════════════════════════════════
 
 function onGenderChange(block) {
-    const gender  = block.querySelector('.t-gender').value;
-    const marital = block.querySelector('.t-marital').value;
-    toggleMarriageSection(block, gender, marital);
     renderDocWarnings();
 }
 
 function onMaritalChange(block) {
-    const gender  = block.querySelector('.t-gender').value;
-    const marital = block.querySelector('.t-marital').value;
-    toggleMarriageSection(block, gender, marital);
     renderDocWarnings();
-}
-
-function toggleMarriageSection(block, gender, marital) {
-    const section = block.querySelector('.marriage-section');
-    if (!section) return;
-    const show = gender === 'female' && marital === 'married';
-    section.classList.toggle('hidden', !show);
 }
 
 function onAgeRangeChange(block) {
@@ -191,7 +171,7 @@ const bookingController = {
 
         try {
             const { data, error } = await window.db.from('packages')
-                .select('id,title,category,season,departure_date,return_date,duration_nights,price_per_person,price_child,discount_percent,max_seats,available_seats,departure_city,flight_type,airline,mecca_hotel,mecca_hotel_stars,medina_hotel,medina_hotel_stars,nights_mecca,nights_medina,transport_type,includes,excludes,itinerary,images,thumbnail_url,is_active,visa_included,notes')
+                .select('id,title,category,season,departure_date,return_date,duration_nights,price_per_person,price_child,price_infant,discount_percent,max_seats,available_seats,departure_city,flight_type,airline,mecca_hotel,mecca_hotel_stars,medina_hotel,medina_hotel_stars,nights_mecca,nights_medina,transport_type,includes,excludes,itinerary,images,thumbnail_url,is_active,visa_included,notes')
                 .eq('id', pkgId).single();
             if (error) throw error;
             this.packageData = data;
@@ -209,9 +189,16 @@ const bookingController = {
                 document.getElementById('childPriceNotice').innerText = `سعر الطفل: ${window.formatCurrency(data.price_child)}`;
             }
 
+            if (!data.price_infant) {
+                document.getElementById('infantPriceNotice').innerText = 'الرضّع (أقل من سنتين) يسافرون مجاناً لهذا البرنامج.';
+            } else {
+                document.getElementById('infantPriceNotice').innerText = `سعر الرضيع: ${window.formatCurrency(data.price_infant)}`;
+            }
+
             this.updatePricing();
             document.getElementById('adultsCount').addEventListener('input', () => this.updatePricing());
             document.getElementById('childrenCount').addEventListener('input', () => this.updatePricing());
+            document.getElementById('infantsCount').addEventListener('input', () => this.updatePricing());
 
         } catch(err) {
             console.error(err);
@@ -222,17 +209,22 @@ const bookingController = {
     updatePricing() {
         const adults   = parseInt(document.getElementById('adultsCount').value) || 1;
         const children = parseInt(document.getElementById('childrenCount').value) || 0;
-        const priceAdult = this.packageData.price_per_person;
-        const priceChild = this.packageData.price_child || priceAdult;
+        const infants  = parseInt(document.getElementById('infantsCount').value) || 0;
+        const priceAdult  = this.packageData.price_per_person;
+        const priceChild  = this.packageData.price_child || priceAdult;
+        const priceInfant = this.packageData.price_infant || 0; // infants free by default
 
         const adultsTotal   = adults * priceAdult;
         const childrenTotal = children * priceChild;
-        this.totalBasePrice = adultsTotal + childrenTotal;
+        const infantsTotal  = infants * priceInfant;
+        this.totalBasePrice = adultsTotal + childrenTotal + infantsTotal;
 
         document.getElementById('calcAdultsText').innerText   = `${adults} بالغ`;
         document.getElementById('calcAdultsTotal').innerText  = window.formatCurrency(adultsTotal);
         document.getElementById('calcChildrenText').innerText = `${children} طفل`;
         document.getElementById('calcChildrenTotal').innerText= window.formatCurrency(childrenTotal);
+        document.getElementById('calcInfantsText').innerText  = `${infants} رضيع`;
+        document.getElementById('calcInfantsTotal').innerText = window.formatCurrency(infantsTotal);
 
         if (this.appliedCoupon && this.packageData.discount_percent) {
             this.discountAmount = (this.totalBasePrice * this.packageData.discount_percent) / 100;
@@ -305,6 +297,7 @@ const bookingController = {
     buildTravelersForm() {
         const adults   = parseInt(document.getElementById('adultsCount').value) || 1;
         const children = parseInt(document.getElementById('childrenCount').value) || 0;
+        const infants  = parseInt(document.getElementById('infantsCount').value) || 0;
         const container= document.getElementById('travelersFormContainer');
         container.innerHTML = '';
 
@@ -450,13 +443,13 @@ const bookingController = {
                            onchange="renderDocWarnings()">
                   </div>
 
-                  <!-- Meningitis vaccine -->
+                  <!-- Meningitis vaccine (optional) -->
                   <div>
                     <label class="block text-xs text-gray-600 mb-1 font-medium">
                       <i class="fa-solid fa-syringe ml-1 text-purple-600"></i>
-                      تطعيم الحمى الشوكية (MenACYW) <span class="text-red-500">*</span>
+                      تطعيم الحمى الشوكية (MenACYW) <span class="text-gray-400 font-normal">(اختياري)</span>
                     </label>
-                    <p class="text-xs text-purple-600 mb-1">شهادة تطعيم سارية المفعول — مطلب سعودي</p>
+                    <p class="text-xs text-purple-600 mb-1">شهادة تطعيم سارية المفعول — مطلب سعودي إن وُجد</p>
                     <input type="file" class="t-menin-file text-sm bg-white border border-gray-300 rounded w-full p-1"
                            data-traveler="" data-doctype="vaccination_meningitis"
                            accept="image/jpeg,image/png,application/pdf"
@@ -467,31 +460,16 @@ const bookingController = {
                     </label>
                   </div>
 
-                  <!-- COVID-19 vaccine -->
+                  <!-- COVID-19 vaccine (optional) -->
                   <div>
                     <label class="block text-xs text-gray-600 mb-1 font-medium">
                       <i class="fa-solid fa-shield-virus ml-1 text-teal-600"></i>
-                      تطعيم كوفيد-19 <span class="text-red-500">*</span>
+                      تطعيم كوفيد-19 <span class="text-gray-400 font-normal">(اختياري)</span>
                     </label>
                     <input type="file" class="t-covid-file text-sm bg-white border border-gray-300 rounded w-full p-1"
                            data-traveler="" data-doctype="vaccination_covid"
                            accept="image/jpeg,image/png,application/pdf"
                            onchange="renderDocWarnings()">
-                  </div>
-
-                  <!-- Marriage contract — conditional (married female only) -->
-                  <div class="marriage-section hidden md:col-span-2">
-                    <div class="bg-pink-50 border border-pink-200 rounded-lg p-3">
-                      <label class="block text-xs text-gray-600 mb-1 font-bold">
-                        <i class="fa-solid fa-file-contract ml-1 text-pink-600"></i>
-                        عقد الزواج <span class="text-red-500">*</span>
-                        <span class="text-pink-500 font-normal">(مطلوب للمرأة المتزوجة)</span>
-                      </label>
-                      <input type="file" class="t-marriage-file text-sm bg-white border border-pink-300 rounded w-full p-1"
-                             data-traveler="" data-doctype="marriage_contract"
-                             accept="image/jpeg,image/png,application/pdf"
-                             onchange="renderDocWarnings()">
-                    </div>
                   </div>
 
                   <!-- Birth certificate — conditional (youth 12–17) -->
@@ -529,6 +507,34 @@ const bookingController = {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <input type="text" class="t-name border p-2 rounded w-full" placeholder="الاسم الرباعي (مطلوب)" required>
                 <input type="number" class="t-age border p-2 rounded w-full" placeholder="العمر" required min="1" max="11">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1 font-medium">
+                  <i class="fa-solid fa-baby ml-1 text-yellow-600"></i>
+                  شهادة الميلاد <span class="text-red-500">*</span>
+                </label>
+                <input type="file" class="t-birth-cert text-sm bg-white border border-gray-300 rounded w-full p-1"
+                       data-traveler="" data-doctype="birth_certificate"
+                       accept="image/jpeg,image/png,application/pdf"
+                       onchange="renderDocWarnings()">
+                <div class="doc-warnings-banner"></div>
+              </div>
+            `;
+            container.appendChild(div);
+        }
+
+        // Infant blocks (under 2 years old)
+        for (let i = 1; i <= infants; i++) {
+            const div = document.createElement('div');
+            div.className = 'border border-gray-200 p-4 rounded-lg traveler-infant-block bg-white';
+            div.innerHTML = `
+              <h4 class="font-bold mb-3 border-b pb-2">
+                <span class="bg-pink-100 text-pink-700 px-2 py-0.5 rounded text-sm ml-2">رضيع ${i}</span>
+                <span class="text-xs text-gray-400 font-normal">— أقل من سنتين</span>
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <input type="text" class="t-name border p-2 rounded w-full" placeholder="الاسم الرباعي (مطلوب)" required>
+                <input type="number" class="t-age-months border p-2 rounded w-full" placeholder="العمر بالأشهر" required min="0" max="23">
               </div>
               <div>
                 <label class="block text-xs text-gray-600 mb-1 font-medium">
@@ -633,7 +639,7 @@ const bookingController = {
         }
 
         // Validate required text inputs
-        const inputs = Array.from(document.querySelectorAll('.traveler-adult-block input[required], .traveler-child-block input[required]'));
+        const inputs = Array.from(document.querySelectorAll('.traveler-adult-block input[required], .traveler-child-block input[required], .traveler-infant-block input[required]'));
         const isValid = inputs.every(i => i.value.trim() !== '');
         if (!isValid) {
             showInlineError('booking-validation-error', 'يرجى ملء كافة الحقول الإلزامية للمسافرين.');
@@ -738,6 +744,11 @@ const bookingController = {
                 const name = block.querySelector('.t-name')?.value?.trim() || `طفل ${idx+1}`;
                 ws.forEach(w => docWarningsList.push(`${name}: ${w}`));
             });
+            document.querySelectorAll('.traveler-infant-block').forEach((block, idx) => {
+                const ws = auditTravelerDocs(block, idx, true);
+                const name = block.querySelector('.t-name')?.value?.trim() || `رضيع ${idx+1}`;
+                ws.forEach(w => docWarningsList.push(`${name}: ${w}`));
+            });
 
             // 2. Upload all files
             let uploadedDocs = [];
@@ -748,11 +759,10 @@ const bookingController = {
                 { cls: '.t-photo-file',    type: 'personal_photo' },
                 { cls: '.t-menin-file',    type: 'vaccination_meningitis' },
                 { cls: '.t-covid-file',    type: 'vaccination_covid' },
-                { cls: '.t-marriage-file', type: 'marriage_contract' },
                 { cls: '.t-birth-cert',    type: 'birth_certificate' },
             ];
 
-            for (const block of document.querySelectorAll('.traveler-adult-block, .traveler-child-block')) {
+            for (const block of document.querySelectorAll('.traveler-adult-block, .traveler-child-block, .traveler-infant-block')) {
                 const name = block.querySelector('.t-name')?.value?.trim() || '';
                 for (const { cls, type } of docInputClasses) {
                     const inp = block.querySelector(cls);
@@ -788,6 +798,13 @@ const bookingController = {
                     age:  parseInt(blk.querySelector('.t-age').value)
                 });
             });
+            document.querySelectorAll('.traveler-infant-block').forEach(blk => {
+                travelers.push({
+                    type: 'infant',
+                    name: blk.querySelector('.t-name').value,
+                    age_months: parseInt(blk.querySelector('.t-age-months').value)
+                });
+            });
 
             // 4. Build payload
             const finalTotal = this.totalBasePrice - this.discountAmount;
@@ -802,6 +819,7 @@ const bookingController = {
                 customer_passport_number:travelers[0]?.passport,
                 adults_count:            parseInt(document.getElementById('adultsCount').value) || 1,
                 children_count:          parseInt(document.getElementById('childrenCount').value) || 0,
+                infants_count:           parseInt(document.getElementById('infantsCount').value) || 0,
                 travelers,
                 total_price:             finalTotal,
                 remaining_amount:        finalTotal,
@@ -852,14 +870,14 @@ const bookingController = {
             : '\n✅ جميع المستندات مرفقة';
 
         const msg =
-`🕌 *طلب حجز جديد — نيو سي برنسيس*
+`🕌 *طلب حجز جديد — نيو سي برنسيس فرع الزقازيق فرع الزقازيق*
 
 📋 *رقم الحجز:* ${bookingRow.booking_number}
 📦 *البرنامج:* ${bookingRow.package_title}
 📅 *المغادرة:* ${window.formatDate(bookingRow.package_departure)}
 👤 *العميل:* ${bookingRow.customer_name}
 📞 *هاتف:* ${bookingRow.customer_phone}
-👥 *الأفراد:* ${bookingRow.adults_count} بالغ | ${bookingRow.children_count} طفل
+👥 *الأفراد:* ${bookingRow.adults_count} بالغ | ${bookingRow.children_count} طفل | ${bookingRow.infants_count} رضيع
 💰 *الإجمالي:* ${window.formatCurrency(bookingRow.total_price)}
 📎 *المستندات:* ${bookingRow.documents.length} ملف${warningsText}`;
 
@@ -925,7 +943,11 @@ function collectTravelersPartial() {
         name: blk.querySelector('.t-name')?.value || '',
         age:  blk.querySelector('.t-age')?.value  || ''
     }));
-    return { adults, children };
+    const infants = Array.from(document.querySelectorAll('.traveler-infant-block')).map(blk => ({
+        name:       blk.querySelector('.t-name')?.value       || '',
+        age_months: blk.querySelector('.t-age-months')?.value || ''
+    }));
+    return { adults, children, infants };
 }
 
 function saveDraft() {
@@ -940,6 +962,7 @@ function saveDraft() {
             contactEmail: document.getElementById('contactEmail')?.value   || '',
             adults:       document.getElementById('adultsCount')?.value    || '1',
             children:     document.getElementById('childrenCount')?.value  || '0',
+            infants:      document.getElementById('infantsCount')?.value   || '0',
             notes:        document.getElementById('specialRequests')?.value|| '',
             travelers:    collectTravelersPartial()
         };
@@ -1002,8 +1025,10 @@ function restoreDraft() {
 
         const adultsEl   = document.getElementById('adultsCount');
         const childrenEl = document.getElementById('childrenCount');
+        const infantsEl  = document.getElementById('infantsCount');
         if (adultsEl   && draft.adults)   { adultsEl.value   = draft.adults;   adultsEl.dispatchEvent(new Event('input')); }
         if (childrenEl && draft.children) { childrenEl.value = draft.children; childrenEl.dispatchEvent(new Event('input')); }
+        if (infantsEl  && draft.infants)  { infantsEl.value  = draft.infants;  infantsEl.dispatchEvent(new Event('input')); }
 
         if (draft.step >= 2 && draft.travelers) {
             setTimeout(() => {
@@ -1046,6 +1071,15 @@ function restoreTravelers(travelers) {
         const ageEl  = blk.querySelector('.t-age');
         if (nameEl && t.name) nameEl.value = t.name;
         if (ageEl  && t.age)  ageEl.value  = t.age;
+    });
+    const infantBlocks = document.querySelectorAll('.traveler-infant-block');
+    (travelers.infants || []).forEach((t, i) => {
+        const blk = infantBlocks[i];
+        if (!blk) return;
+        const nameEl      = blk.querySelector('.t-name');
+        const ageMonthsEl = blk.querySelector('.t-age-months');
+        if (nameEl      && t.name)       nameEl.value      = t.name;
+        if (ageMonthsEl && t.age_months) ageMonthsEl.value = t.age_months;
     });
 }
 
