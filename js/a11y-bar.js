@@ -244,9 +244,11 @@
   function syncStickyOffset() {
     if (header) {
       const rect = header.getBoundingClientRect();
-      // Header is itself sticky at top:0, so the bar should stick right beneath it.
-      bar.style.top = Math.max(0, rect.height) + 'px';
-      handle.style.top = (Math.max(0, rect.height) + 8) + 'px';
+      // Use the header's actual bottom edge (accounts for any banner above it
+      // that pushes header down before the user scrolls).
+      const bottom = Math.max(0, rect.bottom);
+      bar.style.top = bottom + 'px';
+      handle.style.top = (bottom + 8) + 'px';
     } else {
       bar.style.top = '0px';
       handle.style.top = '8px';
@@ -255,6 +257,7 @@
   syncStickyOffset();
   window.addEventListener('resize', syncStickyOffset);
   window.addEventListener('load', syncStickyOffset);
+  window.addEventListener('scroll', syncStickyOffset, { passive: true });
   if (window.ResizeObserver && header) {
     new ResizeObserver(syncStickyOffset).observe(header);
   }
