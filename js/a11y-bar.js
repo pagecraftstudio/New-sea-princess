@@ -68,7 +68,7 @@
 
     #a11yBar.a11y-bar-collapsed { transform:translateY(-100%); opacity:0; pointer-events:none;
       height:0; min-height:0; padding-top:0; padding-bottom:0; border-bottom-width:0;
-      overflow:hidden; margin-bottom:0; }
+      overflow:hidden; margin-bottom:0; box-shadow:none; }
 
     #a11yBarHandle { position:sticky; z-index:9989; top:0; display:flex; align-items:center;
       justify-content:center; gap:6px; width:auto; margin-inline-start:auto; margin-inline-end:14px;
