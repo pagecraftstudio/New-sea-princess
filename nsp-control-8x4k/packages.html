@@ -195,6 +195,10 @@
               <input type="number" id="pPriceChild" min="0" placeholder="اختياري" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
             </div>
             <div>
+              <label class="block text-sm font-bold mb-1">سعر الرضيع (ج.م)</label>
+              <input type="number" id="pPriceInfant" min="0" placeholder="مجاني افتراضياً" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
+            </div>
+            <div>
               <label class="block text-sm font-bold mb-1">أقصى عدد مقاعد</label>
               <input type="number" id="pMaxSeats" min="1" placeholder="40" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
             </div>
@@ -550,7 +554,7 @@
     itineraryItems = [];
 
     // Reset all fields
-    const fields = ['pTitle','pPrice','pPriceChild','pMaxSeats','pDiscount','pDeparture',
+    const fields = ['pTitle','pPrice','pPriceChild','pPriceInfant','pMaxSeats','pDiscount','pDeparture',
                     'pReturn','pDuration','pMeccaHotel','pMeccaDist','pNightsMecca',
                     'pMedinaHotel','pMedinaDist','pNightsMedina','pAirline','pThumbnail','pIncludes','pExcludes','pNotes'];
     fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
@@ -580,6 +584,7 @@
       document.getElementById('pDepartureCity').value  = pkg.departure_city || 'القاهرة';
       document.getElementById('pPrice').value          = pkg.price_per_person || '';
       document.getElementById('pPriceChild').value     = pkg.price_child || '';
+      document.getElementById('pPriceInfant').value    = pkg.price_infant || '';
       document.getElementById('pMaxSeats').value       = pkg.max_seats || 40;
       document.getElementById('pDiscount').value       = pkg.discount_percent || 0;
       document.getElementById('pMeccaHotel').value     = pkg.mecca_hotel || '';
@@ -656,6 +661,7 @@
       departure_city:        document.getElementById('pDepartureCity').value,
       price_per_person:      parseFloat(price),
       price_child:           parseFloat(document.getElementById('pPriceChild').value) || null,
+      price_infant:          parseFloat(document.getElementById('pPriceInfant').value) || null,
       max_seats:             maxSeats,
       available_seats:       editingId ? undefined : maxSeats, // only set on new
       discount_percent:      parseInt(document.getElementById('pDiscount').value) || 0,
@@ -887,6 +893,7 @@
   <div class="label">سعر الفرد البالغ</div>
   <div class="amount">${currency(pkg.price_per_person)}</div>
   ${pkg.price_child ? `<div style="font-size:11px;opacity:.8;margin-top:3px">سعر الطفل: ${currency(pkg.price_child)}</div>` : ''}
+  ${pkg.price_infant ? `<div style="font-size:11px;opacity:.8;margin-top:3px">سعر الرضيع: ${currency(pkg.price_infant)}</div>` : ''}
 </div>
 
 <div class="grid2">
