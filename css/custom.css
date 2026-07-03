@@ -112,3 +112,40 @@ html.dark .pkg-footer {
 
 /* ── New Dark Navbar (logo redesign) ───────────────────── */
 .nav-link-dark:hover { color: #DAA520 !important; border-bottom-color: rgba(184,134,11,.4) !important; }
+
+/* ── Tablet Layout Fix (768px–1023px) ─────────────────────
+   Tailwind's md: breakpoint (768px) was the only breakpoint
+   used, causing 3-col grids to squeeze on tablets.
+   Force max 2 cols on tablet, let lg: (1024px+) handle 3+.
+   ──────────────────────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1023px) {
+
+  /* 3-col grids → 2 cols on tablet */
+  .grid.md\:grid-cols-3,
+  [class*="grid"][class*="md:grid-cols-3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* 4-col grids → 2 cols on tablet */
+  .grid.md\:grid-cols-4,
+  [class*="grid"][class*="md:grid-cols-4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* 5-col grids → 2 cols on tablet */
+  .grid.md\:grid-cols-5,
+  [class*="grid"][class*="md:grid-cols-5"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* 2-col grids — keep as-is, they're fine on tablet */
+
+  /* Reduce excessive padding on tablet */
+  .md\:p-8 { padding: 1.5rem !important; }
+  .md\:p-6 { padding: 1.25rem !important; }
+
+  /* contact.html md:grid-cols-5 (form layout) → single col */
+  .grid.md\:grid-cols-5 {
+    grid-template-columns: 1fr !important;
+  }
+}

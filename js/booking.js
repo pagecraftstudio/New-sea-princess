@@ -321,7 +321,7 @@ const bookingController = {
               </h4>
 
               <!-- Basic info -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <input type="text" class="t-name border p-2 rounded w-full" placeholder="الاسم الرباعي (مطلوب)" required>
                 <input type="text" inputmode="numeric" pattern="[0-9]{14}" class="t-nid border p-2 rounded w-full"
                        placeholder="الرقم القومي (14 رقم) — اختياري" maxlength="14"
@@ -342,7 +342,7 @@ const bookingController = {
               </div>
 
               <!-- Nationality + Place of Birth + Date of Birth (Nusuk/Ministry required) -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label class="block text-xs font-bold text-gray-600 mb-1">
                     <i class="fa-solid fa-flag ml-1 text-sky-500"></i>الجنسية <span class="text-red-500">*</span>
@@ -366,7 +366,7 @@ const bookingController = {
               </div>
 
               <!-- Gender + Marital Status (adults only) -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <div>
                   <label class="block text-xs font-bold text-gray-600 mb-1">
                     <i class="fa-solid fa-venus-mars ml-1 text-blue-500"></i>الجنس <span class="text-red-500">*</span>
@@ -410,7 +410,7 @@ const bookingController = {
                   المستندات المطلوبة
                   <span class="text-gray-400 font-normal">(مطلوبة لإتمام الحجز — يمكن الإرسال لاحقاً عبر واتساب)</span>
                 </p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
                   <!-- National ID -->
                   <div>
@@ -514,7 +514,7 @@ const bookingController = {
                 <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-sm ml-2">طفل ${i}</span>
                 <span class="text-xs text-gray-400 font-normal">— أقل من 12 سنة</span>
               </h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <input type="text" class="t-name border p-2 rounded w-full" placeholder="الاسم الرباعي (مطلوب)" required>
                 <input type="number" class="t-age border p-2 rounded w-full" placeholder="العمر" required min="1" max="11">
               </div>
@@ -542,7 +542,7 @@ const bookingController = {
                 <span class="bg-pink-100 text-pink-700 px-2 py-0.5 rounded text-sm ml-2">رضيع ${i}</span>
                 <span class="text-xs text-gray-400 font-normal">— أقل من سنتين</span>
               </h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <input type="text" class="t-name border p-2 rounded w-full" placeholder="الاسم الرباعي (مطلوب)" required>
                 <input type="number" class="t-age-months border p-2 rounded w-full" placeholder="العمر بالأشهر" required min="0" max="23">
               </div>
