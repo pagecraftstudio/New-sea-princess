@@ -184,7 +184,9 @@ const bookingController = {
 
             document.getElementById('summaryCard').style.display = 'flex';
             document.getElementById('summaryTitle').innerText = data.title;
-            document.getElementById('summaryDate').innerText = 'المغادرة: ' + window.formatDate(data.departure_date);
+            document.getElementById('summaryDate').innerText = data.departure_date
+                ? 'المغادرة: ' + window.formatDate(data.departure_date)
+                : '📅 تاريخ المغادرة: سيُحدد لاحقاً';
             document.getElementById('summaryBasePrice').innerText = window.formatCurrency(data.price_per_person) + ' / للفرد';
 
             if (window.trackEvent) window.trackEvent('booking_start', { package_id: data.id, package_title: data.title });
@@ -905,7 +907,9 @@ const bookingController = {
                 documents:               uploadedDocs,
                 doc_warnings:            docWarningsList,  // stored in DB for admin
                 special_requests:        document.getElementById('specialRequests').value,
-                user_id:                 this.currentUser?.id || null
+                user_id:                 this.currentUser?.id || null,
+                booking_type:            document.getElementById('isPreorder')?.checked ? 'preorder' : 'standard',
+                dates_unknown:           document.getElementById('datesUnknown')?.checked || false
             };
 
             // 5. Insert
@@ -946,12 +950,18 @@ const bookingController = {
             ? `\n⚠️ *مستندات ناقصة (${docWarnings.length}):*\n${docWarnings.map(w => `• ${w}`).join('\n')}`
             : '\n✅ جميع المستندات مرفقة';
 
+        const bookingTypeLabel = bookingRow.booking_type === 'preorder' ? '⭐ حجز مسبق (Pre-order)' : '✅ حجز عادي';
+        const departureLabel   = (bookingRow.dates_unknown || !bookingRow.package_departure)
+            ? '📅 *المغادرة:* سيُحدد لاحقاً'
+            : `📅 *المغادرة:* ${window.formatDate(bookingRow.package_departure)}`;
+
         const msg =
 `🕌 *طلب حجز جديد — نيو سي برنسيس فرع الزقازيق*
 
 📋 *رقم الحجز:* ${bookingRow.booking_number}
+🏷️ *نوع الحجز:* ${bookingTypeLabel}
 📦 *البرنامج:* ${bookingRow.package_title}
-📅 *المغادرة:* ${window.formatDate(bookingRow.package_departure)}
+${departureLabel}
 👤 *العميل:* ${bookingRow.customer_name}
 📞 *هاتف:* ${bookingRow.customer_phone}
 👥 *الأفراد:* ${bookingRow.adults_count} بالغ | ${bookingRow.children_count} طفل | ${bookingRow.infants_count} رضيع
@@ -960,6 +970,16 @@ const bookingController = {
 
         const encoded = encodeURIComponent(msg);
         window.open(`https://wa.me/201031777295?text=${encoded}`, '_blank');
+    },
+
+    // ── Preorder toggle ──
+    togglePreorder(checked) {
+        const tbdRow = document.getElementById('datesUnknown')?.closest('div.p-4');
+        if (tbdRow) tbdRow.style.opacity = checked ? '0.5' : '1';
+        // if preorder, auto-check datesUnknown
+        if (checked && document.getElementById('datesUnknown')) {
+            document.getElementById('datesUnknown').checked = true;
+        }
     },
 
     // ── Auth gate ──

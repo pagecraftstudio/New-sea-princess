@@ -211,6 +211,28 @@
         <div class="flex justify-between text-xl text-primary font-bold"><span>الإجمالي:</span><span id="calcGrandTotal">0 ج.م</span></div>
       </div>
 
+      <!-- Preorder Option -->
+      <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" id="isPreorder" class="mt-1 w-5 h-5 accent-primary" onchange="bookingController.togglePreorder(this.checked)">
+          <div>
+            <span class="font-bold text-blue-800 block">حجز مسبق (Pre-order)</span>
+            <span class="text-sm text-blue-600">سجّل اهتمامك بالبرنامج قبل تحديد المواعيد — سيتواصل معك فريقنا لإتمام التفاصيل.</span>
+          </div>
+        </label>
+      </div>
+
+      <!-- TBD Dates Option -->
+      <div class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" id="datesUnknown" class="mt-1 w-5 h-5">
+          <div>
+            <span class="font-bold text-amber-800 block">تواريخ السفر غير محددة بعد</span>
+            <span class="text-sm text-amber-700">إذا لم تُحدَّد بعد تاريخا المغادرة والعودة — يُسجَّل طلبك وتُخطَر عند توفر المواعيد.</span>
+          </div>
+        </label>
+      </div>
+
       <div class="mt-8 text-left">
         <button onclick="bookingController.nextStep()" class="btn-primary px-8">التالي <i class="fa-solid fa-arrow-left mr-2"></i></button>
       </div>
