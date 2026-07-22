@@ -40,7 +40,7 @@
     { number: '201555154996', name: 'د. شيماء السعداوي' },
     { number: '201029593280', name: 'أ. ياسمين منصور' },
   ];
-  const CREDIT_LINK_MARKER = '201029198346'; // Pagecraft Studio credit link — never intercept
+  const CREDIT_LINK_MARKER = '201080955949'; // MALAKY studio credit link — never intercept
 
   let modal, pendingText = '';
 
