@@ -697,7 +697,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">عدد النجوم</label>
-            <select onchange="${city}Hotels[${hi}].stars=parseInt(this.value)"
+            <select onchange="${city}Hotels[${hi}].stars=parseInt(this.value, 10)"
                     class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none bg-white">
               <option value="3" ${h.stars==3?'selected':''}>★★★ 3 نجوم</option>
               <option value="4" ${h.stars==4?'selected':''}>★★★★ 4 نجوم</option>
@@ -707,7 +707,7 @@
           <div>
             <label class="block text-xs font-bold mb-1">عدد الليالي</label>
             <input type="number" value="${h.nights}" min="0" placeholder="4"
-                   oninput="${city}Hotels[${hi}].nights=parseInt(this.value)||0"
+                   oninput="${city}Hotels[${hi}].nights=parseInt(this.value,10)||0"
                    class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
           </div>
           <div>
@@ -1008,7 +1008,7 @@
 
     const incLines = document.getElementById('pIncludes').value.split('\n').map(s=>s.trim()).filter(Boolean);
     const excLines = document.getElementById('pExcludes').value.split('\n').map(s=>s.trim()).filter(Boolean);
-    const maxSeats = parseInt(document.getElementById('pMaxSeats').value) || 40;
+    const maxSeats = parseInt(document.getElementById('pMaxSeats').value, 10) || 40;
 
     const payload = {
       title,
@@ -1016,21 +1016,21 @@
       season:                document.getElementById('pSeason').value,
       departure_date:        depDate,
       return_date:           retDate,
-      duration_nights:       parseInt(document.getElementById('pDuration').value) || 0,
+      duration_nights:       parseInt(document.getElementById('pDuration').value, 10) || 0,
       departure_city:        document.getElementById('pDepartureCity').value,
       price_per_person:      parseFloat(price),
       price_child:           parseFloat(document.getElementById('pPriceChild').value) || null,
       price_infant:          parseFloat(document.getElementById('pPriceInfant').value) || null,
       max_seats:             maxSeats,
       available_seats:       editingId ? undefined : maxSeats, // only set on new
-      discount_percent:      parseInt(document.getElementById('pDiscount').value) || 0,
+      discount_percent:      parseInt(document.getElementById('pDiscount').value, 10) || 0,
       mecca_hotel:           mHotel,
-      mecca_hotel_stars:     parseInt(document.getElementById('pMeccaStars').value),
-      nights_mecca:          parseInt(document.getElementById('pNightsMecca').value) || 0,
+      mecca_hotel_stars:     parseInt(document.getElementById('pMeccaStars').value, 10),
+      nights_mecca:          parseInt(document.getElementById('pNightsMecca').value, 10) || 0,
       mecca_hotel_distance:  document.getElementById('pMeccaDist').value.trim(),
       medina_hotel:          medHotel,
-      medina_hotel_stars:    parseInt(document.getElementById('pMedinaStars').value),
-      nights_medina:         parseInt(document.getElementById('pNightsMedina').value) || 0,
+      medina_hotel_stars:    parseInt(document.getElementById('pMedinaStars').value, 10),
+      nights_medina:         parseInt(document.getElementById('pNightsMedina').value, 10) || 0,
       medina_hotel_distance: document.getElementById('pMedinaDist').value.trim(),
       flight_type:           document.getElementById('pFlightType').value,
       airline:               document.getElementById('pAirline').value.trim(),

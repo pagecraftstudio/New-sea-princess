@@ -157,6 +157,7 @@ const bookingController = {
     packageData: null,
     totalBasePrice: 0,
     appliedCoupon: null,
+    couponDiscount: 0,
     discountAmount: 0,
     uploadedDocuments: [],
     selectedMeccaHotel: null,
@@ -205,8 +206,8 @@ const bookingController = {
                 // Resolve hotel/tier objects for the WhatsApp/confirm summary
                 const [city, hi, , ti] = preTierId.split('-');
                 const hotels = city === 'mecca' ? (data.mecca_hotels||[]) : (data.madina_hotels||[]);
-                const hotel  = hotels[parseInt(hi)];
-                const tier   = hotel?.room_tiers?.[parseInt(ti)];
+                const hotel  = hotels[parseInt(hi, 10)];
+                const tier   = hotel?.room_tiers?.[parseInt(ti, 10)];
                 if (hotel) {
                     const target = city === 'mecca' ? 'selectedMeccaHotel' : 'selectedMadinaHotel';
                     this[target] = { name: hotel.name, extra_price: 0 };
@@ -238,7 +239,7 @@ const bookingController = {
                 this.preselectedTierPrice = null;
                 const [city, hi] = preHotelId.split('-');
                 const hotels = city === 'mecca' ? (data.mecca_hotels||[]) : (data.madina_hotels||[]);
-                const hotel  = hotels[parseInt(hi)];
+                const hotel  = hotels[parseInt(hi, 10)];
                 if (hotel) {
                     const target = city === 'mecca' ? 'selectedMeccaHotel' : 'selectedMadinaHotel';
                     this[target] = { name: hotel.name, extra_price: 0 };
@@ -354,10 +355,10 @@ const bookingController = {
 
         sel.innerHTML = '<option value="">-- اختر نوع الغرفة --</option>';
         tiers.forEach((t, i) => {
-            const priceLabel = t.extra_price > 0
-                ? ` (+${window.formatCurrency(t.extra_price)} للفرد)`
-                : t.extra_price < 0
-                    ? ` (${window.formatCurrency(t.extra_price)} للفرد)`
+            const priceLabel = t.price > 0
+                ? ` (+${window.formatCurrency(t.price)} للفرد)`
+                : t.price < 0
+                    ? ` (${window.formatCurrency(t.price)} للفرد)`
                     : ' (مشمول)';
             const opt = document.createElement('option');
             opt.value = i;
@@ -386,8 +387,8 @@ const bookingController = {
         const meccaTiers  = this.selectedMeccaHotel?.room_tiers  || [];
         const madinaTiers = this.selectedMadinaHotel?.room_tiers || [];
 
-        this.selectedMeccaRoomTier  = meccaTierIdx  !== '' ? meccaTiers[parseInt(meccaTierIdx)]  : null;
-        this.selectedMadinaRoomTier = madinaTierIdx !== '' ? madinaTiers[parseInt(madinaTierIdx)] : null;
+        this.selectedMeccaRoomTier  = meccaTierIdx  !== '' ? meccaTiers[parseInt(meccaTierIdx, 10)]  : null;
+        this.selectedMadinaRoomTier = madinaTierIdx !== '' ? madinaTiers[parseInt(madinaTierIdx, 10)] : null;
 
         this.updatePricing();
     },
@@ -400,8 +401,8 @@ const bookingController = {
         const meccaIdx  = document.getElementById('meccaHotelSelect')?.value;
         const madinaIdx = document.getElementById('madinaHotelSelect')?.value;
 
-        this.selectedMeccaHotel  = meccaIdx  !== '' ? meccaHotels[parseInt(meccaIdx)]  : null;
-        this.selectedMadinaHotel = madinaIdx !== '' ? madinaHotels[parseInt(madinaIdx)] : null;
+        this.selectedMeccaHotel  = meccaIdx  !== '' ? meccaHotels[parseInt(meccaIdx, 10)]  : null;
+        this.selectedMadinaHotel = madinaIdx !== '' ? madinaHotels[parseInt(madinaIdx, 10)] : null;
 
         // Re-render room tier selectors for newly selected hotels
         this._renderRoomTiers('mecca',  this.selectedMeccaHotel);
@@ -431,13 +432,13 @@ const bookingController = {
     },
 
     updatePricing() {
-        const adults   = parseInt(document.getElementById('adultsCount').value) || 1;
-        const children = parseInt(document.getElementById('childrenCount').value) || 0;
-        const infants  = parseInt(document.getElementById('infantsCount').value) || 0;
+        const adults   = parseInt(document.getElementById('adultsCount').value, 10) || 1;
+        const children = parseInt(document.getElementById('childrenCount').value, 10) || 0;
+        const infants  = parseInt(document.getElementById('infantsCount').value, 10) || 0;
 
         // If a room tier with its own total price is selected (from package-detail),
         // use that as the per-person price; otherwise fall back to package base price.
-        const tierPrice   = this.preselectedTierPrice || null;
+        const tierPrice   = this.preselectedTierPrice !== null ? this.preselectedTierPrice : null;
         const priceAdult  = tierPrice !== null ? tierPrice : this.packageData.price_per_person;
         const priceChild  = tierPrice !== null ? tierPrice : (this.packageData.price_child || this.packageData.price_per_person);
         const priceInfant = this.packageData.price_infant || 0; // infants free by default
@@ -493,9 +494,12 @@ const bookingController = {
             madinaTierRow.classList.remove('hidden');
         } else if (madinaTierRow) { madinaTierRow.classList.add('hidden'); }
 
-        if (this.appliedCoupon && this.packageData.discount_percent) {
-            this.discountAmount = (this.totalBasePrice * this.packageData.discount_percent) / 100;
-            document.getElementById('discountPercentText').innerText = this.packageData.discount_percent;
+        const discountPct = this.appliedCoupon
+            ? (this.couponDiscount ?? this.packageData.discount_percent ?? 0)
+            : 0;
+        if (this.appliedCoupon && discountPct) {
+            this.discountAmount = (this.totalBasePrice * discountPct) / 100;
+            document.getElementById('discountPercentText').innerText = discountPct;
             document.getElementById('calcDiscountTotal').innerText   = '-' + window.formatCurrency(this.discountAmount);
             document.getElementById('discountRow').classList.remove('hidden');
         } else {
@@ -566,9 +570,9 @@ const bookingController = {
 
     // ── Build step 2: travelers form ──────────────────────
     buildTravelersForm() {
-        const adults   = parseInt(document.getElementById('adultsCount').value) || 1;
-        const children = parseInt(document.getElementById('childrenCount').value) || 0;
-        const infants  = parseInt(document.getElementById('infantsCount').value) || 0;
+        const adults   = parseInt(document.getElementById('adultsCount').value, 10) || 1;
+        const children = parseInt(document.getElementById('childrenCount').value, 10) || 0;
+        const infants  = parseInt(document.getElementById('infantsCount').value, 10) || 0;
         const container= document.getElementById('travelersFormContainer');
         container.innerHTML = '';
 
@@ -1127,14 +1131,14 @@ const bookingController = {
                 travelers.push({
                     type: 'child',
                     name: blk.querySelector('.t-name').value,
-                    age:  parseInt(blk.querySelector('.t-age').value)
+                    age:  parseInt(blk.querySelector('.t-age').value, 10)
                 });
             });
             document.querySelectorAll('.traveler-infant-block').forEach(blk => {
                 travelers.push({
                     type: 'infant',
                     name: blk.querySelector('.t-name').value,
-                    age_months: parseInt(blk.querySelector('.t-age-months').value)
+                    age_months: parseInt(blk.querySelector('.t-age-months').value, 10)
                 });
             });
 
@@ -1149,9 +1153,9 @@ const bookingController = {
                 customer_email:          document.getElementById('contactEmail').value,
                 customer_national_id:    travelers[0]?.national_id,
                 customer_passport_number:travelers[0]?.passport,
-                adults_count:            parseInt(document.getElementById('adultsCount').value) || 1,
-                children_count:          parseInt(document.getElementById('childrenCount').value) || 0,
-                infants_count:           parseInt(document.getElementById('infantsCount').value) || 0,
+                adults_count:            parseInt(document.getElementById('adultsCount').value, 10) || 1,
+                children_count:          parseInt(document.getElementById('childrenCount').value, 10) || 0,
+                infants_count:           parseInt(document.getElementById('infantsCount').value, 10) || 0,
                 travelers,
                 total_price:             finalTotal,
                 remaining_amount:        finalTotal,

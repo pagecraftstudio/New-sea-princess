@@ -171,8 +171,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     function getTierLabel(hotelId, tierId) {
       const [city, hi, , ti] = tierId.split('-');
       const hotels = city === 'mecca' ? (data.mecca_hotels||[]) : (data.madina_hotels||[]);
-      const hotel  = hotels[parseInt(hi)];
-      return hotel?.room_tiers?.[parseInt(ti)]?.label || '';
+      const hotel  = hotels[parseInt(hi, 10)];
+      return hotel?.room_tiers?.[parseInt(ti, 10)]?.label || '';
     }
 
     renderHotelsSection();
@@ -243,6 +243,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hasMultipleHotels   = allHotels.length > 1;
         const hasAnyRoomTiers     = allHotels.some(h => h.room_tiers?.length > 0);
 
+        // Auto-select single hotel so tier validation below can fire correctly
+        if (allHotels.length === 1 && !selectedHotelId) {
+            const onlyCity = meccaHotels.length === 1 ? 'mecca' : 'madina';
+            selectedHotelId = `${onlyCity}-0`;
+        }
+
         // If there are multiple hotels, a selection is required
         if (hasMultipleHotels && !selectedHotelId) {
             const btn = document.getElementById('startBookingBtn');
@@ -253,8 +259,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('يرجى اختيار الفندق المناسب قبل الحجز');
             return;
         }
-        // If hotel has room tiers, a tier must be selected
-        if (hasAnyRoomTiers && selectedHotelId && !selectedTierId) {
+        // If any hotel has room tiers, a tier must be selected (covers single-hotel case too)
+        if (hasAnyRoomTiers && !selectedTierId) {
             document.getElementById('hotelsSection')?.scrollIntoView({ behavior:'smooth', block:'center' });
             alert('يرجى اختيار نوع الغرفة قبل الحجز');
             return;
@@ -266,7 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let bookingUrl = `/booking.html?package=${data.id}`;
         if (selectedHotelId)   bookingUrl += `&hotel=${encodeURIComponent(selectedHotelId)}`;
         if (selectedTierId)    bookingUrl += `&tier=${encodeURIComponent(selectedTierId)}`;
-        if (selectedTierPrice) bookingUrl += `&tierPrice=${selectedTierPrice}`;
+        if (selectedTierPrice !== null) bookingUrl += `&tierPrice=${selectedTierPrice}`;
 
         if (!session) {
             window.location.href = '/login.html?next=' + encodeURIComponent(bookingUrl);

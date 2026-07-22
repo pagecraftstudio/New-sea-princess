@@ -15,14 +15,27 @@ VALUES
   ('custom_seasons',    '[]'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
--- Only admins can read/write
+-- Enable RLS
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
+-- Remove any existing policy before recreating
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "admins_all" ON app_settings;
+END$$;
+
+-- Only rows in admin_users can read/write (admin_users.id = auth uid)
 CREATE POLICY "admins_all" ON app_settings
   FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM auth.users
+      SELECT 1 FROM admin_users
+      WHERE id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM admin_users
       WHERE id = auth.uid()
     )
   );
