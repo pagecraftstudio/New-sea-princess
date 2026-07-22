@@ -36,16 +36,146 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('pkgCity').innerText = data.departure_city;
     document.getElementById('pkgFlight').innerText = data.flight_type || 'مباشر';
 
-    // Hotels
-    document.getElementById('meccaHotel').innerText = data.mecca_hotel;
-    document.getElementById('meccaStars').innerText = '★'.repeat(data.mecca_hotel_stars);
-    document.getElementById('meccaNights').innerText = `إقامة لـ ${data.nights_mecca} ليالي`;
-    if(data.mecca_hotel_distance) document.getElementById('meccaDist').innerHTML += data.mecca_hotel_distance;
+    // ── Hotels + Room Tiers (dynamic multi-hotel) ──────────────
+    const hotelsSection = document.getElementById('hotelsSection');
 
-    document.getElementById('medinaHotel').innerText = data.medina_hotel;
-    document.getElementById('medinaStars').innerText = '★'.repeat(data.medina_hotel_stars);
-    document.getElementById('medinaNights').innerText = `إقامة لـ ${data.nights_medina} ليالي`;
-    if(data.medina_hotel_distance) document.getElementById('medinaDist').innerHTML += data.medina_hotel_distance;
+    // Selection state
+    let selectedHotelId   = null;   // 'mecca-0', 'madina-1', etc.
+    let selectedTierId    = null;   // 'mecca-0-tier-1', etc.
+    let selectedTierPrice = null;   // null = use package base price
+
+    function renderHotelsSection() {
+      const meccaHotels  = Array.isArray(data.mecca_hotels)  ? data.mecca_hotels  : [];
+      const madinaHotels = Array.isArray(data.madina_hotels) ? data.madina_hotels : [];
+
+      // Fallback: build single-hotel list from legacy flat fields
+      const meccaList  = meccaHotels.length  ? meccaHotels  : (data.mecca_hotel  ? [{ name: data.mecca_hotel,  stars: data.mecca_hotel_stars,  nights: data.nights_mecca,  distance: data.mecca_hotel_distance,  room_tiers: [] }] : []);
+      const madinaList = madinaHotels.length ? madinaHotels : (data.medina_hotel ? [{ name: data.medina_hotel, stars: data.medina_hotel_stars, nights: data.nights_medina, distance: data.medina_hotel_distance, room_tiers: [] }] : []);
+
+      const cityBlock = (cityKey, hotels, icon, label, colorClass, borderClass) => {
+        if (!hotels.length) return '';
+        return `
+          <div>
+            <h3 class="font-bold text-lg mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-${icon} ${colorClass}"></i> ${label}
+            </h3>
+            <div class="space-y-4">
+              ${hotels.map((h, hi) => {
+                const hotelId  = `${cityKey}-${hi}`;
+                const isHotelSelected = selectedHotelId === hotelId;
+                const stars    = '★'.repeat(h.stars||0);
+                const tiers    = Array.isArray(h.room_tiers) ? h.room_tiers : [];
+                return `
+                  <div class="border-2 rounded-xl overflow-hidden transition-all ${isHotelSelected ? borderClass + ' shadow-md' : 'border-gray-200'}">
+                    <!-- Hotel Card -->
+                    <button type="button"
+                            onclick="selectHotel('${hotelId}')"
+                            class="w-full text-right p-4 flex items-start gap-4 hover:bg-gray-50 transition">
+                      <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isHotelSelected ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}">
+                        ${isHotelSelected ? '<i class="fa-solid fa-check"></i>' : `<span class="font-bold text-sm">${hi+1}</span>`}
+                      </div>
+                      <div class="flex-1">
+                        <div class="flex items-center justify-between flex-wrap gap-1">
+                          <h4 class="font-bold text-darkBg text-lg">${h.name}</h4>
+                          <span class="text-gold text-sm font-bold">${stars}</span>
+                        </div>
+                        ${h.distance ? `<p class="text-sm text-gray-500 mt-0.5"><i class="fa-solid fa-location-dot ml-1"></i>${h.distance}</p>` : ''}
+                        ${h.description ? `<p class="text-sm text-gray-600 mt-1">${h.description}</p>` : ''}
+                        ${h.nights ? `<p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-moon ml-1"></i>إقامة ${h.nights} ليالي</p>` : ''}
+                        ${tiers.length === 0 ? '<p class="text-xs text-primary font-semibold mt-1">اضغط لاختيار هذا الفندق</p>' : '<p class="text-xs text-primary font-semibold mt-1">اضغط لاختيار واختيار نوع الغرفة</p>'}
+                      </div>
+                    </button>
+
+                    <!-- Room Tiers (shown when hotel selected and has tiers) -->
+                    ${isHotelSelected && tiers.length > 0 ? `
+                      <div class="border-t border-gray-100 bg-gray-50 p-4">
+                        <p class="text-sm font-bold text-gray-700 mb-3"><i class="fa-solid fa-bed ml-1 text-gold"></i>اختر نوع الغرفة:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          ${tiers.map((t, ti) => {
+                            const tierId = `${hotelId}-tier-${ti}`;
+                            const isTierSelected = selectedTierId === tierId;
+                            return `
+                              <button type="button"
+                                      onclick="selectTier('${hotelId}','${tierId}',${t.price||0})"
+                                      class="text-right p-3 rounded-xl border-2 transition-all ${isTierSelected ? 'border-primary bg-green-50 shadow-sm' : 'border-gray-200 bg-white hover:border-primary hover:shadow-sm'}">
+                                <div class="flex items-start justify-between gap-1 mb-1">
+                                  <span class="font-bold text-darkBg text-sm">${t.label}</span>
+                                  ${isTierSelected ? '<i class="fa-solid fa-circle-check text-primary text-lg shrink-0"></i>' : ''}
+                                </div>
+                                ${t.description ? `<p class="text-xs text-gray-500 mb-1">${t.description}</p>` : ''}
+                                <p class="text-gold font-bold text-base mt-1">${window.formatCurrency(t.price||0)}</p>
+                              </button>
+                            `;
+                          }).join('')}
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      };
+
+      hotelsSection.innerHTML = `
+        <div class="space-y-8">
+          ${cityBlock('mecca',  meccaList,  'kaaba',  'مكة المكرمة',    'text-primary',    'border-primary')}
+          ${cityBlock('madina', madinaList, 'mosque', 'المدينة المنورة', 'text-blue-600',   'border-blue-500')}
+        </div>
+      `;
+    }
+
+    window.selectHotel = function(hotelId) {
+      if (selectedHotelId === hotelId) {
+        // Deselect
+        selectedHotelId   = null;
+        selectedTierId    = null;
+        selectedTierPrice = null;
+      } else {
+        selectedHotelId   = hotelId;
+        selectedTierId    = null;
+        selectedTierPrice = null;
+      }
+      updateSidebarPrice();
+      renderHotelsSection();
+    };
+
+    window.selectTier = function(hotelId, tierId, price) {
+      selectedHotelId   = hotelId;
+      selectedTierId    = tierId;
+      selectedTierPrice = price;
+      updateSidebarPrice();
+      renderHotelsSection();
+    };
+
+    function updateSidebarPrice() {
+      const displayPrice = selectedTierPrice !== null ? selectedTierPrice : data.price_per_person;
+      const priceEl = document.getElementById('priceAdult');
+      const hintEl  = document.getElementById('priceHint');
+      if (priceEl) priceEl.innerText = window.formatCurrency(displayPrice);
+      if (hintEl && window.getCurrencyHint) {
+        hintEl.innerHTML = `<span class="price-hint">${window.getCurrencyHint(displayPrice)}</span>`;
+      }
+      // Show tier label under price
+      let tierLabelEl = document.getElementById('selectedTierLabel');
+      if (!tierLabelEl) {
+        tierLabelEl = document.createElement('p');
+        tierLabelEl.id = 'selectedTierLabel';
+        tierLabelEl.className = 'text-xs text-primary font-bold mt-1';
+        priceEl?.parentNode?.insertBefore(tierLabelEl, hintEl);
+      }
+      tierLabelEl.textContent = selectedTierId ? '✔ ' + getTierLabel(selectedHotelId, selectedTierId) : '';
+    }
+
+    function getTierLabel(hotelId, tierId) {
+      const [city, hi, , ti] = tierId.split('-');
+      const hotels = city === 'mecca' ? (data.mecca_hotels||[]) : (data.madina_hotels||[]);
+      const hotel  = hotels[parseInt(hi)];
+      return hotel?.room_tiers?.[parseInt(ti)]?.label || '';
+    }
+
+    renderHotelsSection();
 
     // Optional arrays render helper
     const renderList = (elId, arr) => {
@@ -106,13 +236,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Buttons
     document.getElementById('startBookingBtn').onclick = async () => {
-        const { data: { session } } = await window.db.auth.getSession();
-        if (!session) {
-            const returnUrl = encodeURIComponent('/booking.html?package=' + data.id);
-            window.location.href = '/login.html?next=' + returnUrl;
+        // Check if there are hotels and rooms that require selection
+        const meccaHotels  = Array.isArray(data.mecca_hotels)  ? data.mecca_hotels  : [];
+        const madinaHotels = Array.isArray(data.madina_hotels) ? data.madina_hotels : [];
+        const allHotels    = [...meccaHotels, ...madinaHotels];
+        const hasMultipleHotels   = allHotels.length > 1;
+        const hasAnyRoomTiers     = allHotels.some(h => h.room_tiers?.length > 0);
+
+        // If there are multiple hotels, a selection is required
+        if (hasMultipleHotels && !selectedHotelId) {
+            const btn = document.getElementById('startBookingBtn');
+            btn.classList.add('animate-bounce');
+            setTimeout(() => btn.classList.remove('animate-bounce'), 1000);
+            // Scroll to hotels section
+            document.getElementById('hotelsSection')?.scrollIntoView({ behavior:'smooth', block:'center' });
+            alert('يرجى اختيار الفندق المناسب قبل الحجز');
             return;
         }
-        window.location.href = `/booking.html?package=${data.id}`;
+        // If hotel has room tiers, a tier must be selected
+        if (hasAnyRoomTiers && selectedHotelId && !selectedTierId) {
+            document.getElementById('hotelsSection')?.scrollIntoView({ behavior:'smooth', block:'center' });
+            alert('يرجى اختيار نوع الغرفة قبل الحجز');
+            return;
+        }
+
+        const { data: { session } } = await window.db.auth.getSession();
+
+        // Build booking URL with selections
+        let bookingUrl = `/booking.html?package=${data.id}`;
+        if (selectedHotelId)   bookingUrl += `&hotel=${encodeURIComponent(selectedHotelId)}`;
+        if (selectedTierId)    bookingUrl += `&tier=${encodeURIComponent(selectedTierId)}`;
+        if (selectedTierPrice) bookingUrl += `&tierPrice=${selectedTierPrice}`;
+
+        if (!session) {
+            window.location.href = '/login.html?next=' + encodeURIComponent(bookingUrl);
+            return;
+        }
+        window.location.href = bookingUrl;
     };
     document.getElementById('waContactBtn').href = `https://wa.me/201031777295?text=${encodeURIComponent(`مرحباً، أود الاستفسار عن ${data.title}`)}`;
     document.getElementById('compareFromDetail').href = `/packages.html?preselect=${data.id}`;

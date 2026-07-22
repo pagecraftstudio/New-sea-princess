@@ -181,35 +181,19 @@
             </div>
           </div>
 
-          <!-- Hotels Section -->
-          <h2 class="text-2xl font-bold text-darkBg mb-4 border-b-2 border-gold inline-block pb-1">الفنادق المشمولة</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-            <div class="border border-gray-200 rounded-xl p-5 hover:shadow-md transition">
-              <div class="flex items-center gap-3 mb-3">
-                <i class="fa-solid fa-kaaba text-4xl text-primary opacity-20"></i>
-                <div>
-                  <h3 class="font-bold text-lg">مكة المكرمة</h3>
-                  <p id="meccaNights" class="text-sm text-gray-500"></p>
-                </div>
-              </div>
-              <h4 id="meccaHotel" class="text-xl font-bold text-darkBg"></h4>
-              <p id="meccaStars" class="text-gold mb-2"></p>
-              <p id="meccaDist" class="text-sm text-gray-600"><i class="fa-solid fa-location-dot ml-1 text-gray-400"></i> </p>
-            </div>
+          <!-- Hotels Section (dynamic) -->
+          <h2 class="text-2xl font-bold text-darkBg mb-4 border-b-2 border-gold inline-block pb-1">الفنادق والغرف المتاحة</h2>
+          <div id="hotelsSection" class="mb-8 space-y-6"></div>
 
-            <div class="border border-gray-200 rounded-xl p-5 hover:shadow-md transition">
-              <div class="flex items-center gap-3 mb-3">
-                <i class="fa-solid fa-mosque text-4xl text-primary opacity-20"></i>
-                <div>
-                  <h3 class="font-bold text-lg">المدينة المنورة</h3>
-                  <p id="medinaNights" class="text-sm text-gray-500"></p>
-                </div>
-              </div>
-              <h4 id="medinaHotel" class="text-xl font-bold text-darkBg"></h4>
-              <p id="medinaStars" class="text-gold mb-2"></p>
-              <p id="medinaDist" class="text-sm text-gray-600"><i class="fa-solid fa-location-dot ml-1 text-gray-400"></i> </p>
-            </div>
-          </div>
+          <!-- Legacy hidden ids kept so old JS doesn't crash -->
+          <span id="meccaNights"  class="hidden"></span>
+          <span id="meccaHotel"   class="hidden"></span>
+          <span id="meccaStars"   class="hidden"></span>
+          <span id="meccaDist"    class="hidden"></span>
+          <span id="medinaNights" class="hidden"></span>
+          <span id="medinaHotel"  class="hidden"></span>
+          <span id="medinaStars"  class="hidden"></span>
+          <span id="medinaDist"   class="hidden"></span>
 
           <!-- Additional Details -->
           <div class="mt-8">

@@ -209,69 +209,55 @@
           </div>
         </div>
 
-        <!-- ── Section 3: Hotels ── -->
+        <!-- ── Section 3: Hotels (multi-hotel + room tiers) ── -->
         <div>
           <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
-            <i class="fa-solid fa-hotel text-primary"></i> الفنادق
+            <i class="fa-solid fa-hotel text-primary"></i> الفنادق وأنواع الغرف
           </h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Mecca -->
-            <div class="bg-green-50 rounded-xl p-4 border border-green-100">
-              <p class="font-bold text-green-800 mb-3"><i class="fa-solid fa-kaaba ml-1"></i>مكة المكرمة</p>
-              <div class="space-y-3">
-                <div>
-                  <label class="block text-xs font-bold mb-1">اسم الفندق <span class="text-red-500">*</span></label>
-                  <input type="text" id="pMeccaHotel" placeholder="فندق الكونكورد" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-xs font-bold mb-1">عدد النجوم</label>
-                    <select id="pMeccaStars" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none bg-white">
-                      <option value="3">★★★ 3 نجوم</option>
-                      <option value="4">★★★★ 4 نجوم</option>
-                      <option value="5">★★★★★ 5 نجوم</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold mb-1">عدد الليالي</label>
-                    <input type="number" id="pNightsMecca" min="0" placeholder="4" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary">
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold mb-1">المسافة من الحرم</label>
-                  <input type="text" id="pMeccaDist" placeholder="200 متر من الحرم" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary">
-                </div>
-              </div>
+
+          <!-- Mecca Hotels -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+              <p class="font-bold text-green-800 flex items-center gap-2">
+                <i class="fa-solid fa-kaaba text-green-700"></i> فنادق مكة المكرمة
+              </p>
+              <button type="button" onclick="addHotel('mecca')"
+                      class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-plus"></i> إضافة فندق
+              </button>
             </div>
-            <!-- Medina -->
-            <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
-              <p class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-mosque ml-1"></i>المدينة المنورة</p>
-              <div class="space-y-3">
-                <div>
-                  <label class="block text-xs font-bold mb-1">اسم الفندق <span class="text-red-500">*</span></label>
-                  <input type="text" id="pMedinaHotel" placeholder="فندق أنوار المدينة" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-xs font-bold mb-1">عدد النجوم</label>
-                    <select id="pMedinaStars" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none bg-white">
-                      <option value="3">★★★ 3 نجوم</option>
-                      <option value="4">★★★★ 4 نجوم</option>
-                      <option value="5">★★★★★ 5 نجوم</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold mb-1">عدد الليالي</label>
-                    <input type="number" id="pNightsMedina" min="0" placeholder="3" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary">
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold mb-1">المسافة من المسجد النبوي</label>
-                  <input type="text" id="pMedinaDist" placeholder="300 متر من المسجد النبوي" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary">
-                </div>
-              </div>
-            </div>
+            <div id="meccaHotelsList" class="space-y-3"></div>
+            <p id="meccaHotelsEmpty" class="text-xs text-gray-400 text-center py-3 border border-dashed border-gray-200 rounded-lg">
+              لا توجد فنادق بعد — اضغط «إضافة فندق»
+            </p>
           </div>
+
+          <!-- Madina Hotels -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <p class="font-bold text-blue-800 flex items-center gap-2">
+                <i class="fa-solid fa-mosque text-blue-700"></i> فنادق المدينة المنورة
+              </p>
+              <button type="button" onclick="addHotel('madina')"
+                      class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-plus"></i> إضافة فندق
+              </button>
+            </div>
+            <div id="madinaHotelsList" class="space-y-3"></div>
+            <p id="madinaHotelsEmpty" class="text-xs text-gray-400 text-center py-3 border border-dashed border-gray-200 rounded-lg">
+              لا توجد فنادق بعد — اضغط «إضافة فندق»
+            </p>
+          </div>
+
+          <!-- Legacy single-hotel fields (hidden, kept for backward compat) -->
+          <input type="hidden" id="pMeccaHotel">
+          <input type="hidden" id="pMeccaStars" value="3">
+          <input type="hidden" id="pNightsMecca">
+          <input type="hidden" id="pMeccaDist">
+          <input type="hidden" id="pMedinaHotel">
+          <input type="hidden" id="pMedinaStars" value="3">
+          <input type="hidden" id="pNightsMedina">
+          <input type="hidden" id="pMedinaDist">
         </div>
 
         <!-- ── Section 4: Transport & Flight ── -->
@@ -547,6 +533,164 @@
     }
   }
 
+  // ══════════════════════════════════════════════════
+  //  MULTI-HOTEL + ROOM TIERS BUILDER
+  // ══════════════════════════════════════════════════
+  let meccaHotels  = []; // [{name, stars, nights, distance, description, room_tiers:[{label,description,price}]}]
+  let madinaHotels = [];
+
+  function addHotel(city) {
+    const list = city === 'mecca' ? meccaHotels : madinaHotels;
+    list.push({ name:'', stars:4, nights: city==='mecca' ? 4 : 3, distance:'', description:'', room_tiers:[] });
+    renderHotels(city);
+  }
+
+  function removeHotel(city, idx) {
+    const list = city === 'mecca' ? meccaHotels : madinaHotels;
+    list.splice(idx, 1);
+    renderHotels(city);
+  }
+
+  function addRoomTier(city, hotelIdx) {
+    const list = city === 'mecca' ? meccaHotels : madinaHotels;
+    list[hotelIdx].room_tiers.push({ label:'', description:'', price: 0 });
+    renderHotels(city);
+  }
+
+  function removeRoomTier(city, hotelIdx, tierIdx) {
+    const list = city === 'mecca' ? meccaHotels : madinaHotels;
+    list[hotelIdx].room_tiers.splice(tierIdx, 1);
+    renderHotels(city);
+  }
+
+  function renderHotels(city) {
+    const list     = city === 'mecca' ? meccaHotels : madinaHotels;
+    const color    = city === 'mecca' ? 'green' : 'blue';
+    const container = document.getElementById(`${city}HotelsList`);
+    const emptyMsg  = document.getElementById(`${city}HotelsEmpty`);
+
+    emptyMsg.style.display = list.length ? 'none' : 'block';
+
+    container.innerHTML = list.map((h, hi) => `
+      <div class="border-2 border-${color}-200 bg-${color}-50 rounded-xl p-4 space-y-3">
+
+        <!-- Hotel Header -->
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-${color}-800 text-sm flex items-center gap-1">
+            <i class="fa-solid fa-hotel"></i> فندق ${hi + 1}
+          </span>
+          <button type="button" onclick="removeHotel('${city}',${hi})"
+                  class="text-red-400 hover:text-red-600 text-sm transition">
+            <i class="fa-solid fa-trash-can"></i> حذف الفندق
+          </button>
+        </div>
+
+        <!-- Hotel Fields -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold mb-1">اسم الفندق <span class="text-red-500">*</span></label>
+            <input type="text" value="${esc(h.name)}" placeholder="مثال: فندق أبراج البيت"
+                   oninput="${city}Hotels[${hi}].name=this.value"
+                   class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">عدد النجوم</label>
+            <select onchange="${city}Hotels[${hi}].stars=parseInt(this.value)"
+                    class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none bg-white">
+              <option value="3" ${h.stars==3?'selected':''}>★★★ 3 نجوم</option>
+              <option value="4" ${h.stars==4?'selected':''}>★★★★ 4 نجوم</option>
+              <option value="5" ${h.stars==5?'selected':''}>★★★★★ 5 نجوم</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">عدد الليالي</label>
+            <input type="number" value="${h.nights}" min="0" placeholder="4"
+                   oninput="${city}Hotels[${hi}].nights=parseInt(this.value)||0"
+                   class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">المسافة من ${city==='mecca'?'الحرم':'المسجد النبوي'}</label>
+            <input type="text" value="${esc(h.distance)}" placeholder="200 متر"
+                   oninput="${city}Hotels[${hi}].distance=this.value"
+                   class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">وصف الفندق (اختياري)</label>
+            <input type="text" value="${esc(h.description)}" placeholder="مثال: إطلالة مباشرة على الكعبة"
+                   oninput="${city}Hotels[${hi}].description=this.value"
+                   class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          </div>
+        </div>
+
+        <!-- Room Tiers -->
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-gray-600 flex items-center gap-1">
+              <i class="fa-solid fa-bed text-${color}-500"></i> أنواع الغرف وأسعارها
+            </span>
+            <button type="button" onclick="addRoomTier('${city}',${hi})"
+                    class="text-xs bg-white border border-${color}-400 text-${color}-700 hover:bg-${color}-100 px-2 py-1 rounded-lg font-bold transition">
+              <i class="fa-solid fa-plus text-xs"></i> إضافة نوع غرفة
+            </button>
+          </div>
+
+          ${h.room_tiers.length === 0 ? `
+            <p class="text-xs text-gray-400 italic text-center py-2">لا توجد أنواع غرف — اضغط «إضافة نوع غرفة»</p>
+          ` : `
+            <div class="space-y-2">
+              ${h.room_tiers.map((t, ti) => `
+                <div class="bg-white border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
+                  <div>
+                    <label class="block text-xs font-bold mb-1">نوع الغرفة <span class="text-red-500">*</span></label>
+                    <input type="text" value="${esc(t.label)}" placeholder="مثال: غرفة مزدوجة"
+                           oninput="${city}Hotels[${hi}].room_tiers[${ti}].label=this.value"
+                           class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold mb-1">وصف الغرفة (اختياري)</label>
+                    <input type="text" value="${esc(t.description)}" placeholder="مثال: تتسع لشخصين مع إفطار"
+                           oninput="${city}Hotels[${hi}].room_tiers[${ti}].description=this.value"
+                           class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
+                  </div>
+                  <div class="flex gap-2 items-end">
+                    <div class="flex-1">
+                      <label class="block text-xs font-bold mb-1">السعر الإجمالي (ج.م) <span class="text-red-500">*</span></label>
+                      <input type="number" value="${t.price||''}" min="0" placeholder="8500"
+                             oninput="${city}Hotels[${hi}].room_tiers[${ti}].price=parseFloat(this.value)||0"
+                             class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
+                    </div>
+                    <button type="button" onclick="removeRoomTier('${city}',${hi},${ti})"
+                            class="text-red-400 hover:text-red-600 pb-2 transition shrink-0">
+                      <i class="fa-solid fa-xmark text-base"></i>
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    `).join('');
+
+    // Sync legacy hidden fields from first hotel (backward compat for old booking logic)
+    if (list.length > 0) {
+      if (city === 'mecca') {
+        document.getElementById('pMeccaHotel').value  = list[0].name;
+        document.getElementById('pMeccaStars').value  = list[0].stars;
+        document.getElementById('pNightsMecca').value = list[0].nights;
+        document.getElementById('pMeccaDist').value   = list[0].distance;
+      } else {
+        document.getElementById('pMedinaHotel').value  = list[0].name;
+        document.getElementById('pMedinaStars').value  = list[0].stars;
+        document.getElementById('pNightsMedina').value = list[0].nights;
+        document.getElementById('pMedinaDist').value   = list[0].distance;
+      }
+    }
+  }
+
+  // HTML-escape helper for inline event values
+  function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
   // ── Itinerary ──────────────────────────────────────
   function addDay(data = {}) {
     const idx = itineraryItems.length;
@@ -592,6 +736,8 @@
   function openModal(pkg) {
     editingId = pkg ? pkg.id : null;
     itineraryItems = [];
+    meccaHotels  = [];
+    madinaHotels = [];
 
     // Reset all fields
     const fields = ['pTitle','pPrice','pPriceChild','pPriceInfant','pMaxSeats','pDiscount','pDeparture',
@@ -662,6 +808,19 @@
       const itin = Array.isArray(pkg.itinerary) ? pkg.itinerary : [];
       itin.forEach(d => addDay(d));
 
+      // Multi-hotel arrays
+      meccaHotels  = Array.isArray(pkg.mecca_hotels)  ? JSON.parse(JSON.stringify(pkg.mecca_hotels))  : [];
+      madinaHotels = Array.isArray(pkg.madina_hotels) ? JSON.parse(JSON.stringify(pkg.madina_hotels)) : [];
+      // If no hotel array but old flat fields exist, migrate them as a single hotel
+      if (meccaHotels.length === 0 && pkg.mecca_hotel) {
+        meccaHotels = [{ name: pkg.mecca_hotel, stars: pkg.mecca_hotel_stars||4, nights: pkg.nights_mecca||0, distance: pkg.mecca_hotel_distance||'', description:'', room_tiers:[] }];
+      }
+      if (madinaHotels.length === 0 && pkg.medina_hotel) {
+        madinaHotels = [{ name: pkg.medina_hotel, stars: pkg.medina_hotel_stars||4, nights: pkg.nights_medina||0, distance: pkg.medina_hotel_distance||'', description:'', room_tiers:[] }];
+      }
+      renderHotels('mecca');
+      renderHotels('madina');
+
       // Image preview for existing package
       if (pkg.thumbnail_url) {
         document.getElementById('pThumbnail').value = pkg.thumbnail_url;
@@ -669,6 +828,8 @@
       }
     } else {
       document.getElementById('pkgModalTitle').textContent = 'إضافة برنامج جديد';
+      renderHotels('mecca');
+      renderHotels('madina');
     }
 
     renderItinerary();
@@ -687,13 +848,38 @@
     const price    = document.getElementById('pPrice').value;
     const depDate  = document.getElementById('pDeparture').value;
     const retDate  = document.getElementById('pReturn').value;
-    const mHotel   = document.getElementById('pMeccaHotel').value.trim();
-    const medHotel = document.getElementById('pMedinaHotel').value.trim();
-
-    if (!title || !price || !depDate || !retDate || !mHotel || !medHotel) {
-      alert('يرجى ملء الحقول الإلزامية: العنوان، السعر، التواريخ، الفنادق');
+    if (!title || !price || !depDate || !retDate) {
+      alert('يرجى ملء الحقول الإلزامية: العنوان، السعر، التواريخ');
       return;
     }
+
+    // Validate hotel arrays: at least one hotel must have a name
+    if (meccaHotels.length === 0) {
+      alert('يرجى إضافة فندق واحد على الأقل في مكة المكرمة');
+      return;
+    }
+    if (madinaHotels.length === 0) {
+      alert('يرجى إضافة فندق واحد على الأقل في المدينة المنورة');
+      return;
+    }
+    const invalidMecca  = meccaHotels.some(h => !h.name.trim());
+    const invalidMadina = madinaHotels.some(h => !h.name.trim());
+    if (invalidMecca)  { alert('يرجى إدخال اسم لكل فندق في مكة المكرمة');   return; }
+    if (invalidMadina) { alert('يرجى إدخال اسم لكل فندق في المدينة المنورة'); return; }
+
+    // Validate room tiers: label and price required
+    for (const h of [...meccaHotels, ...madinaHotels]) {
+      for (const t of h.room_tiers) {
+        if (!t.label.trim() || !(t.price > 0)) {
+          alert(`يرجى ملء اسم وسعر لكل نوع غرفة في فندق "${h.name}"`);
+          return;
+        }
+      }
+    }
+
+    // Keep legacy flat fields from first hotel for backward compat
+    const mHotel   = meccaHotels[0]?.name   || '';
+    const medHotel = madinaHotels[0]?.name  || '';
 
     const incLines = document.getElementById('pIncludes').value.split('\n').map(s=>s.trim()).filter(Boolean);
     const excLines = document.getElementById('pExcludes').value.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -728,6 +914,8 @@
       includes:              incLines,
       excludes:              excLines,
       itinerary:             itineraryItems,
+      mecca_hotels:          meccaHotels,
+      madina_hotels:         madinaHotels,
       notes:                 document.getElementById('pNotes').value.trim(),
       visa_included:         document.getElementById('pVisaIncluded').checked,
       is_featured:           document.getElementById('pIsFeatured').checked,

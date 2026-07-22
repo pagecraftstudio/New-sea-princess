@@ -195,6 +195,58 @@ const bookingController = {
 
             if (window.trackEvent) window.trackEvent('booking_start', { package_id: data.id, package_title: data.title });
 
+            // ── Pre-selected hotel/tier from package-detail page ──────
+            const preHotelId   = urlParams.get('hotel');     // e.g. 'mecca-0'
+            const preTierId    = urlParams.get('tier');      // e.g. 'mecca-0-tier-1'
+            const preTierPrice = parseFloat(urlParams.get('tierPrice'));
+
+            if (preTierId && !isNaN(preTierPrice)) {
+                this.preselectedTierPrice = preTierPrice;
+                // Resolve hotel/tier objects for the WhatsApp/confirm summary
+                const [city, hi, , ti] = preTierId.split('-');
+                const hotels = city === 'mecca' ? (data.mecca_hotels||[]) : (data.madina_hotels||[]);
+                const hotel  = hotels[parseInt(hi)];
+                const tier   = hotel?.room_tiers?.[parseInt(ti)];
+                if (hotel) {
+                    const target = city === 'mecca' ? 'selectedMeccaHotel' : 'selectedMadinaHotel';
+                    this[target] = { name: hotel.name, extra_price: 0 };
+                }
+                if (tier) {
+                    const target = city === 'mecca' ? 'selectedMeccaRoomTier' : 'selectedMadinaRoomTier';
+                    this[target] = { label: tier.label, extra_price: 0 };
+                }
+                // Show pre-selection summary strip
+                const summaryBaseEl = document.getElementById('summaryBasePrice');
+                if (summaryBaseEl) summaryBaseEl.innerText = window.formatCurrency(preTierPrice) + ' / للغرفة';
+                // Inject a visible pre-selection notice in the booking form
+                const noticeId = 'preselectedHotelNotice';
+                if (!document.getElementById(noticeId)) {
+                    const notice = document.createElement('div');
+                    notice.id = noticeId;
+                    notice.className = 'mb-4 bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800';
+                    notice.innerHTML = `
+                        <p class="font-bold mb-1"><i class="fa-solid fa-circle-check ml-1 text-green-600"></i>اختيارك المحدد من صفحة البرنامج:</p>
+                        ${hotel ? `<p>🏨 ${hotel.name}</p>` : ''}
+                        ${tier  ? `<p>🛏 ${tier.label} — <strong>${window.formatCurrency(preTierPrice)}</strong></p>` : ''}
+                        <a href="/package-detail.html?id=${data.id}" class="text-xs text-green-700 underline mt-1 inline-block">تغيير الاختيار</a>
+                    `;
+                    const step1 = document.getElementById('step1');
+                    if (step1) step1.prepend(notice);
+                }
+            } else if (preHotelId) {
+                // Hotel selected but no tier — set hotel only
+                this.preselectedTierPrice = null;
+                const [city, hi] = preHotelId.split('-');
+                const hotels = city === 'mecca' ? (data.mecca_hotels||[]) : (data.madina_hotels||[]);
+                const hotel  = hotels[parseInt(hi)];
+                if (hotel) {
+                    const target = city === 'mecca' ? 'selectedMeccaHotel' : 'selectedMadinaHotel';
+                    this[target] = { name: hotel.name, extra_price: 0 };
+                }
+            } else {
+                this.preselectedTierPrice = null;
+            }
+
             this.renderHotelSelectors();
 
             if (!data.price_child) {
@@ -382,8 +434,12 @@ const bookingController = {
         const adults   = parseInt(document.getElementById('adultsCount').value) || 1;
         const children = parseInt(document.getElementById('childrenCount').value) || 0;
         const infants  = parseInt(document.getElementById('infantsCount').value) || 0;
-        const priceAdult  = this.packageData.price_per_person;
-        const priceChild  = this.packageData.price_child || priceAdult;
+
+        // If a room tier with its own total price is selected (from package-detail),
+        // use that as the per-person price; otherwise fall back to package base price.
+        const tierPrice   = this.preselectedTierPrice || null;
+        const priceAdult  = tierPrice !== null ? tierPrice : this.packageData.price_per_person;
+        const priceChild  = tierPrice !== null ? tierPrice : (this.packageData.price_child || this.packageData.price_per_person);
         const priceInfant = this.packageData.price_infant || 0; // infants free by default
 
         const adultsTotal   = adults * priceAdult;
@@ -391,13 +447,14 @@ const bookingController = {
         const infantsTotal  = infants * priceInfant;
 
         // Hotel extras — applied per paying person (adults + children)
+        // (These are for in-booking hotel selection; if tier price already reflects hotel, skip extras)
         const payingPersons = adults + children;
-        const meccaExtra    = (this.selectedMeccaHotel?.extra_price  || 0) * payingPersons;
-        const madinaExtra   = (this.selectedMadinaHotel?.extra_price || 0) * payingPersons;
+        const meccaExtra    = tierPrice !== null ? 0 : (this.selectedMeccaHotel?.extra_price  || 0) * payingPersons;
+        const madinaExtra   = tierPrice !== null ? 0 : (this.selectedMadinaHotel?.extra_price || 0) * payingPersons;
 
-        // Room tier extras — per paying person
-        const meccaTierExtra  = (this.selectedMeccaRoomTier?.extra_price  || 0) * payingPersons;
-        const madinaTierExtra = (this.selectedMadinaRoomTier?.extra_price || 0) * payingPersons;
+        // Room tier extras (in-booking selection; skip if pre-selected from detail page)
+        const meccaTierExtra  = tierPrice !== null ? 0 : (this.selectedMeccaRoomTier?.extra_price  || 0) * payingPersons;
+        const madinaTierExtra = tierPrice !== null ? 0 : (this.selectedMadinaRoomTier?.extra_price || 0) * payingPersons;
 
         this.totalBasePrice = adultsTotal + childrenTotal + infantsTotal + meccaExtra + madinaExtra + meccaTierExtra + madinaTierExtra;
 
