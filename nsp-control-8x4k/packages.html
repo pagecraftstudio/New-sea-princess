@@ -405,6 +405,46 @@
               </label>
             </div>
           </div>
+
+          <!-- Documents config -->
+          <div class="mt-5 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <h5 class="font-bold text-blue-800 mb-3 flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-file-circle-check text-blue-600"></i>
+              متطلبات المستندات لكل مسافر
+            </h5>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-gray-500 border-b border-blue-200">
+                    <th class="text-right pb-2 font-semibold w-40">المستند</th>
+                    <th class="pb-2 font-semibold text-center"><span class="inline-flex items-center gap-1 text-red-600"><i class="fa-solid fa-circle-exclamation text-xs"></i> إلزامي</span></th>
+                    <th class="pb-2 font-semibold text-center"><span class="inline-flex items-center gap-1 text-amber-600"><i class="fa-solid fa-circle-minus text-xs"></i> اختياري</span></th>
+                    <th class="pb-2 font-semibold text-center"><span class="inline-flex items-center gap-1 text-gray-400"><i class="fa-solid fa-eye-slash text-xs"></i> مخفي</span></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-blue-100">
+                  <tr>
+                    <td class="py-2.5 font-medium"><i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر</td>
+                    <td class="text-center py-2.5"><input type="radio" name="doc_passport" value="required" checked class="accent-red-500 w-4 h-4"></td>
+                    <td class="text-center py-2.5"><input type="radio" name="doc_passport" value="optional" class="accent-amber-500 w-4 h-4"></td>
+                    <td class="text-center py-2.5"><input type="radio" name="doc_passport" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 font-medium"><i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية</td>
+                    <td class="text-center py-2.5"><input type="radio" name="doc_national_id" value="required" class="accent-red-500 w-4 h-4"></td>
+                    <td class="text-center py-2.5"><input type="radio" name="doc_national_id" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
+                    <td class="text-center py-2.5"><input type="radio" name="doc_national_id" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 font-medium"><i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية</td>
+                    <td class="text-center py-2.5"><input type="radio" name="doc_personal_photo" value="required" checked class="accent-red-500 w-4 h-4"></td>
+                    <td class="text-center py-2.5"><input type="radio" name="doc_personal_photo" value="optional" class="accent-amber-500 w-4 h-4"></td>
+                    <td class="text-center py-2.5"><input type="radio" name="doc_personal_photo" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
       </div><!-- end scrollable body -->
@@ -604,6 +644,14 @@
       document.getElementById('pVisaIncluded').checked = pkg.visa_included !== false;
       document.getElementById('pNotes').value          = pkg.notes || '';
 
+      // Documents config
+      const dc = pkg.documents_config || {};
+      ['passport', 'national_id', 'personal_photo'].forEach(key => {
+        const val = dc[key] || (key === 'national_id' ? 'optional' : 'required');
+        const radio = document.querySelector(`input[name="doc_${key}"][value="${val}"]`);
+        if (radio) radio.checked = true;
+      });
+
       // Arrays → textarea (one per line)
       const inc = Array.isArray(pkg.includes) ? pkg.includes : [];
       const exc = Array.isArray(pkg.excludes) ? pkg.excludes : [];
@@ -684,6 +732,11 @@
       visa_included:         document.getElementById('pVisaIncluded').checked,
       is_featured:           document.getElementById('pIsFeatured').checked,
       is_active:             document.getElementById('pIsActive').checked,
+      documents_config: {
+        passport:       document.querySelector('input[name="doc_passport"]:checked')?.value      || 'required',
+        national_id:    document.querySelector('input[name="doc_national_id"]:checked')?.value   || 'optional',
+        personal_photo: document.querySelector('input[name="doc_personal_photo"]:checked')?.value || 'required',
+      },
     };
 
     // Remove undefined keys

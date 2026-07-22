@@ -45,9 +45,15 @@ function auditTravelerDocs(block, idx, isChild) {
     const covidInput    = block.querySelector('.t-covid-file');
     const birthInput    = block.querySelector('.t-birth-cert');
 
-    // National ID is optional — no warning if missing
-    if (!passportInput?.files?.[0]) warnings.push('صورة جواز السفر غير مرفقة');
-    if (!photoInput?.files?.[0])    warnings.push('الصورة الشخصية غير مرفقة');
+    // Respect documents_config if set by admin
+    const dc = window.BookingApp?.instance?.packageData?.documents_config || {};
+    const passportCfg = dc.passport       || 'required';
+    const nidCfg      = dc.national_id    || 'optional';
+    const photoCfg    = dc.personal_photo || 'required';
+
+    if (passportCfg === 'required' && !passportInput?.files?.[0]) warnings.push('صورة جواز السفر غير مرفقة');
+    if (photoCfg   === 'required' && !photoInput?.files?.[0])     warnings.push('الصورة الشخصية غير مرفقة');
+    if (nidCfg     === 'required' && !nidInput?.files?.[0])       warnings.push('البطاقة الوطنية غير مرفقة');
     // Vaccines (MenACYW / COVID-19) are now optional — no warning if missing.
 
     // Birth certificate required for youth (12–17)
@@ -568,6 +574,64 @@ const bookingController = {
 
         // Initial warn render
         renderDocWarnings();
+        // Apply per-package document visibility/requirement
+        this._applyDocConfig();
+    },
+
+    _applyDocConfig() {
+        const dc = this.packageData?.documents_config || {};
+        const cfg = {
+            passport:       dc.passport       || 'required',
+            national_id:    dc.national_id    || 'optional',
+            personal_photo: dc.personal_photo || 'required',
+        };
+
+        const labelBadge = (status, name) => {
+            if (status === 'required') return `<span class="text-red-500">*</span>`;
+            if (status === 'optional') return `<span class="text-gray-400 font-normal text-xs">(اختياري)</span>`;
+            return '';
+        };
+
+        document.querySelectorAll('.traveler-adult-block, .traveler-child-block').forEach(block => {
+            // Passport wrapper
+            const passportWrap = block.querySelector('.t-passport-file')?.closest('div');
+            if (passportWrap) {
+                if (cfg.passport === 'hidden') {
+                    passportWrap.style.display = 'none';
+                } else {
+                    passportWrap.style.display = '';
+                    const lbl = passportWrap.querySelector('label');
+                    if (lbl) lbl.innerHTML = `<i class="fa-solid fa-passport ml-1 text-primary"></i> جواز السفر ${labelBadge(cfg.passport)}`;
+                }
+            }
+
+            // National ID wrapper
+            const nidWrap = block.querySelector('.t-nid-file')?.closest('div');
+            if (nidWrap) {
+                if (cfg.national_id === 'hidden') {
+                    nidWrap.style.display = 'none';
+                } else {
+                    nidWrap.style.display = '';
+                    const lbl = nidWrap.querySelector('label');
+                    if (lbl) lbl.innerHTML = `<i class="fa-solid fa-id-card ml-1 text-amber-600"></i> بطاقة الرقم القومي ${labelBadge(cfg.national_id)}`;
+                }
+            }
+
+            // Personal photo wrapper
+            const photoWrap = block.querySelector('.t-photo-file')?.closest('div');
+            if (photoWrap) {
+                if (cfg.personal_photo === 'hidden') {
+                    photoWrap.style.display = 'none';
+                } else {
+                    photoWrap.style.display = '';
+                    const lbl = photoWrap.querySelector('label');
+                    if (lbl) {
+                        const badge = labelBadge(cfg.personal_photo);
+                        lbl.innerHTML = `<i class="fa-solid fa-camera ml-1 text-rose-500"></i> الصورة الشخصية (6×4 خلفية بيضاء) ${badge}`;
+                    }
+                }
+            }
+        });
     },
 
     // ── Build confirm step (step 3) ──
@@ -1120,6 +1184,7 @@ function checkDraft() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    window.BookingApp = { instance: bookingController };
     await bookingController.init();
     document.addEventListener('input',  () => saveDraft());
     document.addEventListener('change', () => saveDraft());
