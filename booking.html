@@ -198,6 +198,13 @@
               <option value="">-- اختر فندق مكة --</option>
             </select>
             <p id="meccaHotelDesc" class="text-xs text-gray-500 mt-1 hidden"></p>
+            <!-- Room Tier -->
+            <div id="meccaRoomTierWrapper" class="hidden mt-3">
+              <label class="block font-semibold mb-1 text-sm">🛏️ نوع الغرفة — مكة</label>
+              <select id="meccaRoomTierSelect" onchange="bookingController.onRoomTierChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white">
+                <option value="">-- اختر نوع الغرفة --</option>
+              </select>
+            </div>
           </div>
           <!-- Madina Hotel -->
           <div id="madinaHotelWrapper" class="hidden">
@@ -206,6 +213,13 @@
               <option value="">-- اختر فندق المدينة --</option>
             </select>
             <p id="madinaHotelDesc" class="text-xs text-gray-500 mt-1 hidden"></p>
+            <!-- Room Tier -->
+            <div id="madinaRoomTierWrapper" class="hidden mt-3">
+              <label class="block font-semibold mb-1 text-sm">🛏️ نوع الغرفة — المدينة</label>
+              <select id="madinaRoomTierSelect" onchange="bookingController.onRoomTierChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white">
+                <option value="">-- اختر نوع الغرفة --</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -227,7 +241,9 @@
         <div class="flex justify-between mb-4 border-b pb-4"><span id="calcInfantsText">0 رضّع</span><span id="calcInfantsTotal" class="font-bold"></span></div>
 
         <div id="hotelMeccaRow" class="flex justify-between mb-2 hidden"><span id="calcMeccaHotelText">فندق مكة</span><span id="calcMeccaHotelTotal" class="font-bold"></span></div>
-        <div id="hotelMadinaRow" class="flex justify-between mb-4 border-b pb-4 hidden"><span id="calcMadinaHotelText">فندق المدينة</span><span id="calcMadinaHotelTotal" class="font-bold"></span></div>
+        <div id="roomTierMeccaRow" class="flex justify-between mb-2 hidden text-sm text-gray-600"><span id="calcMeccaTierText">نوع غرفة مكة</span><span id="calcMeccaTierTotal" class="font-bold"></span></div>
+        <div id="hotelMadinaRow" class="flex justify-between mb-2 hidden"><span id="calcMadinaHotelText">فندق المدينة</span><span id="calcMadinaHotelTotal" class="font-bold"></span></div>
+        <div id="roomTierMadinaRow" class="flex justify-between mb-4 border-b pb-4 hidden text-sm text-gray-600"><span id="calcMadinaTierText">نوع غرفة المدينة</span><span id="calcMadinaTierTotal" class="font-bold"></span></div>
 
         <div id="discountRow" class="flex justify-between text-green-600 mb-4 hidden border-b pb-4">
           <span>الخصم (<span id="discountPercentText"></span>%)</span>
