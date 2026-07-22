@@ -159,6 +159,8 @@ const bookingController = {
     appliedCoupon: null,
     discountAmount: 0,
     uploadedDocuments: [],
+    selectedMeccaHotel: null,
+    selectedMadinaHotel: null,
 
     async init() {
         const { data: { session } } = await window.db.auth.getSession();
@@ -191,6 +193,8 @@ const bookingController = {
 
             if (window.trackEvent) window.trackEvent('booking_start', { package_id: data.id, package_title: data.title });
 
+            this.renderHotelSelectors();
+
             if (!data.price_child) {
                 document.getElementById('childPriceNotice').innerText = 'سعر الطفل غير متاح لهذا البرنامج؛ يُحسب كفرد بالغ.';
             } else {
@@ -220,6 +224,98 @@ const bookingController = {
         }
     },
 
+    renderHotelSelectors() {
+        const pkg = this.packageData;
+        const meccaHotels  = pkg.mecca_hotels  || [];
+        const madinaHotels = pkg.madina_hotels || [];
+
+        const section = document.getElementById('hotelSelectionSection');
+        if (!section) return;
+
+        // Mecca
+        const meccaWrapper = document.getElementById('meccaHotelWrapper');
+        const meccaSelect  = document.getElementById('meccaHotelSelect');
+        if (meccaHotels.length > 0 && meccaWrapper && meccaSelect) {
+            meccaSelect.innerHTML = '<option value="">-- اختر فندق مكة --</option>';
+            meccaHotels.forEach((h, i) => {
+                const label = h.extra_price > 0
+                    ? `${h.name} (+${window.formatCurrency(h.extra_price)} للفرد)`
+                    : h.extra_price < 0
+                        ? `${h.name} (${window.formatCurrency(h.extra_price)} للفرد)`
+                        : h.name;
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = label;
+                meccaSelect.appendChild(opt);
+            });
+            // Auto-select first option if only one hotel
+            if (meccaHotels.length === 1) {
+                meccaSelect.value = '0';
+                this.selectedMeccaHotel = meccaHotels[0];
+            }
+            meccaWrapper.classList.remove('hidden');
+            section.classList.remove('hidden');
+        }
+
+        // Madina
+        const madinaWrapper = document.getElementById('madinaHotelWrapper');
+        const madinaSelect  = document.getElementById('madinaHotelSelect');
+        if (madinaHotels.length > 0 && madinaWrapper && madinaSelect) {
+            madinaSelect.innerHTML = '<option value="">-- اختر فندق المدينة --</option>';
+            madinaHotels.forEach((h, i) => {
+                const label = h.extra_price > 0
+                    ? `${h.name} (+${window.formatCurrency(h.extra_price)} للفرد)`
+                    : h.extra_price < 0
+                        ? `${h.name} (${window.formatCurrency(h.extra_price)} للفرد)`
+                        : h.name;
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = label;
+                madinaSelect.appendChild(opt);
+            });
+            if (madinaHotels.length === 1) {
+                madinaSelect.value = '0';
+                this.selectedMadinaHotel = madinaHotels[0];
+            }
+            madinaWrapper.classList.remove('hidden');
+            section.classList.remove('hidden');
+        }
+    },
+
+    onHotelChange() {
+        const pkg = this.packageData;
+        const meccaHotels  = pkg.mecca_hotels  || [];
+        const madinaHotels = pkg.madina_hotels || [];
+
+        const meccaIdx  = document.getElementById('meccaHotelSelect')?.value;
+        const madinaIdx = document.getElementById('madinaHotelSelect')?.value;
+
+        this.selectedMeccaHotel  = meccaIdx  !== '' ? meccaHotels[parseInt(meccaIdx)]  : null;
+        this.selectedMadinaHotel = madinaIdx !== '' ? madinaHotels[parseInt(madinaIdx)] : null;
+
+        // Show description if available
+        const meccaDesc  = document.getElementById('meccaHotelDesc');
+        const madinaDesc = document.getElementById('madinaHotelDesc');
+        if (meccaDesc) {
+            if (this.selectedMeccaHotel?.description) {
+                meccaDesc.textContent = this.selectedMeccaHotel.description;
+                meccaDesc.classList.remove('hidden');
+            } else {
+                meccaDesc.classList.add('hidden');
+            }
+        }
+        if (madinaDesc) {
+            if (this.selectedMadinaHotel?.description) {
+                madinaDesc.textContent = this.selectedMadinaHotel.description;
+                madinaDesc.classList.remove('hidden');
+            } else {
+                madinaDesc.classList.add('hidden');
+            }
+        }
+
+        this.updatePricing();
+    },
+
     updatePricing() {
         const adults   = parseInt(document.getElementById('adultsCount').value) || 1;
         const children = parseInt(document.getElementById('childrenCount').value) || 0;
@@ -231,7 +327,13 @@ const bookingController = {
         const adultsTotal   = adults * priceAdult;
         const childrenTotal = children * priceChild;
         const infantsTotal  = infants * priceInfant;
-        this.totalBasePrice = adultsTotal + childrenTotal + infantsTotal;
+
+        // Hotel extras — applied per paying person (adults + children)
+        const payingPersons = adults + children;
+        const meccaExtra    = (this.selectedMeccaHotel?.extra_price  || 0) * payingPersons;
+        const madinaExtra   = (this.selectedMadinaHotel?.extra_price || 0) * payingPersons;
+
+        this.totalBasePrice = adultsTotal + childrenTotal + infantsTotal + meccaExtra + madinaExtra;
 
         document.getElementById('calcAdultsText').innerText   = `${adults} بالغ`;
         document.getElementById('calcAdultsTotal').innerText  = window.formatCurrency(adultsTotal);
@@ -239,6 +341,20 @@ const bookingController = {
         document.getElementById('calcChildrenTotal').innerText= window.formatCurrency(childrenTotal);
         document.getElementById('calcInfantsText').innerText  = `${infants} رضيع`;
         document.getElementById('calcInfantsTotal').innerText = window.formatCurrency(infantsTotal);
+
+        // Hotel rows in summary
+        const meccaRow  = document.getElementById('hotelMeccaRow');
+        const madinaRow = document.getElementById('hotelMadinaRow');
+        if (this.selectedMeccaHotel && meccaExtra !== 0 && meccaRow) {
+            document.getElementById('calcMeccaHotelText').innerText  = `فندق مكة: ${this.selectedMeccaHotel.name}`;
+            document.getElementById('calcMeccaHotelTotal').innerText = window.formatCurrency(meccaExtra);
+            meccaRow.classList.remove('hidden');
+        } else if (meccaRow) { meccaRow.classList.add('hidden'); }
+        if (this.selectedMadinaHotel && madinaExtra !== 0 && madinaRow) {
+            document.getElementById('calcMadinaHotelText').innerText  = `فندق المدينة: ${this.selectedMadinaHotel.name}`;
+            document.getElementById('calcMadinaHotelTotal').innerText = window.formatCurrency(madinaExtra);
+            madinaRow.classList.remove('hidden');
+        } else if (madinaRow) { madinaRow.classList.add('hidden'); }
 
         if (this.appliedCoupon && this.packageData.discount_percent) {
             this.discountAmount = (this.totalBasePrice * this.packageData.discount_percent) / 100;
@@ -909,7 +1025,9 @@ const bookingController = {
                 special_requests:        document.getElementById('specialRequests').value,
                 user_id:                 this.currentUser?.id || null,
                 booking_type:            document.getElementById('isPreorder')?.checked ? 'preorder' : 'standard',
-                dates_unknown:           document.getElementById('datesUnknown')?.checked || false
+                dates_unknown:           document.getElementById('datesUnknown')?.checked || false,
+                mecca_hotel:             this.selectedMeccaHotel  ? { name: this.selectedMeccaHotel.name,  extra_price: this.selectedMeccaHotel.extra_price  } : null,
+                madina_hotel:            this.selectedMadinaHotel ? { name: this.selectedMadinaHotel.name, extra_price: this.selectedMadinaHotel.extra_price } : null
             };
 
             // 5. Insert
@@ -965,6 +1083,8 @@ ${departureLabel}
 👤 *العميل:* ${bookingRow.customer_name}
 📞 *هاتف:* ${bookingRow.customer_phone}
 👥 *الأفراد:* ${bookingRow.adults_count} بالغ | ${bookingRow.children_count} طفل | ${bookingRow.infants_count} رضيع
+${bookingRow.mecca_hotel  ? `🕋 *فندق مكة:* ${bookingRow.mecca_hotel.name}` : ''}
+${bookingRow.madina_hotel ? `🕌 *فندق المدينة:* ${bookingRow.madina_hotel.name}` : ''}
 💰 *الإجمالي:* ${window.formatCurrency(bookingRow.total_price)}
 📎 *المستندات:* ${bookingRow.documents.length} ملف${warningsText}`;
 

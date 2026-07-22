@@ -187,6 +187,29 @@
         </div>
       </div>
 
+      <!-- Hotel Selection Section -->
+      <div id="hotelSelectionSection" class="mb-8 hidden">
+        <h3 class="font-bold text-lg mb-4 text-darkBg border-b pb-2"><i class="fa-solid fa-hotel ml-2 text-primary"></i>اختر فندقك</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <!-- Mecca Hotel -->
+          <div id="meccaHotelWrapper" class="hidden">
+            <label class="block font-bold mb-2">🕋 فندق مكة المكرمة</label>
+            <select id="meccaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white">
+              <option value="">-- اختر فندق مكة --</option>
+            </select>
+            <p id="meccaHotelDesc" class="text-xs text-gray-500 mt-1 hidden"></p>
+          </div>
+          <!-- Madina Hotel -->
+          <div id="madinaHotelWrapper" class="hidden">
+            <label class="block font-bold mb-2">🕌 فندق المدينة المنورة</label>
+            <select id="madinaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white">
+              <option value="">-- اختر فندق المدينة --</option>
+            </select>
+            <p id="madinaHotelDesc" class="text-xs text-gray-500 mt-1 hidden"></p>
+          </div>
+        </div>
+      </div>
+
       <!-- Coupon Section -->
       <div class="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-end gap-4 max-w-md">
         <div class="flex-1">
@@ -202,7 +225,10 @@
         <div class="flex justify-between mb-2"><span id="calcAdultsText">1 بالغ</span><span id="calcAdultsTotal" class="font-bold"></span></div>
         <div class="flex justify-between mb-2"><span id="calcChildrenText">0 أطفال</span><span id="calcChildrenTotal" class="font-bold"></span></div>
         <div class="flex justify-between mb-4 border-b pb-4"><span id="calcInfantsText">0 رضّع</span><span id="calcInfantsTotal" class="font-bold"></span></div>
-        
+
+        <div id="hotelMeccaRow" class="flex justify-between mb-2 hidden"><span id="calcMeccaHotelText">فندق مكة</span><span id="calcMeccaHotelTotal" class="font-bold"></span></div>
+        <div id="hotelMadinaRow" class="flex justify-between mb-4 border-b pb-4 hidden"><span id="calcMadinaHotelText">فندق المدينة</span><span id="calcMadinaHotelTotal" class="font-bold"></span></div>
+
         <div id="discountRow" class="flex justify-between text-green-600 mb-4 hidden border-b pb-4">
           <span>الخصم (<span id="discountPercentText"></span>%)</span>
           <span id="calcDiscountTotal" class="font-bold"></span>
