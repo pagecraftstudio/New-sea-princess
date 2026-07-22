@@ -137,10 +137,25 @@
             <div>
               <label class="block text-sm font-bold mb-1">الفئة <span class="text-red-500">*</span></label>
               <select id="pCategory" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary bg-white">
-                <option value="اقتصادي">اقتصادي</option>
-                <option value="متميز">متميز</option>
-                <option value="VIP">VIP</option>
-                <option value="عائلي">عائلي</option>
+                <optgroup label="عمرة">
+                  <option value="اقتصادي">🟢 اقتصادي</option>
+                  <option value="متميز">🔵 متميز</option>
+                  <option value="VIP">⭐ VIP</option>
+                  <option value="عائلي">👨‍👩‍👧 عائلي</option>
+                  <option value="نسائي">🌸 نسائي</option>
+                  <option value="شباب">🎯 شباب</option>
+                  <option value="رمضان">🌙 رمضان</option>
+                </optgroup>
+                <optgroup label="حج">
+                  <option value="حج اقتصادي">🕌 حج اقتصادي</option>
+                  <option value="حج متميز">🕌 حج متميز</option>
+                  <option value="حج VIP">🕌 حج VIP</option>
+                </optgroup>
+                <optgroup label="أخرى">
+                  <option value="زيارات دينية">🕍 زيارات دينية</option>
+                  <option value="سياحي">✈️ سياحي</option>
+                  <option value="مخصص">🔧 مخصص</option>
+                </optgroup>
               </select>
             </div>
             <div>
@@ -389,46 +404,119 @@
                 <input type="checkbox" id="pIsActive" checked class="w-4 h-4 accent-primary">
                 <span class="font-bold text-sm">البرنامج نشط وظاهر للعملاء</span>
               </label>
+              <!-- ── Pre-order ── -->
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" id="pIsPreorder" class="w-4 h-4 accent-amber-500" onchange="document.getElementById('preorderNoteWrap').classList.toggle('hidden',!this.checked)">
+                <span class="font-bold text-sm text-amber-700"><i class="fa-solid fa-clock-rotate-left ml-1 text-amber-500"></i>حجز مسبق (Preorder)</span>
+              </label>
+              <div id="preorderNoteWrap" class="hidden mt-1 pr-7">
+                <input type="text" id="pPreorderNote" placeholder="مثال: التفاصيل ستُحدد قبل 30 يوم من السفر" class="w-full border border-amber-300 bg-amber-50 rounded-lg p-2 text-sm outline-none focus:border-amber-500">
+              </div>
             </div>
           </div>
 
           <!-- Documents config -->
           <div class="mt-5 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <h5 class="font-bold text-blue-800 mb-3 flex items-center gap-2 text-sm">
+            <h5 class="font-bold text-blue-800 mb-1 flex items-center gap-2 text-sm">
               <i class="fa-solid fa-file-circle-check text-blue-600"></i>
               متطلبات المستندات لكل مسافر
             </h5>
+
+            <!-- Quick presets -->
+            <div class="flex flex-wrap gap-2 mb-3 mt-2">
+              <span class="text-xs text-gray-500 font-bold self-center">إعدادات سريعة:</span>
+              <button type="button" onclick="applyDocPreset('umrah_standard')" class="text-xs bg-white border border-blue-300 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg font-bold transition">عمرة عادية</button>
+              <button type="button" onclick="applyDocPreset('umrah_ramadan')" class="text-xs bg-white border border-purple-300 hover:bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg font-bold transition">عمرة رمضان</button>
+              <button type="button" onclick="applyDocPreset('hajj')" class="text-xs bg-white border border-green-400 hover:bg-green-100 text-green-700 px-2.5 py-1 rounded-lg font-bold transition">حج</button>
+              <button type="button" onclick="applyDocPreset('minimal')" class="text-xs bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg font-bold transition">حد أدنى</button>
+            </div>
+
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="w-full text-sm" id="docConfigTable">
                 <thead>
                   <tr class="text-xs text-gray-500 border-b border-blue-200">
-                    <th class="text-right pb-2 font-semibold w-40">المستند</th>
-                    <th class="pb-2 font-semibold text-center"><span class="inline-flex items-center gap-1 text-red-600"><i class="fa-solid fa-circle-exclamation text-xs"></i> إلزامي</span></th>
-                    <th class="pb-2 font-semibold text-center"><span class="inline-flex items-center gap-1 text-amber-600"><i class="fa-solid fa-circle-minus text-xs"></i> اختياري</span></th>
-                    <th class="pb-2 font-semibold text-center"><span class="inline-flex items-center gap-1 text-gray-400"><i class="fa-solid fa-eye-slash text-xs"></i> مخفي</span></th>
+                    <th class="text-right pb-2 font-semibold">المستند</th>
+                    <th class="pb-2 font-semibold text-center text-red-600"><i class="fa-solid fa-circle-exclamation text-xs ml-1"></i>إلزامي</th>
+                    <th class="pb-2 font-semibold text-center text-amber-600"><i class="fa-solid fa-circle-minus text-xs ml-1"></i>اختياري</th>
+                    <th class="pb-2 font-semibold text-center text-gray-400"><i class="fa-solid fa-eye-slash text-xs ml-1"></i>مخفي</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-blue-100">
+                <tbody class="divide-y divide-blue-100" id="docConfigBody">
                   <tr>
-                    <td class="py-2.5 font-medium"><i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر</td>
-                    <td class="text-center py-2.5"><input type="radio" name="doc_passport" value="required" checked class="accent-red-500 w-4 h-4"></td>
-                    <td class="text-center py-2.5"><input type="radio" name="doc_passport" value="optional" class="accent-amber-500 w-4 h-4"></td>
-                    <td class="text-center py-2.5"><input type="radio" name="doc_passport" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+                    <td class="py-2 font-medium"><i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر</td>
+                    <td class="text-center"><input type="radio" name="doc_passport" value="required" checked class="accent-red-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_passport" value="optional" class="accent-amber-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_passport" value="hidden" class="accent-gray-400 w-4 h-4"></td>
                   </tr>
                   <tr>
-                    <td class="py-2.5 font-medium"><i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية</td>
-                    <td class="text-center py-2.5"><input type="radio" name="doc_national_id" value="required" class="accent-red-500 w-4 h-4"></td>
-                    <td class="text-center py-2.5"><input type="radio" name="doc_national_id" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
-                    <td class="text-center py-2.5"><input type="radio" name="doc_national_id" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+                    <td class="py-2 font-medium"><i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية</td>
+                    <td class="text-center"><input type="radio" name="doc_national_id" value="required" class="accent-red-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_national_id" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_national_id" value="hidden" class="accent-gray-400 w-4 h-4"></td>
                   </tr>
                   <tr>
-                    <td class="py-2.5 font-medium"><i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية</td>
-                    <td class="text-center py-2.5"><input type="radio" name="doc_personal_photo" value="required" checked class="accent-red-500 w-4 h-4"></td>
-                    <td class="text-center py-2.5"><input type="radio" name="doc_personal_photo" value="optional" class="accent-amber-500 w-4 h-4"></td>
-                    <td class="text-center py-2.5"><input type="radio" name="doc_personal_photo" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+                    <td class="py-2 font-medium"><i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية</td>
+                    <td class="text-center"><input type="radio" name="doc_personal_photo" value="required" checked class="accent-red-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_personal_photo" value="optional" class="accent-amber-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_personal_photo" value="hidden" class="accent-gray-400 w-4 h-4"></td>
                   </tr>
+                  <tr>
+                    <td class="py-2 font-medium"><i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية</td>
+                    <td class="text-center"><input type="radio" name="doc_meningitis" value="required" class="accent-red-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_meningitis" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_meningitis" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 font-medium"><i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19</td>
+                    <td class="text-center"><input type="radio" name="doc_covid" value="required" class="accent-red-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_covid" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_covid" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 font-medium"><i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد</td>
+                    <td class="text-center"><input type="radio" name="doc_birth_cert" value="required" class="accent-red-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_birth_cert" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
+                    <td class="text-center"><input type="radio" name="doc_birth_cert" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+                  </tr>
+                  <!-- Dynamic custom docs injected here by JS -->
+                  <tr id="customDocRows"></tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Add custom document -->
+            <div class="mt-3 border-t border-blue-200 pt-3">
+              <p class="text-xs font-bold text-blue-700 mb-2"><i class="fa-solid fa-plus ml-1"></i>إضافة مستند إضافي</p>
+              <div class="flex gap-2 flex-wrap">
+                <input type="text" id="customDocName" placeholder="مثال: عقد الزواج" class="flex-1 min-w-0 border border-blue-300 rounded-lg p-2 text-sm outline-none focus:border-blue-500 bg-white">
+                <button type="button" onclick="addCustomDoc()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap">
+                  <i class="fa-solid fa-plus ml-1"></i> إضافة
+                </button>
+              </div>
+              <!-- Common quick-add -->
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="text-xs text-gray-400 font-bold self-center">شائع:</span>
+                <button type="button" onclick="quickAddDoc('عقد الزواج')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">عقد الزواج</button>
+                <button type="button" onclick="quickAddDoc('وثيقة المحرم')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">وثيقة المحرم</button>
+                <button type="button" onclick="quickAddDoc('كشف حساب بنكي')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">كشف حساب بنكي</button>
+                <button type="button" onclick="quickAddDoc('شهادة القيد العائلي')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">شهادة القيد العائلي</button>
+                <button type="button" onclick="quickAddDoc('صورة بطاقة الطفل')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">صورة بطاقة الطفل</button>
+              </div>
+            </div>
+
+            <!-- Special conditions -->
+            <div class="mt-4 border-t border-blue-200 pt-3">
+              <p class="text-xs font-bold text-blue-700 mb-2"><i class="fa-solid fa-triangle-exclamation text-amber-500 ml-1"></i>شروط خاصة بالمستندات</p>
+              <textarea id="pDocConditions" rows="3" placeholder="مثال:&#10;- يُشترط أن يكون الجواز صالحاً 6 أشهر بعد تاريخ العودة&#10;- المرأة دون 45 سنة تحتاج محرم&#10;- الأطفال دون 18 سنة يحتاجون موافقة الوالدين" class="w-full border border-blue-300 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500 bg-white"></textarea>
+              <!-- Common conditions quick-add -->
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="text-xs text-gray-400 font-bold self-center">إضافة سريعة:</span>
+                <button type="button" onclick="appendDocCondition('يُشترط أن يكون الجواز صالحاً 6 أشهر على الأقل بعد تاريخ العودة')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">صلاحية الجواز 6 أشهر</button>
+                <button type="button" onclick="appendDocCondition('المرأة دون 45 سنة يجب أن تسافر مع محرم أو ضمن مجموعة نسائية معتمدة')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">اشتراط المحرم</button>
+                <button type="button" onclick="appendDocCondition('يُشترط تقديم شهادة التطعيم ضد الحمى الشوكية (MenACYW) لا تزيد عن 5 سنوات')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">تطعيم الحمى الشوكية</button>
+                <button type="button" onclick="appendDocCondition('الأطفال دون 18 سنة يحتاجون موافقة خطية من الوالدين أو ولي الأمر')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">موافقة الأطفال</button>
+                <button type="button" onclick="appendDocCondition('يجب تقديم جميع المستندات كاملةً قبل 14 يوم من تاريخ المغادرة')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">موعد تسليم المستندات</button>
+              </div>
             </div>
           </div>
         </div>
@@ -757,6 +845,13 @@
     document.getElementById('pIsActive').checked = true;
     document.getElementById('pIsFeatured').checked = false;
     document.getElementById('pVisaIncluded').checked = true;
+    document.getElementById('pIsPreorder').checked = false;
+    document.getElementById('preorderNoteWrap').classList.add('hidden');
+    document.getElementById('pPreorderNote').value = '';
+    document.getElementById('pDocConditions').value = '';
+    resetCustomDocs();
+    // Reset doc radios to defaults
+    applyDocPreset('umrah_standard');
 
     if (pkg) {
       // Fill with existing data
@@ -790,13 +885,29 @@
       document.getElementById('pVisaIncluded').checked = pkg.visa_included !== false;
       document.getElementById('pNotes').value          = pkg.notes || '';
 
+      // Pre-order
+      const isPreorder = pkg.is_preorder === true;
+      document.getElementById('pIsPreorder').checked = isPreorder;
+      document.getElementById('preorderNoteWrap').classList.toggle('hidden', !isPreorder);
+      document.getElementById('pPreorderNote').value = pkg.preorder_note || '';
+
       // Documents config
       const dc = pkg.documents_config || {};
-      ['passport', 'national_id', 'personal_photo'].forEach(key => {
-        const val = dc[key] || (key === 'national_id' ? 'optional' : 'required');
+      const docDefaults = { passport:'required', national_id:'optional', personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'optional' };
+      Object.entries(docDefaults).forEach(([key, def]) => {
+        const val = dc[key] || def;
         const radio = document.querySelector(`input[name="doc_${key}"][value="${val}"]`);
         if (radio) radio.checked = true;
       });
+
+      // Custom docs
+      resetCustomDocs();
+      if (Array.isArray(dc.custom_docs)) {
+        dc.custom_docs.forEach(cd => addCustomDoc(cd.label, cd.value));
+      }
+
+      // Doc conditions
+      document.getElementById('pDocConditions').value = pkg.doc_conditions || '';
 
       // Arrays → textarea (one per line)
       const inc = Array.isArray(pkg.includes) ? pkg.includes : [];
@@ -920,10 +1031,17 @@
       visa_included:         document.getElementById('pVisaIncluded').checked,
       is_featured:           document.getElementById('pIsFeatured').checked,
       is_active:             document.getElementById('pIsActive').checked,
+      is_preorder:           document.getElementById('pIsPreorder').checked,
+      preorder_note:         document.getElementById('pPreorderNote').value.trim() || null,
+      doc_conditions:        document.getElementById('pDocConditions').value.trim() || null,
       documents_config: {
-        passport:       document.querySelector('input[name="doc_passport"]:checked')?.value      || 'required',
-        national_id:    document.querySelector('input[name="doc_national_id"]:checked')?.value   || 'optional',
+        passport:       document.querySelector('input[name="doc_passport"]:checked')?.value       || 'required',
+        national_id:    document.querySelector('input[name="doc_national_id"]:checked')?.value    || 'optional',
         personal_photo: document.querySelector('input[name="doc_personal_photo"]:checked')?.value || 'required',
+        meningitis:     document.querySelector('input[name="doc_meningitis"]:checked')?.value     || 'optional',
+        covid:          document.querySelector('input[name="doc_covid"]:checked')?.value          || 'optional',
+        birth_cert:     document.querySelector('input[name="doc_birth_cert"]:checked')?.value     || 'optional',
+        custom_docs:    collectCustomDocs(),
       },
     };
 
@@ -969,7 +1087,16 @@
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-gray-50';
 
-      const catColors = { 'اقتصادي':'bg-green-100 text-green-800', 'متميز':'bg-blue-100 text-blue-800', 'VIP':'bg-yellow-100 text-yellow-800', 'عائلي':'bg-teal-100 text-teal-800' };
+      const catColors = {
+        'اقتصادي':'bg-green-100 text-green-800', 'متميز':'bg-blue-100 text-blue-800',
+        'VIP':'bg-yellow-100 text-yellow-800', 'عائلي':'bg-teal-100 text-teal-800',
+        'نسائي':'bg-pink-100 text-pink-800', 'شباب':'bg-orange-100 text-orange-800',
+        'رمضان':'bg-purple-100 text-purple-800',
+        'حج اقتصادي':'bg-emerald-100 text-emerald-800', 'حج متميز':'bg-cyan-100 text-cyan-800',
+        'حج VIP':'bg-amber-100 text-amber-800',
+        'زيارات دينية':'bg-indigo-100 text-indigo-800', 'سياحي':'bg-sky-100 text-sky-800',
+        'مخصص':'bg-gray-100 text-gray-700',
+      };
       const catClass = catColors[pkg.category] || 'bg-gray-100 text-gray-800';
       const seatsColor = pkg.available_seats <= 5 ? 'text-red-600' : pkg.available_seats <= 10 ? 'text-orange-500' : 'text-green-700';
 
@@ -1125,7 +1252,7 @@
 </div>
 
 <div style="margin-bottom:12px">
-  <span class="badge badge-${ {اقتصادي:'eco',متميز:'prem',VIP:'vip',عائلي:'fam'}[pkg.category]||'eco' }">${pkg.category}</span>
+  <span class="badge badge-${ {'اقتصادي':'eco','متميز':'prem','VIP':'vip','عائلي':'fam','نسائي':'nis','شباب':'sha','رمضان':'ram','حج اقتصادي':'heco','حج متميز':'hprem','حج VIP':'hvip','زيارات دينية':'rel','سياحي':'tour','مخصص':'cust'}[pkg.category]||'eco' }">${pkg.category}</span>
   ${pkg.season ? `<span class="badge" style="background:#fef3c7;color:#92400e">${pkg.season}</span>` : ''}
   ${pkg.is_active ? '<span class="badge" style="background:#dcfce7;color:#15803d">نشط</span>' : '<span class="badge" style="background:#fee2e2;color:#991b1b">مخفي</span>'}
 </div>
@@ -1234,6 +1361,86 @@ ${pkg.notes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-ra
     });
   });
   function closeDrawer() { document.getElementById('mobileDrawer').classList.add('hidden'); }
+
+  // ══════════════════════════════════════
+  //  DOCUMENT CONFIG HELPERS
+  // ══════════════════════════════════════
+
+  // Custom docs state: [{label, value}]
+  let _customDocs = [];
+
+  function resetCustomDocs() {
+    _customDocs = [];
+    renderCustomDocRows();
+  }
+
+  function addCustomDoc(label, value) {
+    const name = label || document.getElementById('customDocName')?.value?.trim();
+    if (!name) return;
+    const key  = value || 'doc_custom_' + Date.now();
+    if (_customDocs.find(d => d.label === name)) return; // no duplicate
+    _customDocs.push({ label: name, value: key });
+    document.getElementById('customDocName').value = '';
+    renderCustomDocRows();
+  }
+
+  function quickAddDoc(label) {
+    addCustomDoc(label, 'doc_custom_' + label.replace(/\s+/g, '_'));
+  }
+
+  function removeCustomDoc(idx) {
+    _customDocs.splice(idx, 1);
+    renderCustomDocRows();
+  }
+
+  function renderCustomDocRows() {
+    const container = document.getElementById('customDocRows');
+    if (!container) return;
+    if (_customDocs.length === 0) { container.innerHTML = ''; return; }
+    container.innerHTML = _customDocs.map((cd, i) => `
+      <tr class="bg-blue-50/60">
+        <td class="py-2 font-medium text-blue-800">
+          <i class="fa-solid fa-file text-blue-400 text-xs ml-1"></i>${cd.label}
+          <button type="button" onclick="removeCustomDoc(${i})" class="mr-2 text-red-400 hover:text-red-600 text-xs"><i class="fa-solid fa-xmark"></i></button>
+        </td>
+        <td class="text-center"><input type="radio" name="doc_custom_${i}" value="required" class="accent-red-500 w-4 h-4"></td>
+        <td class="text-center"><input type="radio" name="doc_custom_${i}" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
+        <td class="text-center"><input type="radio" name="doc_custom_${i}" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+      </tr>`).join('');
+  }
+
+  function collectCustomDocs() {
+    return _customDocs.map((cd, i) => ({
+      label: cd.label,
+      key:   cd.value,
+      status: document.querySelector(`input[name="doc_custom_${i}"]:checked`)?.value || 'optional',
+    }));
+  }
+
+  // ── Presets ──
+  const DOC_PRESETS = {
+    umrah_standard: { passport:'required', national_id:'optional', personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'optional' },
+    umrah_ramadan:  { passport:'required', national_id:'required', personal_photo:'required', meningitis:'required', covid:'optional', birth_cert:'optional' },
+    hajj:           { passport:'required', national_id:'required', personal_photo:'required', meningitis:'required', covid:'required', birth_cert:'required' },
+    minimal:        { passport:'required', national_id:'hidden',   personal_photo:'hidden',   meningitis:'hidden',   covid:'hidden',   birth_cert:'hidden' },
+  };
+
+  function applyDocPreset(preset) {
+    const cfg = DOC_PRESETS[preset];
+    if (!cfg) return;
+    Object.entries(cfg).forEach(([key, val]) => {
+      const r = document.querySelector(`input[name="doc_${key}"][value="${val}"]`);
+      if (r) r.checked = true;
+    });
+  }
+
+  // ── Append condition line ──
+  function appendDocCondition(text) {
+    const ta = document.getElementById('pDocConditions');
+    if (!ta) return;
+    const current = ta.value.trim();
+    ta.value = current ? current + '\n- ' + text : '- ' + text;
+  }
 </script>
 </div><!-- /flex wrapper -->
 </body>
