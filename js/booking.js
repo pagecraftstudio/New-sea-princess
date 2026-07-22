@@ -424,11 +424,10 @@ const bookingController = {
                       <i class="fa-solid fa-id-card ml-1 text-amber-600"></i>
                       بطاقة الرقم القومي <span class="text-gray-400 font-normal text-xs">(اختياري)</span>
                     </label>
-                    <input type="file" class="t-nid-file text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-nid-input"
+                    <input type="file" class="t-nid-file text-sm bg-white border border-gray-300 rounded w-full p-1"
                            data-traveler="" data-doctype="national_id" data-traveler-idx="${idx}"
                            accept="image/jpeg,image/png,application/pdf"
                            onchange="renderDocWarnings()">
-                    <div id="ocr_nid_status_${idx}" class="ocr-status mt-1 hidden"></div>
                   </div>
 
                   <!-- Passport -->
@@ -437,11 +436,10 @@ const bookingController = {
                       <i class="fa-solid fa-passport ml-1 text-primary"></i>
                       جواز السفر <span class="text-red-500">*</span>
                     </label>
-                    <input type="file" class="t-passport-file text-sm bg-white border border-gray-300 rounded w-full p-1 ocr-passport-input"
+                    <input type="file" class="t-passport-file text-sm bg-white border border-gray-300 rounded w-full p-1"
                            data-traveler="" data-doctype="passport" data-traveler-idx="${idx}"
                            accept="image/jpeg,image/png,application/pdf"
                            onchange="renderDocWarnings()">
-                    <div id="ocr_passport_status_${idx}" class="ocr-status mt-1 hidden"></div>
                   </div>
 
                   <!-- Personal photo -->
@@ -505,7 +503,6 @@ const bookingController = {
 
                 </div>
                 <div class="doc-warnings-banner"></div>
-                <div id="ocr_cross_${idx}" class="hidden"></div>
               </div>
             `;
             container.appendChild(div);
