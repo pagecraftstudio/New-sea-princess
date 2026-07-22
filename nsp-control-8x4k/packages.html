@@ -136,37 +136,51 @@
             </div>
             <div>
               <label class="block text-sm font-bold mb-1">الفئة <span class="text-red-500">*</span></label>
-              <select id="pCategory" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary bg-white">
-                <optgroup label="عمرة">
-                  <option value="اقتصادي">🟢 اقتصادي</option>
-                  <option value="متميز">🔵 متميز</option>
-                  <option value="VIP">⭐ VIP</option>
-                  <option value="عائلي">👨‍👩‍👧 عائلي</option>
-                  <option value="نسائي">🌸 نسائي</option>
-                  <option value="شباب">🎯 شباب</option>
-                  <option value="رمضان">🌙 رمضان</option>
-                </optgroup>
-                <optgroup label="حج">
-                  <option value="حج اقتصادي">🕌 حج اقتصادي</option>
-                  <option value="حج متميز">🕌 حج متميز</option>
-                  <option value="حج VIP">🕌 حج VIP</option>
-                </optgroup>
-                <optgroup label="أخرى">
-                  <option value="زيارات دينية">🕍 زيارات دينية</option>
-                  <option value="سياحي">✈️ سياحي</option>
-                  <option value="مخصص">🔧 مخصص</option>
-                </optgroup>
-              </select>
+              <div class="flex gap-2 items-center">
+                <select id="pCategory" class="flex-1 border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary bg-white">
+                  <optgroup label="عمرة">
+                    <option value="اقتصادي">🟢 اقتصادي</option>
+                    <option value="متميز">🔵 متميز</option>
+                    <option value="VIP">⭐ VIP</option>
+                    <option value="عائلي">👨‍👩‍👧 عائلي</option>
+                    <option value="نسائي">🌸 نسائي</option>
+                    <option value="شباب">🎯 شباب</option>
+                    <option value="رمضان">🌙 رمضان</option>
+                  </optgroup>
+                  <optgroup label="حج">
+                    <option value="حج اقتصادي">🕌 حج اقتصادي</option>
+                    <option value="حج متميز">🕌 حج متميز</option>
+                    <option value="حج VIP">🕌 حج VIP</option>
+                  </optgroup>
+                  <optgroup label="أخرى">
+                    <option value="زيارات دينية">🕍 زيارات دينية</option>
+                    <option value="سياحي">✈️ سياحي</option>
+                    <option value="مخصص">🔧 مخصص</option>
+                  </optgroup>
+                  <!-- custom categories injected here -->
+                </select>
+                <button type="button" title="إضافة فئة جديدة" onclick="showAddOption('category')"
+                  class="flex-shrink-0 w-9 h-9 rounded-lg bg-primary hover:bg-green-700 text-white flex items-center justify-center transition">
+                  <i class="fa-solid fa-plus text-sm"></i>
+                </button>
+              </div>
             </div>
             <div>
               <label class="block text-sm font-bold mb-1">الموسم</label>
-              <select id="pSeason" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary bg-white">
-                <option value="رجب">رجب</option>
-                <option value="شعبان">شعبان</option>
-                <option value="رمضان">رمضان</option>
-                <option value="ذو الحجة">ذو الحجة</option>
-                <option value="طوال العام">طوال العام</option>
-              </select>
+              <div class="flex gap-2 items-center">
+                <select id="pSeason" class="flex-1 border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary bg-white">
+                  <option value="رجب">رجب</option>
+                  <option value="شعبان">شعبان</option>
+                  <option value="رمضان">رمضان</option>
+                  <option value="ذو الحجة">ذو الحجة</option>
+                  <option value="طوال العام">طوال العام</option>
+                  <!-- custom seasons injected here -->
+                </select>
+                <button type="button" title="إضافة موسم جديد" onclick="showAddOption('season')"
+                  class="flex-shrink-0 w-9 h-9 rounded-lg bg-primary hover:bg-green-700 text-white flex items-center justify-center transition">
+                  <i class="fa-solid fa-plus text-sm"></i>
+                </button>
+              </div>
             </div>
             <div>
               <label class="block text-sm font-bold mb-1">تاريخ المغادرة <span class="text-red-500">*</span></label>
@@ -1441,7 +1455,128 @@ ${pkg.notes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-ra
     const current = ta.value.trim();
     ta.value = current ? current + '\n- ' + text : '- ' + text;
   }
+
+  // ══════════════════════════════════════
+  //  CUSTOM CATEGORIES & SEASONS
+  // ══════════════════════════════════════
+
+  const SETTINGS_KEY_CAT    = 'custom_categories';
+  const SETTINGS_KEY_SEASON = 'custom_seasons';
+
+  // Load custom options from Supabase app_settings and inject into selects
+  async function loadCustomOptions() {
+    try {
+      const { data, error } = await window.db
+        .from('app_settings')
+        .select('key, value')
+        .in('key', [SETTINGS_KEY_CAT, SETTINGS_KEY_SEASON]);
+      if (error) return; // table may not exist yet — silent fail
+      (data || []).forEach(row => {
+        const list = Array.isArray(row.value) ? row.value : [];
+        if (row.key === SETTINGS_KEY_CAT)    list.forEach(v => injectOption('pCategory', v));
+        if (row.key === SETTINGS_KEY_SEASON) list.forEach(v => injectOption('pSeason', v));
+      });
+    } catch(e) { /* table doesn't exist yet — ignore */ }
+  }
+
+  function injectOption(selectId, value) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    // Don't duplicate
+    if ([...sel.options].some(o => o.value === value)) return;
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = value;
+    // Find or create "مضاف" optgroup
+    let grp = [...sel.querySelectorAll('optgroup')].find(g => g.label === 'مضاف');
+    if (!grp) { grp = document.createElement('optgroup'); grp.label = 'مضاف'; sel.appendChild(grp); }
+    grp.appendChild(opt);
+  }
+
+  async function saveCustomOption(type, value) {
+    const key = type === 'category' ? SETTINGS_KEY_CAT : SETTINGS_KEY_SEASON;
+    try {
+      // Fetch existing list
+      const { data } = await window.db.from('app_settings').select('value').eq('key', key).maybeSingle();
+      const list = Array.isArray(data?.value) ? data.value : [];
+      if (list.includes(value)) return; // already saved
+      list.push(value);
+      await window.db.from('app_settings').upsert({ key, value: list }, { onConflict: 'key' });
+    } catch(e) { /* silent — option still works for this session */ }
+  }
+
+  async function deleteCustomOption(type, value) {
+    const key = type === 'category' ? SETTINGS_KEY_CAT : SETTINGS_KEY_SEASON;
+    try {
+      const { data } = await window.db.from('app_settings').select('value').eq('key', key).maybeSingle();
+      const list = (Array.isArray(data?.value) ? data.value : []).filter(v => v !== value);
+      await window.db.from('app_settings').upsert({ key, value: list }, { onConflict: 'key' });
+    } catch(e) {}
+  }
+
+  // ── Inline popup ──
+  let _addOptionType = null; // 'category' | 'season'
+
+  function showAddOption(type) {
+    _addOptionType = type;
+    const label = type === 'category' ? 'فئة' : 'موسم';
+    document.getElementById('addOptionLabel').textContent = label;
+    document.getElementById('addOptionInput').value = '';
+    document.getElementById('addOptionPopup').classList.remove('hidden');
+    setTimeout(() => document.getElementById('addOptionInput').focus(), 50);
+  }
+
+  function hideAddOption() {
+    document.getElementById('addOptionPopup').classList.add('hidden');
+    _addOptionType = null;
+  }
+
+  async function confirmAddOption() {
+    const val = document.getElementById('addOptionInput').value.trim();
+    if (!val) { document.getElementById('addOptionInput').focus(); return; }
+    const selectId = _addOptionType === 'category' ? 'pCategory' : 'pSeason';
+    injectOption(selectId, val);
+    document.getElementById(selectId).value = val;
+    await saveCustomOption(_addOptionType, val);
+    hideAddOption();
+    if (typeof showToast === 'function') showToast('تمت الإضافة بنجاح ✓');
+  }
+
+  // Enter key confirms
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('addOptionPopup').classList.contains('hidden')) {
+      e.preventDefault();
+      confirmAddOption();
+    }
+    if (e.key === 'Escape') hideAddOption();
+  });
+
+  // Load on page ready
+  document.addEventListener('DOMContentLoaded', loadCustomOptions);
 </script>
+
+<!-- ── Add Option Popup ── -->
+<div id="addOptionPopup" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" dir="rtl">
+    <h3 class="font-bold text-lg text-darkBg mb-4">
+      <i class="fa-solid fa-plus-circle text-primary ml-2"></i>
+      إضافة <span id="addOptionLabel">فئة</span> جديدة
+    </h3>
+    <input type="text" id="addOptionInput" placeholder="اكتب الاسم هنا..."
+      class="w-full border-2 border-gray-200 focus:border-primary rounded-xl p-3 text-base outline-none mb-4 font-bold">
+    <div class="flex gap-3">
+      <button onclick="confirmAddOption()"
+        class="flex-1 bg-primary hover:bg-green-700 text-white py-2.5 rounded-xl font-bold transition">
+        <i class="fa-solid fa-check ml-1"></i> إضافة
+      </button>
+      <button onclick="hideAddOption()"
+        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-bold transition">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
 </div><!-- /flex wrapper -->
 </body>
 </html>
