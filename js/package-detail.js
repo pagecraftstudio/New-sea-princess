@@ -236,44 +236,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Buttons
     document.getElementById('startBookingBtn').onclick = async () => {
-        // Check if there are hotels and rooms that require selection
-        const meccaHotels  = Array.isArray(data.mecca_hotels)  ? data.mecca_hotels  : [];
-        const madinaHotels = Array.isArray(data.madina_hotels) ? data.madina_hotels : [];
-        const allHotels    = [...meccaHotels, ...madinaHotels];
-        const hasMultipleHotels   = allHotels.length > 1;
-        const hasAnyRoomTiers     = allHotels.some(h => h.room_tiers?.length > 0);
-
-        // Auto-select single hotel so tier validation below can fire correctly
-        if (allHotels.length === 1 && !selectedHotelId) {
-            const onlyCity = meccaHotels.length === 1 ? 'mecca' : 'madina';
-            selectedHotelId = `${onlyCity}-0`;
-        }
-
-        // If there are multiple hotels, a selection is required
-        if (hasMultipleHotels && !selectedHotelId) {
-            const btn = document.getElementById('startBookingBtn');
-            btn.classList.add('animate-bounce');
-            setTimeout(() => btn.classList.remove('animate-bounce'), 1000);
-            // Scroll to hotels section
-            document.getElementById('hotelsSection')?.scrollIntoView({ behavior:'smooth', block:'center' });
-            alert('يرجى اختيار الفندق المناسب قبل الحجز');
-            return;
-        }
-        // If any hotel has room tiers, a tier must be selected (covers single-hotel case too)
-        if (hasAnyRoomTiers && !selectedTierId) {
-            document.getElementById('hotelsSection')?.scrollIntoView({ behavior:'smooth', block:'center' });
-            alert('يرجى اختيار نوع الغرفة قبل الحجز');
-            return;
-        }
-
+        // Hotel & room selection now happens inside the booking wizard (step 0).
+        // Just navigate straight to booking — no pre-selection required here.
+        const bookingUrl = `/booking.html?package=${data.id}`;
         const { data: { session } } = await window.db.auth.getSession();
-
-        // Build booking URL with selections
-        let bookingUrl = `/booking.html?package=${data.id}`;
-        if (selectedHotelId)   bookingUrl += `&hotel=${encodeURIComponent(selectedHotelId)}`;
-        if (selectedTierId)    bookingUrl += `&tier=${encodeURIComponent(selectedTierId)}`;
-        if (selectedTierPrice !== null) bookingUrl += `&tierPrice=${selectedTierPrice}`;
-
         if (!session) {
             window.location.href = '/login.html?next=' + encodeURIComponent(bookingUrl);
             return;

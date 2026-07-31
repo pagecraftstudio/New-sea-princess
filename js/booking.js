@@ -173,7 +173,7 @@ function onAgeRangeChange(block) {
 // ══════════════════════════════════════════════════════
 
 const bookingController = {
-    step: 1,
+    step: 0,
     packageData: null,
     totalBasePrice: 0,
     appliedCoupon: null,
@@ -220,7 +220,6 @@ const bookingController = {
             const isPreorderInput = document.getElementById('isPreorder');
             if (isPreorderInput && data.is_preorder) {
                 isPreorderInput.value = 'true';
-                // Show notice to user
                 const noticeId = 'preorderNotice';
                 if (!document.getElementById(noticeId)) {
                     const n = document.createElement('div');
@@ -228,63 +227,12 @@ const bookingController = {
                     n.className = 'mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800';
                     n.innerHTML = `<p class="font-bold"><i class="fa-solid fa-star ml-2 text-blue-500"></i>هذا البرنامج متاح كحجز مسبق (Pre-order)</p>
                         <p class="text-blue-600 mt-1">${data.preorder_note || 'سيتواصل معك فريقنا لإتمام التفاصيل بعد تأكيد المواعيد.'}</p>`;
-                    const step1 = document.getElementById('step1');
-                    if (step1) step1.prepend(n);
+                    const step0 = document.getElementById('step0');
+                    if (step0) step0.prepend(n);
                 }
             }
 
-            // ── Pre-selected hotel/tier from package-detail page ──────
-            const preHotelId   = urlParams.get('hotel');     // e.g. 'mecca-0'
-            const preTierId    = urlParams.get('tier');      // e.g. 'mecca-0-tier-1'
-            const preTierPrice = parseFloat(urlParams.get('tierPrice'));
-
-            if (preTierId && !isNaN(preTierPrice)) {
-                this.preselectedTierPrice = preTierPrice;
-                // Resolve hotel/tier objects for the WhatsApp/confirm summary
-                const [city, hi, , ti] = preTierId.split('-');
-                const hotels = city === 'mecca' ? (data.mecca_hotels||[]) : (data.madina_hotels||[]);
-                const hotel  = hotels[parseInt(hi, 10)];
-                const tier   = hotel?.room_tiers?.[parseInt(ti, 10)];
-                if (hotel) {
-                    const target = city === 'mecca' ? 'selectedMeccaHotel' : 'selectedMadinaHotel';
-                    this[target] = { name: hotel.name, extra_price: 0 };
-                }
-                if (tier) {
-                    const target = city === 'mecca' ? 'selectedMeccaRoomTier' : 'selectedMadinaRoomTier';
-                    this[target] = { label: tier.label, extra_price: 0 };
-                }
-                // Show pre-selection summary strip
-                const summaryBaseEl = document.getElementById('summaryBasePrice');
-                if (summaryBaseEl) summaryBaseEl.innerText = window.formatCurrency(preTierPrice) + ' / للغرفة';
-                // Inject a visible pre-selection notice in the booking form
-                const noticeId = 'preselectedHotelNotice';
-                if (!document.getElementById(noticeId)) {
-                    const notice = document.createElement('div');
-                    notice.id = noticeId;
-                    notice.className = 'mb-4 bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800';
-                    notice.innerHTML = `
-                        <p class="font-bold mb-1"><i class="fa-solid fa-circle-check ml-1 text-green-600"></i>اختيارك المحدد من صفحة البرنامج:</p>
-                        ${hotel ? `<p>🏨 ${hotel.name}</p>` : ''}
-                        ${tier  ? `<p>🛏 ${tier.label} — <strong>${window.formatCurrency(preTierPrice)}</strong></p>` : ''}
-                        <a href="/package-detail.html?id=${data.id}" class="text-xs text-green-700 underline mt-1 inline-block">تغيير الاختيار</a>
-                    `;
-                    const step1 = document.getElementById('step1');
-                    if (step1) step1.prepend(notice);
-                }
-            } else if (preHotelId) {
-                // Hotel selected but no tier — set hotel only
-                this.preselectedTierPrice = null;
-                const [city, hi] = preHotelId.split('-');
-                const hotels = city === 'mecca' ? (data.mecca_hotels||[]) : (data.madina_hotels||[]);
-                const hotel  = hotels[parseInt(hi, 10)];
-                if (hotel) {
-                    const target = city === 'mecca' ? 'selectedMeccaHotel' : 'selectedMadinaHotel';
-                    this[target] = { name: hotel.name, extra_price: 0 };
-                }
-            } else {
-                this.preselectedTierPrice = null;
-            }
-
+            this.preselectedTierPrice = null;
             this.renderHotelSelectors();
 
             if (!data.price_child) {
@@ -323,8 +271,20 @@ const bookingController = {
         const pkg = this.packageData;
         const meccaHotels  = pkg.mecca_hotels  || [];
         const madinaHotels = pkg.madina_hotels || [];
-        const section = document.getElementById('hotelSelectionSection');
-        if (!section) return;
+        const allHotels    = [...meccaHotels, ...madinaHotels];
+
+        const step0 = document.getElementById('step0');
+
+        // If no hotels at all — skip step 0 entirely and jump straight to step 1
+        if (allHotels.length === 0) {
+            this._skipStep0();
+            const noHotelNotice = document.getElementById('noHotelNotice');
+            if (noHotelNotice) noHotelNotice.classList.remove('hidden');
+            return;
+        }
+
+        // Show step0
+        if (step0) step0.classList.remove('hidden');
 
         const fill = (city, hotels, wrapperId, selectId) => {
             const wrapper = document.getElementById(wrapperId);
@@ -337,18 +297,42 @@ const bookingController = {
                 opt.textContent = h.name;
                 sel.appendChild(opt);
             });
+            // Auto-select when only one hotel for this city
             if (hotels.length === 1) {
                 sel.value = '0';
                 if (city === 'mecca')  this.selectedMeccaHotel  = hotels[0];
                 if (city === 'madina') this.selectedMadinaHotel = hotels[0];
                 this._renderRoomTiersGrid(city, hotels[0]);
+                // Hide the select dropdown when there is no choice to make
+                sel.closest('div')?.querySelector('select')?.parentElement?.classList.add('single-hotel');
+                const note = document.createElement('p');
+                note.className = 'text-xs text-green-700 font-semibold mb-2';
+                note.innerHTML = `<i class="fa-solid fa-circle-check ml-1"></i>تم اختيار الفندق تلقائياً: ${hotels[0].name}`;
+                if (!wrapper.querySelector('.auto-selected-note')) {
+                    note.classList.add('auto-selected-note');
+                    sel.insertAdjacentElement('beforebegin', note);
+                    sel.classList.add('hidden');
+                }
             }
             wrapper.classList.remove('hidden');
-            section.classList.remove('hidden');
         };
 
         fill('mecca',  meccaHotels,  'meccaHotelWrapper',  'meccaHotelSelect');
         fill('madina', madinaHotels, 'madinaHotelWrapper', 'madinaHotelSelect');
+    },
+
+    // Skip step 0 — used when package has no hotels
+    _skipStep0() {
+        this.step = 1;
+        const step0 = document.getElementById('step0');
+        const step1 = document.getElementById('step1');
+        const label0 = document.getElementById('stepLabel0');
+        const label1 = document.getElementById('stepLabel1');
+        if (step0) step0.classList.add('hidden');
+        if (step1) step1.classList.remove('hidden');
+        if (label0) { label0.classList.remove('text-primary'); label0.classList.add('text-gray-300'); }
+        if (label1) label1.classList.add('text-primary');
+        document.getElementById('progressBar').style.width = '50%';
     },
 
     // Render multi-room quantity selectors for a hotel's room tiers
@@ -604,8 +588,32 @@ const bookingController = {
             showInlineError('booking-validation-error', 'تعذّر تحميل بيانات البرنامج. الرجاء العودة لاختيار برنامج صالح.');
             return;
         }
+
+        // ── Step 0: validate hotel selection ──────────────────────────
+        if (this.step === 0) {
+            const meccaHotels  = this.packageData.mecca_hotels  || [];
+            const madinaHotels = this.packageData.madina_hotels || [];
+
+            // Require selection only when there are multiple hotels per city
+            if (meccaHotels.length > 1 && !this.selectedMeccaHotel) {
+                const errEl = document.getElementById('booking-validation-error-step0');
+                if (errEl) { errEl.querySelector('[data-msg]').textContent = 'يرجى اختيار فندق مكة المكرمة.'; errEl.classList.remove('hidden'); }
+                document.getElementById('meccaHotelWrapper')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (madinaHotels.length > 1 && !this.selectedMadinaHotel) {
+                const errEl = document.getElementById('booking-validation-error-step0');
+                if (errEl) { errEl.querySelector('[data-msg]').textContent = 'يرجى اختيار فندق المدينة المنورة.'; errEl.classList.remove('hidden'); }
+                document.getElementById('madinaHotelWrapper')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            // Hide error if all good
+            const errEl = document.getElementById('booking-validation-error-step0');
+            if (errEl) errEl.classList.add('hidden');
+        }
+
+        // ── Step 1: validate rooms fit passengers ──────────────────────
         if (this.step === 1) {
-            // Validate rooms fit passengers
             if (!this._roomsFitPassengers('mecca')) {
                 showInlineError('booking-validation-error', '⚠️ الغرف المختارة في مكة المكرمة غير كافية لعدد المسافرين. يرجى إضافة غرف إضافية.');
                 document.getElementById('meccaRoomFitStatus')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -618,13 +626,14 @@ const bookingController = {
             }
             this.buildTravelersForm();
         }
+
         if (this.step < 3) {
             document.getElementById(`step${this.step}`).classList.add('hidden');
             document.getElementById(`stepLabel${this.step}`).classList.remove('text-primary');
             this.step++;
             document.getElementById(`step${this.step}`).classList.remove('hidden');
             document.getElementById(`stepLabel${this.step}`).classList.add('text-primary');
-            document.getElementById('progressBar').style.width = (this.step * 33) + '%';
+            document.getElementById('progressBar').style.width = ((this.step + 1) * 25) + '%';
             if (this.step === 3) this.buildConfirmStep();
             if (window.trackEvent) window.trackEvent('booking_step', {
                 package_id: this.packageData?.id, package_title: this.packageData?.title, step_number: this.step
@@ -633,13 +642,13 @@ const bookingController = {
     },
 
     prevStep() {
-        if (this.step > 1) {
+        if (this.step > 0) {
             document.getElementById(`step${this.step}`).classList.add('hidden');
             document.getElementById(`stepLabel${this.step}`).classList.remove('text-primary');
             this.step--;
             document.getElementById(`step${this.step}`).classList.remove('hidden');
             document.getElementById(`stepLabel${this.step}`).classList.add('text-primary');
-            document.getElementById('progressBar').style.width = (this.step * 33) + '%';
+            document.getElementById('progressBar').style.width = ((this.step + 1) * 25) + '%';
         }
     },
 
@@ -1409,7 +1418,7 @@ function saveDraft() {
         const draft = {
             packageId:    pkgId,
             savedAt:      new Date().toISOString(),
-            step:         bookingController.step || 1,
+            step:         bookingController.step || 0,
             contactPhone: document.getElementById('contactPhone')?.value   || '',
             contactEmail: document.getElementById('contactEmail')?.value   || '',
             adults:       document.getElementById('adultsCount')?.value    || '1',
@@ -1482,8 +1491,10 @@ function restoreDraft() {
         if (childrenEl && draft.children) { childrenEl.value = draft.children; childrenEl.dispatchEvent(new Event('input')); }
         if (infantsEl  && draft.infants)  { infantsEl.value  = draft.infants;  infantsEl.dispatchEvent(new Event('input')); }
 
-        if (draft.step >= 2 && draft.travelers) {
+        if (draft.step >= 3 && draft.travelers) {
             setTimeout(() => {
+                // Advance past hotel step and counts step to reach travelers
+                bookingController.nextStep();
                 bookingController.nextStep();
                 restoreTravelers(draft.travelers);
             }, 400);

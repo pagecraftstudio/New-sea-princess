@@ -148,12 +148,13 @@
     <!-- Progress Indicator -->
     <div class="mb-8 relative">
       <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
-        <div id="progressBar" style="width: 33%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500"></div>
+        <div id="progressBar" style="width: 25%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500"></div>
       </div>
       <div class="flex justify-between text-sm font-bold text-gray-500">
-        <span id="stepLabel1" class="text-primary">1. الأفراد والأسعار</span>
-        <span id="stepLabel2">2. بيانات المسافرين والمستندات</span>
-        <span id="stepLabel3">3. تأكيد الحجز</span>
+        <span id="stepLabel0" class="text-primary">1. الفندق والغرف</span>
+        <span id="stepLabel1">2. الأفراد والأسعار</span>
+        <span id="stepLabel2">3. بيانات المسافرين</span>
+        <span id="stepLabel3">4. تأكيد الحجز</span>
       </div>
     </div>
 
@@ -166,8 +167,57 @@
       <div class="text-left font-bold text-xl text-gold" id="summaryBasePrice"></div>
     </div>
 
+    <!-- STEP 0: Hotel & Room Selection -->
+    <div id="step0" class="bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-sm border border-gray-100 step-container">
+      <h2 class="text-2xl font-bold mb-2 text-darkBg border-b pb-2"><i class="fa-solid fa-hotel ml-2 text-primary"></i>اختيار الفندق والغرف</h2>
+      <p class="text-sm text-gray-500 mb-6"><i class="fa-solid fa-circle-info ml-1 text-blue-400"></i>اختر الفندق المناسب لكل مدينة ثم حدد أنواع الغرف وعددها.</p>
+
+      <div class="grid grid-cols-1 gap-6">
+        <!-- Mecca Hotel -->
+        <div id="meccaHotelWrapper" class="hidden border border-green-100 rounded-xl p-4 bg-green-50/30">
+          <h4 class="font-bold mb-3 text-primary flex items-center gap-2"><span class="text-xl">🕋</span> فندق مكة المكرمة</h4>
+          <select id="meccaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white mb-2">
+            <option value="">-- اختر فندق مكة --</option>
+          </select>
+          <p id="meccaHotelDesc" class="text-xs text-gray-500 mb-3 hidden"></p>
+          <div id="meccaRoomTierWrapper" class="hidden">
+            <p class="text-sm font-bold mb-2 text-gray-700">🛏️ اختر أنواع الغرف وعددها:</p>
+            <div id="meccaRoomTiersGrid" class="space-y-2"></div>
+            <div id="meccaRoomFitStatus" class="mt-2 text-sm font-semibold hidden"></div>
+          </div>
+        </div>
+        <!-- Madina Hotel -->
+        <div id="madinaHotelWrapper" class="hidden border border-blue-100 rounded-xl p-4 bg-blue-50/30">
+          <h4 class="font-bold mb-3 text-primary flex items-center gap-2"><span class="text-xl">🕌</span> فندق المدينة المنورة</h4>
+          <select id="madinaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white mb-2">
+            <option value="">-- اختر فندق المدينة --</option>
+          </select>
+          <p id="madinaHotelDesc" class="text-xs text-gray-500 mb-3 hidden"></p>
+          <div id="madinaRoomTierWrapper" class="hidden">
+            <p class="text-sm font-bold mb-2 text-gray-700">🛏️ اختر أنواع الغرف وعددها:</p>
+            <div id="madinaRoomTiersGrid" class="space-y-2"></div>
+            <div id="madinaRoomFitStatus" class="mt-2 text-sm font-semibold hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No hotels notice (shown when package has no hotel choices) -->
+      <div id="noHotelNotice" class="hidden text-center py-10 text-gray-400">
+        <i class="fa-solid fa-circle-info text-3xl mb-3 block"></i>
+        <p>هذا البرنامج لا يتضمن اختيار فندق — سيتم تحديده لاحقاً.</p>
+      </div>
+
+      <div id="booking-validation-error-step0" class="hidden bg-red-50 border border-red-300 text-red-700 rounded-lg p-3 mt-4 text-sm">
+        <span data-msg></span>
+      </div>
+
+      <div class="mt-8 text-left">
+        <button onclick="bookingController.nextStep()" class="btn-primary px-8">التالي <i class="fa-solid fa-arrow-left mr-2"></i></button>
+      </div>
+    </div>
+
     <!-- STEP 1: Counts & Pricing -->
-    <div id="step1" class="bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-sm border border-gray-100 step-container">
+    <div id="step1" class="bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-sm border border-gray-100 step-container hidden">
       <h2 class="text-2xl font-bold mb-6 text-darkBg border-b pb-2"><i class="fa-solid fa-users ml-2 text-primary"></i>تحديد عدد الأفراد</h2>
       
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
@@ -184,42 +234,6 @@
           <label class="block font-bold mb-2">رضّع (أقل من سنتين)</label>
           <input type="number" id="infantsCount" min="0" max="10" value="0" class="w-full border p-3 rounded-lg focus:border-primary text-center font-bold text-lg">
           <p class="text-xs text-gray-500 mt-1" id="infantPriceNotice">سعر الرضيع يختلف حسب البرنامج المختارة</p>
-        </div>
-      </div>
-
-      <!-- Hotel & Room Selection Section -->
-      <div id="hotelSelectionSection" class="mb-8 hidden">
-        <h3 class="font-bold text-lg mb-4 text-darkBg border-b pb-2"><i class="fa-solid fa-hotel ml-2 text-primary"></i>اختيار الفندق والغرف</h3>
-        <p class="text-sm text-gray-500 mb-4"><i class="fa-solid fa-circle-info ml-1 text-blue-400"></i>اختر الفندق ثم أنواع الغرف وعددها. سيتحقق النظام تلقائياً من أن الغرف كافية لعدد المسافرين.</p>
-        <div class="grid grid-cols-1 gap-6">
-          <!-- Mecca Hotel -->
-          <div id="meccaHotelWrapper" class="hidden border border-green-100 rounded-xl p-4 bg-green-50/30">
-            <h4 class="font-bold mb-3 text-primary flex items-center gap-2"><span class="text-xl">🕋</span> فندق مكة المكرمة</h4>
-            <select id="meccaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white mb-2">
-              <option value="">-- اختر فندق مكة --</option>
-            </select>
-            <p id="meccaHotelDesc" class="text-xs text-gray-500 mb-3 hidden"></p>
-            <!-- Room selection grid -->
-            <div id="meccaRoomTierWrapper" class="hidden">
-              <p class="text-sm font-bold mb-2 text-gray-700">🛏️ اختر أنواع الغرف وعددها:</p>
-              <div id="meccaRoomTiersGrid" class="space-y-2"></div>
-              <div id="meccaRoomFitStatus" class="mt-2 text-sm font-semibold hidden"></div>
-            </div>
-          </div>
-          <!-- Madina Hotel -->
-          <div id="madinaHotelWrapper" class="hidden border border-blue-100 rounded-xl p-4 bg-blue-50/30">
-            <h4 class="font-bold mb-3 text-primary flex items-center gap-2"><span class="text-xl">🕌</span> فندق المدينة المنورة</h4>
-            <select id="madinaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white mb-2">
-              <option value="">-- اختر فندق المدينة --</option>
-            </select>
-            <p id="madinaHotelDesc" class="text-xs text-gray-500 mb-3 hidden"></p>
-            <!-- Room selection grid -->
-            <div id="madinaRoomTierWrapper" class="hidden">
-              <p class="text-sm font-bold mb-2 text-gray-700">🛏️ اختر أنواع الغرف وعددها:</p>
-              <div id="madinaRoomTiersGrid" class="space-y-2"></div>
-              <div id="madinaRoomFitStatus" class="mt-2 text-sm font-semibold hidden"></div>
-            </div>
-          </div>
         </div>
       </div>
 
