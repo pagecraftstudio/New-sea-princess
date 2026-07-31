@@ -23,11 +23,23 @@ function auditTravelerDocs(block, idx, isChild) {
     const warnings = [];
 
     if (isChild) {
-        // child block: only need birth cert (age < 18 always true for children)
-        const birthInput = block.querySelector('.t-birth-cert');
-        if (birthInput && !birthInput.files?.[0]) {
-            warnings.push('شهادة الميلاد غير مرفقة');
-        }
+        const dc = window.BookingApp?.instance?.packageData?.documents_config || {};
+        // Determine traveler type from block class
+        const isInfant = block.classList.contains('traveler-infant-block');
+        const typeCfg  = dc[isInfant ? 'infant' : 'child'] || {};
+        const get      = (key, def) => typeCfg[key] || def;
+
+        const passportInput = block.querySelector('.t-passport-file');
+        const photoInput    = block.querySelector('.t-photo-file');
+        const birthInput    = block.querySelector('.t-birth-cert');
+        const meninInput    = block.querySelector('.t-menin-file');
+        const covidInput    = block.querySelector('.t-covid-file');
+
+        if (get('passport',       'required') === 'required' && !passportInput?.files?.[0]) warnings.push('جواز السفر غير مرفق');
+        if (get('personal_photo', 'required') === 'required' && !photoInput?.files?.[0])    warnings.push('الصورة الشخصية غير مرفقة');
+        if (get('meningitis',     'optional') === 'required' && !meninInput?.files?.[0])    warnings.push('تطعيم الحمى الشوكية غير مرفق');
+        if (get('covid',          'optional') === 'required' && !covidInput?.files?.[0])    warnings.push('تطعيم كوفيد-19 غير مرفق');
+        if (get('birth_cert',     'required') === 'required' && !birthInput?.files?.[0])    warnings.push('شهادة الميلاد غير مرفقة');
         return warnings;
     }
 
@@ -45,20 +57,28 @@ function auditTravelerDocs(block, idx, isChild) {
     const covidInput    = block.querySelector('.t-covid-file');
     const birthInput    = block.querySelector('.t-birth-cert');
 
-    // Respect documents_config if set by admin
+    // Respect documents_config per traveler type
     const dc = window.BookingApp?.instance?.packageData?.documents_config || {};
-    const passportCfg = dc.passport       || 'required';
-    const nidCfg      = dc.national_id    || 'optional';
-    const photoCfg    = dc.personal_photo || 'required';
+    const typeCfg = dc['adult'] || {};
+    const flatCfg = dc; // legacy flat fallback
+    const get = (key, def) => typeCfg[key] || flatCfg[key] || def;
 
-    if (passportCfg === 'required' && !passportInput?.files?.[0]) warnings.push('صورة جواز السفر غير مرفقة');
-    if (photoCfg   === 'required' && !photoInput?.files?.[0])     warnings.push('الصورة الشخصية غير مرفقة');
-    if (nidCfg     === 'required' && !nidInput?.files?.[0])       warnings.push('البطاقة الوطنية غير مرفقة');
-    // Vaccines (MenACYW / COVID-19) are now optional — no warning if missing.
+    const passportCfg  = get('passport',       'required');
+    const nidCfg       = get('national_id',    'optional');
+    const photoCfg     = get('personal_photo', 'required');
+    const meninCfg     = get('meningitis',     'optional');
+    const covidCfg     = get('covid',          'optional');
+    const birthCertCfg = get('birth_cert',     'hidden');
 
-    // Birth certificate required for youth (12–17)
-    if (ageRange === 'youth') {
-        if (!birthInput?.files?.[0]) warnings.push('شهادة الميلاد غير مرفقة (مطلوبة لمن هم دون 18 سنة)');
+    if (passportCfg  === 'required' && !passportInput?.files?.[0]) warnings.push('صورة جواز السفر غير مرفقة');
+    if (photoCfg     === 'required' && !photoInput?.files?.[0])    warnings.push('الصورة الشخصية غير مرفقة');
+    if (nidCfg       === 'required' && !nidInput?.files?.[0])      warnings.push('البطاقة الوطنية غير مرفقة');
+    if (meninCfg     === 'required' && !meningInput?.files?.[0])   warnings.push('تطعيم الحمى الشوكية غير مرفق');
+    if (covidCfg     === 'required' && !covidInput?.files?.[0])    warnings.push('تطعيم كوفيد-19 غير مرفق');
+
+    // Birth certificate for youth OR if admin set birth_cert=required for adults
+    if (ageRange === 'youth' || birthCertCfg === 'required') {
+        if (!birthInput?.files?.[0]) warnings.push('شهادة الميلاد غير مرفقة');
     }
 
     return warnings;
@@ -196,6 +216,23 @@ const bookingController = {
 
             if (window.trackEvent) window.trackEvent('booking_start', { package_id: data.id, package_title: data.title });
 
+            // Auto-set preorder from package admin flag
+            const isPreorderInput = document.getElementById('isPreorder');
+            if (isPreorderInput && data.is_preorder) {
+                isPreorderInput.value = 'true';
+                // Show notice to user
+                const noticeId = 'preorderNotice';
+                if (!document.getElementById(noticeId)) {
+                    const n = document.createElement('div');
+                    n.id = noticeId;
+                    n.className = 'mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800';
+                    n.innerHTML = `<p class="font-bold"><i class="fa-solid fa-star ml-2 text-blue-500"></i>هذا البرنامج متاح كحجز مسبق (Pre-order)</p>
+                        <p class="text-blue-600 mt-1">${data.preorder_note || 'سيتواصل معك فريقنا لإتمام التفاصيل بعد تأكيد المواعيد.'}</p>`;
+                    const step1 = document.getElementById('step1');
+                    if (step1) step1.prepend(n);
+                }
+            }
+
             // ── Pre-selected hotel/tier from package-detail page ──────
             const preHotelId   = urlParams.get('hotel');     // e.g. 'mecca-0'
             const preTierId    = urlParams.get('tier');      // e.g. 'mecca-0-tier-1'
@@ -279,119 +316,124 @@ const bookingController = {
         }
     },
 
+    // roomSelections: { mecca: [{tierIdx, qty}], madina: [{tierIdx, qty}] }
+    roomSelections: { mecca: [], madina: [] },
+
     renderHotelSelectors() {
         const pkg = this.packageData;
         const meccaHotels  = pkg.mecca_hotels  || [];
         const madinaHotels = pkg.madina_hotels || [];
-
         const section = document.getElementById('hotelSelectionSection');
         if (!section) return;
 
-        // Mecca
-        const meccaWrapper = document.getElementById('meccaHotelWrapper');
-        const meccaSelect  = document.getElementById('meccaHotelSelect');
-        if (meccaHotels.length > 0 && meccaWrapper && meccaSelect) {
-            meccaSelect.innerHTML = '<option value="">-- اختر فندق مكة --</option>';
-            meccaHotels.forEach((h, i) => {
-                const label = h.extra_price > 0
-                    ? `${h.name} (+${window.formatCurrency(h.extra_price)} للفرد)`
-                    : h.extra_price < 0
-                        ? `${h.name} (${window.formatCurrency(h.extra_price)} للفرد)`
-                        : h.name;
+        const fill = (city, hotels, wrapperId, selectId) => {
+            const wrapper = document.getElementById(wrapperId);
+            const sel     = document.getElementById(selectId);
+            if (!wrapper || !sel || hotels.length === 0) return;
+            sel.innerHTML = `<option value="">-- اختر فندق ${city === 'mecca' ? 'مكة' : 'المدينة'} --</option>`;
+            hotels.forEach((h, i) => {
                 const opt = document.createElement('option');
                 opt.value = i;
-                opt.textContent = label;
-                meccaSelect.appendChild(opt);
+                opt.textContent = h.name;
+                sel.appendChild(opt);
             });
-            // Auto-select first option if only one hotel
-            if (meccaHotels.length === 1) {
-                meccaSelect.value = '0';
-                this.selectedMeccaHotel = meccaHotels[0];
-                this._renderRoomTiers('mecca', meccaHotels[0]);
+            if (hotels.length === 1) {
+                sel.value = '0';
+                if (city === 'mecca')  this.selectedMeccaHotel  = hotels[0];
+                if (city === 'madina') this.selectedMadinaHotel = hotels[0];
+                this._renderRoomTiersGrid(city, hotels[0]);
             }
-            meccaWrapper.classList.remove('hidden');
+            wrapper.classList.remove('hidden');
             section.classList.remove('hidden');
-        }
+        };
 
-        // Madina
-        const madinaWrapper = document.getElementById('madinaHotelWrapper');
-        const madinaSelect  = document.getElementById('madinaHotelSelect');
-        if (madinaHotels.length > 0 && madinaWrapper && madinaSelect) {
-            madinaSelect.innerHTML = '<option value="">-- اختر فندق المدينة --</option>';
-            madinaHotels.forEach((h, i) => {
-                const label = h.extra_price > 0
-                    ? `${h.name} (+${window.formatCurrency(h.extra_price)} للفرد)`
-                    : h.extra_price < 0
-                        ? `${h.name} (${window.formatCurrency(h.extra_price)} للفرد)`
-                        : h.name;
-                const opt = document.createElement('option');
-                opt.value = i;
-                opt.textContent = label;
-                madinaSelect.appendChild(opt);
-            });
-            if (madinaHotels.length === 1) {
-                madinaSelect.value = '0';
-                this.selectedMadinaHotel = madinaHotels[0];
-                this._renderRoomTiers('madina', madinaHotels[0]);
-            }
-            madinaWrapper.classList.remove('hidden');
-            section.classList.remove('hidden');
-        }
+        fill('mecca',  meccaHotels,  'meccaHotelWrapper',  'meccaHotelSelect');
+        fill('madina', madinaHotels, 'madinaHotelWrapper', 'madinaHotelSelect');
     },
 
-    // Populate room-tier dropdown for a given city after hotel is chosen
-    _renderRoomTiers(city, hotel) {
+    // Render multi-room quantity selectors for a hotel's room tiers
+    _renderRoomTiersGrid(city, hotel) {
         const wrapper = document.getElementById(`${city}RoomTierWrapper`);
-        const sel     = document.getElementById(`${city}RoomTierSelect`);
-        if (!wrapper || !sel) return;
+        const grid    = document.getElementById(`${city}RoomTiersGrid`);
+        if (!wrapper || !grid) return;
 
         const tiers = hotel?.room_tiers || [];
+        this.roomSelections[city] = tiers.map(() => ({ qty: 0 }));
+
         if (tiers.length === 0) {
             wrapper.classList.add('hidden');
-            if (city === 'mecca')  this.selectedMeccaRoomTier  = null;
-            if (city === 'madina') this.selectedMadinaRoomTier = null;
             return;
         }
 
-        sel.innerHTML = '<option value="">-- اختر نوع الغرفة --</option>';
-        tiers.forEach((t, i) => {
-            const priceLabel = t.price > 0
-                ? ` (+${window.formatCurrency(t.price)} للفرد)`
-                : t.price < 0
-                    ? ` (${window.formatCurrency(t.price)} للفرد)`
-                    : ' (مشمول)';
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.textContent = `${t.label}${priceLabel}`;
-            sel.appendChild(opt);
-        });
-
-        // Auto-select if only one tier
-        if (tiers.length === 1) {
-            sel.value = '0';
-            if (city === 'mecca')  this.selectedMeccaRoomTier  = tiers[0];
-            if (city === 'madina') this.selectedMadinaRoomTier = tiers[0];
-        } else {
-            if (city === 'mecca')  this.selectedMeccaRoomTier  = null;
-            if (city === 'madina') this.selectedMadinaRoomTier = null;
-        }
+        grid.innerHTML = tiers.map((t, ti) => `
+            <div class="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3 gap-3">
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm text-gray-800">${t.label}</p>
+                ${t.description ? `<p class="text-xs text-gray-500">${t.description}</p>` : ''}
+                <p class="text-xs text-primary font-semibold mt-0.5">
+                  ${window.formatCurrency(t.price)} للغرفة
+                  <span class="text-gray-400 font-normal">· تتسع لـ ${t.capacity || 2} أشخاص</span>
+                </p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button type="button" onclick="bookingController.changeRoomQty('${city}',${ti},-1)"
+                  class="w-8 h-8 rounded-full border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-100">−</button>
+                <span id="${city}-tier-${ti}-qty" class="w-6 text-center font-bold text-gray-800">0</span>
+                <button type="button" onclick="bookingController.changeRoomQty('${city}',${ti},+1)"
+                  class="w-8 h-8 rounded-full border border-primary text-primary font-bold text-lg flex items-center justify-center hover:bg-green-50">+</button>
+              </div>
+            </div>
+        `).join('');
 
         wrapper.classList.remove('hidden');
+        this._updateRoomFitStatus(city, hotel);
     },
 
-    onRoomTierChange() {
-        const pkg = this.packageData;
-        const meccaTierIdx  = document.getElementById('meccaRoomTierSelect')?.value;
-        const madinaTierIdx = document.getElementById('madinaRoomTierSelect')?.value;
-
-        const meccaTiers  = this.selectedMeccaHotel?.room_tiers  || [];
-        const madinaTiers = this.selectedMadinaHotel?.room_tiers || [];
-
-        this.selectedMeccaRoomTier  = meccaTierIdx  !== '' ? meccaTiers[parseInt(meccaTierIdx, 10)]  : null;
-        this.selectedMadinaRoomTier = madinaTierIdx !== '' ? madinaTiers[parseInt(madinaTierIdx, 10)] : null;
-
+    changeRoomQty(city, tierIdx, delta) {
+        if (!this.roomSelections[city]) return;
+        const sel = this.roomSelections[city];
+        if (!sel[tierIdx]) sel[tierIdx] = { qty: 0 };
+        sel[tierIdx].qty = Math.max(0, (sel[tierIdx].qty || 0) + delta);
+        // Update display
+        const qtyEl = document.getElementById(`${city}-tier-${tierIdx}-qty`);
+        if (qtyEl) qtyEl.textContent = sel[tierIdx].qty;
+        const hotel = city === 'mecca' ? this.selectedMeccaHotel : this.selectedMadinaHotel;
+        this._updateRoomFitStatus(city, hotel);
         this.updatePricing();
     },
+
+    // Check if selected rooms fit total passengers
+    _updateRoomFitStatus(city, hotel) {
+        const statusEl = document.getElementById(`${city}RoomFitStatus`);
+        if (!statusEl || !hotel) return;
+        const tiers    = hotel.room_tiers || [];
+        const sel      = this.roomSelections[city] || [];
+        const adults   = parseInt(document.getElementById('adultsCount')?.value, 10) || 1;
+        const children = parseInt(document.getElementById('childrenCount')?.value, 10) || 0;
+        const infants  = parseInt(document.getElementById('infantsCount')?.value, 10) || 0;
+        const totalPassengers = adults + children + infants;
+
+        let totalCapacity = 0;
+        tiers.forEach((t, i) => {
+            totalCapacity += (sel[i]?.qty || 0) * (t.capacity || 2);
+        });
+
+        const totalRooms = sel.reduce((s, r) => s + (r?.qty || 0), 0);
+        if (totalRooms === 0) {
+            statusEl.classList.add('hidden');
+            return;
+        }
+        statusEl.classList.remove('hidden');
+        if (totalCapacity >= totalPassengers) {
+            statusEl.className = 'mt-2 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-lg p-2';
+            statusEl.innerHTML = `<i class="fa-solid fa-circle-check ml-1"></i>الغرف كافية: ${totalCapacity} مقعد متاح لـ ${totalPassengers} مسافر ✓`;
+        } else {
+            statusEl.className = 'mt-2 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg p-2';
+            statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation ml-1"></i>الغرف غير كافية: ${totalCapacity} مقعد متاح لـ ${totalPassengers} مسافر — يرجى إضافة المزيد من الغرف`;
+        }
+    },
+
+    onRoomTierChange() { this.updatePricing(); },
 
     onHotelChange() {
         const pkg = this.packageData;
@@ -404,99 +446,119 @@ const bookingController = {
         this.selectedMeccaHotel  = meccaIdx  !== '' ? meccaHotels[parseInt(meccaIdx, 10)]  : null;
         this.selectedMadinaHotel = madinaIdx !== '' ? madinaHotels[parseInt(madinaIdx, 10)] : null;
 
-        // Re-render room tier selectors for newly selected hotels
-        this._renderRoomTiers('mecca',  this.selectedMeccaHotel);
-        this._renderRoomTiers('madina', this.selectedMadinaHotel);
+        this.roomSelections = { mecca: [], madina: [] };
+        this._renderRoomTiersGrid('mecca',  this.selectedMeccaHotel);
+        this._renderRoomTiersGrid('madina', this.selectedMadinaHotel);
 
-        // Show description if available
-        const meccaDesc  = document.getElementById('meccaHotelDesc');
-        const madinaDesc = document.getElementById('madinaHotelDesc');
-        if (meccaDesc) {
-            if (this.selectedMeccaHotel?.description) {
-                meccaDesc.textContent = this.selectedMeccaHotel.description;
-                meccaDesc.classList.remove('hidden');
-            } else {
-                meccaDesc.classList.add('hidden');
+        ['mecca','madina'].forEach(city => {
+            const hotel = city === 'mecca' ? this.selectedMeccaHotel : this.selectedMadinaHotel;
+            const descEl = document.getElementById(`${city}HotelDesc`);
+            if (descEl) {
+                if (hotel?.description) { descEl.textContent = hotel.description; descEl.classList.remove('hidden'); }
+                else descEl.classList.add('hidden');
             }
-        }
-        if (madinaDesc) {
-            if (this.selectedMadinaHotel?.description) {
-                madinaDesc.textContent = this.selectedMadinaHotel.description;
-                madinaDesc.classList.remove('hidden');
-            } else {
-                madinaDesc.classList.add('hidden');
-            }
-        }
+        });
 
         this.updatePricing();
+    },
+
+    // Get total rooms cost for a city
+    _roomsCost(city) {
+        const hotel = city === 'mecca' ? this.selectedMeccaHotel : this.selectedMadinaHotel;
+        const tiers = hotel?.room_tiers || [];
+        const sel   = this.roomSelections[city] || [];
+        return tiers.reduce((sum, t, i) => sum + (sel[i]?.qty || 0) * (t.price || 0), 0);
+    },
+
+    // Check rooms fit passengers for validation
+    _roomsFitPassengers(city) {
+        const hotel = city === 'mecca' ? this.selectedMeccaHotel : this.selectedMadinaHotel;
+        if (!hotel || (hotel.room_tiers || []).length === 0) return true; // no tiers = no check
+        const tiers = hotel.room_tiers || [];
+        const sel   = this.roomSelections[city] || [];
+        const totalRooms = sel.reduce((s, r) => s + (r?.qty || 0), 0);
+        if (totalRooms === 0) return true; // user didn't pick rooms yet — allow (soft)
+        const adults   = parseInt(document.getElementById('adultsCount')?.value, 10) || 1;
+        const children = parseInt(document.getElementById('childrenCount')?.value, 10) || 0;
+        const infants  = parseInt(document.getElementById('infantsCount')?.value, 10) || 0;
+        const totalPassengers = adults + children + infants;
+        const totalCapacity   = tiers.reduce((s, t, i) => s + (sel[i]?.qty || 0) * (t.capacity || 2), 0);
+        return totalCapacity >= totalPassengers;
     },
 
     updatePricing() {
         const adults   = parseInt(document.getElementById('adultsCount').value, 10) || 1;
         const children = parseInt(document.getElementById('childrenCount').value, 10) || 0;
         const infants  = parseInt(document.getElementById('infantsCount').value, 10) || 0;
+        const totalPersons = adults + children + infants;
 
-        // If a room tier with its own total price is selected (from package-detail),
-        // use that as the per-person price; otherwise fall back to package base price.
-        const tierPrice   = this.preselectedTierPrice !== null ? this.preselectedTierPrice : null;
-        const priceAdult  = tierPrice !== null ? tierPrice : this.packageData.price_per_person;
-        const priceChild  = tierPrice !== null ? tierPrice : (this.packageData.price_child || this.packageData.price_per_person);
-        const priceInfant = this.packageData.price_infant || 0; // infants free by default
+        const priceAdult  = this.packageData.price_per_person;
+        const priceChild  = this.packageData.price_child || this.packageData.price_per_person;
+        const priceInfant = this.packageData.price_infant || 0;
 
         const adultsTotal   = adults * priceAdult;
         const childrenTotal = children * priceChild;
         const infantsTotal  = infants * priceInfant;
 
-        // Hotel extras — applied per paying person (adults + children)
-        // (These are for in-booking hotel selection; if tier price already reflects hotel, skip extras)
-        const payingPersons = adults + children;
-        const meccaExtra    = tierPrice !== null ? 0 : (this.selectedMeccaHotel?.extra_price  || 0) * payingPersons;
-        const madinaExtra   = tierPrice !== null ? 0 : (this.selectedMadinaHotel?.extra_price || 0) * payingPersons;
+        // Rooms cost
+        const meccaRoomsCost  = this._roomsCost('mecca');
+        const madinaRoomsCost = this._roomsCost('madina');
 
-        // Room tier extras (in-booking selection; skip if pre-selected from detail page)
-        const meccaTierExtra  = tierPrice !== null ? 0 : (this.selectedMeccaRoomTier?.extra_price  || 0) * payingPersons;
-        const madinaTierExtra = tierPrice !== null ? 0 : (this.selectedMadinaRoomTier?.extra_price || 0) * payingPersons;
+        // Flight ticket cost
+        const ticketPricePerPerson = this.packageData.flight_ticket_price || 0;
+        const flightTotal = ticketPricePerPerson * (adults + children); // infants usually free on tickets
 
-        this.totalBasePrice = adultsTotal + childrenTotal + infantsTotal + meccaExtra + madinaExtra + meccaTierExtra + madinaTierExtra;
+        this.totalBasePrice = adultsTotal + childrenTotal + infantsTotal + meccaRoomsCost + madinaRoomsCost + flightTotal;
 
-        document.getElementById('calcAdultsText').innerText   = `${adults} بالغ`;
-        document.getElementById('calcAdultsTotal').innerText  = window.formatCurrency(adultsTotal);
-        document.getElementById('calcChildrenText').innerText = `${children} طفل`;
-        document.getElementById('calcChildrenTotal').innerText= window.formatCurrency(childrenTotal);
-        document.getElementById('calcInfantsText').innerText  = `${infants} رضيع`;
-        document.getElementById('calcInfantsTotal').innerText = window.formatCurrency(infantsTotal);
+        document.getElementById('calcAdultsText').innerText    = `${adults} بالغ`;
+        document.getElementById('calcAdultsTotal').innerText   = window.formatCurrency(adultsTotal);
+        document.getElementById('calcChildrenText').innerText  = `${children} طفل`;
+        document.getElementById('calcChildrenTotal').innerText = window.formatCurrency(childrenTotal);
+        document.getElementById('calcInfantsText').innerText   = `${infants} رضيع`;
+        document.getElementById('calcInfantsTotal').innerText  = window.formatCurrency(infantsTotal);
 
-        // Hotel rows in summary
+        // Hotel name rows (show if hotel selected)
         const meccaRow  = document.getElementById('hotelMeccaRow');
         const madinaRow = document.getElementById('hotelMadinaRow');
-        if (this.selectedMeccaHotel && meccaExtra !== 0 && meccaRow) {
+        if (this.selectedMeccaHotel && meccaRow) {
             document.getElementById('calcMeccaHotelText').innerText  = `فندق مكة: ${this.selectedMeccaHotel.name}`;
-            document.getElementById('calcMeccaHotelTotal').innerText = window.formatCurrency(meccaExtra);
+            document.getElementById('calcMeccaHotelTotal').innerText = '';
             meccaRow.classList.remove('hidden');
-        } else if (meccaRow) { meccaRow.classList.add('hidden'); }
-        if (this.selectedMadinaHotel && madinaExtra !== 0 && madinaRow) {
+        } else if (meccaRow) meccaRow.classList.add('hidden');
+        if (this.selectedMadinaHotel && madinaRow) {
             document.getElementById('calcMadinaHotelText').innerText  = `فندق المدينة: ${this.selectedMadinaHotel.name}`;
-            document.getElementById('calcMadinaHotelTotal').innerText = window.formatCurrency(madinaExtra);
+            document.getElementById('calcMadinaHotelTotal').innerText = '';
             madinaRow.classList.remove('hidden');
-        } else if (madinaRow) { madinaRow.classList.add('hidden'); }
+        } else if (madinaRow) madinaRow.classList.add('hidden');
 
-        // Room tier summary rows
+        // Room costs
         const meccaTierRow  = document.getElementById('roomTierMeccaRow');
         const madinaTierRow = document.getElementById('roomTierMadinaRow');
-        if (this.selectedMeccaRoomTier && meccaTierExtra !== 0 && meccaTierRow) {
-            document.getElementById('calcMeccaTierText').innerText  = `نوع الغرفة — مكة: ${this.selectedMeccaRoomTier.label}`;
-            document.getElementById('calcMeccaTierTotal').innerText = window.formatCurrency(meccaTierExtra);
+        if (meccaRoomsCost > 0 && meccaTierRow) {
+            document.getElementById('calcMeccaTierText').innerText  = 'غرف مكة';
+            document.getElementById('calcMeccaTierTotal').innerText = window.formatCurrency(meccaRoomsCost);
             meccaTierRow.classList.remove('hidden');
-        } else if (meccaTierRow) { meccaTierRow.classList.add('hidden'); }
-        if (this.selectedMadinaRoomTier && madinaTierExtra !== 0 && madinaTierRow) {
-            document.getElementById('calcMadinaTierText').innerText  = `نوع الغرفة — المدينة: ${this.selectedMadinaRoomTier.label}`;
-            document.getElementById('calcMadinaTierTotal').innerText = window.formatCurrency(madinaTierExtra);
+        } else if (meccaTierRow) meccaTierRow.classList.add('hidden');
+        if (madinaRoomsCost > 0 && madinaTierRow) {
+            document.getElementById('calcMadinaTierText').innerText  = 'غرف المدينة';
+            document.getElementById('calcMadinaTierTotal').innerText = window.formatCurrency(madinaRoomsCost);
             madinaTierRow.classList.remove('hidden');
-        } else if (madinaTierRow) { madinaTierRow.classList.add('hidden'); }
+        } else if (madinaTierRow) madinaTierRow.classList.add('hidden');
 
-        const discountPct = this.appliedCoupon
-            ? (this.couponDiscount ?? this.packageData.discount_percent ?? 0)
-            : 0;
+        // Flight ticket row
+        const flightRow = document.getElementById('flightTicketRow');
+        if (flightTotal > 0 && flightRow) {
+            document.getElementById('calcFlightTicketText').innerText  = `تذاكر الطيران (${adults + children} فرد × ${window.formatCurrency(ticketPricePerPerson)})`;
+            document.getElementById('calcFlightTicketTotal').innerText = window.formatCurrency(flightTotal);
+            flightRow.classList.remove('hidden');
+        } else if (flightRow) flightRow.classList.add('hidden');
+
+        // Update passenger fit status (also re-checks when counts change)
+        if (this.selectedMeccaHotel)  this._updateRoomFitStatus('mecca',  this.selectedMeccaHotel);
+        if (this.selectedMadinaHotel) this._updateRoomFitStatus('madina', this.selectedMadinaHotel);
+
+        // Discount
+        const discountPct = this.appliedCoupon ? (this.couponDiscount ?? this.packageData.discount_percent ?? 0) : 0;
         if (this.appliedCoupon && discountPct) {
             this.discountAmount = (this.totalBasePrice * discountPct) / 100;
             document.getElementById('discountPercentText').innerText = discountPct;
@@ -542,7 +604,20 @@ const bookingController = {
             showInlineError('booking-validation-error', 'تعذّر تحميل بيانات البرنامج. الرجاء العودة لاختيار برنامج صالح.');
             return;
         }
-        if (this.step === 1) this.buildTravelersForm();
+        if (this.step === 1) {
+            // Validate rooms fit passengers
+            if (!this._roomsFitPassengers('mecca')) {
+                showInlineError('booking-validation-error', '⚠️ الغرف المختارة في مكة المكرمة غير كافية لعدد المسافرين. يرجى إضافة غرف إضافية.');
+                document.getElementById('meccaRoomFitStatus')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (!this._roomsFitPassengers('madina')) {
+                showInlineError('booking-validation-error', '⚠️ الغرف المختارة في المدينة المنورة غير كافية لعدد المسافرين. يرجى إضافة غرف إضافية.');
+                document.getElementById('madinaRoomFitStatus')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            this.buildTravelersForm();
+        }
         if (this.step < 3) {
             document.getElementById(`step${this.step}`).classList.add('hidden');
             document.getElementById(`stepLabel${this.step}`).classList.remove('text-primary');
@@ -836,58 +911,64 @@ const bookingController = {
 
     _applyDocConfig() {
         const dc = this.packageData?.documents_config || {};
-        const cfg = {
-            passport:       dc.passport       || 'required',
-            national_id:    dc.national_id    || 'optional',
-            personal_photo: dc.personal_photo || 'required',
-        };
 
-        const labelBadge = (status, name) => {
+        const badge = (status) => {
             if (status === 'required') return `<span class="text-red-500">*</span>`;
             if (status === 'optional') return `<span class="text-gray-400 font-normal text-xs">(اختياري)</span>`;
             return '';
         };
 
-        document.querySelectorAll('.traveler-adult-block, .traveler-child-block').forEach(block => {
-            // Passport wrapper
-            const passportWrap = block.querySelector('.t-passport-file')?.closest('div');
-            if (passportWrap) {
-                if (cfg.passport === 'hidden') {
-                    passportWrap.style.display = 'none';
-                } else {
-                    passportWrap.style.display = '';
-                    const lbl = passportWrap.querySelector('label');
-                    if (lbl) lbl.innerHTML = `<i class="fa-solid fa-passport ml-1 text-primary"></i> جواز السفر ${labelBadge(cfg.passport)}`;
-                }
-            }
+        const applyToBlock = (block, travelerType) => {
+            // Get type-specific config, fall back to legacy flat config, then defaults
+            const defaults = {
+                adult:  { passport:'required', national_id:'optional', personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'hidden'   },
+                child:  { passport:'required', national_id:'hidden',   personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'required' },
+                infant: { passport:'optional', national_id:'hidden',   personal_photo:'optional', meningitis:'hidden',   covid:'hidden',   birth_cert:'required' },
+            };
+            const typeCfg = dc[travelerType] || {};
+            const flatCfg = dc; // legacy fallback for adult
+            const def     = defaults[travelerType] || defaults.adult;
 
-            // National ID wrapper
-            const nidWrap = block.querySelector('.t-nid-file')?.closest('div');
-            if (nidWrap) {
-                if (cfg.national_id === 'hidden') {
-                    nidWrap.style.display = 'none';
-                } else {
-                    nidWrap.style.display = '';
-                    const lbl = nidWrap.querySelector('label');
-                    if (lbl) lbl.innerHTML = `<i class="fa-solid fa-id-card ml-1 text-amber-600"></i> بطاقة الرقم القومي ${labelBadge(cfg.national_id)}`;
-                }
-            }
+            const get = (key) => typeCfg[key] || (travelerType === 'adult' ? flatCfg[key] : null) || def[key];
 
-            // Personal photo wrapper
-            const photoWrap = block.querySelector('.t-photo-file')?.closest('div');
-            if (photoWrap) {
-                if (cfg.personal_photo === 'hidden') {
-                    photoWrap.style.display = 'none';
+            const docFields = [
+                { cls: '.t-passport-file', key: 'passport',       icon: 'fa-passport text-primary',         lbl: 'جواز السفر' },
+                { cls: '.t-nid-file',      key: 'national_id',    icon: 'fa-id-card text-amber-600',        lbl: 'بطاقة الرقم القومي' },
+                { cls: '.t-photo-file',    key: 'personal_photo', icon: 'fa-camera text-rose-500',          lbl: 'الصورة الشخصية (6×4 خلفية بيضاء)' },
+                { cls: '.t-menin-file',    key: 'meningitis',     icon: 'fa-syringe text-purple-600',       lbl: 'تطعيم الحمى الشوكية (MenACYW)' },
+                { cls: '.t-covid-file',    key: 'covid',          icon: 'fa-shield-virus text-teal-600',    lbl: 'تطعيم كوفيد-19' },
+                { cls: '.t-birth-cert',    key: 'birth_cert',     icon: 'fa-baby text-yellow-600',          lbl: 'شهادة الميلاد' },
+            ];
+
+            docFields.forEach(({ cls, key, icon, lbl }) => {
+                const inp  = block.querySelector(cls);
+                const wrap = inp?.closest('div');
+                if (!wrap) return;
+                const status = get(key);
+                if (status === 'hidden') {
+                    wrap.style.display = 'none';
                 } else {
-                    photoWrap.style.display = '';
-                    const lbl = photoWrap.querySelector('label');
-                    if (lbl) {
-                        const badge = labelBadge(cfg.personal_photo);
-                        lbl.innerHTML = `<i class="fa-solid fa-camera ml-1 text-rose-500"></i> الصورة الشخصية (6×4 خلفية بيضاء) ${badge}`;
-                    }
+                    wrap.style.display = '';
+                    const labelEl = wrap.querySelector('label');
+                    if (labelEl) labelEl.innerHTML = `<i class="fa-solid ${icon} ml-1"></i> ${lbl} ${badge(status)}`;
+                }
+            });
+
+            // Birth cert section for adult youth — always show if birth_cert not hidden
+            if (travelerType === 'adult') {
+                const birthSection = block.querySelector('.birth-cert-section');
+                if (birthSection) {
+                    const ageRange = block.querySelector('.t-age-range')?.value;
+                    const bcStatus = get('birth_cert');
+                    if (bcStatus === 'hidden') birthSection.classList.add('hidden');
+                    else birthSection.classList.toggle('hidden', ageRange !== 'youth');
                 }
             }
-        });
+        };
+
+        document.querySelectorAll('.traveler-adult-block').forEach(b  => applyToBlock(b, 'adult'));
+        document.querySelectorAll('.traveler-child-block').forEach(b  => applyToBlock(b, 'child'));
+        document.querySelectorAll('.traveler-infant-block').forEach(b => applyToBlock(b, 'infant'));
     },
 
     // ── Build confirm step (step 3) ──
@@ -1165,12 +1246,15 @@ const bookingController = {
                 doc_warnings:            docWarningsList,  // stored in DB for admin
                 special_requests:        document.getElementById('specialRequests').value,
                 user_id:                 this.currentUser?.id || null,
-                booking_type:            document.getElementById('isPreorder')?.checked ? 'preorder' : 'standard',
+                booking_type:            (document.getElementById('isPreorder')?.value === 'true') ? 'preorder' : 'standard',
                 dates_unknown:           document.getElementById('datesUnknown')?.checked || false,
-                mecca_hotel:             this.selectedMeccaHotel  ? { name: this.selectedMeccaHotel.name,  extra_price: this.selectedMeccaHotel.extra_price  } : null,
-                madina_hotel:            this.selectedMadinaHotel ? { name: this.selectedMadinaHotel.name, extra_price: this.selectedMadinaHotel.extra_price } : null,
-                mecca_room_tier:         this.selectedMeccaRoomTier  ? { label: this.selectedMeccaRoomTier.label,  extra_price: this.selectedMeccaRoomTier.extra_price  } : null,
-                madina_room_tier:        this.selectedMadinaRoomTier ? { label: this.selectedMadinaRoomTier.label, extra_price: this.selectedMadinaRoomTier.extra_price } : null
+                mecca_hotel:             this.selectedMeccaHotel  ? { name: this.selectedMeccaHotel.name  } : null,
+                madina_hotel:            this.selectedMadinaHotel ? { name: this.selectedMadinaHotel.name } : null,
+                mecca_rooms:             this._buildRoomsPayload('mecca'),
+                madina_rooms:            this._buildRoomsPayload('madina'),
+                mecca_room_tier:         null,
+                madina_room_tier:        null,
+                flight_ticket_price:     this.packageData.flight_ticket_price || 0
             };
 
             // 5. Insert
@@ -1206,6 +1290,18 @@ const bookingController = {
         }
     },
 
+    _buildRoomsPayload(city) {
+        const hotel = city === 'mecca' ? this.selectedMeccaHotel : this.selectedMadinaHotel;
+        const tiers = hotel?.room_tiers || [];
+        const sel   = this.roomSelections[city] || [];
+        const result = [];
+        tiers.forEach((t, i) => {
+            const qty = sel[i]?.qty || 0;
+            if (qty > 0) result.push({ label: t.label, qty, price_each: t.price, capacity: t.capacity || 2 });
+        });
+        return result.length > 0 ? result : null;
+    },
+
     sendWhatsApp(bookingRow, docWarnings = []) {
         const warningsText = docWarnings.length
             ? `\n⚠️ *مستندات ناقصة (${docWarnings.length}):*\n${docWarnings.map(w => `• ${w}`).join('\n')}`
@@ -1227,9 +1323,10 @@ ${departureLabel}
 📞 *هاتف:* ${bookingRow.customer_phone}
 👥 *الأفراد:* ${bookingRow.adults_count} بالغ | ${bookingRow.children_count} طفل | ${bookingRow.infants_count} رضيع
 ${bookingRow.mecca_hotel  ? `🕋 *فندق مكة:* ${bookingRow.mecca_hotel.name}` : ''}
-${bookingRow.mecca_room_tier  ? `🛏️ *غرفة مكة:* ${bookingRow.mecca_room_tier.label}` : ''}
+${(bookingRow.mecca_rooms||[]).map(r=>`🛏️ مكة: ${r.qty}× ${r.label}`).join('\n')}
 ${bookingRow.madina_hotel ? `🕌 *فندق المدينة:* ${bookingRow.madina_hotel.name}` : ''}
-${bookingRow.madina_room_tier ? `🛏️ *غرفة المدينة:* ${bookingRow.madina_room_tier.label}` : ''}
+${(bookingRow.madina_rooms||[]).map(r=>`🛏️ المدينة: ${r.qty}× ${r.label}`).join('\n')}
+${bookingRow.flight_ticket_price > 0 ? `✈️ *تذكرة الطيران:* ${window.formatCurrency(bookingRow.flight_ticket_price)} للفرد` : ''}
 💰 *الإجمالي:* ${window.formatCurrency(bookingRow.total_price)}
 📎 *المستندات:* ${bookingRow.documents.length} ملف${warningsText}`;
 
@@ -1238,14 +1335,7 @@ ${bookingRow.madina_room_tier ? `🛏️ *غرفة المدينة:* ${bookingRow
     },
 
     // ── Preorder toggle ──
-    togglePreorder(checked) {
-        const tbdRow = document.getElementById('datesUnknown')?.closest('div.p-4');
-        if (tbdRow) tbdRow.style.opacity = checked ? '0.5' : '1';
-        // if preorder, auto-check datesUnknown
-        if (checked && document.getElementById('datesUnknown')) {
-            document.getElementById('datesUnknown').checked = true;
-        }
-    },
+    togglePreorder(checked) { /* preorder is set by admin; no-op */ },
 
     // ── Auth gate ──
     _showAuthGate() {

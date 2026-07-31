@@ -294,7 +294,7 @@
           <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
             <i class="fa-solid fa-plane text-primary"></i> الطيران والنقل
           </h4>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label class="block text-sm font-bold mb-1">نوع الطيران</label>
               <select id="pFlightType" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none bg-white">
@@ -305,6 +305,12 @@
             <div>
               <label class="block text-sm font-bold mb-1">شركة الطيران</label>
               <input type="text" id="pAirline" placeholder="مصر للطيران" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
+            </div>
+            <div>
+              <label class="block text-sm font-bold mb-1">سعر تذكرة الطيران (ج.م/للفرد)</label>
+              <input type="number" id="pFlightTicketPrice" min="0" placeholder="0 = مشمول في السعر"
+                     class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
+              <p class="text-xs text-gray-400 mt-1">0 = التذكرة مشمولة في سعر البرنامج</p>
             </div>
             <div>
               <label class="block text-sm font-bold mb-1">وسيلة النقل</label>
@@ -437,65 +443,94 @@
             </h5>
 
             <!-- Quick presets -->
-            <div class="flex flex-wrap gap-2 mb-3 mt-2">
-              <span class="text-xs text-gray-500 font-bold self-center">إعدادات سريعة:</span>
-              <button type="button" onclick="applyDocPreset('umrah_standard')" class="text-xs bg-white border border-blue-300 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg font-bold transition">عمرة عادية</button>
-              <button type="button" onclick="applyDocPreset('umrah_ramadan')" class="text-xs bg-white border border-purple-300 hover:bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg font-bold transition">عمرة رمضان</button>
-              <button type="button" onclick="applyDocPreset('hajj')" class="text-xs bg-white border border-green-400 hover:bg-green-100 text-green-700 px-2.5 py-1 rounded-lg font-bold transition">حج</button>
-              <button type="button" onclick="applyDocPreset('minimal')" class="text-xs bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg font-bold transition">حد أدنى</button>
+            <!-- Per-traveler-type doc config tabs -->
+            <div class="flex gap-1 mb-3 mt-2 border-b border-blue-200">
+              <button type="button" onclick="switchDocTab('adult')" id="docTab-adult"
+                class="px-3 py-1.5 text-xs font-bold rounded-t border border-b-0 border-blue-200 bg-blue-600 text-white">
+                👤 بالغ
+              </button>
+              <button type="button" onclick="switchDocTab('child')" id="docTab-child"
+                class="px-3 py-1.5 text-xs font-bold rounded-t border border-b-0 border-blue-200 bg-white text-blue-600">
+                🧒 طفل
+              </button>
+              <button type="button" onclick="switchDocTab('infant')" id="docTab-infant"
+                class="px-3 py-1.5 text-xs font-bold rounded-t border border-b-0 border-blue-200 bg-white text-blue-600">
+                👶 رضيع
+              </button>
             </div>
 
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm" id="docConfigTable">
-                <thead>
-                  <tr class="text-xs text-gray-500 border-b border-blue-200">
-                    <th class="text-right pb-2 font-semibold">المستند</th>
-                    <th class="pb-2 font-semibold text-center text-red-600"><i class="fa-solid fa-circle-exclamation text-xs ml-1"></i>إلزامي</th>
-                    <th class="pb-2 font-semibold text-center text-amber-600"><i class="fa-solid fa-circle-minus text-xs ml-1"></i>اختياري</th>
-                    <th class="pb-2 font-semibold text-center text-gray-400"><i class="fa-solid fa-eye-slash text-xs ml-1"></i>مخفي</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-blue-100" id="docConfigBody">
-                  <tr>
-                    <td class="py-2 font-medium"><i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر</td>
-                    <td class="text-center"><input type="radio" name="doc_passport" value="required" checked class="accent-red-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_passport" value="optional" class="accent-amber-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_passport" value="hidden" class="accent-gray-400 w-4 h-4"></td>
-                  </tr>
-                  <tr>
-                    <td class="py-2 font-medium"><i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية</td>
-                    <td class="text-center"><input type="radio" name="doc_national_id" value="required" class="accent-red-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_national_id" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_national_id" value="hidden" class="accent-gray-400 w-4 h-4"></td>
-                  </tr>
-                  <tr>
-                    <td class="py-2 font-medium"><i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية</td>
-                    <td class="text-center"><input type="radio" name="doc_personal_photo" value="required" checked class="accent-red-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_personal_photo" value="optional" class="accent-amber-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_personal_photo" value="hidden" class="accent-gray-400 w-4 h-4"></td>
-                  </tr>
-                  <tr>
-                    <td class="py-2 font-medium"><i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية</td>
-                    <td class="text-center"><input type="radio" name="doc_meningitis" value="required" class="accent-red-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_meningitis" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_meningitis" value="hidden" class="accent-gray-400 w-4 h-4"></td>
-                  </tr>
-                  <tr>
-                    <td class="py-2 font-medium"><i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19</td>
-                    <td class="text-center"><input type="radio" name="doc_covid" value="required" class="accent-red-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_covid" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_covid" value="hidden" class="accent-gray-400 w-4 h-4"></td>
-                  </tr>
-                  <tr>
-                    <td class="py-2 font-medium"><i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد</td>
-                    <td class="text-center"><input type="radio" name="doc_birth_cert" value="required" class="accent-red-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_birth_cert" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
-                    <td class="text-center"><input type="radio" name="doc_birth_cert" value="hidden" class="accent-gray-400 w-4 h-4"></td>
-                  </tr>
-                  <!-- Dynamic custom docs injected here by JS -->
-                  <tr id="customDocRows"></tr>
-                </tbody>
-              </table>
+            <script>
+            function switchDocTab(type) {
+              ['adult','child','infant'].forEach(t => {
+                document.getElementById('docPanel-'+t).classList.toggle('hidden', t !== type);
+                const tab = document.getElementById('docTab-'+t);
+                if (t === type) { tab.classList.add('bg-blue-600','text-white'); tab.classList.remove('bg-white','text-blue-600'); }
+                else            { tab.classList.remove('bg-blue-600','text-white'); tab.classList.add('bg-white','text-blue-600'); }
+              });
+            }
+            </script>
+
+            <!-- Shared doc table builder -->
+            <script>
+            function docTableHTML(prefix, rows) {
+              return `<table class="w-full text-sm"><thead><tr class="text-xs text-gray-500 border-b border-blue-200">
+                <th class="text-right pb-2 font-semibold">المستند</th>
+                <th class="pb-2 font-semibold text-center text-red-600"><i class="fa-solid fa-circle-exclamation text-xs ml-1"></i>إلزامي</th>
+                <th class="pb-2 font-semibold text-center text-amber-600"><i class="fa-solid fa-circle-minus text-xs ml-1"></i>اختياري</th>
+                <th class="pb-2 font-semibold text-center text-gray-400"><i class="fa-solid fa-eye-slash text-xs ml-1"></i>مخفي</th>
+              </tr></thead><tbody class="divide-y divide-blue-100">
+              ${rows.map(r=>`<tr><td class="py-2 font-medium">${r.label}</td>
+                <td class="text-center"><input type="radio" name="${prefix}_${r.key}" value="required" ${r.def==='required'?'checked':''} class="accent-red-500 w-4 h-4"></td>
+                <td class="text-center"><input type="radio" name="${prefix}_${r.key}" value="optional" ${r.def==='optional'?'checked':''} class="accent-amber-500 w-4 h-4"></td>
+                <td class="text-center"><input type="radio" name="${prefix}_${r.key}" value="hidden"   ${r.def==='hidden'?'checked':''} class="accent-gray-400 w-4 h-4"></td>
+              </tr>`).join('')}
+              </tbody></table>`;
+            }
+            </script>
+
+            <!-- Adult docs panel -->
+            <div id="docPanel-adult" class="overflow-x-auto">
+              <div id="docTableAdult"></div>
+              <script>
+              document.getElementById('docTableAdult').innerHTML = docTableHTML('adult_doc', [
+                {key:'passport',       label:'<i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر',         def:'required'},
+                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية',    def:'optional'},
+                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية', def:'required'},
+                {key:'meningitis',     label:'<i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية', def:'optional'},
+                {key:'covid',          label:'<i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19', def:'optional'},
+                {key:'birth_cert',     label:'<i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد',       def:'hidden'},
+              ]);
+              </script>
+            </div>
+
+            <!-- Child docs panel -->
+            <div id="docPanel-child" class="overflow-x-auto hidden">
+              <div id="docTableChild"></div>
+              <script>
+              document.getElementById('docTableChild').innerHTML = docTableHTML('child_doc', [
+                {key:'passport',       label:'<i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر',         def:'required'},
+                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية',    def:'hidden'},
+                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية', def:'required'},
+                {key:'meningitis',     label:'<i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية', def:'optional'},
+                {key:'covid',          label:'<i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19', def:'optional'},
+                {key:'birth_cert',     label:'<i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد',       def:'required'},
+              ]);
+              </script>
+            </div>
+
+            <!-- Infant docs panel -->
+            <div id="docPanel-infant" class="overflow-x-auto hidden">
+              <div id="docTableInfant"></div>
+              <script>
+              document.getElementById('docTableInfant').innerHTML = docTableHTML('infant_doc', [
+                {key:'passport',       label:'<i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر',         def:'optional'},
+                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية',    def:'hidden'},
+                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية', def:'optional'},
+                {key:'meningitis',     label:'<i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية', def:'hidden'},
+                {key:'covid',          label:'<i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19', def:'hidden'},
+                {key:'birth_cert',     label:'<i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد',       def:'required'},
+              ]);
+              </script>
             </div>
 
             <!-- Add custom document -->
@@ -741,7 +776,7 @@
           ` : `
             <div class="space-y-2">
               ${h.room_tiers.map((t, ti) => `
-                <div class="bg-white border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
+                <div class="bg-white border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
                   <div>
                     <label class="block text-xs font-bold mb-1">نوع الغرفة <span class="text-red-500">*</span></label>
                     <input type="text" value="${esc(t.label)}" placeholder="مثال: غرفة مزدوجة"
@@ -750,13 +785,19 @@
                   </div>
                   <div>
                     <label class="block text-xs font-bold mb-1">وصف الغرفة (اختياري)</label>
-                    <input type="text" value="${esc(t.description)}" placeholder="مثال: تتسع لشخصين مع إفطار"
+                    <input type="text" value="${esc(t.description||'')}" placeholder="مثال: مع إفطار"
                            oninput="${city}Hotels[${hi}].room_tiers[${ti}].description=this.value"
+                           class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold mb-1">سعة الغرفة (أشخاص) <span class="text-red-500">*</span></label>
+                    <input type="number" value="${t.capacity||2}" min="1" max="10" placeholder="2"
+                           oninput="${city}Hotels[${hi}].room_tiers[${ti}].capacity=parseInt(this.value)||2"
                            class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
                   </div>
                   <div class="flex gap-2 items-end">
                     <div class="flex-1">
-                      <label class="block text-xs font-bold mb-1">السعر الإجمالي (ج.م) <span class="text-red-500">*</span></label>
+                      <label class="block text-xs font-bold mb-1">سعر الغرفة (ج.م) <span class="text-red-500">*</span></label>
                       <input type="number" value="${t.price||''}" min="0" placeholder="8500"
                              oninput="${city}Hotels[${hi}].room_tiers[${ti}].price=parseFloat(this.value)||0"
                              class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
@@ -890,9 +931,10 @@
       document.getElementById('pMedinaStars').value    = pkg.medina_hotel_stars || 3;
       document.getElementById('pNightsMedina').value   = pkg.nights_medina || '';
       document.getElementById('pMedinaDist').value     = pkg.medina_hotel_distance || '';
-      document.getElementById('pFlightType').value     = pkg.flight_type || 'مباشر';
-      document.getElementById('pAirline').value        = pkg.airline || '';
-      document.getElementById('pTransport').value      = pkg.transport_type || 'باص VIP';
+      document.getElementById('pFlightType').value        = pkg.flight_type || 'مباشر';
+      document.getElementById('pAirline').value           = pkg.airline || '';
+      document.getElementById('pFlightTicketPrice').value = pkg.flight_ticket_price || '';
+      document.getElementById('pTransport').value         = pkg.transport_type || 'باص VIP';
       document.getElementById('pThumbnail').value      = pkg.thumbnail_url || '';
       document.getElementById('pIsActive').checked     = pkg.is_active !== false;
       document.getElementById('pIsFeatured').checked   = pkg.is_featured === true;
@@ -905,13 +947,22 @@
       document.getElementById('preorderNoteWrap').classList.toggle('hidden', !isPreorder);
       document.getElementById('pPreorderNote').value = pkg.preorder_note || '';
 
-      // Documents config
+      // Documents config — per traveler type
       const dc = pkg.documents_config || {};
-      const docDefaults = { passport:'required', national_id:'optional', personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'optional' };
-      Object.entries(docDefaults).forEach(([key, def]) => {
-        const val = dc[key] || def;
-        const radio = document.querySelector(`input[name="doc_${key}"][value="${val}"]`);
-        if (radio) radio.checked = true;
+      const docTypes = ['adult','child','infant'];
+      const docKeys  = ['passport','national_id','personal_photo','meningitis','covid','birth_cert'];
+      const docDefaults = {
+        adult:  { passport:'required', national_id:'optional', personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'hidden' },
+        child:  { passport:'required', national_id:'hidden',   personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'required' },
+        infant: { passport:'optional', national_id:'hidden',   personal_photo:'optional', meningitis:'hidden',   covid:'hidden',   birth_cert:'required' },
+      };
+      docTypes.forEach(type => {
+        const typeCfg = dc[type] || {};
+        docKeys.forEach(key => {
+          const val   = typeCfg[key] || docDefaults[type][key];
+          const radio = document.querySelector(`input[name="${type}_doc_${key}"][value="${val}"]`);
+          if (radio) radio.checked = true;
+        });
       });
 
       // Custom docs
@@ -992,11 +1043,15 @@
     if (invalidMecca)  { alert('يرجى إدخال اسم لكل فندق في مكة المكرمة');   return; }
     if (invalidMadina) { alert('يرجى إدخال اسم لكل فندق في المدينة المنورة'); return; }
 
-    // Validate room tiers: label and price required
+    // Validate room tiers: label, price, capacity required
     for (const h of [...meccaHotels, ...madinaHotels]) {
       for (const t of h.room_tiers) {
         if (!t.label.trim() || !(t.price > 0)) {
           alert(`يرجى ملء اسم وسعر لكل نوع غرفة في فندق "${h.name}"`);
+          return;
+        }
+        if (!t.capacity || t.capacity < 1) {
+          alert(`يرجى تحديد سعة الغرفة (عدد الأشخاص) لنوع "${t.label}" في فندق "${h.name}"`);
           return;
         }
       }
@@ -1034,6 +1089,7 @@
       medina_hotel_distance: document.getElementById('pMedinaDist').value.trim(),
       flight_type:           document.getElementById('pFlightType').value,
       airline:               document.getElementById('pAirline').value.trim(),
+      flight_ticket_price:   parseFloat(document.getElementById('pFlightTicketPrice').value) || 0,
       transport_type:        document.getElementById('pTransport').value,
       thumbnail_url:         document.getElementById('pThumbnail').value.trim() || null,
       includes:              incLines,
@@ -1049,12 +1105,38 @@
       preorder_note:         document.getElementById('pPreorderNote').value.trim() || null,
       doc_conditions:        document.getElementById('pDocConditions').value.trim() || null,
       documents_config: {
-        passport:       document.querySelector('input[name="doc_passport"]:checked')?.value       || 'required',
-        national_id:    document.querySelector('input[name="doc_national_id"]:checked')?.value    || 'optional',
-        personal_photo: document.querySelector('input[name="doc_personal_photo"]:checked')?.value || 'required',
-        meningitis:     document.querySelector('input[name="doc_meningitis"]:checked')?.value     || 'optional',
-        covid:          document.querySelector('input[name="doc_covid"]:checked')?.value          || 'optional',
-        birth_cert:     document.querySelector('input[name="doc_birth_cert"]:checked')?.value     || 'optional',
+        // Legacy flat (keep for backward compat — mirrors adult settings)
+        passport:       document.querySelector('input[name="adult_doc_passport"]:checked')?.value       || 'required',
+        national_id:    document.querySelector('input[name="adult_doc_national_id"]:checked')?.value    || 'optional',
+        personal_photo: document.querySelector('input[name="adult_doc_personal_photo"]:checked')?.value || 'required',
+        meningitis:     document.querySelector('input[name="adult_doc_meningitis"]:checked')?.value     || 'optional',
+        covid:          document.querySelector('input[name="adult_doc_covid"]:checked')?.value          || 'optional',
+        birth_cert:     document.querySelector('input[name="adult_doc_birth_cert"]:checked')?.value     || 'hidden',
+        // Per-traveler-type doc config
+        adult: {
+          passport:       document.querySelector('input[name="adult_doc_passport"]:checked')?.value       || 'required',
+          national_id:    document.querySelector('input[name="adult_doc_national_id"]:checked')?.value    || 'optional',
+          personal_photo: document.querySelector('input[name="adult_doc_personal_photo"]:checked')?.value || 'required',
+          meningitis:     document.querySelector('input[name="adult_doc_meningitis"]:checked')?.value     || 'optional',
+          covid:          document.querySelector('input[name="adult_doc_covid"]:checked')?.value          || 'optional',
+          birth_cert:     document.querySelector('input[name="adult_doc_birth_cert"]:checked')?.value     || 'hidden',
+        },
+        child: {
+          passport:       document.querySelector('input[name="child_doc_passport"]:checked')?.value       || 'required',
+          national_id:    document.querySelector('input[name="child_doc_national_id"]:checked')?.value    || 'hidden',
+          personal_photo: document.querySelector('input[name="child_doc_personal_photo"]:checked')?.value || 'required',
+          meningitis:     document.querySelector('input[name="child_doc_meningitis"]:checked')?.value     || 'optional',
+          covid:          document.querySelector('input[name="child_doc_covid"]:checked')?.value          || 'optional',
+          birth_cert:     document.querySelector('input[name="child_doc_birth_cert"]:checked')?.value     || 'required',
+        },
+        infant: {
+          passport:       document.querySelector('input[name="infant_doc_passport"]:checked')?.value       || 'optional',
+          national_id:    document.querySelector('input[name="infant_doc_national_id"]:checked')?.value    || 'hidden',
+          personal_photo: document.querySelector('input[name="infant_doc_personal_photo"]:checked')?.value || 'optional',
+          meningitis:     document.querySelector('input[name="infant_doc_meningitis"]:checked')?.value     || 'hidden',
+          covid:          document.querySelector('input[name="infant_doc_covid"]:checked')?.value          || 'hidden',
+          birth_cert:     document.querySelector('input[name="infant_doc_birth_cert"]:checked')?.value     || 'required',
+        },
         custom_docs:    collectCustomDocs(),
       },
     };

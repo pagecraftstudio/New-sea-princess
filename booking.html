@@ -187,38 +187,37 @@
         </div>
       </div>
 
-      <!-- Hotel Selection Section -->
+      <!-- Hotel & Room Selection Section -->
       <div id="hotelSelectionSection" class="mb-8 hidden">
-        <h3 class="font-bold text-lg mb-4 text-darkBg border-b pb-2"><i class="fa-solid fa-hotel ml-2 text-primary"></i>اختر فندقك</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <h3 class="font-bold text-lg mb-4 text-darkBg border-b pb-2"><i class="fa-solid fa-hotel ml-2 text-primary"></i>اختيار الفندق والغرف</h3>
+        <p class="text-sm text-gray-500 mb-4"><i class="fa-solid fa-circle-info ml-1 text-blue-400"></i>اختر الفندق ثم أنواع الغرف وعددها. سيتحقق النظام تلقائياً من أن الغرف كافية لعدد المسافرين.</p>
+        <div class="grid grid-cols-1 gap-6">
           <!-- Mecca Hotel -->
-          <div id="meccaHotelWrapper" class="hidden">
-            <label class="block font-bold mb-2">🕋 فندق مكة المكرمة</label>
-            <select id="meccaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white">
+          <div id="meccaHotelWrapper" class="hidden border border-green-100 rounded-xl p-4 bg-green-50/30">
+            <h4 class="font-bold mb-3 text-primary flex items-center gap-2"><span class="text-xl">🕋</span> فندق مكة المكرمة</h4>
+            <select id="meccaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white mb-2">
               <option value="">-- اختر فندق مكة --</option>
             </select>
-            <p id="meccaHotelDesc" class="text-xs text-gray-500 mt-1 hidden"></p>
-            <!-- Room Tier -->
-            <div id="meccaRoomTierWrapper" class="hidden mt-3">
-              <label class="block font-semibold mb-1 text-sm">🛏️ نوع الغرفة — مكة</label>
-              <select id="meccaRoomTierSelect" onchange="bookingController.onRoomTierChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white">
-                <option value="">-- اختر نوع الغرفة --</option>
-              </select>
+            <p id="meccaHotelDesc" class="text-xs text-gray-500 mb-3 hidden"></p>
+            <!-- Room selection grid -->
+            <div id="meccaRoomTierWrapper" class="hidden">
+              <p class="text-sm font-bold mb-2 text-gray-700">🛏️ اختر أنواع الغرف وعددها:</p>
+              <div id="meccaRoomTiersGrid" class="space-y-2"></div>
+              <div id="meccaRoomFitStatus" class="mt-2 text-sm font-semibold hidden"></div>
             </div>
           </div>
           <!-- Madina Hotel -->
-          <div id="madinaHotelWrapper" class="hidden">
-            <label class="block font-bold mb-2">🕌 فندق المدينة المنورة</label>
-            <select id="madinaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white">
+          <div id="madinaHotelWrapper" class="hidden border border-blue-100 rounded-xl p-4 bg-blue-50/30">
+            <h4 class="font-bold mb-3 text-primary flex items-center gap-2"><span class="text-xl">🕌</span> فندق المدينة المنورة</h4>
+            <select id="madinaHotelSelect" onchange="bookingController.onHotelChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white mb-2">
               <option value="">-- اختر فندق المدينة --</option>
             </select>
-            <p id="madinaHotelDesc" class="text-xs text-gray-500 mt-1 hidden"></p>
-            <!-- Room Tier -->
-            <div id="madinaRoomTierWrapper" class="hidden mt-3">
-              <label class="block font-semibold mb-1 text-sm">🛏️ نوع الغرفة — المدينة</label>
-              <select id="madinaRoomTierSelect" onchange="bookingController.onRoomTierChange()" class="w-full border p-3 rounded-lg focus:border-primary bg-white">
-                <option value="">-- اختر نوع الغرفة --</option>
-              </select>
+            <p id="madinaHotelDesc" class="text-xs text-gray-500 mb-3 hidden"></p>
+            <!-- Room selection grid -->
+            <div id="madinaRoomTierWrapper" class="hidden">
+              <p class="text-sm font-bold mb-2 text-gray-700">🛏️ اختر أنواع الغرف وعددها:</p>
+              <div id="madinaRoomTiersGrid" class="space-y-2"></div>
+              <div id="madinaRoomFitStatus" class="mt-2 text-sm font-semibold hidden"></div>
             </div>
           </div>
         </div>
@@ -241,9 +240,11 @@
         <div class="flex justify-between mb-4 border-b pb-4"><span id="calcInfantsText">0 رضّع</span><span id="calcInfantsTotal" class="font-bold"></span></div>
 
         <div id="hotelMeccaRow" class="flex justify-between mb-2 hidden"><span id="calcMeccaHotelText">فندق مكة</span><span id="calcMeccaHotelTotal" class="font-bold"></span></div>
-        <div id="roomTierMeccaRow" class="flex justify-between mb-2 hidden text-sm text-gray-600"><span id="calcMeccaTierText">نوع غرفة مكة</span><span id="calcMeccaTierTotal" class="font-bold"></span></div>
+        <div id="roomTierMeccaRow" class="flex justify-between mb-2 hidden text-sm text-gray-600"><span id="calcMeccaTierText">غرف مكة</span><span id="calcMeccaTierTotal" class="font-bold"></span></div>
         <div id="hotelMadinaRow" class="flex justify-between mb-2 hidden"><span id="calcMadinaHotelText">فندق المدينة</span><span id="calcMadinaHotelTotal" class="font-bold"></span></div>
-        <div id="roomTierMadinaRow" class="flex justify-between mb-4 border-b pb-4 hidden text-sm text-gray-600"><span id="calcMadinaTierText">نوع غرفة المدينة</span><span id="calcMadinaTierTotal" class="font-bold"></span></div>
+        <div id="roomTierMadinaRow" class="flex justify-between mb-2 hidden text-sm text-gray-600"><span id="calcMadinaTierText">غرف المدينة</span><span id="calcMadinaTierTotal" class="font-bold"></span></div>
+
+        <div id="flightTicketRow" class="flex justify-between mb-4 border-b pb-4 hidden text-sm text-blue-700"><span id="calcFlightTicketText">تذاكر الطيران</span><span id="calcFlightTicketTotal" class="font-bold"></span></div>
 
         <div id="discountRow" class="flex justify-between text-green-600 mb-4 hidden border-b pb-4">
           <span>الخصم (<span id="discountPercentText"></span>%)</span>
@@ -253,16 +254,8 @@
         <div class="flex justify-between text-xl text-primary font-bold"><span>الإجمالي:</span><span id="calcGrandTotal">0 ج.م</span></div>
       </div>
 
-      <!-- Preorder Option -->
-      <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <label class="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" id="isPreorder" class="mt-1 w-5 h-5 accent-primary" onchange="bookingController.togglePreorder(this.checked)">
-          <div>
-            <span class="font-bold text-blue-800 block">حجز مسبق (Pre-order)</span>
-            <span class="text-sm text-blue-600">سجّل اهتمامك بالبرنامج قبل تحديد المواعيد — سيتواصل معك فريقنا لإتمام التفاصيل.</span>
-          </div>
-        </label>
-      </div>
+      <!-- Preorder flag set by admin only — hidden input auto-filled from package data -->
+      <input type="hidden" id="isPreorder" value="false">
 
       <!-- TBD Dates Option -->
       <div class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
