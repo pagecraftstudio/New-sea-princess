@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>العملاء | نيو سي برنسيس فرع الزقازيق</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;}
+    .nav-link:hover{background:#1f2937;color:#fff;}
+    .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.75rem;font-weight:700;}
+    .badge-green{background:#dcfce7;color:#166534;}
+    .badge-red{background:#fee2e2;color:#991b1b;}
+    .badge-yellow{background:#fef9c3;color:#854d0e;}
+    .badge-gray{background:#f3f4f6;color:#374151;}
+    .badge-blue{background:#dbeafe;color:#1e40af;}
+    .stat-card{background:#fff;border-radius:1rem;padding:1.25rem 1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid #e5e7eb;}
+    .ledger-row:hover{background:#f0fdf4;}
+    @media print{
+      aside,.no-print{display:none!important;}
+      main{padding:0!important;}
+      body{background:#fff!important;}
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen" style="font-family:'Cairo',sans-serif;">
+
+<!-- MOBILE TOP BAR -->
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg">
+  <div class="flex items-center gap-2 font-bold text-lg text-gold"><i class="fa-solid fa-users"></i> العملاء</div>
+  <button id="mobileMenuBtn" class="text-white text-2xl p-1"><i class="fa-solid fa-bars"></i></button>
+</header>
+<!-- MOBILE DRAWER -->
+<div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
+  <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl">
+    <div class="h-16 flex items-center justify-between px-5 border-b border-gray-800">
+      <span class="font-bold text-gold text-lg"><i class="fa-solid fa-moon ml-1"></i> الإدارة</span>
+      <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link active"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-calculator w-5"></i>المحاسبة</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>التقارير المالية</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة</a>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+    </div>
+    <div class="p-4 border-t border-gray-800">
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </nav>
+</div>
+
+<div class="flex min-h-screen">
+<!-- SIDEBAR -->
+<aside class="w-64 bg-darkBg text-white hidden md:flex flex-col sticky top-0 h-screen">
+  <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+    <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto object-contain ml-2"> الإدارة
+  </div>
+  <nav class="flex-1 overflow-y-auto py-4">
+    <ul class="space-y-1">
+      <li><a href="/nsp-control-8x4k/dashboard.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a></li>
+      <li><a href="/nsp-control-8x4k/bookings.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a></li>
+      <li><a href="/nsp-control-8x4k/packages.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a></li>
+      <li><a href="/nsp-control-8x4k/customers.html" class="flex px-6 py-3 bg-primary border-r-4 border-gold text-white items-center gap-2"><i class="fa-solid fa-users w-5"></i>العملاء</a></li>
+      <li><a href="/nsp-control-8x4k/suppliers.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-truck w-5"></i>الموردون</a></li>
+      <li class="px-6 py-1 text-xs text-gray-600 uppercase tracking-wider mt-2">المحاسبة</li>
+      <li><a href="/nsp-control-8x4k/accounting-dashboard.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-calculator w-5"></i>لوحة المحاسبة</a></li>
+      <li><a href="/nsp-control-8x4k/financial-dashboard.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-chart-line w-5"></i>التقارير المالية</a></li>
+      <li><a href="/nsp-control-8x4k/accounting-coa.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a></li>
+      <li><a href="/nsp-control-8x4k/profitability.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-arrow-trend-up w-5"></i>الربحية</a></li>
+      <li class="px-6 py-1 text-xs text-gray-600 uppercase tracking-wider mt-2">الإدارة</li>
+      <li><a href="/nsp-control-8x4k/reviews.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-comments w-5"></i>الآراء</a></li>
+      <li><a href="/nsp-control-8x4k/newsletter.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-envelope w-5"></i>النشرة</a></li>
+      <li><a href="/nsp-control-8x4k/users.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-user w-5"></i>المستخدمون</a></li>
+      <li><a href="/nsp-control-8x4k/admins.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-user-shield w-5"></i>الأدمن</a></li>
+      <li><a href="/nsp-control-8x4k/audit-log.html" class="flex px-6 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition items-center gap-2"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a></li>
+    </ul>
+  </nav>
+  <div class="p-4 border-t border-gray-800">
+    <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
+      <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 flex flex-col p-4 md:p-6 overflow-x-hidden">
+
+  <!-- Header -->
+  <div class="flex flex-wrap justify-between items-center mb-6 gap-4 no-print">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">إدارة العملاء</h2>
+      <p class="text-sm text-gray-500 mt-1">كشف حساب • فواتير • مدفوعات • رصيد</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="printPage()" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition text-sm">
+        <i class="fa-solid fa-print"></i> طباعة
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 no-print">
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">إجمالي العملاء</div>
+      <div class="text-2xl font-bold text-primary" id="statTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">إجمالي المستحق</div>
+      <div class="text-2xl font-bold text-red-600" id="statReceivable">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">متأخر السداد</div>
+      <div class="text-2xl font-bold text-orange-600" id="statOverdue">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">إجمالي المحصّل</div>
+      <div class="text-2xl font-bold text-green-700" id="statCollected">—</div>
+    </div>
+  </div>
+
+  <!-- Search + filter -->
+  <div class="bg-white rounded-xl shadow border border-gray-200 p-4 mb-4 no-print">
+    <div class="flex flex-wrap gap-3">
+      <div class="flex-1 min-w-[200px] relative">
+        <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <input id="searchInput" type="text" placeholder="بحث بالاسم أو الهاتف أو الإيميل..."
+          class="w-full border border-gray-300 rounded-lg py-2 pr-9 pl-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+          oninput="renderCustomers()">
+      </div>
+      <select id="filterBalance" onchange="renderCustomers()"
+        class="border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none">
+        <option value="">جميع الأرصدة</option>
+        <option value="has_balance">لديه رصيد مستحق</option>
+        <option value="overdue">متأخر السداد</option>
+        <option value="zero">رصيد صفر</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Customers table -->
+  <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+    <div id="loadingState" class="flex items-center justify-center py-16 text-gray-400 gap-3">
+      <i class="fa-solid fa-spinner fa-spin text-2xl text-primary"></i>
+      <span>جارٍ تحميل بيانات العملاء...</span>
+    </div>
+    <div id="emptyState" class="hidden flex items-center justify-center py-16 text-gray-400 gap-3">
+      <i class="fa-solid fa-users-slash text-4xl"></i>
+      <span>لا يوجد عملاء</span>
+    </div>
+    <div id="tableWrap" class="hidden overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-gray-50 text-gray-600 text-xs border-b">
+            <th class="px-4 py-3 text-right font-bold">العميل</th>
+            <th class="px-4 py-3 text-right font-bold">التواصل</th>
+            <th class="px-4 py-3 text-center font-bold">الحجوزات</th>
+            <th class="px-4 py-3 text-center font-bold">الفواتير</th>
+            <th class="px-4 py-3 text-left font-bold">إجمالي المطلوب</th>
+            <th class="px-4 py-3 text-left font-bold">المحصّل</th>
+            <th class="px-4 py-3 text-left font-bold">الرصيد المستحق</th>
+            <th class="px-4 py-3 text-center font-bold">الحالة</th>
+            <th class="px-4 py-3 text-center font-bold no-print">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="customersBody"></tbody>
+      </table>
+    </div>
+    <div class="border-t px-4 py-3 flex items-center justify-between bg-gray-50 no-print">
+      <span id="paginationInfo" class="text-xs text-gray-500"></span>
+      <div class="flex gap-2">
+        <button id="prevBtn" onclick="prevPage()" class="px-3 py-1.5 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">السابق</button>
+        <button id="nextBtn" onclick="nextPage()" class="px-3 py-1.5 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">التالي</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- LEDGER MODAL -->
+<div id="ledgerModal" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-black/60" onclick="closeLedger()"></div>
+  <div class="absolute inset-y-0 left-0 w-full md:w-[780px] bg-white shadow-2xl flex flex-col overflow-hidden">
+    <div class="bg-primary text-white px-6 py-4 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-bold" id="ledgerName">كشف حساب العميل</h3>
+        <div class="text-green-200 text-xs mt-0.5" id="ledgerSub"></div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="printLedger()" class="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-print"></i> طباعة
+        </button>
+        <button onclick="closeLedger()" class="text-white/70 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+
+    <!-- Summary cards inside modal -->
+    <div class="grid grid-cols-3 gap-4 p-4 bg-gray-50 border-b" id="ledgerSummary">
+      <div class="bg-white rounded-lg p-3 border text-center">
+        <div class="text-xs text-gray-500 mb-1">إجمالي الفواتير</div>
+        <div class="text-lg font-bold text-gray-800" id="ls_total">—</div>
+      </div>
+      <div class="bg-white rounded-lg p-3 border text-center">
+        <div class="text-xs text-gray-500 mb-1">المحصّل</div>
+        <div class="text-lg font-bold text-green-700" id="ls_paid">—</div>
+      </div>
+      <div class="bg-white rounded-lg p-3 border text-center">
+        <div class="text-xs text-gray-500 mb-1">الرصيد المستحق</div>
+        <div class="text-lg font-bold text-red-600" id="ls_balance">—</div>
+      </div>
+    </div>
+
+    <!-- Ledger Transactions -->
+    <div class="flex-1 overflow-y-auto p-4" id="ledgerBody">
+      <div class="flex items-center justify-center py-16 text-gray-400">
+        <i class="fa-solid fa-spinner fa-spin text-2xl text-primary ml-2"></i> جارٍ التحميل...
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let allCustomers = [];
+let filteredCustomers = [];
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let currentLedgerCustomer = null;
+
+document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+  document.getElementById('mobileDrawer').classList.remove('hidden');
+});
+function closeDrawer() { document.getElementById('mobileDrawer').classList.add('hidden'); }
+
+function fmtMoney(v, currency='EGP') {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toLocaleString('ar-EG', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ' + currency;
+}
+
+async function loadCustomers() {
+  const sb = window.supabase;
+  try {
+    // Get all bookings with payment data, grouped by customer
+    const { data: bookings, error } = await sb
+      .from('bookings')
+      .select('id,customer_name,customer_phone,customer_email,customer_national_id,total_price,paid_amount,remaining_amount,status,created_at,user_id')
+      .order('customer_name');
+    if (error) throw error;
+
+    // Group by customer_email or customer_phone as identifier
+    const map = {};
+    for (const b of bookings) {
+      const key = b.customer_email || b.customer_phone || b.customer_name;
+      if (!map[key]) {
+        map[key] = {
+          key, name: b.customer_name,
+          phone: b.customer_phone, email: b.customer_email,
+          national_id: b.customer_national_id,
+          user_id: b.user_id,
+          bookings: [], total: 0, paid: 0, remaining: 0
+        };
+      }
+      map[key].bookings.push(b);
+      map[key].total += Number(b.total_price || 0);
+      map[key].paid  += Number(b.paid_amount  || 0);
+      map[key].remaining += Number(b.remaining_amount || 0);
+    }
+
+    // Also pull invoice data
+    const { data: invoices } = await sb
+      .from('nsp_invoices')
+      .select('customer_name,customer_phone,customer_email,total_amount,paid_amount,status,due_date');
+
+    // Enrich with invoice data if available
+    const invMap = {};
+    if (invoices) {
+      for (const inv of invoices) {
+        const key = inv.customer_email || inv.customer_phone || inv.customer_name;
+        if (!invMap[key]) invMap[key] = { invoices: 0, overdue: 0 };
+        invMap[key].invoices++;
+        if (inv.status === 'overdue' || (inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'paid')) {
+          invMap[key].overdue++;
+        }
+      }
+    }
+
+    allCustomers = Object.values(map).map(c => ({
+      ...c,
+      invoiceCount: invMap[c.key]?.invoices || 0,
+      overdueCount: invMap[c.key]?.overdue || 0,
+    }));
+
+    // Stats
+    const totalReceivable = allCustomers.reduce((s,c)=>s+c.remaining,0);
+    const totalOverdue = allCustomers.filter(c=>c.overdueCount>0).reduce((s,c)=>s+c.remaining,0);
+    const totalCollected = allCustomers.reduce((s,c)=>s+c.paid,0);
+
+    document.getElementById('statTotal').textContent = allCustomers.length;
+    document.getElementById('statReceivable').textContent = fmtMoney(totalReceivable);
+    document.getElementById('statOverdue').textContent = fmtMoney(totalOverdue);
+    document.getElementById('statCollected').textContent = fmtMoney(totalCollected);
+
+    renderCustomers();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loadingState').innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-500 text-2xl"></i><span class="text-red-500 mr-2">خطأ في تحميل البيانات: ${e.message}</span>`;
+  }
+}
+
+function renderCustomers() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const filterBalance = document.getElementById('filterBalance').value;
+
+  filteredCustomers = allCustomers.filter(c => {
+    if (search && !c.name?.toLowerCase().includes(search) && !c.phone?.includes(search) && !c.email?.toLowerCase().includes(search)) return false;
+    if (filterBalance === 'has_balance' && c.remaining <= 0) return false;
+    if (filterBalance === 'overdue' && c.overdueCount === 0) return false;
+    if (filterBalance === 'zero' && c.remaining !== 0) return false;
+    return true;
+  });
+
+  currentPage = 1;
+  renderPage();
+}
+
+function renderPage() {
+  const total = filteredCustomers.length;
+  const start = (currentPage-1)*PAGE_SIZE;
+  const end = Math.min(start+PAGE_SIZE, total);
+  const pageData = filteredCustomers.slice(start, end);
+
+  document.getElementById('loadingState').classList.add('hidden');
+
+  if (total === 0) {
+    document.getElementById('emptyState').classList.remove('hidden');
+    document.getElementById('tableWrap').classList.add('hidden');
+  } else {
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('tableWrap').classList.remove('hidden');
+  }
+
+  document.getElementById('paginationInfo').textContent = `عرض ${start+1}–${end} من ${total} عميل`;
+  document.getElementById('prevBtn').disabled = currentPage === 1;
+  document.getElementById('nextBtn').disabled = end >= total;
+
+  const tbody = document.getElementById('customersBody');
+  tbody.innerHTML = pageData.map(c => {
+    const balanceBadge = c.remaining > 0
+      ? (c.overdueCount > 0 ? `<span class="badge badge-red">متأخر</span>` : `<span class="badge badge-yellow">مستحق</span>`)
+      : `<span class="badge badge-green">مسدّد</span>`;
+
+    return `<tr class="border-b ledger-row cursor-pointer" onclick="openLedger(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+      <td class="px-4 py-3">
+        <div class="font-bold text-gray-800">${c.name || '—'}</div>
+        ${c.national_id ? `<div class="text-xs text-gray-400">رقم هوية: ${c.national_id}</div>` : ''}
+      </td>
+      <td class="px-4 py-3">
+        <div class="text-xs text-gray-600">${c.phone || '—'}</div>
+        <div class="text-xs text-gray-400">${c.email || ''}</div>
+      </td>
+      <td class="px-4 py-3 text-center">
+        <span class="badge badge-blue">${c.bookings.length}</span>
+      </td>
+      <td class="px-4 py-3 text-center text-xs text-gray-500">${c.invoiceCount || c.bookings.length}</td>
+      <td class="px-4 py-3 text-left font-mono text-sm font-bold">${fmtMoney(c.total)}</td>
+      <td class="px-4 py-3 text-left font-mono text-sm text-green-700">${fmtMoney(c.paid)}</td>
+      <td class="px-4 py-3 text-left font-mono text-sm font-bold ${c.remaining>0?'text-red-600':'text-green-700'}">${fmtMoney(c.remaining)}</td>
+      <td class="px-4 py-3 text-center">${balanceBadge}</td>
+      <td class="px-4 py-3 text-center no-print">
+        <button class="text-primary hover:text-green-800 text-xs font-bold border border-primary rounded px-2 py-1 hover:bg-green-50 transition"
+          onclick="event.stopPropagation(); openLedger(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+          <i class="fa-solid fa-file-invoice-dollar ml-1"></i>كشف حساب
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function prevPage() { if (currentPage > 1) { currentPage--; renderPage(); } }
+function nextPage() {
+  const total = filteredCustomers.length;
+  if (currentPage * PAGE_SIZE < total) { currentPage++; renderPage(); }
+}
+
+async function openLedger(customer) {
+  currentLedgerCustomer = customer;
+  const modal = document.getElementById('ledgerModal');
+  modal.classList.remove('hidden');
+  document.getElementById('ledgerName').textContent = `كشف حساب: ${customer.name}`;
+  document.getElementById('ledgerSub').textContent = customer.phone ? `📞 ${customer.phone}` : '';
+  document.getElementById('ls_total').textContent = fmtMoney(customer.total);
+  document.getElementById('ls_paid').textContent = fmtMoney(customer.paid);
+  document.getElementById('ls_balance').textContent = fmtMoney(customer.remaining);
+
+  const body = document.getElementById('ledgerBody');
+  body.innerHTML = `<div class="flex items-center justify-center py-16 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl text-primary ml-2"></i> جارٍ التحميل...</div>`;
+
+  try {
+    const sb = window.supabase;
+    // Load bookings for this customer
+    const { data: bookings } = await sb
+      .from('bookings')
+      .select('id,booking_number,package_title,total_price,paid_amount,remaining_amount,status,created_at,updated_at')
+      .eq('customer_name', customer.name)
+      .order('created_at', { ascending: false });
+
+    // Load payments
+    const { data: payments } = await sb
+      .from('nsp_payments')
+      .select('id,payment_number,payment_date,amount,currency,payment_method,reference_number,notes')
+      .eq('customer_name', customer.name)
+      .order('payment_date', { ascending: false });
+
+    // Load invoices
+    const { data: invoices } = await sb
+      .from('nsp_invoices')
+      .select('id,invoice_number,issue_date,due_date,total_amount,paid_amount,status')
+      .eq('customer_name', customer.name)
+      .order('issue_date', { ascending: false });
+
+    // Load credit notes
+    const { data: credits } = await sb
+      .from('credit_notes')
+      .select('id,note_number,issue_date,amount,reason,status')
+      .eq('customer_name', customer.name)
+      .order('issue_date', { ascending: false });
+
+    let html = '';
+
+    // Opening balance section
+    html += `<div class="mb-6">
+      <div class="flex items-center gap-2 mb-3">
+        <i class="fa-solid fa-scale-balanced text-primary"></i>
+        <h4 class="font-bold text-gray-700">ملخص الحساب</h4>
+      </div>
+      <div class="bg-primary/5 border border-primary/20 rounded-lg p-4 grid grid-cols-3 gap-4 text-center">
+        <div><div class="text-xs text-gray-500">إجمالي الحجوزات</div><div class="font-bold text-lg">${fmtMoney(customer.total)}</div></div>
+        <div><div class="text-xs text-gray-500">المدفوع</div><div class="font-bold text-lg text-green-700">${fmtMoney(customer.paid)}</div></div>
+        <div><div class="text-xs text-gray-500">المتبقي</div><div class="font-bold text-lg ${customer.remaining>0?'text-red-600':'text-green-700'}">${fmtMoney(customer.remaining)}</div></div>
+      </div>
+    </div>`;
+
+    // Bookings
+    if (bookings?.length) {
+      html += `<div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-address-book text-primary"></i>
+          <h4 class="font-bold text-gray-700">الحجوزات (${bookings.length})</h4>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-right">رقم الحجز</th>
+              <th class="px-3 py-2 text-right">البرنامج</th>
+              <th class="px-3 py-2 text-left">الإجمالي</th>
+              <th class="px-3 py-2 text-left">المدفوع</th>
+              <th class="px-3 py-2 text-left">المتبقي</th>
+              <th class="px-3 py-2 text-center">الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bookings.map(b=>{
+              const statusMap={'pending':'معلق','confirmed':'مؤكد','cancelled':'ملغي','completed':'مكتمل'};
+              const statusColor={'pending':'badge-yellow','confirmed':'badge-blue','cancelled':'badge-red','completed':'badge-green'};
+              return `<tr class="border-t hover:bg-gray-50">
+                <td class="px-3 py-2 font-mono font-bold text-primary">${b.booking_number||b.id.slice(-8)}</td>
+                <td class="px-3 py-2 text-gray-700">${b.package_title||'—'}</td>
+                <td class="px-3 py-2 font-mono">${fmtMoney(b.total_price)}</td>
+                <td class="px-3 py-2 font-mono text-green-700">${fmtMoney(b.paid_amount)}</td>
+                <td class="px-3 py-2 font-mono ${Number(b.remaining_amount)>0?'text-red-600':''}">${fmtMoney(b.remaining_amount)}</td>
+                <td class="px-3 py-2 text-center"><span class="badge ${statusColor[b.status]||'badge-gray'}">${statusMap[b.status]||b.status}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        </div>
+      </div>`;
+    }
+
+    // Invoices
+    if (invoices?.length) {
+      html += `<div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-file-invoice text-gold"></i>
+          <h4 class="font-bold text-gray-700">الفواتير (${invoices.length})</h4>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-right">رقم الفاتورة</th>
+              <th class="px-3 py-2 text-right">التاريخ</th>
+              <th class="px-3 py-2 text-right">تاريخ الاستحقاق</th>
+              <th class="px-3 py-2 text-left">الإجمالي</th>
+              <th class="px-3 py-2 text-left">المدفوع</th>
+              <th class="px-3 py-2 text-center">الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoices.map(inv=>{
+              const isOverdue = inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'paid';
+              const statusMap={draft:'مسودة',issued:'صادرة',partial:'جزئي',paid:'مدفوعة',overdue:'متأخرة',cancelled:'ملغية',refunded:'مستردة'};
+              const effectiveStatus = isOverdue && inv.status!=='paid' ? 'overdue' : inv.status;
+              const statusColor={draft:'badge-gray',issued:'badge-blue',partial:'badge-yellow',paid:'badge-green',overdue:'badge-red',cancelled:'badge-gray',refunded:'badge-gray'};
+              return `<tr class="border-t hover:bg-gray-50">
+                <td class="px-3 py-2 font-mono font-bold text-primary">${inv.invoice_number}</td>
+                <td class="px-3 py-2 text-gray-600">${inv.issue_date||'—'}</td>
+                <td class="px-3 py-2 ${isOverdue?'text-red-600 font-bold':''}">${inv.due_date||'—'}</td>
+                <td class="px-3 py-2 font-mono">${fmtMoney(inv.total_amount)}</td>
+                <td class="px-3 py-2 font-mono text-green-700">${fmtMoney(inv.paid_amount)}</td>
+                <td class="px-3 py-2 text-center"><span class="badge ${statusColor[effectiveStatus]||'badge-gray'}">${statusMap[effectiveStatus]||effectiveStatus}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        </div>
+      </div>`;
+    }
+
+    // Payments
+    if (payments?.length) {
+      html += `<div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-money-bill-transfer text-green-600"></i>
+          <h4 class="font-bold text-gray-700">المدفوعات (${payments.length})</h4>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-right">رقم الدفعة</th>
+              <th class="px-3 py-2 text-right">التاريخ</th>
+              <th class="px-3 py-2 text-right">طريقة الدفع</th>
+              <th class="px-3 py-2 text-right">المرجع</th>
+              <th class="px-3 py-2 text-left">المبلغ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${payments.map(p=>`<tr class="border-t hover:bg-gray-50">
+              <td class="px-3 py-2 font-mono font-bold text-green-700">${p.payment_number||'—'}</td>
+              <td class="px-3 py-2 text-gray-600">${p.payment_date||'—'}</td>
+              <td class="px-3 py-2 text-gray-600">${p.payment_method||'—'}</td>
+              <td class="px-3 py-2 text-gray-400 text-xs">${p.reference_number||'—'}</td>
+              <td class="px-3 py-2 font-mono font-bold text-green-700">${fmtMoney(p.amount, p.currency||'EGP')}</td>
+            </tr>`).join('')}
+          </tbody>
+          <tfoot class="bg-green-50">
+            <tr>
+              <td colspan="4" class="px-3 py-2 font-bold text-right">إجمالي المحصّل</td>
+              <td class="px-3 py-2 font-mono font-bold text-green-700">${fmtMoney(payments.reduce((s,p)=>s+Number(p.amount||0),0))}</td>
+            </tr>
+          </tfoot>
+        </table>
+        </div>
+      </div>`;
+    }
+
+    // Credit notes
+    if (credits?.length) {
+      html += `<div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-file-circle-minus text-orange-500"></i>
+          <h4 class="font-bold text-gray-700">إشعارات الدائن (${credits.length})</h4>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-right">رقم الإشعار</th>
+              <th class="px-3 py-2 text-right">التاريخ</th>
+              <th class="px-3 py-2 text-right">السبب</th>
+              <th class="px-3 py-2 text-left">المبلغ</th>
+              <th class="px-3 py-2 text-center">الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${credits.map(cr=>`<tr class="border-t hover:bg-gray-50">
+              <td class="px-3 py-2 font-mono font-bold text-orange-600">${cr.note_number||'—'}</td>
+              <td class="px-3 py-2 text-gray-600">${cr.issue_date||'—'}</td>
+              <td class="px-3 py-2 text-gray-600">${cr.reason||'—'}</td>
+              <td class="px-3 py-2 font-mono text-orange-600">${fmtMoney(cr.amount)}</td>
+              <td class="px-3 py-2 text-center"><span class="badge badge-gray">${cr.status||'—'}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        </div>
+      </div>`;
+    }
+
+    if (!bookings?.length && !invoices?.length && !payments?.length) {
+      html = `<div class="flex flex-col items-center justify-center py-16 text-gray-400">
+        <i class="fa-solid fa-folder-open text-4xl mb-3"></i>
+        <p>لا توجد معاملات مالية لهذا العميل بعد</p>
+      </div>`;
+    }
+
+    body.innerHTML = html;
+  } catch(e) {
+    body.innerHTML = `<div class="text-red-500 p-4"><i class="fa-solid fa-circle-exclamation ml-2"></i>خطأ: ${e.message}</div>`;
+  }
+}
+
+function closeLedger() {
+  document.getElementById('ledgerModal').classList.add('hidden');
+  currentLedgerCustomer = null;
+}
+
+function printPage() { window.print(); }
+function printLedger() {
+  const content = document.getElementById('ledgerBody').innerHTML;
+  const customerName = currentLedgerCustomer?.name || '';
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+    <meta charset="UTF-8"><title>كشف حساب: ${customerName}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      body{font-family:'Cairo',sans-serif;padding:24px;color:#111;}
+      table{width:100%;border-collapse:collapse;font-size:12px;}
+      th,td{border:1px solid #ddd;padding:6px 10px;text-align:right;}
+      th{background:#f5f5f5;font-weight:700;}
+      .font-bold{font-weight:700;} .text-left{text-align:left;}
+      .badge{display:inline;padding:2px 8px;border-radius:4px;font-size:10px;}
+      .badge-green{background:#dcfce7;color:#166534;} .badge-red{background:#fee2e2;color:#991b1b;}
+      .badge-yellow{background:#fef9c3;color:#854d0e;} .badge-blue{background:#dbeafe;color:#1e40af;}
+      .badge-gray{background:#f3f4f6;color:#374151;}
+      h2{color:#1B5E20;} h4{border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:8px;}
+      @media print{.no-print{display:none!important;}}
+    </style>
+  </head><body>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+      <div><h2 style="margin:0;">كشف حساب العميل</h2><div style="color:#555;font-size:13px;">${customerName}</div></div>
+      <div style="font-size:12px;color:#888;">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
+    </div>
+    ${content}
+  </body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),600);
+}
+
+// Init
+loadCustomers();
+</script>
+</body>
+</html>
