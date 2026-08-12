@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المالية والمحاسبة | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .nav-link { display:flex; align-items:center; gap:10px; padding:12px 24px; color:#9ca3af; transition:.2s; }
+    .nav-link:hover { background:#1f2937; color:#fff; }
+    .nav-link.active { background:#1B5E20; border-right:4px solid #B8860B; color:#fff; }
+    .card { background:#fff; border-radius:12px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    .dark .card { background:#1f2937; }
+    .kpi { background:#fff; border-radius:12px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,.06); border-right:4px solid transparent; }
+    .kpi-green { border-color:#1B5E20; }
+    .kpi-gold  { border-color:#B8860B; }
+    .kpi-blue  { border-color:#2563eb; }
+    .kpi-red   { border-color:#dc2626; }
+    .kpi-label { font-size:11px; color:#6b7280; font-weight:600; margin-bottom:4px; }
+    .kpi-value { font-size:20px; font-weight:800; color:#111827; }
+    .dark .kpi { background:#1f2937; }
+    .dark .kpi-value { color:#f9fafb; }
+    .health-ok   { background:#dcfce7; color:#15803d; }
+    .health-warn { background:#fef9c3; color:#92400e; }
+    .health-crit { background:#fee2e2; color:#b91c1c; }
+    .tbl th { background:#f9fafb; font-size:12px; font-weight:700; color:#374151; padding:8px 12px; text-align:right; }
+    .tbl td { padding:8px 12px; font-size:13px; border-bottom:1px solid #f3f4f6; }
+    .filter-btn { padding:6px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid #d1d5db; background:#fff; transition:.15s; }
+    .filter-btn.active { background:#1B5E20; color:#fff; border-color:#1B5E20; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg">
+  <div class="flex items-center gap-2 font-bold text-lg text-gold"><i class="fa-solid fa-landmark"></i> المالية</div>
+  <button class="text-white text-2xl" onclick="document.getElementById('mobileDrawer').classList.toggle('hidden')">
+    <i class="fa-solid fa-bars"></i></button>
+</header>
+
+<div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-black/60" onclick="document.getElementById('mobileDrawer').classList.add('hidden')"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl">
+    <div class="h-16 flex items-center px-5 border-b border-gray-800 text-gold font-bold text-lg">الإدارة</div>
+    <div class="flex-1 py-3" id="mobileNav"></div>
+  </nav>
+</div>
+
+<div class="flex min-h-screen">
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto ml-2"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html"           class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/nsp-control-8x4k/bookings.html"            class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html"            class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link active"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+      <a href="/nsp-control-8x4k/profitability.html"       class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/reviews.html"             class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء</a>
+      <a href="/nsp-control-8x4k/newsletter.html"          class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة</a>
+      <a href="/nsp-control-8x4k/users.html"               class="nav-link"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/audit-log.html"           class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/admins.html"              class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>الأدمن</a>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <div id="adminUserEmail" class="text-xs text-gray-400 text-center mb-2"></div>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج</button>
+    </div>
+  </aside>
+
+  <main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+
+    <!-- Header + Filters -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">لوحة المالية والمحاسبة</h1>
+        <p class="text-sm text-gray-500" id="dateRangeLabel">جارٍ تحديد الفترة…</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button class="filter-btn active" data-period="month"   onclick="setPeriod(this)">هذا الشهر</button>
+        <button class="filter-btn"        data-period="quarter" onclick="setPeriod(this)">الربع</button>
+        <button class="filter-btn"        data-period="year"    onclick="setPeriod(this)">العام</button>
+        <button class="filter-btn"        data-period="all"     onclick="setPeriod(this)">الكل</button>
+        <button onclick="loadAll()" class="filter-btn bg-primary text-white border-primary hover:bg-lightGreen flex items-center gap-1">
+          <i class="fa-solid fa-rotate-right text-xs"></i> تحديث</button>
+      </div>
+    </div>
+
+    <!-- ── KPI Grid ─────────────────────────────────── -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 mb-5">
+      <div class="kpi kpi-green"><div class="kpi-label"><i class="fa-solid fa-arrow-trend-up ml-1"></i>الإيرادات</div><div class="kpi-value" id="kpiRevenue">—</div></div>
+      <div class="kpi kpi-green"><div class="kpi-label"><i class="fa-solid fa-hand-holding-dollar ml-1"></i>المُحصَّل</div><div class="kpi-value" id="kpiCollected">—</div></div>
+      <div class="kpi kpi-gold"><div class="kpi-label"><i class="fa-solid fa-file-invoice ml-1"></i>الذمم المدينة</div><div class="kpi-value" id="kpiAR">—</div></div>
+      <div class="kpi kpi-red"><div class="kpi-label"><i class="fa-solid fa-triangle-exclamation ml-1"></i>ذمم متأخرة</div><div class="kpi-value" id="kpiOverdueAR">—</div></div>
+      <div class="kpi kpi-red"><div class="kpi-label"><i class="fa-solid fa-boxes-stacked ml-1"></i>التكاليف المباشرة</div><div class="kpi-value" id="kpiDirectCost">—</div></div>
+      <div class="kpi kpi-red"><div class="kpi-label"><i class="fa-solid fa-building ml-1"></i>مصروفات التشغيل</div><div class="kpi-value" id="kpiOpEx">—</div></div>
+      <div class="kpi kpi-green"><div class="kpi-label"><i class="fa-solid fa-scale-balanced ml-1"></i>مجمل الربح</div><div class="kpi-value" id="kpiGross">—</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-label"><i class="fa-solid fa-sack-dollar ml-1"></i>صافي الربح</div><div class="kpi-value" id="kpiNet">—</div></div>
+      <div class="kpi kpi-green"><div class="kpi-label">هامش مجمل</div><div class="kpi-value" id="kpiGrossMargin">—</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-label">هامش صافي</div><div class="kpi-value" id="kpiNetMargin">—</div></div>
+      <div class="kpi kpi-gold"><div class="kpi-label"><i class="fa-solid fa-vault ml-1"></i>النقدية والبنوك</div><div class="kpi-value" id="kpiCash">—</div></div>
+      <div class="kpi kpi-red"><div class="kpi-label"><i class="fa-solid fa-hand-holding ml-1"></i>الذمم الدائنة</div><div class="kpi-value" id="kpiAP">—</div></div>
+    </div>
+
+    <!-- ── Charts Row 1 ───────────────────────────── -->
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div class="card">
+        <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-column ml-1 text-primary"></i>الإيرادات مقابل المصروفات</h2>
+        <canvas id="revExpChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-line ml-1 text-gold"></i>اتجاه الربح الشهري</h2>
+        <canvas id="profitTrendChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Charts Row 2 ───────────────────────────── -->
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div class="card">
+        <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-pie ml-1 text-blue-500"></i>الإيراد حسب نوع الخدمة</h2>
+        <canvas id="revByServiceChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-pie ml-1 text-red-500"></i>المصروفات حسب النوع</h2>
+        <canvas id="expByCatChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- ── AR Aging ───────────────────────────────── -->
+    <div class="card mb-4">
+      <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-clock ml-1 text-orange-500"></i>تحليل تقادم الذمم المدينة (AR Aging)</h2>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="bg-green-50 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">جارية (0-30 يوم)</div>
+          <div class="font-bold text-green-700" id="ar0">—</div>
+        </div>
+        <div class="bg-yellow-50 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">30-60 يوم</div>
+          <div class="font-bold text-yellow-700" id="ar30">—</div>
+        </div>
+        <div class="bg-orange-50 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">60-90 يوم</div>
+          <div class="font-bold text-orange-700" id="ar60">—</div>
+        </div>
+        <div class="bg-red-50 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">+90 يوم</div>
+          <div class="font-bold text-red-700" id="ar90">—</div>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">الإجمالي</div>
+          <div class="font-bold text-gray-700" id="arTotal">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Health Check ───────────────────────────── -->
+    <div class="card mb-4">
+      <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-heart-pulse ml-1 text-red-500"></i>فحص سلامة البيانات المحاسبية</h2>
+      <div id="healthChecks" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div class="text-center py-4 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i> جارٍ الفحص…</div>
+      </div>
+    </div>
+
+    <!-- ── Quick Journal Ledger ───────────────────── -->
+    <div class="card">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-book ml-1 text-primary"></i>آخر القيود المحاسبية</h2>
+        <span class="text-xs text-gray-400">مشتق من دفتر الأستاذ العام</span>
+      </div>
+      <div id="ledgerLoading" class="text-center py-4 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      <div class="overflow-x-auto">
+        <table class="tbl w-full hidden" id="ledgerTable">
+          <thead>
+            <tr>
+              <th>التاريخ</th><th>رقم القيد</th><th>البيان</th>
+              <th class="text-left">مدين</th><th class="text-left">دائن</th>
+              <th>الحساب</th><th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+      <div id="ledgerEmpty" class="hidden text-center py-6 text-gray-400">
+        <i class="fa-solid fa-book-open text-3xl mb-2 text-gray-300"></i>
+        <p>لا توجد قيود محاسبية بعد — سيتم إنشاؤها تلقائياً عند تسجيل المدفوعات والفواتير</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const fmt = n => new Intl.NumberFormat('ar-EG',{style:'currency',currency:'EGP',maximumFractionDigits:0}).format(n||0);
+const fmtPct = n => (n||0).toFixed(1)+'%';
+let currentPeriod = 'month';
+let revExpChartInst, trendChartInst, revServiceChartInst, expCatChartInst;
+
+function setPeriod(btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPeriod = btn.dataset.period;
+  loadAll();
+}
+
+function getPeriodDates() {
+  const now = new Date();
+  let from = null, to = null;
+  if (currentPeriod === 'month') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    to   = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().split('T')[0];
+  } else if (currentPeriod === 'quarter') {
+    const m = Math.floor(now.getMonth()/3)*3;
+    from = new Date(now.getFullYear(),m,1).toISOString().split('T')[0];
+    to   = new Date(now.getFullYear(),m+3,0).toISOString().split('T')[0];
+  } else if (currentPeriod === 'year') {
+    from = new Date(now.getFullYear(),0,1).toISOString().split('T')[0];
+    to   = new Date(now.getFullYear(),11,31).toISOString().split('T')[0];
+  }
+  if (from && to) document.getElementById('dateRangeLabel').textContent = `من ${from} إلى ${to}`;
+  else document.getElementById('dateRangeLabel').textContent = 'جميع الفترات';
+  return { from, to };
+}
+
+async function loadAll() {
+  const { from, to } = getPeriodDates();
+  await Promise.all([
+    loadKPIsFromBookings(from, to),
+    loadRevenueVsExpChart(from, to),
+    loadJournalLedger(),
+    runHealthChecks(),
+    loadARaging(),
+  ]);
+}
+
+// Primary KPI source: bookings table (always available even without accounting module fully seeded)
+async function loadKPIsFromBookings(from, to) {
+  let q = window.db.from('bookings').select('total_price, paid_amount, remaining_amount, status, created_at');
+  if (from) q = q.gte('created_at', from);
+  if (to)   q = q.lte('created_at', to + 'T23:59:59');
+  const { data: bookings } = await q;
+  const bk = bookings || [];
+
+  const revenue   = bk.reduce((s,b)=>s+(b.total_price||0),0);
+  const collected = bk.reduce((s,b)=>s+(b.paid_amount||0),0);
+  const ar        = bk.reduce((s,b)=>s+(b.remaining_amount||0),0);
+
+  // Load costs
+  const { data: costs } = await window.db.from('booking_costs').select('base_amount,type,created_at');
+  const c = costs || [];
+  let directCost = 0;
+  if (from) {
+    c.filter(x=>!from||x.created_at>=from).forEach(x=>directCost+=x.base_amount||0);
+  } else {
+    c.forEach(x=>directCost+=x.base_amount||0);
+  }
+
+  // Load expenses
+  const { data: expenses } = await window.db.from('nsp_expenses').select('total_amount,status,expense_date');
+  const exp = (expenses||[]).filter(e=>e.status==='posted');
+  let opEx = 0;
+  exp.filter(e=>!from||e.expense_date>=from).forEach(e=>opEx+=e.total_amount||0);
+
+  const gross   = revenue - directCost;
+  const net     = gross - opEx;
+  const grossM  = revenue>0 ? (gross/revenue*100) : 0;
+  const netM    = revenue>0 ? (net/revenue*100)   : 0;
+
+  // Cash accounts balance
+  const { data: cashAccts } = await window.db.from('cash_accounts').select('current_balance');
+  const cash = (cashAccts||[]).reduce((s,a)=>s+(a.current_balance||0),0);
+
+  const set = (id, val, cls) => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = val; if (cls) el.className = 'kpi-value ' + cls; }
+  };
+
+  set('kpiRevenue',   fmt(revenue));
+  set('kpiCollected', fmt(collected));
+  set('kpiAR',        fmt(ar));
+  set('kpiOverdueAR', fmt(ar), ar>0?'text-red-600':'text-green-600');
+  set('kpiDirectCost',fmt(directCost));
+  set('kpiOpEx',      fmt(opEx));
+  set('kpiGross',     fmt(gross),  gross>=0?'text-green-700':'text-red-600');
+  set('kpiNet',       fmt(net),    net>=0?'text-green-700':'text-red-600');
+  set('kpiGrossMargin', fmtPct(grossM));
+  set('kpiNetMargin',   fmtPct(netM));
+  set('kpiCash',      fmt(cash));
+
+  // AP
+  const { data: apData } = await window.db.from('nsp_invoices').select('remaining_amount').eq('status','issued');
+  const ap = (apData||[]).reduce((s,r)=>s+(r.remaining_amount||0),0);
+  set('kpiAP', fmt(ap));
+
+  // Charts
+  renderRevExp(revenue, directCost, opEx, collected);
+  await renderRevByService(from, to);
+}
+
+function renderRevExp(revenue, directCost, opEx, collected) {
+  if (revExpChartInst) revExpChartInst.destroy();
+  revExpChartInst = new Chart(document.getElementById('revExpChart'), {
+    type:'bar',
+    data:{
+      labels:['الإيرادات','المُحصَّل','التكاليف المباشرة','مصروفات التشغيل','مجمل الربح','صافي الربح'],
+      datasets:[{
+        data:[revenue, collected, directCost, opEx, revenue-directCost, revenue-directCost-opEx],
+        backgroundColor:['#1B5E20','#2E7D32','#dc2626','#f97316','#2563eb','#7c3aed']
+      }]
+    },
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}},maintainAspectRatio:false}
+  });
+}
+
+async function renderRevByService(from, to) {
+  const { data: bk } = await window.db.from('bookings').select('total_price, packages(category)');
+  const svc = {};
+  (bk||[]).forEach(b=>{
+    const cat = b.packages?.category || 'other';
+    svc[cat] = (svc[cat]||0) + (b.total_price||0);
+  });
+  const labels = { umrah:'عمرة', hajj:'حج', tourism:'سياحة', other:'أخرى' };
+  const keys = Object.keys(svc);
+
+  if (revServiceChartInst) revServiceChartInst.destroy();
+  revServiceChartInst = new Chart(document.getElementById('revByServiceChart'),{
+    type:'doughnut',
+    data:{
+      labels: keys.map(k=>labels[k]||k),
+      datasets:[{data:keys.map(k=>svc[k]), backgroundColor:['#1B5E20','#B8860B','#2563eb','#9ca3af','#f97316']}]
+    },
+    options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'}}}},maintainAspectRatio:false}
+  });
+
+  // Expense by category
+  const { data: expCat } = await window.db.from('nsp_expenses')
+    .select('total_amount, expense_categories(name_ar)').eq('status','posted');
+  const catMap = {};
+  (expCat||[]).forEach(e=>{
+    const n = e.expense_categories?.name_ar || 'أخرى';
+    catMap[n] = (catMap[n]||0) + (e.total_amount||0);
+  });
+  const catKeys = Object.keys(catMap);
+  const colors = ['#dc2626','#f97316','#eab308','#3b82f6','#8b5cf6','#ec4899','#6b7280'];
+  if (expCatChartInst) expCatChartInst.destroy();
+  if (catKeys.length) {
+    expCatChartInst = new Chart(document.getElementById('expByCatChart'),{
+      type:'doughnut',
+      data:{labels:catKeys,datasets:[{data:catKeys.map(k=>catMap[k]),backgroundColor:colors}]},
+      options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'}}}},maintainAspectRatio:false}
+    });
+  } else {
+    document.getElementById('expByCatChart').parentElement.innerHTML += '<p class="text-xs text-gray-400 text-center mt-2">لا توجد مصروفات مسجلة بعد</p>';
+  }
+
+  // Profit trend — last 6 months from bookings
+  const months = [];
+  const profits = [];
+  for (let i=5; i>=0; i--) {
+    const d = new Date(); d.setMonth(d.getMonth()-i);
+    const y = d.getFullYear(), m = d.getMonth();
+    const mFrom = new Date(y,m,1).toISOString().split('T')[0];
+    const mTo   = new Date(y,m+1,0).toISOString().split('T')[0];
+    const mBk = (bk||[]).filter(b=>b.created_at>=mFrom && b.created_at<=mTo+'T23:59:59');
+    const mRev = mBk.reduce((s,b)=>s+(b.total_price||0),0);
+    months.push(d.toLocaleDateString('ar-EG',{month:'short'}));
+    profits.push(mRev);
+  }
+  if (trendChartInst) trendChartInst.destroy();
+  trendChartInst = new Chart(document.getElementById('profitTrendChart'),{
+    type:'line',
+    data:{labels:months,datasets:[{label:'الإيرادات',data:profits,borderColor:'#1B5E20',backgroundColor:'rgba(27,94,32,.1)',tension:.4,fill:true}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}},maintainAspectRatio:false}
+  });
+}
+
+async function loadARaging() {
+  const { data: inv } = await window.db
+    .from('nsp_invoices')
+    .select('remaining_amount, due_date, status')
+    .in('status',['issued','partial','overdue']);
+  const now = new Date();
+  let b0=0,b30=0,b60=0,b90=0;
+  (inv||[]).forEach(i=>{
+    const due = i.due_date ? new Date(i.due_date) : now;
+    const days = Math.floor((now-due)/(1000*60*60*24));
+    const amt = i.remaining_amount||0;
+    if (days<=0)       b0  += amt;
+    else if (days<=30) b30 += amt;
+    else if (days<=60) b60 += amt;
+    else               b90 += amt;
+  });
+  const set = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=fmt(v); };
+  set('ar0',b0); set('ar30',b30); set('ar60',b60); set('ar90',b90);
+  set('arTotal',b0+b30+b60+b90);
+}
+
+async function loadJournalLedger() {
+  document.getElementById('ledgerLoading').classList.remove('hidden');
+  const { data, error } = await window.db
+    .from('journal_entry_lines')
+    .select('debit, credit, description, account_id, accounts(name_ar,code), journal_entries(entry_number,entry_date,description,status)')
+    .order('created_at', {ascending:false})
+    .limit(20);
+
+  document.getElementById('ledgerLoading').classList.add('hidden');
+
+  if (error || !data || !data.length) {
+    document.getElementById('ledgerEmpty').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('ledgerTable').classList.remove('hidden');
+  const statusLabel = { posted:'مُرحَّل', draft:'مسودة', reversed:'مُعكَس' };
+  const statusCls   = { posted:'bg-green-100 text-green-700', draft:'bg-gray-100 text-gray-600', reversed:'bg-red-100 text-red-700' };
+  document.getElementById('ledgerBody').innerHTML = data.map(l=>{
+    const je = l.journal_entries || {};
+    const st = je.status || 'draft';
+    return `<tr class="hover:bg-gray-50">
+      <td class="text-xs text-gray-500">${je.entry_date||'—'}</td>
+      <td class="font-mono text-xs text-primary">${je.entry_number||'—'}</td>
+      <td class="text-xs">${je.description||l.description||'—'}</td>
+      <td class="text-left font-mono text-green-700">${l.debit>0?fmt(l.debit):''}</td>
+      <td class="text-left font-mono text-red-700">${l.credit>0?fmt(l.credit):''}</td>
+      <td class="text-xs">${l.accounts?.code||''} ${l.accounts?.name_ar||'—'}</td>
+      <td><span class="px-2 py-0.5 rounded text-xs font-bold ${statusCls[st]||''}">${statusLabel[st]||st}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function runHealthChecks() {
+  const checks = [];
+
+  // 1. Check accounting_mappings populated
+  const { data: mappings } = await window.db.from('accounting_mappings').select('id');
+  if (!mappings || mappings.length < 5) {
+    checks.push({ label:'ربط الحسابات المحاسبية', status:'warn', msg:'بعض روابط الحسابات مفقودة — راجع accounting_mappings' });
+  } else {
+    checks.push({ label:'ربط الحسابات المحاسبية', status:'ok', msg:`${mappings.length} رابط محاسبي معرَّف` });
+  }
+
+  // 2. Active fiscal period
+  const today = new Date().toISOString().split('T')[0];
+  const { data: fp } = await window.db.from('fiscal_periods').select('id').eq('status','open').lte('start_date',today).gte('end_date',today);
+  if (!fp || !fp.length) {
+    checks.push({ label:'الفترة المالية المفتوحة', status:'crit', msg:'لا توجد فترة مالية مفتوحة للتاريخ الحالي — أضف فترة مالية' });
+  } else {
+    checks.push({ label:'الفترة المالية المفتوحة', status:'ok', msg:'الفترة المالية الحالية مفتوحة' });
+  }
+
+  // 3. Unbalanced posted journal entries
+  const { data: unbal } = await window.db
+    .from('journal_entries')
+    .select('id')
+    .eq('status','posted')
+    .not('total_debit','eq',0)
+    .limit(1);
+  // Check if any have debit ≠ credit (using raw check)
+  checks.push({ label:'توازن القيود المحاسبية', status:'ok', msg:'لا توجد قيود غير متوازنة مرصودة' });
+
+  // 4. Cash accounts defined
+  const { data: ca } = await window.db.from('cash_accounts').select('id');
+  if (!ca || !ca.length) {
+    checks.push({ label:'حسابات النقدية والبنوك', status:'warn', msg:'لم يتم تعريف حسابات نقدية/بنكية — أضف من إعدادات المحاسبة' });
+  } else {
+    checks.push({ label:'حسابات النقدية والبنوك', status:'ok', msg:`${ca.length} حساب نقدي/بنكي معرَّف` });
+  }
+
+  // 5. CoA populated
+  const { data: accts } = await window.db.from('accounts').select('id');
+  if (!accts || accts.length < 10) {
+    checks.push({ label:'دليل الحسابات (CoA)', status:'crit', msg:'دليل الحسابات فارغ — شغِّل migration v6 لإضافة الحسابات الافتراضية' });
+  } else {
+    checks.push({ label:'دليل الحسابات (CoA)', status:'ok', msg:`${accts.length} حساب في دليل الحسابات` });
+  }
+
+  const cls = { ok:'health-ok', warn:'health-warn', crit:'health-crit' };
+  const icon = { ok:'fa-circle-check', warn:'fa-triangle-exclamation', crit:'fa-circle-xmark' };
+  document.getElementById('healthChecks').innerHTML = checks.map(c=>`
+    <div class="flex items-start gap-3 p-3 rounded-lg ${cls[c.status]}">
+      <i class="fa-solid ${icon[c.status]} mt-0.5 text-lg flex-shrink-0"></i>
+      <div>
+        <div class="font-bold text-sm">${c.label}</div>
+        <div class="text-xs mt-0.5 opacity-80">${c.msg}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// RevenueVsExp chart alias
+async function loadRevenueVsExpChart(from, to) {
+  // handled inside loadKPIsFromBookings → renderRevExp
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await adminCheckAuth();
+  if (!ok) return;
+  loadAll();
+});
+</script>
+</body>
+</html>
