@@ -110,7 +110,7 @@ ON CONFLICT (code) DO NOTHING;
 
 -- ─── DEFAULT ACCOUNTING MAPPINGS ─────────────────────────────
 INSERT INTO accounting_mappings (mapping_key, account_id, description)
-SELECT key, (SELECT id FROM accounts WHERE code = acct_code), desc
+SELECT key, (SELECT id FROM accounts WHERE code = acct_code), description
 FROM (VALUES
   ('ar_account',           '1200', 'ذمم مدينة عملاء'),
   ('cash_account',         '1101', 'الصندوق الرئيسي'),
@@ -127,7 +127,7 @@ FROM (VALUES
   ('bank_fees',            '6700', 'رسوم بنكية'),
   ('expense_general',      '6000', 'مصروفات تشغيل عامة'),
   ('customer_advances',    '2200', 'مقدمات عملاء')
-) AS t(key, acct_code, desc)
+) AS t(key, acct_code, description)
 WHERE (SELECT id FROM accounts WHERE code = acct_code) IS NOT NULL
 ON CONFLICT (mapping_key) DO NOTHING;
 
@@ -142,7 +142,7 @@ VALUES (
 ON CONFLICT DO NOTHING;
 
 -- ─── DEFAULT COST CENTER ─────────────────────────────────────
-INSERT INTO cost_centers (code, name_ar, name_ar, name_en)
+INSERT INTO cost_centers (code, name_ar, name_en)
 VALUES ('MAIN', 'الإدارة الرئيسية', 'Head Office')
 ON CONFLICT (code) DO NOTHING;
 

@@ -570,7 +570,7 @@ ORDER BY a.code;
 CREATE OR REPLACE VIEW booking_profitability AS
 SELECT
   b.id AS booking_id,
-  b.booking_ref,
+  b.booking_number,
   b.customer_name,
   b.package_id,
   p.title AS package_name,
@@ -591,7 +591,7 @@ SELECT
 FROM bookings b
 LEFT JOIN packages p ON p.id = b.package_id
 LEFT JOIN booking_costs bc ON bc.booking_id = b.id
-GROUP BY b.id, b.booking_ref, b.customer_name, b.package_id, p.title,
+GROUP BY b.id, b.booking_number, b.customer_name, b.package_id, p.title,
          b.total_price, b.paid_amount, b.remaining_amount;
 
 -- ─── 29. FINANCIAL SUMMARY FUNCTION ─────────────────────────

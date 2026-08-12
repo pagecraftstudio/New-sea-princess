@@ -529,7 +529,7 @@ function renderProfit(rows) {
     const margin = r.gross_margin_pct || 0;
     const cls = margin >= 20 ? 'text-green-700 font-bold' : margin >= 0 ? 'text-yellow-700 font-semibold' : 'text-red-600 font-bold';
     return `<tr>
-      <td class="font-mono text-xs">${r.booking_ref||'—'}</td>
+      <td class="font-mono text-xs">${r.booking_number||'—'}</td>
       <td>${r.customer_name||'—'}</td>
       <td class="text-xs text-gray-500">${r.package_name||'—'}</td>
       <td class="font-semibold">${egp(r.selling_price)}</td>
@@ -547,14 +547,14 @@ function renderProfit(rows) {
 function filterProfit() {
   const q = document.getElementById('profitSearch').value.toLowerCase();
   renderProfit(allProfitRows.filter(r =>
-    (r.booking_ref||'').toLowerCase().includes(q) ||
+    (r.booking_number||'').toLowerCase().includes(q) ||
     (r.customer_name||'').toLowerCase().includes(q) ||
     (r.package_name||'').toLowerCase().includes(q)
   ));
 }
 function exportProfitCSV() {
   const hdr = ['رقم الحجز','العميل','الباقة','سعر البيع','تكلفة الفندق','تكلفة الطيران','تكلفة التأشيرة','تكلفة النقل','إجمالي التكلفة','إجمالي الربح','الهامش%'];
-  const rows = allProfitRows.map(r => [r.booking_ref,r.customer_name,r.package_name,r.selling_price,r.hotel_cost,r.flight_cost,r.visa_cost,r.transport_cost,r.total_cost,r.gross_profit,(r.gross_margin_pct||0).toFixed(1)+'%']);
+  const rows = allProfitRows.map(r => [r.booking_number,r.customer_name,r.package_name,r.selling_price,r.hotel_cost,r.flight_cost,r.visa_cost,r.transport_cost,r.total_cost,r.gross_profit,(r.gross_margin_pct||0).toFixed(1)+'%']);
   const csv  = [hdr, ...rows].map(r => r.join(',')).join('\n');
   const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   a.download = 'profitability.csv'; a.click();
