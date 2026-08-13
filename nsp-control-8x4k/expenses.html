@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>المصاريف | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;}
+    .nav-link:hover{background:#1f2937;color:#fff;}
+    .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
+    .card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:2px solid #e5e7eb;}
+    .tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#f0fdf4;}
+    .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+    .badge-gray{background:#f3f4f6;color:#374151;}
+    .badge-yellow{background:#fef9c3;color:#854d0e;}
+    .badge-blue{background:#dbeafe;color:#1e40af;}
+    .badge-green{background:#dcfce7;color:#166534;}
+    .badge-red{background:#fee2e2;color:#991b1b;}
+    .badge-purple{background:#ede9fe;color:#5b21b6;}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+    .modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:700px;margin:auto;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.12);}
+    .stat-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid #e5e7eb;}
+    @media(max-width:640px){.cols2,.cols3{grid-template-columns:1fr!important;}}
+    @media print{aside,header,.no-print{display:none!important;}body{background:#fff;}}
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- MOBILE HEADER -->
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg no-print">
+  <span class="font-bold text-gold text-lg"><i class="fa-solid fa-receipt ml-1"></i>المصاريف</span>
+  <button onclick="toggleDrawer()" class="text-2xl"><i class="fa-solid fa-bars"></i></button>
+</header>
+<div id="drawer" class="md:hidden fixed inset-0 z-[60] hidden no-print">
+  <div class="absolute inset-0 bg-black/60" onclick="toggleDrawer()"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col">
+    <div class="h-14 flex items-center px-5 border-b border-gray-800 text-gold font-bold">الإدارة</div>
+    <div class="flex-1 py-2 overflow-y-auto" id="mobNav"></div>
+  </nav>
+</div>
+
+<div class="flex min-h-screen">
+  <!-- SIDEBAR -->
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link active"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <p class="text-xs text-gray-500 mb-2 text-center" id="adminUserEmail"></p>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 flex flex-col p-4 md:p-6 overflow-x-hidden">
+
+    <!-- Header -->
+    <div class="flex flex-wrap justify-between items-center mb-6 gap-4 no-print">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">إدارة المصاريف</h2>
+        <p class="text-sm text-gray-500 mt-1">تتبع ومراجعة وترحيل المصاريف التشغيلية</p>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="openModal()" class="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-lightGreen transition">
+          <i class="fa-solid fa-plus"></i> مصروف جديد
+        </button>
+        <button onclick="window.print()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-gray-300 transition">
+          <i class="fa-solid fa-print"></i> طباعة
+        </button>
+        <button onclick="exportCSV()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-gray-300 transition">
+          <i class="fa-solid fa-file-csv"></i> تصدير
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 no-print">
+      <div class="stat-card">
+        <p class="text-xs text-gray-500 mb-1">إجمالي المصاريف</p>
+        <p class="text-xl font-bold text-gray-800" id="statTotal">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="text-xs text-gray-500 mb-1">هذا الشهر</p>
+        <p class="text-xl font-bold text-primary" id="statMonth">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="text-xs text-yellow-600 mb-1">في الانتظار</p>
+        <p class="text-xl font-bold text-yellow-600" id="statPending">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="text-xs text-blue-600 mb-1">مرحّلة</p>
+        <p class="text-xl font-bold text-blue-600" id="statPosted">—</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-5 no-print">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <input type="text" id="fSearch" placeholder="بحث برقم أو وصف أو مورد…" class="col-span-2 md:col-span-1" oninput="applyFilters()">
+        <select id="fStatus" onchange="applyFilters()">
+          <option value="">كل الحالات</option>
+          <option value="draft">مسودة</option>
+          <option value="submitted">مقدّم</option>
+          <option value="approved">موافق عليه</option>
+          <option value="posted">مرحّل</option>
+          <option value="rejected">مرفوض</option>
+        </select>
+        <select id="fCategory" onchange="applyFilters()">
+          <option value="">كل الفئات</option>
+        </select>
+        <select id="fCostCenter" onchange="applyFilters()">
+          <option value="">كل مراكز التكلفة</option>
+        </select>
+        <div class="flex gap-2">
+          <input type="date" id="fDateFrom" onchange="applyFilters()" class="text-xs">
+          <input type="date" id="fDateTo" onchange="applyFilters()" class="text-xs">
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card overflow-x-auto">
+      <table class="tbl w-full">
+        <thead>
+          <tr>
+            <th>رقم المصروف</th>
+            <th>التاريخ</th>
+            <th>الفئة</th>
+            <th>مركز التكلفة</th>
+            <th>المورد / الجهة</th>
+            <th>طريقة الدفع</th>
+            <th class="text-left">المبلغ</th>
+            <th>الحالة</th>
+            <th class="no-print">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="expensesTbody">
+          <tr><td colspan="9" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جاري التحميل…</td></tr>
+        </tbody>
+      </table>
+      <!-- Pagination -->
+      <div class="flex justify-between items-center mt-4 text-sm text-gray-500 no-print" id="pagination">
+        <span id="pageInfo"></span>
+        <div class="flex gap-2">
+          <button id="btnPrev" onclick="changePage(-1)" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-40">السابق</button>
+          <button id="btnNext" onclick="changePage(1)" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-40">التالي</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════ ADD/EDIT MODAL ══════════════ -->
+<div id="modal" class="modal-bg hidden" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="text-lg font-bold text-gray-800" id="modalTitle">مصروف جديد</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="grid cols2 gap-3 mb-3" style="grid-template-columns:1fr 1fr">
+      <div>
+        <label>تاريخ المصروف *</label>
+        <input type="date" id="fExpDate">
+      </div>
+      <div>
+        <label>المبلغ (بدون ضريبة) *</label>
+        <input type="number" id="fAmount" min="0" step="0.01" placeholder="0.00" oninput="calcTotal()">
+      </div>
+    </div>
+
+    <div class="grid cols2 gap-3 mb-3" style="grid-template-columns:1fr 1fr">
+      <div>
+        <label>الفئة *</label>
+        <select id="fCat"></select>
+      </div>
+      <div>
+        <label>مركز التكلفة</label>
+        <select id="fCC"></select>
+      </div>
+    </div>
+
+    <div class="grid cols2 gap-3 mb-3" style="grid-template-columns:1fr 1fr">
+      <div>
+        <label>طريقة الدفع</label>
+        <select id="fPayMethod" onchange="updatePayHint()">
+          <option value="cash">نقدي</option>
+          <option value="bank">بنك</option>
+          <option value="wallet">محفظة إلكترونية</option>
+          <option value="cheque">شيك</option>
+          <option value="transfer">تحويل بنكي</option>
+        </select>
+      </div>
+      <div>
+        <label id="payAccountLabel">حساب الدفع / اسم البنك</label>
+        <input type="text" id="fPayAccount" placeholder="مثال: البنك الأهلي">
+      </div>
+    </div>
+
+    <div class="grid cols3 gap-3 mb-3" style="grid-template-columns:1fr 1fr 1fr">
+      <div>
+        <label>العملة</label>
+        <select id="fCurrency">
+          <option value="EGP">جنيه مصري (EGP)</option>
+          <option value="SAR">ريال سعودي (SAR)</option>
+          <option value="USD">دولار أمريكي (USD)</option>
+          <option value="EUR">يورو (EUR)</option>
+        </select>
+      </div>
+      <div>
+        <label>سعر الصرف</label>
+        <input type="number" id="fExRate" value="1" min="0.000001" step="0.0001" oninput="calcTotal()">
+      </div>
+      <div>
+        <label>ضريبة (EGP)</label>
+        <input type="number" id="fTax" value="0" min="0" step="0.01" oninput="calcTotal()">
+      </div>
+    </div>
+
+    <div class="mb-3 p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+      <span class="text-sm font-bold text-gray-600">الإجمالي (بالعملة الأساسية EGP):</span>
+      <span class="text-lg font-bold text-primary" id="calcTotalDisplay">0.00 ج.م</span>
+    </div>
+
+    <div class="mb-3">
+      <label>المورد / الجهة المستفيدة</label>
+      <input type="text" id="fSupplier" placeholder="اسم المورد أو الجهة">
+    </div>
+
+    <div class="mb-3">
+      <label>الوصف *</label>
+      <textarea id="fDesc" rows="2" placeholder="وصف المصروف…"></textarea>
+    </div>
+
+    <div class="grid cols2 gap-3 mb-3" style="grid-template-columns:1fr 1fr">
+      <div>
+        <label>رقم المرجع / الفاتورة</label>
+        <input type="text" id="fRef" placeholder="INV-001">
+      </div>
+      <div>
+        <label>رابط الإيصال (URL)</label>
+        <input type="url" id="fReceipt" placeholder="https://…">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label>ملاحظات</label>
+      <textarea id="fNotes" rows="2" placeholder="ملاحظات إضافية…"></textarea>
+    </div>
+
+    <!-- Recurring -->
+    <div class="mb-4 border border-gray-200 rounded-lg p-3">
+      <label class="flex items-center gap-2 cursor-pointer mb-2">
+        <input type="checkbox" id="fRecurring" onchange="toggleRecurring()" class="w-4 h-4"> مصروف متكرر
+      </label>
+      <div id="recurringFields" class="hidden grid cols2 gap-3" style="grid-template-columns:1fr 1fr">
+        <div>
+          <label>دورية التكرار</label>
+          <select id="fRecurrenceRule">
+            <option value="weekly">أسبوعي</option>
+            <option value="monthly" selected>شهري</option>
+            <option value="quarterly">ربع سنوي</option>
+            <option value="yearly">سنوي</option>
+          </select>
+        </div>
+        <div>
+          <label>تاريخ التكرار القادم</label>
+          <input type="date" id="fNextRecurrence">
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex gap-2 flex-wrap justify-end border-t pt-4">
+      <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-200">إلغاء</button>
+      <button onclick="saveExpense('draft')" class="px-4 py-2 bg-gray-500 text-white rounded-lg font-bold text-sm hover:bg-gray-600">
+        <i class="fa-solid fa-save ml-1"></i>حفظ مسودة
+      </button>
+      <button onclick="saveExpense('submitted')" class="px-4 py-2 bg-yellow-500 text-white rounded-lg font-bold text-sm hover:bg-yellow-600">
+        <i class="fa-solid fa-paper-plane ml-1"></i>تقديم للمراجعة
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ VIEW/APPROVE MODAL ══════════════ -->
+<div id="viewModal" class="modal-bg hidden" onclick="if(event.target===this)closeViewModal()">
+  <div class="modal max-w-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold text-gray-800" id="viewTitle">تفاصيل المصروف</h3>
+      <button onclick="closeViewModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="viewBody" class="text-sm text-gray-700 space-y-3"></div>
+    <div class="flex gap-2 flex-wrap justify-end border-t pt-4 mt-4" id="viewActions"></div>
+  </div>
+</div>
+
+<script>
+const sb = window.db;
+const PAGE_SIZE = 20;
+let allExpenses = [], filtered = [], page = 0;
+let categories = [], costCenters = [];
+let editingId = null;
+
+const fmt = n => Number(n||0).toLocaleString('ar-EG', {minimumFractionDigits:2, maximumFractionDigits:2});
+const statusBadge = s => {
+  const map = {
+    draft: ['badge-gray','مسودة'],
+    submitted: ['badge-yellow','مقدّم'],
+    approved: ['badge-blue','موافق عليه'],
+    posted: ['badge-green','مرحّل'],
+    rejected: ['badge-red','مرفوض']
+  };
+  const [cls, label] = map[s] || ['badge-gray', s];
+  return `<span class="badge ${cls}">${label}</span>`;
+};
+const payLabel = m => ({cash:'نقدي',bank:'بنك',wallet:'محفظة',cheque:'شيك',transfer:'تحويل'}[m]||m);
+
+async function init() {
+  await loadLookups();
+  await loadExpenses();
+}
+
+async function loadLookups() {
+  const [catRes, ccRes] = await Promise.all([
+    sb.from('expense_categories').select('*').eq('is_active', true).order('name_ar'),
+    sb.from('cost_centers').select('*').eq('is_active', true).order('name_ar')
+  ]);
+  categories = catRes.data || [];
+  costCenters = ccRes.data || [];
+
+  // Populate filter selects
+  const fCat = document.getElementById('fCategory');
+  const fCC = document.getElementById('fCostCenter');
+  categories.forEach(c => {
+    fCat.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name_ar}</option>`);
+  });
+  costCenters.forEach(c => {
+    fCC.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name_ar}</option>`);
+  });
+
+  // Populate modal selects
+  const mCat = document.getElementById('fCat');
+  const mCC = document.getElementById('fCC');
+  mCat.innerHTML = '<option value="">اختر الفئة…</option>';
+  mCC.innerHTML = '<option value="">بدون مركز تكلفة</option>';
+  categories.forEach(c => mCat.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name_ar}</option>`));
+  costCenters.forEach(c => mCC.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name_ar}</option>`));
+}
+
+async function loadExpenses() {
+  const tbody = document.getElementById('expensesTbody');
+  tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جاري التحميل…</td></tr>';
+
+  const { data, error } = await sb
+    .from('expenses')
+    .select('*,expense_categories(name_ar),cost_centers(name_ar)')
+    .order('expense_date', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">خطأ: ${error.message}</td></tr>`;
+    return;
+  }
+
+  allExpenses = data || [];
+  updateStats();
+  applyFilters();
+}
+
+function updateStats() {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+
+  let total = 0, month = 0, pending = 0, posted = 0;
+  allExpenses.forEach(e => {
+    const amt = Number(e.total_amount || 0);
+    total += amt;
+    if (e.expense_date >= monthStart) month += amt;
+    if (['draft','submitted','approved'].includes(e.status)) pending++;
+    if (e.status === 'posted') posted++;
+  });
+
+  document.getElementById('statTotal').textContent = fmt(total) + ' ج.م';
+  document.getElementById('statMonth').textContent = fmt(month) + ' ج.م';
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statPosted').textContent = posted;
+}
+
+function applyFilters() {
+  const search = document.getElementById('fSearch').value.trim().toLowerCase();
+  const status = document.getElementById('fStatus').value;
+  const catId = document.getElementById('fCategory').value;
+  const ccId = document.getElementById('fCostCenter').value;
+  const dateFrom = document.getElementById('fDateFrom').value;
+  const dateTo = document.getElementById('fDateTo').value;
+
+  filtered = allExpenses.filter(e => {
+    if (status && e.status !== status) return false;
+    if (catId && e.category_id !== catId) return false;
+    if (ccId && e.cost_center_id !== ccId) return false;
+    if (dateFrom && e.expense_date < dateFrom) return false;
+    if (dateTo && e.expense_date > dateTo) return false;
+    if (search) {
+      const hay = [e.expense_number, e.description, e.supplier_name, e.reference].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  page = 0;
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('expensesTbody');
+  const start = page * PAGE_SIZE;
+  const rows = filtered.slice(start, start + PAGE_SIZE);
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-10 text-gray-400">لا توجد مصاريف مطابقة</td></tr>';
+  } else {
+    tbody.innerHTML = rows.map(e => {
+      const catName = e.expense_categories?.name_ar || '—';
+      const ccName = e.cost_centers?.name_ar || '—';
+      return `<tr class="cursor-pointer" onclick="viewExpense('${e.id}')">
+        <td class="font-mono text-xs text-gray-500">${e.expense_number || '—'}</td>
+        <td>${e.expense_date || '—'}</td>
+        <td>${catName}</td>
+        <td>${ccName}</td>
+        <td>${e.supplier_name || '—'}</td>
+        <td>${payLabel(e.payment_method)}</td>
+        <td class="text-left font-bold text-gray-800">${fmt(e.total_amount)} ${e.currency||'EGP'}</td>
+        <td>${statusBadge(e.status)}</td>
+        <td class="no-print">
+          <div class="flex gap-1" onclick="event.stopPropagation()">
+            ${e.status !== 'posted' ? `<button onclick="editExpense('${e.id}')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">تعديل</button>` : ''}
+            ${e.status === 'submitted' ? `<button onclick="approveExpense('${e.id}')" class="text-xs bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100">موافقة</button>` : ''}
+            ${e.status === 'approved' ? `<button onclick="postExpense('${e.id}')" class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100">ترحيل</button>` : ''}
+            ${['draft','submitted'].includes(e.status) ? `<button onclick="rejectExpense('${e.id}')" class="text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100">رفض</button>` : ''}
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  const total = filtered.length;
+  document.getElementById('pageInfo').textContent = `${start + 1}–${Math.min(start + PAGE_SIZE, total)} من ${total}`;
+  document.getElementById('btnPrev').disabled = page === 0;
+  document.getElementById('btnNext').disabled = start + PAGE_SIZE >= total;
+}
+
+function changePage(dir) { page += dir; renderTable(); }
+
+// ── Modal ──────────────────────────────────────────
+function openModal(expense = null) {
+  editingId = expense?.id || null;
+  document.getElementById('modalTitle').textContent = expense ? 'تعديل مصروف' : 'مصروف جديد';
+
+  // Defaults
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('fExpDate').value   = expense?.expense_date || today;
+  document.getElementById('fAmount').value    = expense?.amount || '';
+  document.getElementById('fCat').value       = expense?.category_id || '';
+  document.getElementById('fCC').value        = expense?.cost_center_id || '';
+  document.getElementById('fPayMethod').value = expense?.payment_method || 'cash';
+  document.getElementById('fPayAccount').value= expense?.payment_account || '';
+  document.getElementById('fCurrency').value  = expense?.currency || 'EGP';
+  document.getElementById('fExRate').value    = expense?.exchange_rate || 1;
+  document.getElementById('fTax').value       = expense?.tax_amount || 0;
+  document.getElementById('fSupplier').value  = expense?.supplier_name || '';
+  document.getElementById('fDesc').value      = expense?.description || '';
+  document.getElementById('fRef').value       = expense?.reference || '';
+  document.getElementById('fReceipt').value   = expense?.receipt_url || '';
+  document.getElementById('fNotes').value     = expense?.notes || '';
+  document.getElementById('fRecurring').checked = expense?.is_recurring || false;
+  document.getElementById('fRecurrenceRule').value = expense?.recurrence_rule || 'monthly';
+  document.getElementById('fNextRecurrence').value = expense?.next_recurrence || '';
+  toggleRecurring();
+  calcTotal();
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('modal').classList.add('hidden'); editingId = null; }
+
+function calcTotal() {
+  const amount = parseFloat(document.getElementById('fAmount').value) || 0;
+  const rate   = parseFloat(document.getElementById('fExRate').value) || 1;
+  const tax    = parseFloat(document.getElementById('fTax').value) || 0;
+  const total  = (amount * rate) + tax;
+  document.getElementById('calcTotalDisplay').textContent = fmt(total) + ' ج.م';
+}
+
+function toggleRecurring() {
+  const checked = document.getElementById('fRecurring').checked;
+  document.getElementById('recurringFields').classList.toggle('hidden', !checked);
+}
+
+function updatePayHint() {
+  const method = document.getElementById('fPayMethod').value;
+  const labels = {cash:'صندوق النقدية',bank:'اسم البنك / رقم الحساب',wallet:'اسم المحفظة',cheque:'رقم الشيك',transfer:'مرجع التحويل'};
+  document.getElementById('payAccountLabel').textContent = labels[method] || 'حساب الدفع';
+}
+
+async function saveExpense(status) {
+  const amount = parseFloat(document.getElementById('fAmount').value);
+  const desc   = document.getElementById('fDesc').value.trim();
+  if (!amount || amount <= 0) { alert('أدخل مبلغاً صحيحاً'); return; }
+  if (!desc) { alert('أدخل وصف المصروف'); return; }
+
+  const rate  = parseFloat(document.getElementById('fExRate').value) || 1;
+  const tax   = parseFloat(document.getElementById('fTax').value) || 0;
+  const total = (amount * rate) + tax;
+  const recurring = document.getElementById('fRecurring').checked;
+
+  const payload = {
+    expense_date:     document.getElementById('fExpDate').value,
+    amount,
+    category_id:      document.getElementById('fCat').value || null,
+    cost_center_id:   document.getElementById('fCC').value || null,
+    payment_method:   document.getElementById('fPayMethod').value,
+    payment_account:  document.getElementById('fPayAccount').value || null,
+    currency:         document.getElementById('fCurrency').value,
+    exchange_rate:    rate,
+    tax_amount:       tax,
+    total_amount:     total,
+    supplier_name:    document.getElementById('fSupplier').value || null,
+    description:      desc,
+    reference:        document.getElementById('fRef').value || null,
+    receipt_url:      document.getElementById('fReceipt').value || null,
+    notes:            document.getElementById('fNotes').value || null,
+    is_recurring:     recurring,
+    recurrence_rule:  recurring ? document.getElementById('fRecurrenceRule').value : null,
+    next_recurrence:  recurring ? (document.getElementById('fNextRecurrence').value || null) : null,
+    status
+  };
+
+  if (status === 'submitted') {
+    payload.submitted_at = new Date().toISOString();
+  }
+
+  let error;
+  if (editingId) {
+    ({ error } = await sb.from('expenses').update(payload).eq('id', editingId));
+  } else {
+    ({ error } = await sb.from('expenses').insert(payload));
+  }
+
+  if (error) { alert('خطأ: ' + error.message); return; }
+  closeModal();
+  await loadExpenses();
+}
+
+function editExpense(id) {
+  const e = allExpenses.find(x => x.id === id);
+  if (e) openModal(e);
+}
+
+async function approveExpense(id) {
+  if (!confirm('تأكيد الموافقة على المصروف؟')) return;
+  const { error } = await sb.from('expenses').update({
+    status: 'approved',
+    approved_at: new Date().toISOString()
+  }).eq('id', id);
+  if (error) { alert('خطأ: ' + error.message); return; }
+  await loadExpenses();
+}
+
+async function postExpense(id) {
+  if (!confirm('ترحيل المصروف؟ لن يمكن تعديله بعد الترحيل.')) return;
+  const { error } = await sb.from('expenses').update({
+    status: 'posted',
+    posted_at: new Date().toISOString()
+  }).eq('id', id);
+  if (error) { alert('خطأ: ' + error.message); return; }
+  await loadExpenses();
+}
+
+async function rejectExpense(id) {
+  const reason = prompt('سبب الرفض:');
+  if (!reason) return;
+  const { error } = await sb.from('expenses').update({
+    status: 'rejected',
+    rejection_reason: reason
+  }).eq('id', id);
+  if (error) { alert('خطأ: ' + error.message); return; }
+  await loadExpenses();
+}
+
+function viewExpense(id) {
+  const e = allExpenses.find(x => x.id === id);
+  if (!e) return;
+  const catName = e.expense_categories?.name_ar || '—';
+  const ccName  = e.cost_centers?.name_ar || '—';
+
+  document.getElementById('viewTitle').textContent = e.expense_number || 'مصروف';
+  document.getElementById('viewBody').innerHTML = `
+    <div class="grid grid-cols-2 gap-3">
+      <div><span class="font-bold text-gray-500 text-xs block">رقم المصروف</span><span class="font-mono">${e.expense_number||'—'}</span></div>
+      <div><span class="font-bold text-gray-500 text-xs block">الحالة</span>${statusBadge(e.status)}</div>
+      <div><span class="font-bold text-gray-500 text-xs block">التاريخ</span>${e.expense_date||'—'}</div>
+      <div><span class="font-bold text-gray-500 text-xs block">الفئة</span>${catName}</div>
+      <div><span class="font-bold text-gray-500 text-xs block">مركز التكلفة</span>${ccName}</div>
+      <div><span class="font-bold text-gray-500 text-xs block">المورد</span>${e.supplier_name||'—'}</div>
+      <div><span class="font-bold text-gray-500 text-xs block">المبلغ</span>${fmt(e.amount)} ${e.currency}</div>
+      <div><span class="font-bold text-gray-500 text-xs block">الضريبة</span>${fmt(e.tax_amount)} ج.م</div>
+      <div><span class="font-bold text-gray-500 text-xs block">الإجمالي</span><span class="font-bold text-primary text-base">${fmt(e.total_amount)} ج.م</span></div>
+      <div><span class="font-bold text-gray-500 text-xs block">طريقة الدفع</span>${payLabel(e.payment_method)}</div>
+      <div><span class="font-bold text-gray-500 text-xs block">حساب الدفع</span>${e.payment_account||'—'}</div>
+      <div><span class="font-bold text-gray-500 text-xs block">المرجع</span>${e.reference||'—'}</div>
+    </div>
+    ${e.description ? `<div class="mt-3 p-3 bg-gray-50 rounded"><span class="font-bold text-xs text-gray-500 block mb-1">الوصف</span>${e.description}</div>` : ''}
+    ${e.notes ? `<div class="mt-2 p-3 bg-yellow-50 rounded"><span class="font-bold text-xs text-gray-500 block mb-1">ملاحظات</span>${e.notes}</div>` : ''}
+    ${e.rejection_reason ? `<div class="mt-2 p-3 bg-red-50 rounded"><span class="font-bold text-xs text-red-500 block mb-1">سبب الرفض</span>${e.rejection_reason}</div>` : ''}
+    ${e.is_recurring ? `<div class="mt-2 p-3 bg-blue-50 rounded text-xs"><i class="fa-solid fa-rotate ml-1 text-blue-500"></i>مصروف متكرر — ${e.recurrence_rule} — القادم: ${e.next_recurrence||'—'}</div>` : ''}
+    ${e.receipt_url ? `<div class="mt-2"><a href="${e.receipt_url}" target="_blank" class="text-blue-600 text-xs underline"><i class="fa-solid fa-link ml-1"></i>رابط الإيصال</a></div>` : ''}
+  `;
+
+  const actions = document.getElementById('viewActions');
+  actions.innerHTML = '';
+  if (e.status !== 'posted') {
+    actions.insertAdjacentHTML('beforeend', `<button onclick="closeViewModal();editExpense('${e.id}')" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">تعديل</button>`);
+  }
+  if (e.status === 'submitted') {
+    actions.insertAdjacentHTML('beforeend', `<button onclick="closeViewModal();approveExpense('${e.id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm">موافقة</button>`);
+    actions.insertAdjacentHTML('beforeend', `<button onclick="closeViewModal();rejectExpense('${e.id}')" class="px-4 py-2 bg-red-500 text-white rounded-lg font-bold text-sm">رفض</button>`);
+  }
+  if (e.status === 'approved') {
+    actions.insertAdjacentHTML('beforeend', `<button onclick="closeViewModal();postExpense('${e.id}')" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-bold text-sm">ترحيل</button>`);
+  }
+  actions.insertAdjacentHTML('beforeend', `<button onclick="closeViewModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm">إغلاق</button>`);
+
+  document.getElementById('viewModal').classList.remove('hidden');
+}
+
+function closeViewModal() { document.getElementById('viewModal').classList.add('hidden'); }
+
+function exportCSV() {
+  if (!filtered.length) { alert('لا توجد بيانات للتصدير'); return; }
+  const headers = ['رقم المصروف','التاريخ','الفئة','مركز التكلفة','المورد','طريقة الدفع','المبلغ','العملة','الضريبة','الإجمالي','الحالة','الوصف'];
+  const rows = filtered.map(e => [
+    e.expense_number, e.expense_date,
+    e.expense_categories?.name_ar||'',
+    e.cost_centers?.name_ar||'',
+    e.supplier_name||'', payLabel(e.payment_method),
+    e.amount, e.currency, e.tax_amount, e.total_amount,
+    e.status, e.description
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = `expenses-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function toggleDrawer() {
+  const d = document.getElementById('drawer');
+  d.classList.toggle('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

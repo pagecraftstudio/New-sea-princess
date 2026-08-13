@@ -70,6 +70,7 @@
         <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
         <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
         <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
         <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
         <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
         <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
@@ -260,20 +261,23 @@ async function loadKPIsFromBookings(from, to) {
   const ar        = bk.reduce((s,b)=>s+(b.remaining_amount||0),0);
 
   // Load costs
-  const { data: costs } = await window.db.from('booking_costs').select('base_amount,type,created_at');
+  let costsQ = window.db.from('booking_costs').select('base_amount,type,created_at');
+  if (from) costsQ = costsQ.gte('created_at', from);
+  if (to)   costsQ = costsQ.lte('created_at', to + 'T23:59:59');
+  const { data: costs, error: costsErr } = await costsQ;
+  if (costsErr) console.warn('booking_costs query failed (table may not exist yet):', costsErr.message);
   const c = costs || [];
   let directCost = 0;
-  if (from) {
-    c.filter(x=>!from||x.created_at>=from).forEach(x=>directCost+=x.base_amount||0);
-  } else {
-    c.forEach(x=>directCost+=x.base_amount||0);
-  }
+  c.forEach(x=>directCost+=x.base_amount||0);
 
   // Load expenses
-  const { data: expenses } = await window.db.from('nsp_expenses').select('total_amount,status,expense_date');
-  const exp = (expenses||[]).filter(e=>e.status==='posted');
+  let expQ = window.db.from('nsp_expenses').select('total_amount,status,expense_date').eq('status','posted');
+  if (from) expQ = expQ.gte('expense_date', from);
+  if (to)   expQ = expQ.lte('expense_date', to);
+  const { data: expenses, error: expErr } = await expQ;
+  if (expErr) console.warn('nsp_expenses query failed (table may not exist yet):', expErr.message);
   let opEx = 0;
-  exp.filter(e=>!from||e.expense_date>=from).forEach(e=>opEx+=e.total_amount||0);
+  (expenses||[]).forEach(e=>opEx+=e.total_amount||0);
 
   const gross   = revenue - directCost;
   const net     = gross - opEx;
@@ -281,7 +285,8 @@ async function loadKPIsFromBookings(from, to) {
   const netM    = revenue>0 ? (net/revenue*100)   : 0;
 
   // Cash accounts balance
-  const { data: cashAccts } = await window.db.from('cash_accounts').select('current_balance');
+  const { data: cashAccts, error: cashErr } = await window.db.from('cash_accounts').select('current_balance');
+  if (cashErr) console.warn('cash_accounts query failed:', cashErr.message);
   const cash = (cashAccts||[]).reduce((s,a)=>s+(a.current_balance||0),0);
 
   const set = (id, val, cls) => {
@@ -302,7 +307,8 @@ async function loadKPIsFromBookings(from, to) {
   set('kpiCash',      fmt(cash));
 
   // AP
-  const { data: apData } = await window.db.from('nsp_invoices').select('remaining_amount').eq('status','issued');
+  const { data: apData, error: apErr } = await window.db.from('nsp_invoices').select('remaining_amount').eq('status','issued');
+  if (apErr) console.warn('nsp_invoices (AP) query failed:', apErr.message);
   const ap = (apData||[]).reduce((s,r)=>s+(r.remaining_amount||0),0);
   set('kpiAP', fmt(ap));
 
@@ -327,7 +333,7 @@ function renderRevExp(revenue, directCost, opEx, collected) {
 }
 
 async function renderRevByService(from, to) {
-  const { data: bk } = await window.db.from('bookings').select('total_price, packages(category)');
+  const { data: bk } = await window.db.from('bookings').select('total_price, created_at, packages(category)');
   const svc = {};
   (bk||[]).forEach(b=>{
     const cat = b.packages?.category || 'other';
