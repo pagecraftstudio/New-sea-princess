@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>الخزينة والبنوك والمحافظ | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;}
+    .nav-link:hover{background:#1f2937;color:#fff;}
+    .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
+    .card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:2px solid #e5e7eb;}
+    .tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#f0fdf4;}
+    .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+    .badge-green{background:#dcfce7;color:#166534;}
+    .badge-blue{background:#dbeafe;color:#1e40af;}
+    .badge-purple{background:#ede9fe;color:#5b21b6;}
+    .badge-red{background:#fee2e2;color:#991b1b;}
+    .badge-yellow{background:#fef9c3;color:#854d0e;}
+    .badge-gray{background:#f3f4f6;color:#374151;}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+    .modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:680px;margin:auto;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.12);}
+    .stat-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid #e5e7eb;}
+    .acct-card{border:2px solid #e5e7eb;border-radius:12px;padding:16px;cursor:pointer;transition:.15s;background:#fff;}
+    .acct-card:hover{border-color:#1B5E20;box-shadow:0 2px 8px rgba(27,94,32,.12);}
+    .acct-card.selected{border-color:#1B5E20;background:#f0fdf4;}
+    .tab-btn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;transition:.15s;color:#6b7280;border:2px solid transparent;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:hover:not(.active){background:#f3f4f6;color:#374151;}
+    .txn-in{color:#166534;font-weight:700;}
+    .txn-out{color:#991b1b;font-weight:700;}
+    @media(max-width:640px){.hide-mobile{display:none!important;}}
+    @media print{aside,header,.no-print{display:none!important;}body{background:#fff;}}
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- MOBILE HEADER -->
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg no-print">
+  <span class="font-bold text-gold text-lg"><i class="fa-solid fa-vault ml-1"></i>الخزينة والبنوك</span>
+  <button onclick="toggleDrawer()" class="text-2xl"><i class="fa-solid fa-bars"></i></button>
+</header>
+<div id="drawer" class="md:hidden fixed inset-0 z-[60] hidden no-print">
+  <div class="absolute inset-0 bg-black/60" onclick="toggleDrawer()"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col">
+    <div class="h-14 flex items-center px-5 border-b border-gray-800 text-gold font-bold">الإدارة</div>
+    <div class="flex-1 py-2 overflow-y-auto" id="mobNav"></div>
+  </nav>
+</div>
+
+<div class="flex min-h-screen">
+  <!-- SIDEBAR -->
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link active"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <p class="text-xs text-gray-500 mb-2 text-center" id="adminUserEmail"></p>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 flex flex-col p-4 md:p-6 overflow-x-hidden">
+
+    <!-- Header -->
+    <div class="flex flex-wrap justify-between items-center mb-6 gap-4 no-print">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">الخزينة والبنوك والمحافظ</h2>
+        <p class="text-sm text-gray-500 mt-1">إدارة الأرصدة والإيداعات والسحوبات والتحويلات</p>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="openNewAccountModal()" class="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-lightGreen transition">
+          <i class="fa-solid fa-plus"></i> حساب جديد
+        </button>
+        <button onclick="window.print()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-gray-300 transition">
+          <i class="fa-solid fa-print"></i> طباعة
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 no-print">
+      <div class="stat-card">
+        <p class="text-xs text-gray-500 mb-1">إجمالي الخزينة</p>
+        <p class="text-xl font-bold text-gray-800" id="statCash">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="text-xs text-gray-500 mb-1">إجمالي البنوك</p>
+        <p class="text-xl font-bold text-blue-700" id="statBank">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="text-xs text-gray-500 mb-1">إجمالي المحافظ</p>
+        <p class="text-xl font-bold text-purple-700" id="statWallet">—</p>
+      </div>
+      <div class="stat-card border-r-4 border-primary">
+        <p class="text-xs text-gray-500 mb-1">الإجمالي الكلي</p>
+        <p class="text-xl font-bold text-primary" id="statTotal">—</p>
+      </div>
+    </div>
+
+    <!-- Accounts Grid -->
+    <div class="card mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-gray-800 text-lg">الحسابات</h3>
+        <div class="flex gap-2 text-sm">
+          <button onclick="filterType('all')" class="tab-btn active" id="fAll">الكل</button>
+          <button onclick="filterType('cash')" class="tab-btn" id="fCash"><i class="fa-solid fa-money-bill ml-1"></i>خزينة</button>
+          <button onclick="filterType('bank')" class="tab-btn" id="fBank"><i class="fa-solid fa-building-columns ml-1"></i>بنوك</button>
+          <button onclick="filterType('wallet')" class="tab-btn" id="fWallet"><i class="fa-brands fa-google-pay ml-1"></i>محافظ</button>
+        </div>
+      </div>
+      <div id="accountsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-full text-center py-8 text-gray-400">
+          <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><br>جاري التحميل…
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions for selected account -->
+    <div class="card" id="txnSection" style="display:none;">
+      <div class="flex flex-wrap items-center justify-between mb-4 gap-3">
+        <div>
+          <h3 class="font-bold text-gray-800 text-lg" id="txnTitle">الحركات</h3>
+          <p class="text-xs text-gray-500 mt-0.5" id="txnSubtitle"></p>
+        </div>
+        <div class="flex gap-2 flex-wrap no-print">
+          <button onclick="openDepositModal()" class="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-green-700 transition">
+            <i class="fa-solid fa-arrow-down"></i> إيداع
+          </button>
+          <button onclick="openWithdrawModal()" class="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-red-700 transition">
+            <i class="fa-solid fa-arrow-up"></i> سحب
+          </button>
+          <button onclick="openTransferModal()" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-blue-700 transition">
+            <i class="fa-solid fa-right-left"></i> تحويل
+          </button>
+          <button onclick="openOpeningModal()" class="bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-gray-700 transition">
+            <i class="fa-solid fa-flag"></i> رصيد افتتاحي
+          </button>
+          <button onclick="exportTxnCSV()" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-gray-300 transition">
+            <i class="fa-solid fa-file-csv"></i> تصدير
+          </button>
+        </div>
+      </div>
+
+      <!-- Date filter -->
+      <div class="flex gap-3 mb-4 flex-wrap no-print">
+        <div>
+          <label>من</label>
+          <input type="date" id="txnFrom" onchange="loadTransactions()">
+        </div>
+        <div>
+          <label>إلى</label>
+          <input type="date" id="txnTo" onchange="loadTransactions()">
+        </div>
+        <div class="self-end">
+          <button onclick="clearDateFilter()" class="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-gray-200 transition">مسح</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full tbl">
+          <thead>
+            <tr>
+              <th>رقم الحركة</th>
+              <th>التاريخ</th>
+              <th>النوع</th>
+              <th>البيان</th>
+              <th>المرجع</th>
+              <th class="text-left">إيداع</th>
+              <th class="text-left">سحب</th>
+              <th class="text-left">الرصيد</th>
+              <th class="no-print">—</th>
+            </tr>
+          </thead>
+          <tbody id="txnBody">
+            <tr><td colspan="9" class="text-center py-8 text-gray-400">اختر حساباً لعرض حركاته</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="txnPager" class="flex justify-between items-center mt-3 text-sm text-gray-500 no-print"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- New Account Modal -->
+<div id="modalAccount" class="modal-bg hidden no-print">
+  <div class="modal">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="font-bold text-xl text-gray-800" id="modalAccountTitle">حساب جديد</h3>
+      <button onclick="closeModal('modalAccount')" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+    </div>
+    <input type="hidden" id="acctId">
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label>كود الحساب *</label>
+        <input id="acctCode" placeholder="مثال: CSH-001">
+      </div>
+      <div>
+        <label>نوع الحساب *</label>
+        <select id="acctType">
+          <option value="cash">خزينة نقدية</option>
+          <option value="bank">حساب بنكي</option>
+          <option value="wallet">محفظة إلكترونية</option>
+        </select>
+      </div>
+      <div class="col-span-2">
+        <label>الاسم بالعربي *</label>
+        <input id="acctNameAr" placeholder="اسم الخزينة أو البنك">
+      </div>
+      <div class="col-span-2">
+        <label>الاسم بالإنجليزي</label>
+        <input id="acctNameEn" placeholder="English name">
+      </div>
+      <div id="bankFields" class="col-span-2 grid grid-cols-2 gap-4">
+        <div>
+          <label>اسم البنك</label>
+          <input id="acctBankName" placeholder="مثال: البنك الأهلي">
+        </div>
+        <div>
+          <label>رقم الحساب</label>
+          <input id="acctAccountNumber" placeholder="رقم الحساب البنكي">
+        </div>
+      </div>
+      <div>
+        <label>العملة</label>
+        <select id="acctCurrency">
+          <option value="EGP">جنيه مصري (EGP)</option>
+          <option value="SAR">ريال سعودي (SAR)</option>
+          <option value="USD">دولار أمريكي (USD)</option>
+          <option value="EUR">يورو (EUR)</option>
+        </select>
+      </div>
+      <div>
+        <label>الرصيد الافتتاحي</label>
+        <input type="number" id="acctOpening" value="0" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end mt-4">
+      <button onclick="closeModal('modalAccount')" class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50 transition">إلغاء</button>
+      <button onclick="saveAccount()" class="px-5 py-2 rounded-lg bg-primary text-white text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-save ml-1"></i> حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Deposit Modal -->
+<div id="modalDeposit" class="modal-bg hidden no-print">
+  <div class="modal" style="max-width:480px;">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="font-bold text-xl text-green-700"><i class="fa-solid fa-arrow-down ml-2"></i>إيداع</h3>
+      <button onclick="closeModal('modalDeposit')" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="bg-green-50 rounded-lg p-3 mb-4 text-sm text-green-800">
+      الحساب: <strong id="depAcctName"></strong> &nbsp;|&nbsp; الرصيد الحالي: <strong id="depAcctBal"></strong>
+    </div>
+    <div class="grid gap-4">
+      <div>
+        <label>التاريخ *</label>
+        <input type="date" id="depDate">
+      </div>
+      <div>
+        <label>المبلغ *</label>
+        <input type="number" id="depAmount" placeholder="0.00" min="0.01" step="0.01">
+      </div>
+      <div>
+        <label>المرجع</label>
+        <input id="depRef" placeholder="رقم الإيصال أو التحويل">
+      </div>
+      <div>
+        <label>البيان</label>
+        <textarea id="depDesc" rows="2" placeholder="تفاصيل الإيداع"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end mt-5">
+      <button onclick="closeModal('modalDeposit')" class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50">إلغاء</button>
+      <button onclick="saveDeposit()" class="px-5 py-2 rounded-lg bg-green-600 text-white text-sm font-bold hover:bg-green-700">
+        <i class="fa-solid fa-check ml-1"></i> تأكيد الإيداع
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Withdrawal Modal -->
+<div id="modalWithdraw" class="modal-bg hidden no-print">
+  <div class="modal" style="max-width:480px;">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="font-bold text-xl text-red-700"><i class="fa-solid fa-arrow-up ml-2"></i>سحب</h3>
+      <button onclick="closeModal('modalWithdraw')" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="bg-red-50 rounded-lg p-3 mb-4 text-sm text-red-800">
+      الحساب: <strong id="wdAcctName"></strong> &nbsp;|&nbsp; الرصيد الحالي: <strong id="wdAcctBal"></strong>
+    </div>
+    <div class="grid gap-4">
+      <div>
+        <label>التاريخ *</label>
+        <input type="date" id="wdDate">
+      </div>
+      <div>
+        <label>المبلغ *</label>
+        <input type="number" id="wdAmount" placeholder="0.00" min="0.01" step="0.01">
+      </div>
+      <div>
+        <label>المرجع</label>
+        <input id="wdRef" placeholder="رقم الشيك أو المرجع">
+      </div>
+      <div>
+        <label>البيان</label>
+        <textarea id="wdDesc" rows="2" placeholder="تفاصيل السحب"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end mt-5">
+      <button onclick="closeModal('modalWithdraw')" class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50">إلغاء</button>
+      <button onclick="saveWithdraw()" class="px-5 py-2 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700">
+        <i class="fa-solid fa-check ml-1"></i> تأكيد السحب
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer Modal -->
+<div id="modalTransfer" class="modal-bg hidden no-print">
+  <div class="modal" style="max-width:520px;">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="font-bold text-xl text-blue-700"><i class="fa-solid fa-right-left ml-2"></i>تحويل بين الحسابات</h3>
+      <button onclick="closeModal('modalTransfer')" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="grid gap-4">
+      <div>
+        <label>من حساب *</label>
+        <select id="trFromAcct"></select>
+      </div>
+      <div>
+        <label>إلى حساب *</label>
+        <select id="trToAcct"></select>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label>التاريخ *</label>
+          <input type="date" id="trDate">
+        </div>
+        <div>
+          <label>المبلغ *</label>
+          <input type="number" id="trAmount" placeholder="0.00" min="0.01" step="0.01">
+        </div>
+      </div>
+      <div>
+        <label>المرجع</label>
+        <input id="trRef" placeholder="رقم التحويل">
+      </div>
+      <div>
+        <label>البيان</label>
+        <textarea id="trDesc" rows="2" placeholder="سبب التحويل"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end mt-5">
+      <button onclick="closeModal('modalTransfer')" class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50">إلغاء</button>
+      <button onclick="saveTransfer()" class="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700">
+        <i class="fa-solid fa-check ml-1"></i> تأكيد التحويل
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Opening Balance Modal -->
+<div id="modalOpening" class="modal-bg hidden no-print">
+  <div class="modal" style="max-width:440px;">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="font-bold text-xl text-gray-700"><i class="fa-solid fa-flag ml-2"></i>رصيد افتتاحي</h3>
+      <button onclick="closeModal('modalOpening')" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+    </div>
+    <p class="text-sm text-amber-700 bg-amber-50 rounded-lg p-3 mb-4">
+      <i class="fa-solid fa-triangle-exclamation ml-1"></i>
+      يُستخدم هذا فقط لتسجيل الرصيد الافتتاحي مرة واحدة. لا يُنشئ قيد يومية مزدوج.
+    </p>
+    <div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
+      الحساب: <strong id="opAcctName"></strong>
+    </div>
+    <div class="grid gap-4">
+      <div>
+        <label>التاريخ *</label>
+        <input type="date" id="opDate">
+      </div>
+      <div>
+        <label>المبلغ الافتتاحي *</label>
+        <input type="number" id="opAmount" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div>
+        <label>البيان</label>
+        <input id="opDesc" placeholder="رصيد افتتاحي …" value="رصيد افتتاحي">
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end mt-5">
+      <button onclick="closeModal('modalOpening')" class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50">إلغاء</button>
+      <button onclick="saveOpening()" class="px-5 py-2 rounded-lg bg-gray-700 text-white text-sm font-bold hover:bg-gray-800">
+        <i class="fa-solid fa-save ml-1"></i> تسجيل الرصيد
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] hidden no-print">
+  <div id="toastMsg" class="bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl text-sm font-bold"></div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════ */
+let sb, currentUser;
+let allAccounts = [];
+let filteredAccounts = [];
+let selectedAccount = null;
+let currentTypeFilter = 'all';
+const PAGE_SIZE = 30;
+let txnPage = 0;
+let txnTotal = 0;
+
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    sb = window.supabaseClient || window._supabase;
+    if (!sb) { alert('Supabase غير متاح'); return; }
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { location.href = '/nsp-control-8x4k/login.html'; return; }
+    currentUser = session.user;
+    document.getElementById('adminUserEmail').textContent = currentUser.email;
+    setDefaultDates();
+    buildMobileNav();
+    await loadAccounts();
+  } catch(e) { console.error(e); toast('خطأ في التهيئة', 'error'); }
+});
+
+function setDefaultDates() {
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('txnFrom').value = `${y}-${m}-01`;
+  document.getElementById('txnTo').value = now.toISOString().split('T')[0];
+  document.getElementById('depDate').value = now.toISOString().split('T')[0];
+  document.getElementById('wdDate').value = now.toISOString().split('T')[0];
+  document.getElementById('trDate').value = now.toISOString().split('T')[0];
+  document.getElementById('opDate').value = now.toISOString().split('T')[0];
+}
+
+/* ════════════════════════════════════════════
+   ACCOUNTS
+════════════════════════════════════════════ */
+async function loadAccounts() {
+  const { data, error } = await sb.from('cash_accounts').select('*').order('code');
+  if (error) { toast('خطأ تحميل الحسابات', 'error'); return; }
+  allAccounts = data || [];
+  updateStats();
+  applyFilter();
+}
+
+function updateStats() {
+  let cash=0, bank=0, wallet=0;
+  allAccounts.forEach(a => {
+    if (!a.is_active) return;
+    const bal = parseFloat(a.current_balance||0);
+    if (a.type==='cash') cash += bal;
+    else if (a.type==='bank') bank += bal;
+    else wallet += bal;
+  });
+  const fmt = n => n.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م';
+  document.getElementById('statCash').textContent   = fmt(cash);
+  document.getElementById('statBank').textContent   = fmt(bank);
+  document.getElementById('statWallet').textContent = fmt(wallet);
+  document.getElementById('statTotal').textContent  = fmt(cash+bank+wallet);
+}
+
+function filterType(type) {
+  currentTypeFilter = type;
+  ['all','Cash','Bank','Wallet'].forEach(t => {
+    const el = document.getElementById('f'+t);
+    if (el) el.classList.remove('active');
+  });
+  const key = type==='all'?'All': type.charAt(0).toUpperCase()+type.slice(1);
+  document.getElementById('f'+key)?.classList.add('active');
+  applyFilter();
+}
+
+function applyFilter() {
+  filteredAccounts = currentTypeFilter==='all'
+    ? allAccounts
+    : allAccounts.filter(a => a.type === currentTypeFilter);
+  renderAccountsGrid();
+}
+
+function typeLabel(t) {
+  return {cash:'خزينة نقدية', bank:'حساب بنكي', wallet:'محفظة إلكترونية'}[t] || t;
+}
+function typeIcon(t) {
+  return {cash:'fa-money-bill-wave', bank:'fa-building-columns', wallet:'fa-wallet'}[t] || 'fa-circle';
+}
+function typeColor(t) {
+  return {cash:'text-green-700', bank:'text-blue-700', wallet:'text-purple-700'}[t] || 'text-gray-700';
+}
+function typeBg(t) {
+  return {cash:'bg-green-50', bank:'bg-blue-50', wallet:'bg-purple-50'}[t] || 'bg-gray-50';
+}
+function typeBadge(t) {
+  return {cash:'badge-green', bank:'badge-blue', wallet:'badge-purple'}[t] || 'badge-gray';
+}
+
+function renderAccountsGrid() {
+  const grid = document.getElementById('accountsGrid');
+  if (!filteredAccounts.length) {
+    grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><i class="fa-solid fa-folder-open text-3xl mb-2 block"></i>لا توجد حسابات</div>';
+    return;
+  }
+  grid.innerHTML = filteredAccounts.map(a => `
+    <div class="acct-card${selectedAccount?.id===a.id?' selected':''}" onclick="selectAccount('${a.id}')">
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-full ${typeBg(a.type)} flex items-center justify-center">
+            <i class="fa-solid ${typeIcon(a.type)} ${typeColor(a.type)} text-sm"></i>
+          </div>
+          <div>
+            <p class="font-bold text-gray-800 text-sm leading-tight">${a.name_ar}</p>
+            <p class="text-xs text-gray-400">${a.code}</p>
+          </div>
+        </div>
+        <div class="flex gap-1">
+          <span class="badge ${typeBadge(a.type)}">${typeLabel(a.type)}</span>
+          ${!a.is_active ? '<span class="badge badge-red">معطّل</span>' : ''}
+        </div>
+      </div>
+      ${a.bank_name ? `<p class="text-xs text-gray-500 mb-1"><i class="fa-solid fa-bank ml-1"></i>${a.bank_name}${a.account_number?' — '+a.account_number:''}</p>` : ''}
+      <div class="border-t border-gray-100 pt-3 mt-2 flex justify-between items-end">
+        <div>
+          <p class="text-xs text-gray-500">الرصيد الحالي</p>
+          <p class="text-lg font-bold ${parseFloat(a.current_balance||0)<0?'text-red-600':'text-gray-800'}">${parseFloat(a.current_balance||0).toLocaleString('ar-EG',{minimumFractionDigits:2})} ${a.currency||'EGP'}</p>
+        </div>
+        <div class="flex gap-1">
+          <button onclick="event.stopPropagation();editAccount('${a.id}')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectAccount(id) {
+  selectedAccount = allAccounts.find(a => a.id===id);
+  renderAccountsGrid();
+  const sec = document.getElementById('txnSection');
+  sec.style.display = 'block';
+  document.getElementById('txnTitle').textContent = `حركات: ${selectedAccount.name_ar}`;
+  document.getElementById('txnSubtitle').textContent = `${typeLabel(selectedAccount.type)} — ${selectedAccount.currency||'EGP'} — الرصيد: ${parseFloat(selectedAccount.current_balance||0).toLocaleString('ar-EG',{minimumFractionDigits:2})}`;
+  txnPage = 0;
+  loadTransactions();
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ════════════════════════════════════════════
+   TRANSACTIONS
+════════════════════════════════════════════ */
+async function loadTransactions() {
+  if (!selectedAccount) return;
+  const from = document.getElementById('txnFrom').value;
+  const to   = document.getElementById('txnTo').value;
+
+  let q = sb.from('cash_transactions')
+    .select('*', {count:'exact'})
+    .eq('cash_account_id', selectedAccount.id)
+    .order('txn_date', {ascending:false})
+    .order('created_at', {ascending:false})
+    .range(txnPage*PAGE_SIZE, (txnPage+1)*PAGE_SIZE - 1);
+
+  if (from) q = q.gte('txn_date', from);
+  if (to)   q = q.lte('txn_date', to);
+
+  const { data, count, error } = await q;
+  if (error) { toast('خطأ تحميل الحركات', 'error'); return; }
+  txnTotal = count || 0;
+  renderTxnTable(data || []);
+  renderPager();
+}
+
+function txnTypeLabel(t) {
+  return {deposit:'إيداع', withdrawal:'سحب', transfer_in:'تحويل وارد', transfer_out:'تحويل صادر', opening:'رصيد افتتاحي', adjustment:'تسوية'}[t] || t;
+}
+function txnTypeClass(t) {
+  if (['deposit','transfer_in','opening'].includes(t)) return 'badge-green';
+  if (['withdrawal','transfer_out'].includes(t)) return 'badge-red';
+  return 'badge-yellow';
+}
+
+function renderTxnTable(rows) {
+  const body = document.getElementById('txnBody');
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400">لا توجد حركات في هذه الفترة</td></tr>';
+    return;
+  }
+  // lookup counterpart names
+  const counterpartNames = {};
+  allAccounts.forEach(a => counterpartNames[a.id] = a.name_ar);
+
+  body.innerHTML = rows.map(t => {
+    const isIn  = ['deposit','transfer_in','opening','adjustment'].includes(t.type);
+    const isOut = ['withdrawal','transfer_out'].includes(t.type);
+    const amt = parseFloat(t.amount||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+    const bal = t.balance_after != null ? parseFloat(t.balance_after).toLocaleString('ar-EG',{minimumFractionDigits:2}) : '—';
+    const desc = [t.description, t.counterpart_id ? '← '+counterpartNames[t.counterpart_id] : ''].filter(Boolean).join(' | ');
+    return `
+      <tr>
+        <td class="font-mono text-xs">${t.txn_number||'—'}</td>
+        <td>${t.txn_date}</td>
+        <td><span class="badge ${txnTypeClass(t.type)}">${txnTypeLabel(t.type)}</span></td>
+        <td class="max-w-xs truncate text-xs text-gray-600">${desc||'—'}</td>
+        <td class="text-xs text-gray-500">${t.reference||'—'}</td>
+        <td class="text-left ${isIn?'txn-in':''}">${isIn ? amt : ''}</td>
+        <td class="text-left ${isOut?'txn-out':''}">${isOut ? amt : ''}</td>
+        <td class="text-left font-mono text-xs">${bal}</td>
+        <td class="no-print text-xs text-gray-400">${t.created_by ? '<i class="fa-solid fa-user"></i>' : ''}</td>
+      </tr>`;
+  }).join('');
+}
+
+function renderPager() {
+  const pager = document.getElementById('txnPager');
+  const pages = Math.ceil(txnTotal/PAGE_SIZE);
+  if (pages <= 1) { pager.innerHTML = `<span>إجمالي: ${txnTotal} حركة</span>`; return; }
+  pager.innerHTML = `
+    <span>إجمالي: ${txnTotal} حركة — صفحة ${txnPage+1} من ${pages}</span>
+    <div class="flex gap-2">
+      <button onclick="changePage(-1)" ${txnPage===0?'disabled':''} class="px-3 py-1 rounded border text-sm disabled:opacity-40">السابق</button>
+      <button onclick="changePage(1)"  ${txnPage>=pages-1?'disabled':''} class="px-3 py-1 rounded border text-sm disabled:opacity-40">التالي</button>
+    </div>`;
+}
+
+function changePage(dir) { txnPage += dir; loadTransactions(); }
+
+function clearDateFilter() {
+  document.getElementById('txnFrom').value = '';
+  document.getElementById('txnTo').value = '';
+  loadTransactions();
+}
+
+/* ════════════════════════════════════════════
+   NEW / EDIT ACCOUNT
+════════════════════════════════════════════ */
+function openNewAccountModal() {
+  document.getElementById('acctId').value = '';
+  document.getElementById('modalAccountTitle').textContent = 'حساب جديد';
+  ['acctCode','acctNameAr','acctNameEn','acctBankName','acctAccountNumber'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('acctType').value='cash';
+  document.getElementById('acctCurrency').value='EGP';
+  document.getElementById('acctOpening').value='0';
+  document.getElementById('bankFields').style.display='grid';
+  document.getElementById('modalAccount').classList.remove('hidden');
+}
+
+function editAccount(id) {
+  const a = allAccounts.find(x=>x.id===id);
+  if (!a) return;
+  document.getElementById('acctId').value = a.id;
+  document.getElementById('modalAccountTitle').textContent = 'تعديل الحساب';
+  document.getElementById('acctCode').value = a.code||'';
+  document.getElementById('acctNameAr').value = a.name_ar||'';
+  document.getElementById('acctNameEn').value = a.name_en||'';
+  document.getElementById('acctType').value = a.type||'cash';
+  document.getElementById('acctCurrency').value = a.currency||'EGP';
+  document.getElementById('acctOpening').value = a.opening_balance||0;
+  document.getElementById('acctBankName').value = a.bank_name||'';
+  document.getElementById('acctAccountNumber').value = a.account_number||'';
+  document.getElementById('modalAccount').classList.remove('hidden');
+}
+
+async function saveAccount() {
+  const id     = document.getElementById('acctId').value;
+  const code   = document.getElementById('acctCode').value.trim();
+  const nameAr = document.getElementById('acctNameAr').value.trim();
+  const type   = document.getElementById('acctType').value;
+  if (!code || !nameAr) { toast('الكود والاسم مطلوبان', 'error'); return; }
+
+  const payload = {
+    code, name_ar: nameAr,
+    name_en: document.getElementById('acctNameEn').value.trim()||null,
+    type,
+    currency:        document.getElementById('acctCurrency').value,
+    bank_name:       document.getElementById('acctBankName').value.trim()||null,
+    account_number:  document.getElementById('acctAccountNumber').value.trim()||null,
+    opening_balance: parseFloat(document.getElementById('acctOpening').value)||0,
+  };
+  if (!id) payload.current_balance = payload.opening_balance;
+
+  let error;
+  if (id) {
+    ({ error } = await sb.from('cash_accounts').update(payload).eq('id', id));
+  } else {
+    ({ error } = await sb.from('cash_accounts').insert(payload));
+  }
+  if (error) { toast('خطأ: ' + error.message, 'error'); return; }
+  closeModal('modalAccount');
+  toast(id ? 'تم التعديل' : 'تم الإنشاء');
+  await loadAccounts();
+}
+
+/* ════════════════════════════════════════════
+   DEPOSIT
+════════════════════════════════════════════ */
+function openDepositModal() {
+  if (!selectedAccount) { toast('اختر حساباً أولاً', 'error'); return; }
+  document.getElementById('depAcctName').textContent = selectedAccount.name_ar;
+  document.getElementById('depAcctBal').textContent  = parseFloat(selectedAccount.current_balance||0).toLocaleString('ar-EG',{minimumFractionDigits:2})+' '+selectedAccount.currency;
+  document.getElementById('depAmount').value = '';
+  document.getElementById('depRef').value    = '';
+  document.getElementById('depDesc').value   = '';
+  document.getElementById('modalDeposit').classList.remove('hidden');
+}
+
+async function saveDeposit() {
+  const amount = parseFloat(document.getElementById('depAmount').value);
+  if (!amount || amount <= 0) { toast('أدخل مبلغاً صحيحاً', 'error'); return; }
+  const txnNum = await genTxnNumber();
+  const { error } = await sb.from('cash_transactions').insert({
+    txn_number: txnNum,
+    txn_date: document.getElementById('depDate').value,
+    cash_account_id: selectedAccount.id,
+    type: 'deposit',
+    amount,
+    currency: selectedAccount.currency||'EGP',
+    reference: document.getElementById('depRef').value.trim()||null,
+    description: document.getElementById('depDesc').value.trim()||null,
+    created_by: currentUser.id
+  });
+  if (error) { toast('خطأ: '+error.message, 'error'); return; }
+  closeModal('modalDeposit');
+  toast('تم الإيداع بنجاح');
+  await loadAccounts();
+  selectedAccount = allAccounts.find(a=>a.id===selectedAccount.id);
+  if (selectedAccount) {
+    document.getElementById('txnSubtitle').textContent = `${typeLabel(selectedAccount.type)} — الرصيد: ${parseFloat(selectedAccount.current_balance||0).toLocaleString('ar-EG',{minimumFractionDigits:2})}`;
+  }
+  loadTransactions();
+}
+
+/* ════════════════════════════════════════════
+   WITHDRAWAL
+════════════════════════════════════════════ */
+function openWithdrawModal() {
+  if (!selectedAccount) { toast('اختر حساباً أولاً', 'error'); return; }
+  document.getElementById('wdAcctName').textContent = selectedAccount.name_ar;
+  document.getElementById('wdAcctBal').textContent  = parseFloat(selectedAccount.current_balance||0).toLocaleString('ar-EG',{minimumFractionDigits:2})+' '+selectedAccount.currency;
+  document.getElementById('wdAmount').value = '';
+  document.getElementById('wdRef').value    = '';
+  document.getElementById('wdDesc').value   = '';
+  document.getElementById('modalWithdraw').classList.remove('hidden');
+}
+
+async function saveWithdraw() {
+  const amount = parseFloat(document.getElementById('wdAmount').value);
+  const bal    = parseFloat(selectedAccount.current_balance||0);
+  if (!amount || amount <= 0) { toast('أدخل مبلغاً صحيحاً', 'error'); return; }
+  if (amount > bal) { toast('المبلغ يتجاوز الرصيد المتاح', 'error'); return; }
+  const txnNum = await genTxnNumber();
+  const { error } = await sb.from('cash_transactions').insert({
+    txn_number: txnNum,
+    txn_date: document.getElementById('wdDate').value,
+    cash_account_id: selectedAccount.id,
+    type: 'withdrawal',
+    amount,
+    currency: selectedAccount.currency||'EGP',
+    reference: document.getElementById('wdRef').value.trim()||null,
+    description: document.getElementById('wdDesc').value.trim()||null,
+    created_by: currentUser.id
+  });
+  if (error) { toast('خطأ: '+error.message, 'error'); return; }
+  closeModal('modalWithdraw');
+  toast('تم السحب بنجاح');
+  await loadAccounts();
+  selectedAccount = allAccounts.find(a=>a.id===selectedAccount.id);
+  loadTransactions();
+}
+
+/* ════════════════════════════════════════════
+   TRANSFER
+════════════════════════════════════════════ */
+function openTransferModal() {
+  const fromSel = document.getElementById('trFromAcct');
+  const toSel   = document.getElementById('trToAcct');
+  const opts = allAccounts.filter(a=>a.is_active!==false).map(a=>
+    `<option value="${a.id}">${a.name_ar} (${parseFloat(a.current_balance||0).toLocaleString('ar-EG',{minimumFractionDigits:2})} ${a.currency||'EGP'})</option>`
+  ).join('');
+  fromSel.innerHTML = opts;
+  toSel.innerHTML   = opts;
+  if (selectedAccount) fromSel.value = selectedAccount.id;
+  document.getElementById('trAmount').value='';
+  document.getElementById('trRef').value='';
+  document.getElementById('trDesc').value='';
+  document.getElementById('modalTransfer').classList.remove('hidden');
+}
+
+async function saveTransfer() {
+  const fromId = document.getElementById('trFromAcct').value;
+  const toId   = document.getElementById('trToAcct').value;
+  const amount = parseFloat(document.getElementById('trAmount').value);
+  if (fromId === toId) { toast('لا يمكن التحويل إلى نفس الحساب', 'error'); return; }
+  if (!amount || amount <= 0) { toast('أدخل مبلغاً صحيحاً', 'error'); return; }
+  const fromAcct = allAccounts.find(a=>a.id===fromId);
+  if (amount > parseFloat(fromAcct?.current_balance||0)) { toast('المبلغ يتجاوز رصيد الحساب المصدر', 'error'); return; }
+
+  const date = document.getElementById('trDate').value;
+  const ref  = document.getElementById('trRef').value.trim()||null;
+  const desc = document.getElementById('trDesc').value.trim()||null;
+
+  // Insert transfer_out then transfer_in (trigger handles balance)
+  const n1 = await genTxnNumber();
+  const { error: e1 } = await sb.from('cash_transactions').insert({
+    txn_number: n1, txn_date: date, cash_account_id: fromId,
+    type: 'transfer_out', amount, currency: fromAcct?.currency||'EGP',
+    reference: ref, description: desc, counterpart_id: toId, created_by: currentUser.id
+  });
+  if (e1) { toast('خطأ: '+e1.message, 'error'); return; }
+
+  const n2 = await genTxnNumber();
+  const toAcct = allAccounts.find(a=>a.id===toId);
+  const { error: e2 } = await sb.from('cash_transactions').insert({
+    txn_number: n2, txn_date: date, cash_account_id: toId,
+    type: 'transfer_in', amount, currency: toAcct?.currency||'EGP',
+    reference: ref, description: desc, counterpart_id: fromId, created_by: currentUser.id
+  });
+  if (e2) { toast('خطأ في الوارد: '+e2.message, 'error'); return; }
+
+  closeModal('modalTransfer');
+  toast('تم التحويل بنجاح');
+  await loadAccounts();
+  if (selectedAccount) {
+    selectedAccount = allAccounts.find(a=>a.id===selectedAccount.id);
+    loadTransactions();
+  }
+}
+
+/* ════════════════════════════════════════════
+   OPENING BALANCE
+════════════════════════════════════════════ */
+function openOpeningModal() {
+  if (!selectedAccount) { toast('اختر حساباً أولاً', 'error'); return; }
+  document.getElementById('opAcctName').textContent = selectedAccount.name_ar;
+  document.getElementById('opAmount').value = selectedAccount.opening_balance||0;
+  document.getElementById('opDesc').value = 'رصيد افتتاحي';
+  document.getElementById('modalOpening').classList.remove('hidden');
+}
+
+async function saveOpening() {
+  const amount = parseFloat(document.getElementById('opAmount').value);
+  if (isNaN(amount) || amount < 0) { toast('أدخل مبلغاً صحيحاً', 'error'); return; }
+  const txnNum = await genTxnNumber();
+  const { error } = await sb.from('cash_transactions').insert({
+    txn_number: txnNum,
+    txn_date: document.getElementById('opDate').value,
+    cash_account_id: selectedAccount.id,
+    type: 'opening',
+    amount,
+    currency: selectedAccount.currency||'EGP',
+    description: document.getElementById('opDesc').value.trim()||'رصيد افتتاحي',
+    created_by: currentUser.id
+  });
+  if (error) { toast('خطأ: '+error.message, 'error'); return; }
+  // also update opening_balance field on account
+  await sb.from('cash_accounts').update({opening_balance: amount}).eq('id', selectedAccount.id);
+  closeModal('modalOpening');
+  toast('تم تسجيل الرصيد الافتتاحي');
+  await loadAccounts();
+  selectedAccount = allAccounts.find(a=>a.id===selectedAccount.id);
+  loadTransactions();
+}
+
+/* ════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════ */
+async function genTxnNumber() {
+  const { data } = await sb.from('cash_transactions').select('txn_number').order('created_at',{ascending:false}).limit(1);
+  if (data && data.length) {
+    const last = data[0].txn_number;
+    const num  = parseInt(last.replace(/\D/g,''))||0;
+    return 'TXN' + String(num+1).padStart(6,'0');
+  }
+  return 'TXN000001';
+}
+
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function toast(msg, type='success') {
+  const el  = document.getElementById('toast');
+  const msg_el = document.getElementById('toastMsg');
+  msg_el.textContent = msg;
+  msg_el.className   = `px-6 py-3 rounded-full shadow-2xl text-sm font-bold ${type==='error'?'bg-red-700':'bg-gray-900'} text-white`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3200);
+}
+
+function exportTxnCSV() {
+  if (!selectedAccount) return;
+  const rows = [['رقم الحركة','التاريخ','النوع','البيان','المرجع','إيداع','سحب','الرصيد بعد']];
+  document.querySelectorAll('#txnBody tr').forEach(tr => {
+    const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+    if (cells.length > 1) rows.push(cells.slice(0,8));
+  });
+  const csv = rows.map(r => r.map(c=>`"${c}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download = `${selectedAccount.name_ar}-حركات.csv`;
+  a.click();
+}
+
+function toggleDrawer() {
+  const d = document.getElementById('drawer');
+  d.classList.toggle('hidden');
+}
+
+function buildMobileNav() {
+  const links = [
+    ['dashboard.html','fa-chart-pie','نظرة عامة'],
+    ['bookings.html','fa-address-book','الحجوزات'],
+    ['packages.html','fa-suitcase-rolling','برامج الرحلات'],
+    ['financial-dashboard.html','fa-landmark','المالية والمحاسبة'],
+    ['accounting-coa.html','fa-list-ol','دليل الحسابات'],
+    ['customers.html','fa-users','العملاء'],
+    ['suppliers.html','fa-truck','الموردون'],
+    ['invoices-payments.html','fa-file-invoice-dollar','الفواتير والمدفوعات'],
+    ['expenses.html','fa-receipt','المصاريف'],
+    ['cash-bank-wallets.html','fa-vault','الخزينة والبنوك'],
+    ['bank-reconciliation.html','fa-scale-balanced','المطابقة البنكية'],
+    ['users.html','fa-user','المستخدمون'],
+    ['audit-log.html','fa-clipboard-list','سجل العمليات'],
+  ];
+  document.getElementById('mobNav').innerHTML = links.map(([href,icon,label]) =>
+    `<a href="/nsp-control-8x4k/${href}" class="nav-link${href.includes('cash-bank')?'active':''}" onclick="toggleDrawer()"><i class="fa-solid ${icon} w-5"></i>${label}</a>`
+  ).join('');
+}
+
+// Show bank fields only for bank type
+document.getElementById('acctType')?.addEventListener('change', e => {
+  document.getElementById('bankFields').style.display = e.target.value === 'bank' ? 'grid' : 'none';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>المطابقة البنكية | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;}
+    .nav-link:hover{background:#1f2937;color:#fff;}
+    .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
+    .card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:2px solid #e5e7eb;}
+    .tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#f0fdf4;}
+    .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+    .badge-green{background:#dcfce7;color:#166534;}
+    .badge-blue{background:#dbeafe;color:#1e40af;}
+    .badge-yellow{background:#fef9c3;color:#854d0e;}
+    .badge-red{background:#fee2e2;color:#991b1b;}
+    .badge-gray{background:#f3f4f6;color:#374151;}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+    .modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:780px;margin:auto;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.12);}
+    .stat-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid #e5e7eb;}
+    .matched{background:#f0fdf4;}
+    .unmatched{background:#fff7ed;}
+    @media print{aside,header,.no-print{display:none!important;}body{background:#fff;}}
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- MOBILE HEADER -->
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg no-print">
+  <span class="font-bold text-gold text-lg"><i class="fa-solid fa-scale-balanced ml-1"></i>المطابقة البنكية</span>
+  <button onclick="toggleDrawer()" class="text-2xl"><i class="fa-solid fa-bars"></i></button>
+</header>
+<div id="drawer" class="md:hidden fixed inset-0 z-[60] hidden no-print">
+  <div class="absolute inset-0 bg-black/60" onclick="toggleDrawer()"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col">
+    <div class="h-14 flex items-center px-5 border-b border-gray-800 text-gold font-bold">الإدارة</div>
+    <div class="flex-1 py-2 overflow-y-auto" id="mobNav"></div>
+  </nav>
+</div>
+
+<div class="flex min-h-screen">
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link active"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <p class="text-xs text-gray-500 mb-2 text-center" id="adminUserEmail"></p>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
+
+  <main class="flex-1 flex flex-col p-4 md:p-6 overflow-x-hidden">
+
+    <div class="flex flex-wrap justify-between items-center mb-6 gap-4 no-print">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">المطابقة البنكية</h2>
+        <p class="text-sm text-gray-500 mt-1">مطابقة الحركات المُسجَّلة مع كشف الحساب البنكي</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="openNewReconModal()" class="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-lightGreen transition">
+          <i class="fa-solid fa-plus"></i> مطابقة جديدة
+        </button>
+        <button onclick="window.print()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-gray-300 transition">
+          <i class="fa-solid fa-print"></i> طباعة
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 no-print">
+      <div class="stat-card">
+        <p class="text-xs text-gray-500 mb-1">إجمالي المطابقات</p>
+        <p class="text-xl font-bold text-gray-800" id="statTotal">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="text-xs text-gray-500 mb-1">مكتملة</p>
+        <p class="text-xl font-bold text-green-700" id="statDone">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="text-xs text-gray-500 mb-1">قيد التنفيذ</p>
+        <p class="text-xl font-bold text-yellow-600" id="statProgress">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="text-xs text-gray-500 mb-1">حسابات بنكية</p>
+        <p class="text-xl font-bold text-blue-700" id="statBankAccts">—</p>
+      </div>
+    </div>
+
+    <!-- Reconciliations List -->
+    <div class="card mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-gray-800">سجل المطابقات</h3>
+        <div class="flex gap-2 text-sm">
+          <select id="filterAcct" onchange="loadReconciliations()" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm">
+            <option value="">كل الحسابات</option>
+          </select>
+          <select id="filterStatus" onchange="loadReconciliations()" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm">
+            <option value="">كل الحالات</option>
+            <option value="in_progress">قيد التنفيذ</option>
+            <option value="reconciled">مكتملة</option>
+          </select>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full tbl">
+          <thead>
+            <tr>
+              <th>الحساب</th>
+              <th>من</th>
+              <th>إلى</th>
+              <th>رصيد الدفاتر</th>
+              <th>رصيد الكشف</th>
+              <th>الفرق</th>
+              <th>الحالة</th>
+              <th class="no-print">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="reconBody">
+            <tr><td colspan="8" class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin ml-1"></i>جاري التحميل…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Active Reconciliation Workspace -->
+    <div class="card" id="workspace" style="display:none;">
+      <div class="flex flex-wrap items-center justify-between mb-5 gap-3">
+        <div>
+          <h3 class="font-bold text-xl text-gray-800" id="wsTitle">مطابقة</h3>
+          <p class="text-sm text-gray-500" id="wsPeriod"></p>
+        </div>
+        <div class="flex gap-2 no-print">
+          <button onclick="markReconciled()" id="btnComplete" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-green-700 transition">
+            <i class="fa-solid fa-check-double"></i> إتمام المطابقة
+          </button>
+          <button onclick="closeWorkspace()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-300 transition">إغلاق</button>
+        </div>
+      </div>
+
+      <!-- Balance summary -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+        <div class="stat-card text-center">
+          <p class="text-xs text-gray-500 mb-1">رصيد الدفاتر</p>
+          <p class="text-lg font-bold text-gray-800" id="wsBookBal">—</p>
+        </div>
+        <div class="stat-card text-center">
+          <p class="text-xs text-gray-500 mb-1">رصيد الكشف</p>
+          <p class="text-lg font-bold text-blue-700" id="wsStmtBal">—</p>
+        </div>
+        <div class="stat-card text-center">
+          <p class="text-xs text-gray-500 mb-1">الفرق</p>
+          <p class="text-lg font-bold" id="wsDiff">—</p>
+        </div>
+        <div class="stat-card text-center">
+          <p class="text-xs text-gray-500 mb-1">الحالة</p>
+          <p class="text-lg font-bold" id="wsStatus">—</p>
+        </div>
+      </div>
+
+      <!-- Statement balance input -->
+      <div class="bg-blue-50 rounded-xl p-4 mb-5 no-print">
+        <h4 class="font-bold text-blue-800 mb-3">تحديث رصيد كشف الحساب</h4>
+        <div class="flex gap-3 items-end flex-wrap">
+          <div style="min-width:200px;">
+            <label>رصيد الكشف البنكي</label>
+            <input type="number" id="stmtBalInput" placeholder="0.00" step="0.01">
+          </div>
+          <button onclick="updateStmtBalance()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition">
+            <i class="fa-solid fa-refresh ml-1"></i> تحديث
+          </button>
+        </div>
+      </div>
+
+      <!-- Book transactions to match -->
+      <div class="grid md:grid-cols-2 gap-5">
+        <!-- Book side -->
+        <div>
+          <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+            حركات الدفاتر (النظام)
+          </h4>
+          <div class="overflow-y-auto" style="max-height:420px;">
+            <table class="w-full tbl text-xs">
+              <thead><tr><th>التاريخ</th><th>البيان</th><th>إيداع</th><th>سحب</th><th class="no-print">مطابق</th></tr></thead>
+              <tbody id="bookLines"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Statement side -->
+        <div>
+          <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
+            سطور كشف الحساب البنكي
+          </h4>
+          <div class="mb-2 flex gap-2 no-print">
+            <button onclick="addStmtLine()" class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-200">
+              <i class="fa-solid fa-plus ml-1"></i>إضافة سطر
+            </button>
+            <button onclick="importStmtCSV()" class="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-bold hover:bg-gray-200">
+              <i class="fa-solid fa-file-csv ml-1"></i>استيراد CSV
+            </button>
+            <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="parseCSV(event)">
+          </div>
+          <div class="overflow-y-auto" style="max-height:420px;">
+            <table class="w-full tbl text-xs">
+              <thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th class="no-print">مطابق</th><th class="no-print">—</th></tr></thead>
+              <tbody id="stmtLines"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- New Reconciliation Modal -->
+<div id="modalRecon" class="modal-bg hidden no-print">
+  <div class="modal" style="max-width:500px;">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="font-bold text-xl text-gray-800">مطابقة بنكية جديدة</h3>
+      <button onclick="closeModal('modalRecon')" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="grid gap-4">
+      <div>
+        <label>الحساب البنكي *</label>
+        <select id="newReconAcct"></select>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label>من تاريخ *</label>
+          <input type="date" id="newReconFrom">
+        </div>
+        <div>
+          <label>إلى تاريخ *</label>
+          <input type="date" id="newReconTo">
+        </div>
+      </div>
+      <div>
+        <label>رصيد الكشف البنكي</label>
+        <input type="number" id="newReconStmt" placeholder="0.00" step="0.01" value="0">
+      </div>
+      <div>
+        <label>ملاحظات</label>
+        <textarea id="newReconNotes" rows="2" placeholder="اختياري"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end mt-5">
+      <button onclick="closeModal('modalRecon')" class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50">إلغاء</button>
+      <button onclick="saveNewRecon()" class="px-5 py-2 rounded-lg bg-primary text-white text-sm font-bold hover:bg-lightGreen">
+        <i class="fa-solid fa-save ml-1"></i> إنشاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] hidden no-print">
+  <div id="toastMsg" class="bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl text-sm font-bold"></div>
+</div>
+
+<script>
+let sb, currentUser;
+let allBankAccounts = [];
+let reconciliations = [];
+let activeRecon = null;
+let bookTxns = [];
+let stmtLines = [];
+let matchedBook = new Set();
+let matchedStmt = new Set();
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    sb = window.supabaseClient || window._supabase;
+    if (!sb) { alert('Supabase غير متاح'); return; }
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { location.href = '/nsp-control-8x4k/login.html'; return; }
+    currentUser = session.user;
+    document.getElementById('adminUserEmail').textContent = currentUser.email;
+    await loadBankAccounts();
+    await loadReconciliations();
+    setDefaultDates();
+  } catch(e) { console.error(e); toast('خطأ في التهيئة', 'error'); }
+});
+
+function setDefaultDates() {
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('newReconFrom').value = `${y}-${m}-01`;
+  document.getElementById('newReconTo').value   = now.toISOString().split('T')[0];
+}
+
+async function loadBankAccounts() {
+  const { data } = await sb.from('cash_accounts').select('*').in('type',['bank','cash','wallet']).eq('is_active',true).order('name_ar');
+  allBankAccounts = data || [];
+  document.getElementById('statBankAccts').textContent = allBankAccounts.filter(a=>a.type==='bank').length;
+  const opts = allBankAccounts.map(a=>`<option value="${a.id}">${a.name_ar} (${a.type==='bank'?'بنك':a.type==='cash'?'خزينة':'محفظة'})</option>`).join('');
+  document.getElementById('filterAcct').innerHTML = '<option value="">كل الحسابات</option>'+opts;
+  document.getElementById('newReconAcct').innerHTML = opts;
+}
+
+async function loadReconciliations() {
+  const acctFilter  = document.getElementById('filterAcct').value;
+  const stFilter    = document.getElementById('filterStatus').value;
+
+  let q = sb.from('bank_reconciliations').select(`*, cash_accounts(name_ar,code,currency)`).order('created_at',{ascending:false});
+  if (acctFilter) q = q.eq('cash_account_id', acctFilter);
+  if (stFilter)   q = q.eq('status', stFilter);
+
+  const { data, error } = await q;
+  if (error) { toast('خطأ تحميل المطابقات', 'error'); return; }
+  reconciliations = data || [];
+  document.getElementById('statTotal').textContent    = reconciliations.length;
+  document.getElementById('statDone').textContent     = reconciliations.filter(r=>r.status==='reconciled').length;
+  document.getElementById('statProgress').textContent = reconciliations.filter(r=>r.status==='in_progress').length;
+  renderReconTable();
+}
+
+function renderReconTable() {
+  const body = document.getElementById('reconBody');
+  if (!reconciliations.length) {
+    body.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400">لا توجد مطابقات</td></tr>';
+    return;
+  }
+  body.innerHTML = reconciliations.map(r => {
+    const acct  = r.cash_accounts;
+    const diff  = parseFloat(r.difference||0);
+    const fmt   = n => parseFloat(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+    const balanced = Math.abs(diff) < 0.01;
+    return `
+      <tr>
+        <td class="font-bold">${acct?.name_ar||'—'}<br><span class="text-xs font-normal text-gray-400">${acct?.code||''}</span></td>
+        <td>${r.period_start}</td>
+        <td>${r.period_end}</td>
+        <td class="font-mono text-sm">${fmt(r.book_balance)}</td>
+        <td class="font-mono text-sm">${fmt(r.statement_balance)}</td>
+        <td class="font-mono text-sm ${balanced?'text-green-700 font-bold':'text-red-600 font-bold'}">${diff>0?'+':''}${fmt(diff)}</td>
+        <td><span class="badge ${r.status==='reconciled'?'badge-green':'badge-yellow'}">${r.status==='reconciled'?'مكتملة':'قيد التنفيذ'}</span></td>
+        <td class="no-print">
+          <button onclick="openReconWorkspace('${r.id}')" class="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-lightGreen">
+            <i class="fa-solid fa-magnifying-glass ml-0.5"></i> فتح
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+async function openNewReconModal() {
+  document.getElementById('modalRecon').classList.remove('hidden');
+}
+
+async function saveNewRecon() {
+  const acctId = document.getElementById('newReconAcct').value;
+  const from   = document.getElementById('newReconFrom').value;
+  const to     = document.getElementById('newReconTo').value;
+  const stmt   = parseFloat(document.getElementById('newReconStmt').value)||0;
+  if (!acctId||!from||!to) { toast('الحساب والفترة مطلوبة', 'error'); return; }
+
+  // compute book balance from cash_transactions
+  const { data: txns } = await sb.from('cash_transactions')
+    .select('type,amount').eq('cash_account_id', acctId)
+    .gte('txn_date', from).lte('txn_date', to);
+  let bookBal = 0;
+  (txns||[]).forEach(t => {
+    if (['deposit','transfer_in','opening','adjustment'].includes(t.type)) bookBal += parseFloat(t.amount);
+    else bookBal -= parseFloat(t.amount);
+  });
+
+  const { error } = await sb.from('bank_reconciliations').insert({
+    cash_account_id: acctId,
+    period_start: from, period_end: to,
+    book_balance: bookBal,
+    statement_balance: stmt,
+    notes: document.getElementById('newReconNotes').value.trim()||null,
+    status: 'in_progress'
+  });
+  if (error) { toast('خطأ: '+error.message, 'error'); return; }
+  closeModal('modalRecon');
+  toast('تم إنشاء المطابقة');
+  await loadReconciliations();
+}
+
+async function openReconWorkspace(id) {
+  activeRecon = reconciliations.find(r=>r.id===id);
+  if (!activeRecon) return;
+  const acctName = activeRecon.cash_accounts?.name_ar||'';
+  document.getElementById('wsTitle').textContent = `مطابقة: ${acctName}`;
+  document.getElementById('wsPeriod').textContent = `${activeRecon.period_start} — ${activeRecon.period_end}`;
+  document.getElementById('stmtBalInput').value = activeRecon.statement_balance||0;
+  updateWsSummary();
+
+  // load book transactions
+  const { data } = await sb.from('cash_transactions').select('*')
+    .eq('cash_account_id', activeRecon.cash_account_id)
+    .gte('txn_date', activeRecon.period_start)
+    .lte('txn_date', activeRecon.period_end)
+    .order('txn_date');
+  bookTxns = data||[];
+  matchedBook = new Set();
+  matchedStmt = new Set();
+
+  // load statement lines
+  const { data: lines } = await sb.from('bank_recon_lines').select('*').eq('reconciliation_id', id);
+  stmtLines = (lines||[]).map((l,i)=>({...l, _key: i}));
+
+  renderBookLines();
+  renderStmtLines();
+
+  document.getElementById('workspace').style.display='block';
+  document.getElementById('workspace').scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('btnComplete').disabled = activeRecon.status==='reconciled';
+}
+
+function updateWsSummary() {
+  if (!activeRecon) return;
+  const fmt = n => parseFloat(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const diff = parseFloat(activeRecon.difference||0);
+  const balanced = Math.abs(diff) < 0.01;
+  document.getElementById('wsBookBal').textContent  = fmt(activeRecon.book_balance);
+  document.getElementById('wsStmtBal').textContent  = fmt(activeRecon.statement_balance);
+  document.getElementById('wsDiff').textContent     = (diff>0?'+':'')+fmt(diff);
+  document.getElementById('wsDiff').className       = 'text-lg font-bold '+(balanced?'text-green-700':'text-red-600');
+  document.getElementById('wsStatus').innerHTML     = activeRecon.status==='reconciled'
+    ? '<span class="badge badge-green">مكتملة</span>'
+    : (balanced ? '<span class="badge badge-blue">متطابق — جاهز للإتمام</span>' : '<span class="badge badge-yellow">قيد التنفيذ</span>');
+}
+
+async function updateStmtBalance() {
+  const val = parseFloat(document.getElementById('stmtBalInput').value)||0;
+  const { error } = await sb.from('bank_reconciliations').update({statement_balance: val}).eq('id', activeRecon.id);
+  if (error) { toast('خطأ', 'error'); return; }
+  activeRecon.statement_balance = val;
+  activeRecon.difference = val - activeRecon.book_balance;
+  updateWsSummary();
+  toast('تم التحديث');
+}
+
+function renderBookLines() {
+  const body = document.getElementById('bookLines');
+  if (!bookTxns.length) { body.innerHTML='<tr><td colspan="5" class="text-center py-4 text-gray-400">لا توجد حركات</td></tr>'; return; }
+  body.innerHTML = bookTxns.map((t,i) => {
+    const isIn = ['deposit','transfer_in','opening','adjustment'].includes(t.type);
+    const matched = matchedBook.has(i);
+    return `
+      <tr class="${matched?'matched':''}">
+        <td>${t.txn_date}</td>
+        <td class="text-xs">${t.description||t.txn_number}</td>
+        <td class="text-left text-green-700">${isIn?parseFloat(t.amount).toLocaleString('ar-EG',{minimumFractionDigits:2}):''}</td>
+        <td class="text-left text-red-600">${!isIn?parseFloat(t.amount).toLocaleString('ar-EG',{minimumFractionDigits:2}):''}</td>
+        <td class="no-print text-center">
+          <button onclick="toggleBookMatch(${i})" class="text-xs px-2 py-0.5 rounded ${matched?'bg-green-600 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+            ${matched?'✓ مطابق':'مطابقة'}
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function toggleBookMatch(i) {
+  if (matchedBook.has(i)) matchedBook.delete(i);
+  else matchedBook.add(i);
+  renderBookLines();
+}
+
+function renderStmtLines() {
+  const body = document.getElementById('stmtLines');
+  if (!stmtLines.length) { body.innerHTML='<tr><td colspan="5" class="text-center py-4 text-gray-400">أضف سطور الكشف</td></tr>'; return; }
+  body.innerHTML = stmtLines.map((l,i) => {
+    const matched = matchedStmt.has(i);
+    return `
+      <tr class="${matched?'matched':'unmatched'}">
+        <td><input type="date" value="${l.statement_date||''}" onchange="stmtLines[${i}].statement_date=this.value" class="border-0 p-0 bg-transparent text-xs" style="width:100px;"></td>
+        <td><input type="text" value="${l.statement_description||''}" onchange="stmtLines[${i}].statement_description=this.value" class="border-0 p-0 bg-transparent text-xs" placeholder="البيان"></td>
+        <td><input type="number" value="${l.statement_amount||''}" onchange="stmtLines[${i}].statement_amount=this.value" class="border-0 p-0 bg-transparent text-xs text-left" style="width:80px;" placeholder="0.00"></td>
+        <td class="no-print text-center">
+          <button onclick="toggleStmtMatch(${i})" class="text-xs px-2 py-0.5 rounded ${matched?'bg-green-600 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+            ${matched?'✓':'مطابقة'}
+          </button>
+        </td>
+        <td class="no-print">
+          <button onclick="removeStmtLine(${i})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function toggleStmtMatch(i) {
+  if (matchedStmt.has(i)) matchedStmt.delete(i);
+  else matchedStmt.add(i);
+  renderStmtLines();
+}
+
+function addStmtLine() {
+  const now = new Date().toISOString().split('T')[0];
+  stmtLines.push({_key: Date.now(), statement_date: now, statement_description: '', statement_amount: '', is_matched: false});
+  renderStmtLines();
+}
+
+function removeStmtLine(i) {
+  stmtLines.splice(i,1);
+  renderStmtLines();
+}
+
+function importStmtCSV() { document.getElementById('csvInput').click(); }
+
+function parseCSV(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const lines = ev.target.result.split('\n').slice(1);
+    lines.forEach(line => {
+      const parts = line.split(',');
+      if (parts.length >= 3) {
+        stmtLines.push({
+          _key: Date.now()+Math.random(),
+          statement_date: parts[0]?.replace(/"/g,'').trim(),
+          statement_description: parts[1]?.replace(/"/g,'').trim(),
+          statement_amount: parseFloat(parts[2]?.replace(/"/g,'').trim())||0,
+          is_matched: false
+        });
+      }
+    });
+    renderStmtLines();
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+async function markReconciled() {
+  if (!activeRecon) return;
+  // save statement lines
+  await sb.from('bank_recon_lines').delete().eq('reconciliation_id', activeRecon.id);
+  for (const l of stmtLines) {
+    await sb.from('bank_recon_lines').insert({
+      reconciliation_id: activeRecon.id,
+      statement_date: l.statement_date||null,
+      statement_description: l.statement_description||null,
+      statement_amount: parseFloat(l.statement_amount)||0,
+      is_matched: matchedStmt.has(stmtLines.indexOf(l))
+    });
+  }
+  const { error } = await sb.from('bank_reconciliations').update({
+    status: 'reconciled',
+    reconciled_by: currentUser.id,
+    reconciled_at: new Date().toISOString()
+  }).eq('id', activeRecon.id);
+  if (error) { toast('خطأ: '+error.message, 'error'); return; }
+  toast('تمت المطابقة بنجاح ✓');
+  await loadReconciliations();
+  activeRecon.status = 'reconciled';
+  updateWsSummary();
+  document.getElementById('btnComplete').disabled = true;
+}
+
+function closeWorkspace() {
+  document.getElementById('workspace').style.display='none';
+  activeRecon = null;
+}
+
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  const mel = document.getElementById('toastMsg');
+  mel.textContent = msg;
+  mel.className = `px-6 py-3 rounded-full shadow-2xl text-sm font-bold ${type==='error'?'bg-red-700':'bg-gray-900'} text-white`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3200);
+}
+
+function toggleDrawer() {
+  document.getElementById('drawer').classList.toggle('hidden');
+}
+</script>
+</body>
+</html>
