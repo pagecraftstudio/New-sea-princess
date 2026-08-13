@@ -250,7 +250,7 @@ async function loadCustomers() {
     // Get all bookings with payment data, grouped by customer
     const { data: bookings, error } = await sb
       .from('bookings')
-      .select('id,customer_name,customer_phone,customer_email,customer_national_id,total_price,paid_amount,remaining_amount,status,created_at,user_id')
+      .select('id,customer_name,customer_phone,customer_email,customer_national_id,total_price,paid_amount,remaining_amount,status,user_id')
       .order('customer_name');
     if (error) throw error;
 
@@ -407,9 +407,9 @@ async function openLedger(customer) {
     // Load bookings for this customer
     const { data: bookings } = await sb
       .from('bookings')
-      .select('id,booking_number,package_title,total_price,paid_amount,remaining_amount,status,created_at,updated_at')
+      .select('id,booking_number,package_title,total_price,paid_amount,remaining_amount,status')
       .eq('customer_name', customer.name)
-      .order('created_at', { ascending: false });
+      .order('booking_number', { ascending: false });
 
     // Load payments
     const { data: payments } = await sb
