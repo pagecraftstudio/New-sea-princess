@@ -361,7 +361,7 @@ async function loadInvoices() {
 
   const { data, error } = await window.db
     .from('nsp_invoices')
-    .select('id,invoice_number,customer_name,customer_id,booking_id,issue_date,due_date,currency,total_amount,paid_amount,remaining_amount,status,notes,bookings(booking_ref)')
+    .select('id,invoice_number,customer_name,customer_id,booking_id,issue_date,due_date,currency,total_amount,paid_amount,remaining_amount,status,notes,bookings(booking_number)')
     .order('issue_date',{ascending:false})
     .limit(300);
 
@@ -381,7 +381,7 @@ function renderInvoices(rows) {
     return `<tr>
       <td class="font-mono text-xs font-bold text-primary">${r.invoice_number||'—'}</td>
       <td><div class="font-semibold text-sm">${r.customer_name}</div></td>
-      <td class="text-xs text-gray-500">${r.bookings?.booking_ref||'—'}</td>
+      <td class="text-xs text-gray-500">${r.bookings?.booking_number||'—'}</td>
       <td class="text-xs text-gray-500">${r.issue_date||'—'}</td>
       <td class="text-xs ${overdue&&r.status!=='paid'?'text-red-600 font-bold':''}">${r.due_date||'—'}</td>
       <td class="text-left font-mono font-bold">${fmt(r.total_amount,r.currency)}</td>
@@ -407,7 +407,7 @@ async function loadPayments() {
 
   const { data } = await window.db
     .from('nsp_payments')
-    .select('id,payment_number,customer_name,booking_id,payment_date,payment_method,amount,currency,status,reference,bookings(booking_ref),payment_allocations(amount,nsp_invoices(invoice_number))')
+    .select('id,payment_number,customer_name,booking_id,payment_date,payment_method,amount,currency,status,reference,bookings(booking_number),payment_allocations(amount,nsp_invoices(invoice_number))')
     .order('payment_date',{ascending:false})
     .limit(300);
 
@@ -428,7 +428,7 @@ function renderPayments(rows) {
     return `<tr>
       <td class="font-mono text-xs font-bold text-primary">${r.payment_number||'—'}</td>
       <td class="font-semibold text-sm">${r.customer_name}</td>
-      <td class="text-xs text-gray-500">${r.bookings?.booking_ref||'—'}</td>
+      <td class="text-xs text-gray-500">${r.bookings?.booking_number||'—'}</td>
       <td class="text-xs">${r.payment_date||'—'}</td>
       <td><span class="badge bg-blue-50 text-blue-700">${PAY_METHOD[r.payment_method]||r.payment_method}</span></td>
       <td class="text-left font-mono font-bold text-primary">${fmt(r.amount,r.currency)}</td>
@@ -458,22 +458,32 @@ async function loadKPIs() {
 async function loadCustomersSelect() {
   const { data } = await window.db.from('profiles').select('id,full_name,email').order('full_name').limit(300);
   allCustomers = data || [];
-  const opts = `<option value="">— اختر العميل —</option>` + allCustomers.map(c=>`<option value="${c.id}" data-name="${c.full_name||c.email}">${c.full_name||c.email}</option>`).join('');
+  const opts = `<option value="">— اختر العميل —</option>` + allCustomers.map(c=>`<option value="${c.id}" data-name="${c.full_name||c.email}" data-email="${c.email||''}">${c.full_name||c.email}</option>`).join('');
   document.getElementById('fInvCustomer').innerHTML = opts;
   document.getElementById('fPayCustomer').innerHTML = opts;
 }
 
 async function loadCustomerBookings() {
-  const custId = document.getElementById('fInvCustomer').value;
+  const custSel = document.getElementById('fInvCustomer');
+  const custId = custSel.value;
+  const custEmail = custSel.selectedOptions[0]?.dataset?.email || '';
   const sel = document.getElementById('fInvBooking');
   sel.innerHTML = '<option value="">— اختر الحجز —</option>';
   if (!custId) return;
-  const { data } = await window.db.from('bookings').select('id,booking_ref,total_price,packages(title)')
-    .eq('user_id',custId).order('created_at',{ascending:false}).limit(50);
+  // Try user_id first, fall back to customer_email match
+  let query = window.db.from('bookings').select('id,booking_number,total_price,packages(title)')
+    .order('created_at',{ascending:false}).limit(50);
+  let { data } = await query.eq('user_id', custId);
+  if (!data || !data.length) {
+    // Fallback: match by email (for bookings created without auth account)
+    const { data: d2 } = await window.db.from('bookings').select('id,booking_number,total_price,packages(title)')
+      .eq('customer_email', custEmail).order('created_at',{ascending:false}).limit(50);
+    data = d2;
+  }
   (data||[]).forEach(b=>{
     const opt = document.createElement('option');
     opt.value = b.id;
-    opt.textContent = `${b.booking_ref} — ${b.packages?.title||'باقة'} (${fmt(b.total_price)})`;
+    opt.textContent = `${b.booking_number||b.id.slice(0,8)} — ${b.packages?.title||'باقة'} (${fmt(b.total_price)})`;
     sel.appendChild(opt);
   });
   // Auto-fill first item description if only 1 booking
@@ -494,9 +504,17 @@ async function loadPayCustomerInvoices() {
   const bkSel = document.getElementById('fPayBooking');
   bkSel.innerHTML = '<option value="">— اختر الحجز —</option>';
   if (custId) {
-    const { data: bk } = await window.db.from('bookings').select('id,booking_ref,packages(title)')
+    let { data: bk } = await window.db.from('bookings').select('id,booking_number,packages(title)')
       .eq('user_id',custId).limit(30);
-    (bk||[]).forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=`${b.booking_ref} — ${b.packages?.title||''}`; bkSel.appendChild(o); });
+    if (!bk || !bk.length) {
+      const custEmail2 = document.getElementById('fPayCustomer').selectedOptions[0]?.dataset?.email || '';
+      if (custEmail2) {
+        const { data: bk2 } = await window.db.from('bookings').select('id,booking_number,packages(title)')
+          .eq('customer_email', custEmail2).limit(30);
+        bk = bk2;
+      }
+    }
+    (bk||[]).forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=`${b.booking_number||b.id.slice(0,8)} — ${b.packages?.title||''}`; bkSel.appendChild(o); });
   }
 
   if (!custId) { container.innerHTML='<p class="text-xs text-gray-400 text-center py-2">اختر العميل أولاً لتظهر فواتيره المفتوحة</p>'; return; }
@@ -765,7 +783,7 @@ async function refundPayment(id) {
 
 async function printInvoice(id) {
   const { data: inv } = await window.db.from('nsp_invoices')
-    .select('*,invoice_items(*),bookings(booking_ref,packages(title))')
+    .select('*,invoice_items(*),bookings(booking_number,packages(title))')
     .eq('id',id).single();
   if (!inv) return;
 
@@ -789,7 +807,7 @@ async function printInvoice(id) {
     <div class="meta">
       <div class="meta-block">
         <p class="lbl">العميل</p><p><strong>${inv.customer_name}</strong></p>
-        ${inv.bookings?.booking_ref?`<p class="lbl">رقم الحجز</p><p>${inv.bookings.booking_ref}</p>`:''}
+        ${inv.bookings?.booking_number?`<p class="lbl">رقم الحجز</p><p>${inv.bookings.booking_number}</p>`:''}
         ${inv.bookings?.packages?.title?`<p class="lbl">الباقة</p><p>${inv.bookings.packages.title}</p>`:''}
       </div>
       <div class="meta-block" style="text-align:left">
