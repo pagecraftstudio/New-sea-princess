@@ -35,7 +35,7 @@ CREATE OR REPLACE VIEW customer_ledger AS
     SUM(b.total_price)               AS total_invoiced,
     SUM(b.paid_amount)               AS total_paid,
     SUM(b.remaining_amount)          AS total_remaining,
-    MAX(b.created_at)                AS last_booking_date
+    MAX(b.updated_at)                AS last_booking_date
   FROM bookings b
   GROUP BY b.customer_name, b.customer_phone, b.customer_email, b.user_id;
 
