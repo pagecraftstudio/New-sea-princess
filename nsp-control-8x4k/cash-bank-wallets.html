@@ -461,7 +461,7 @@ let txnTotal = 0;
 ════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    sb = window.supabaseClient || window._supabase;
+    sb = window.db;
     if (!sb) { alert('Supabase غير متاح'); return; }
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { location.href = '/nsp-control-8x4k/login.html'; return; }
