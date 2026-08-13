@@ -416,7 +416,6 @@ async function checkIntegrity() {
       .from('journal_entries')
       .select('id')
       .neq('status','draft')
-      .filter('total_debit', 'neq', 'total_credit') // rough filter
       .limit(5);
     const alert = document.getElementById('integrityAlert');
     if (unbal && unbal.length > 0) {

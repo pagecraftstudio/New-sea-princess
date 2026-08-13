@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>المصاريف | نيو سي برنسيس</title>
-  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -388,7 +388,7 @@ async function loadExpenses() {
   tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جاري التحميل…</td></tr>';
 
   const { data, error } = await sb
-    .from('expenses')
+    .from('nsp_expenses')
     .select('*,expense_categories(name_ar),cost_centers(name_ar)')
     .order('expense_date', { ascending: false })
     .order('created_at', { ascending: false });
@@ -576,9 +576,9 @@ async function saveExpense(status) {
 
   let error;
   if (editingId) {
-    ({ error } = await sb.from('expenses').update(payload).eq('id', editingId));
+    ({ error } = await sb.from('nsp_expenses').update(payload).eq('id', editingId));
   } else {
-    ({ error } = await sb.from('expenses').insert(payload));
+    ({ error } = await sb.from('nsp_expenses').insert(payload));
   }
 
   if (error) { alert('خطأ: ' + error.message); return; }
@@ -593,7 +593,7 @@ function editExpense(id) {
 
 async function approveExpense(id) {
   if (!confirm('تأكيد الموافقة على المصروف؟')) return;
-  const { error } = await sb.from('expenses').update({
+  const { error } = await sb.from('nsp_expenses').update({
     status: 'approved',
     approved_at: new Date().toISOString()
   }).eq('id', id);
@@ -603,7 +603,7 @@ async function approveExpense(id) {
 
 async function postExpense(id) {
   if (!confirm('ترحيل المصروف؟ لن يمكن تعديله بعد الترحيل.')) return;
-  const { error } = await sb.from('expenses').update({
+  const { error } = await sb.from('nsp_expenses').update({
     status: 'posted',
     posted_at: new Date().toISOString()
   }).eq('id', id);
@@ -614,7 +614,7 @@ async function postExpense(id) {
 async function rejectExpense(id) {
   const reason = prompt('سبب الرفض:');
   if (!reason) return;
-  const { error } = await sb.from('expenses').update({
+  const { error } = await sb.from('nsp_expenses').update({
     status: 'rejected',
     rejection_reason: reason
   }).eq('id', id);
