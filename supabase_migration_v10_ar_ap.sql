@@ -39,7 +39,7 @@ SELECT
   SUM(CASE WHEN (CURRENT_DATE - i.due_date) BETWEEN 31 AND 60 THEN i.remaining_amount ELSE 0 END) AS bucket_60,
   SUM(CASE WHEN (CURRENT_DATE - i.due_date) > 60               THEN i.remaining_amount ELSE 0 END) AS bucket_90plus
 FROM nsp_invoices i
-JOIN profiles p ON p.id = i.user_id
+JOIN profiles p ON p.id = i.customer_id
 WHERE i.status IN ('issued','partial','overdue')
   AND i.remaining_amount > 0
 GROUP BY p.id, p.full_name, p.email;
@@ -48,7 +48,7 @@ GROUP BY p.id, p.full_name, p.email;
 CREATE OR REPLACE VIEW ap_aging AS
 SELECT
   s.id                    AS supplier_id,
-  COALESCE(s.name, 'Unknown') AS supplier_name,
+  COALESCE(s.name_en, s.name_ar, 'Unknown') AS supplier_name,
   COUNT(e.id)             AS expense_count,
   SUM(e.total_amount - e.paid_amount) AS total_outstanding,
   SUM(CASE WHEN e.due_date IS NULL OR (CURRENT_DATE - e.due_date) <= 0  THEN e.total_amount - e.paid_amount ELSE 0 END) AS bucket_current,
@@ -59,7 +59,7 @@ FROM nsp_expenses e
 LEFT JOIN suppliers s ON s.id = e.supplier_id
 WHERE e.status IN ('approved','partial','posted')
   AND (e.total_amount - e.paid_amount) > 0
-GROUP BY s.id, s.name;
+GROUP BY s.id, s.name_en, s.name_ar;
 
 -- 5. Indexes for AR/AP performance
 CREATE INDEX IF NOT EXISTS idx_nsp_invoices_status_due   ON nsp_invoices(status, due_date);
