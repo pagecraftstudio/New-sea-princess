@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الأدوار والصلاحيات | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .nav-link { display:flex; align-items:center; gap:10px; padding:12px 24px; color:#9ca3af; transition:.2s; text-decoration:none; font-size:14px; }
+    .nav-link:hover { background:#1f2937; color:#fff; }
+    .nav-link.active { background:#1B5E20; border-right:4px solid #B8860B; color:#fff; }
+
+    /* Role color badges */
+    .role-super    { background:#fef9c3; color:#92400e; border:1px solid #fde68a; }
+    .role-fin-mgr  { background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; }
+    .role-acct     { background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; }
+    .role-cashier  { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+    .role-sales    { background:#ccfbf1; color:#0f766e; border:1px solid #5eead4; }
+    .role-booking  { background:#e0e7ff; color:#3730a3; border:1px solid #a5b4fc; }
+    .role-auditor  { background:#ffedd5; color:#9a3412; border:1px solid #fdba74; }
+    .role-admin    { background:#f0f9ff; color:#0c4a6e; border:1px solid #7dd3fc; }
+    .role-viewer   { background:#f3f4f6; color:#4b5563; border:1px solid #d1d5db; }
+
+    .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 11px; border-radius:20px; font-size:11px; font-weight:700; }
+
+    /* Permission matrix table */
+    .perm-table th { position:sticky; top:0; background:#1f2937; color:#f9fafb; font-size:11px; z-index:10; }
+    .perm-table td { font-size:12px; border-bottom:1px solid #f3f4f6; }
+    .perm-table tr:hover td { background:#fafafa; }
+    .check-yes { color:#16a34a; font-size:14px; }
+    .check-no  { color:#d1d5db; font-size:14px; }
+
+    /* Loader */
+    .loader { width:28px;height:28px;border:3px solid #e5e7eb;border-top-color:#1B5E20;border-radius:50%;animation:spin .8s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg);} }
+
+    /* Modal */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px; }
+    .modal-box { background:#fff;border-radius:16px;box-shadow:0 25px 50px rgba(0,0,0,.25);width:100%;max-width:520px;overflow:hidden; }
+    .modal-header { background:#1B5E20;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center; }
+
+    /* Category label row in matrix */
+    .cat-row td { background:#f9fafb;font-weight:800;color:#374151;font-size:11px;padding:6px 12px;letter-spacing:.5px;text-transform:uppercase; }
+
+    .tab-btn { padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;border:2px solid transparent;cursor:pointer;transition:.15s; }
+    .tab-btn.active { background:#1B5E20;color:#fff;border-color:#1B5E20; }
+    .tab-btn:not(.active) { background:#f3f4f6;color:#374151; }
+    .tab-btn:not(.active):hover { background:#e5e7eb; }
+
+    .field-input { width:100%;border:1.5px solid #e2dfd8;border-radius:9px;padding:10px 14px;font-family:'Cairo',sans-serif;font-size:14px;outline:none;transition:border-color .2s;background:#fafaf8; }
+    .field-input:focus { border-color:#B8860B; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- MOBILE TOP BAR -->
+  <header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg">
+    <div class="flex items-center gap-2 font-bold text-lg text-gold">
+      <i class="fa-solid fa-shield-halved"></i> الأدوار والصلاحيات
+    </div>
+    <button id="mobileMenuBtn" onclick="document.getElementById('mobileDrawer').classList.remove('hidden')" class="text-white text-2xl p-1">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </header>
+
+  <!-- MOBILE DRAWER -->
+  <div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/60" onclick="document.getElementById('mobileDrawer').classList.add('hidden')"></div>
+    <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl overflow-y-auto">
+      <div class="h-14 flex items-center px-5 border-b border-gray-800 text-gold font-bold text-base shrink-0">
+        <i class="fa-solid fa-moon ml-2"></i> الإدارة
+      </div>
+      <a href="/nsp-control-8x4k/dashboard.html"          class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/nsp-control-8x4k/bookings.html"           class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html"           class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/customers.html"          class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html"class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html"class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html"     class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/fiscal-periods.html"     class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+      <a href="/nsp-control-8x4k/profitability.html"      class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html"  class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/expenses.html"           class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html"  class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html"class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/ar-ap.html"              class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+      <a href="/nsp-control-8x4k/reports.html"            class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      <a href="/nsp-control-8x4k/suppliers.html"          class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+      <a href="/nsp-control-8x4k/reviews.html"            class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html"         class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      <a href="/nsp-control-8x4k/users.html"              class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/admins.html"             class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html"  class="nav-link active"><i class="fa-solid fa-shield-halved w-5"></i>الأدوار والصلاحيات</a>
+      <a href="/nsp-control-8x4k/audit-log.html"          class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+    </nav>
+  </div>
+
+  <div class="flex min-h-screen">
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0">
+      <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+        <img src="/assets/logo-white.png" alt="" class="h-8 w-auto object-contain ml-2" onerror="this.style.display='none'"> الإدارة
+      </div>
+      <nav class="flex-1 overflow-y-auto py-3">
+        <a href="/nsp-control-8x4k/dashboard.html"          class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+        <a href="/nsp-control-8x4k/bookings.html"           class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+        <a href="/nsp-control-8x4k/packages.html"           class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+        <a href="/nsp-control-8x4k/customers.html"          class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+        <a href="/nsp-control-8x4k/financial-dashboard.html"class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+        <a href="/nsp-control-8x4k/accounting-dashboard.html"class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+        <a href="/nsp-control-8x4k/accounting-coa.html"     class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+        <a href="/nsp-control-8x4k/fiscal-periods.html"     class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+        <a href="/nsp-control-8x4k/profitability.html"      class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+        <a href="/nsp-control-8x4k/invoices-payments.html"  class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+        <a href="/nsp-control-8x4k/expenses.html"           class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+        <a href="/nsp-control-8x4k/cash-bank-wallets.html"  class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+        <a href="/nsp-control-8x4k/bank-reconciliation.html"class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+        <a href="/nsp-control-8x4k/ar-ap.html"              class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+        <a href="/nsp-control-8x4k/reports.html"            class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+        <a href="/nsp-control-8x4k/suppliers.html"          class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+        <a href="/nsp-control-8x4k/reviews.html"            class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+        <a href="/nsp-control-8x4k/newsletter.html"         class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+        <a href="/nsp-control-8x4k/users.html"              class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+        <a href="/nsp-control-8x4k/admins.html"             class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+        <a href="/nsp-control-8x4k/roles-permissions.html"  class="nav-link active"><i class="fa-solid fa-shield-halved w-5"></i>الأدوار والصلاحيات</a>
+        <a href="/nsp-control-8x4k/audit-log.html"          class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      </nav>
+      <div class="p-3 border-t border-gray-800 text-xs text-gray-500 text-center" id="adminUserEmail"></div>
+      <div class="p-4 border-t border-gray-800">
+        <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition text-sm font-bold flex justify-center items-center gap-2">
+          <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 p-4 md:p-6 overflow-auto">
+
+      <!-- Page Header -->
+      <div class="flex flex-wrap justify-between items-start mb-6 gap-4">
+        <div>
+          <h1 class="text-xl md:text-2xl font-black text-gray-800 border-b-2 border-primary pb-2 inline-block">
+            <i class="fa-solid fa-shield-halved text-primary ml-2"></i>
+            الأدوار والصلاحيات
+          </h1>
+          <p class="text-xs text-gray-400 mt-1">إدارة أدوار المشرفين وصلاحياتهم — مطبّقة server-side عبر RLS</p>
+        </div>
+        <div class="flex gap-2" id="headerActions">
+          <!-- shown only to super_admin -->
+        </div>
+      </div>
+
+      <!-- Access Denied Banner (shown if not super_admin) -->
+      <div id="accessBanner" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center gap-3">
+        <i class="fa-solid fa-circle-exclamation text-red-500 text-xl"></i>
+        <div>
+          <p class="font-bold text-red-700">صلاحية محدودة</p>
+          <p class="text-sm text-red-600">يمكنك عرض الأدوار والصلاحيات فقط. إضافة/تعديل الأدوار يتطلب صلاحية مدير عام.</p>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-5 flex-wrap">
+        <button class="tab-btn active" onclick="switchTab('team')" id="tab-team">
+          <i class="fa-solid fa-users-gear ml-1"></i>فريق العمل
+        </button>
+        <button class="tab-btn" onclick="switchTab('matrix')" id="tab-matrix">
+          <i class="fa-solid fa-table ml-1"></i>مصفوفة الصلاحيات
+        </button>
+        <button class="tab-btn" onclick="switchTab('roles')" id="tab-roles">
+          <i class="fa-solid fa-id-badge ml-1"></i>تعريف الأدوار
+        </button>
+      </div>
+
+      <!-- ═══ TAB: TEAM ═════════════════════════════════════════ -->
+      <div id="pane-team">
+
+        <!-- KPI Row -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5" id="kpiRow">
+          <div class="bg-white rounded-xl shadow border-b-4 border-yellow-400 p-4 text-center">
+            <p class="text-xs text-gray-500 font-bold">مدير عام</p>
+            <p id="kpi-super_admin" class="text-2xl font-black text-gray-800">—</p>
+          </div>
+          <div class="bg-white rounded-xl shadow border-b-4 border-purple-400 p-4 text-center">
+            <p class="text-xs text-gray-500 font-bold">مدير مالي</p>
+            <p id="kpi-financial_manager" class="text-2xl font-black text-gray-800">—</p>
+          </div>
+          <div class="bg-white rounded-xl shadow border-b-4 border-blue-400 p-4 text-center">
+            <p class="text-xs text-gray-500 font-bold">محاسب</p>
+            <p id="kpi-accountant" class="text-2xl font-black text-gray-800">—</p>
+          </div>
+          <div class="bg-white rounded-xl shadow border-b-4 border-green-400 p-4 text-center">
+            <p class="text-xs text-gray-500 font-bold">أمين صندوق</p>
+            <p id="kpi-cashier" class="text-2xl font-black text-gray-800">—</p>
+          </div>
+          <div class="bg-white rounded-xl shadow border-b-4 border-gray-400 p-4 text-center">
+            <p class="text-xs text-gray-500 font-bold">إجمالي المشرفين</p>
+            <p id="kpi-total" class="text-2xl font-black text-gray-800">—</p>
+          </div>
+        </div>
+
+        <!-- Search + Filter -->
+        <div class="bg-white rounded-xl shadow border border-gray-200 p-4 mb-4">
+          <div class="flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[160px]">
+              <label class="block text-xs text-gray-500 font-bold mb-1">بحث</label>
+              <input type="text" id="teamSearch" placeholder="بحث بالاسم أو البريد..." oninput="filterTeam()" class="field-input text-sm">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 font-bold mb-1">الدور</label>
+              <select id="teamRoleFilter" onchange="filterTeam()" class="field-input text-sm" style="width:auto">
+                <option value="">كل الأدوار</option>
+                <option value="super_admin">مدير عام</option>
+                <option value="financial_manager">مدير مالي</option>
+                <option value="accountant">محاسب</option>
+                <option value="cashier">أمين صندوق</option>
+                <option value="sales_agent">موظف مبيعات</option>
+                <option value="booking_agent">موظف حجوزات</option>
+                <option value="auditor">مراجع حسابات</option>
+                <option value="admin">مشرف</option>
+                <option value="viewer">مشاهد</option>
+              </select>
+            </div>
+            <button onclick="document.getElementById('teamSearch').value='';document.getElementById('teamRoleFilter').value='';filterTeam();" class="text-sm text-gold hover:underline">إعادة تعيين</button>
+          </div>
+        </div>
+
+        <!-- Team Table -->
+        <div class="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600 text-xs">
+              <tr>
+                <th class="px-4 py-3 text-right">#</th>
+                <th class="px-4 py-3 text-right">البريد الإلكتروني</th>
+                <th class="px-4 py-3 text-right">الدور</th>
+                <th class="px-4 py-3 text-right">الصلاحيات الرئيسية</th>
+                <th class="px-4 py-3 text-right">تاريخ الإضافة</th>
+                <th class="px-4 py-3 text-right" id="actionsHead">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="teamTable">
+              <tr><td colspan="6" class="p-8 text-center"><div class="loader mx-auto"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: PERMISSION MATRIX ════════════════════════════ -->
+      <div id="pane-matrix" class="hidden">
+        <div class="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto">
+          <div class="p-4 border-b border-gray-100 flex items-center gap-2">
+            <i class="fa-solid fa-table text-primary"></i>
+            <h2 class="font-black text-gray-700">مصفوفة الصلاحيات — الأدوار × الصلاحيات</h2>
+            <span class="text-xs text-gray-400 mr-2">✅ مسموح | ❌ غير مسموح</span>
+          </div>
+          <div class="overflow-x-auto" style="max-height:70vh;overflow-y:auto;">
+            <table class="w-full perm-table" id="matrixTable">
+              <thead>
+                <tr id="matrixHeader">
+                  <th class="px-4 py-3 text-right min-w-[200px]">الصلاحية</th>
+                  <!-- role columns injected by JS -->
+                </tr>
+              </thead>
+              <tbody id="matrixBody">
+                <tr><td colspan="10" class="p-8 text-center"><div class="loader mx-auto"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: ROLE DEFINITIONS ═════════════════════════════ -->
+      <div id="pane-roles" class="hidden">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="rolesGrid">
+          <div class="col-span-full flex justify-center py-8"><div class="loader"></div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ═══ EDIT ROLE MODAL ═══════════════════════════════════════ -->
+  <div id="editModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="font-black text-lg flex items-center gap-2">
+          <i class="fa-solid fa-user-pen"></i>
+          تعديل دور المشرف
+        </h3>
+        <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <div id="modalAlert" class="hidden mb-4 p-3 rounded-lg text-sm font-bold"></div>
+
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-gray-600 mb-1">البريد الإلكتروني</label>
+          <input type="email" id="modalEmail" class="field-input bg-gray-50" readonly>
+        </div>
+
+        <div class="mb-5">
+          <label class="block text-xs font-bold text-gray-600 mb-2">الدور الجديد</label>
+          <div class="grid grid-cols-1 gap-2" id="roleSelector">
+            <!-- Role radio cards injected by JS -->
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-xs text-amber-800">
+          <i class="fa-solid fa-triangle-exclamation ml-1"></i>
+          تغيير الدور يُطبَّق فوراً على المستوى server-side ويُسجَّل في سجل العمليات.
+        </div>
+
+        <div class="flex gap-3 justify-end">
+          <button onclick="closeModal()" class="px-5 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition">إلغاء</button>
+          <button onclick="saveRole()" class="px-6 py-2 rounded-lg bg-primary hover:bg-green-700 text-white font-bold text-sm transition flex items-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i> حفظ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  /* ══════════════════════════════════════════════════
+     ROLES & PERMISSIONS — Admin Page JS
+     Depends on window.db (Supabase) from supabase-config.js
+  ══════════════════════════════════════════════════ */
+
+  const ROLES_ORDER = [
+    'super_admin','financial_manager','accountant','cashier',
+    'sales_agent','booking_agent','auditor','admin','viewer'
+  ];
+
+  const ROLE_META = {
+    super_admin:       { ar:'مدير عام',       en:'Super Admin',       cls:'role-super',   icon:'fa-crown' },
+    financial_manager: { ar:'مدير مالي',       en:'Financial Manager', cls:'role-fin-mgr', icon:'fa-landmark' },
+    accountant:        { ar:'محاسب',           en:'Accountant',        cls:'role-acct',    icon:'fa-calculator' },
+    cashier:           { ar:'أمين صندوق',      en:'Cashier',           cls:'role-cashier', icon:'fa-cash-register' },
+    sales_agent:       { ar:'موظف مبيعات',     en:'Sales Agent',       cls:'role-sales',   icon:'fa-handshake' },
+    booking_agent:     { ar:'موظف حجوزات',     en:'Booking Agent',     cls:'role-booking', icon:'fa-calendar-check' },
+    auditor:           { ar:'مراجع حسابات',    en:'Auditor',           cls:'role-auditor', icon:'fa-eye' },
+    admin:             { ar:'مشرف',            en:'Admin',             cls:'role-admin',   icon:'fa-user-tie' },
+    viewer:            { ar:'مشاهد',           en:'Viewer',            cls:'role-viewer',  icon:'fa-eye' },
+  };
+
+  // Summarised capabilities shown in team table
+  const ROLE_CAPS = {
+    super_admin:       'كل الصلاحيات بلا قيود',
+    financial_manager: 'موافقة مالية، إغلاق فترات، تقارير كاملة',
+    accountant:        'قيود، فواتير، مصاريف، تقارير',
+    cashier:           'تسجيل المدفوعات والمقبوضات فقط',
+    sales_agent:       'حجوزات، عملاء، عرض بيانات أساسية',
+    booking_agent:     'إنشاء حجوزات وتتبع مسافرين',
+    auditor:           'عرض كل البيانات المالية — للقراءة فقط',
+    admin:             'إدارة عامة باستثناء إغلاق الفترات',
+    viewer:            'عرض البيانات العامة فقط',
+  };
+
+  let allAdmins = [], filteredAdmins = [];
+  let permMatrix = [], roleDefs = [];
+  let myRole = null, myId = null;
+  let editTarget = null;
+
+  /* ── INIT ─────────────────────────────────────────────────── */
+  async function init() {
+    let attempts = 0;
+    while (!window.db && attempts < 20) { await new Promise(r => setTimeout(r, 300)); attempts++; }
+    if (!window.db) return;
+
+    // Get current user
+    const { data: { user } } = await window.db.auth.getUser();
+    if (!user) { location.href = '/nsp-control-8x4k/login.html'; return; }
+    myId = user.id;
+    document.getElementById('adminUserEmail').textContent = user.email || '';
+
+    // Get my role
+    const { data: me } = await window.db.from('admin_users').select('role').eq('id', myId).single();
+    myRole = me?.role || null;
+
+    if (!myRole) { location.href = '/nsp-control-8x4k/login.html'; return; }
+
+    // Only super_admin sees edit buttons
+    if (myRole !== 'super_admin') {
+      document.getElementById('accessBanner').classList.remove('hidden');
+      document.getElementById('actionsHead').style.display = 'none';
+    } else {
+      // Add admin button
+      document.getElementById('headerActions').innerHTML = `
+        <a href="/nsp-control-8x4k/admins.html"
+           class="bg-primary hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm transition shadow">
+          <i class="fa-solid fa-user-plus"></i> إضافة مشرف
+        </a>`;
+    }
+
+    await Promise.all([loadTeam(), loadPermMatrix(), loadRoleDefs()]);
+  }
+
+  /* ── LOAD TEAM ────────────────────────────────────────────── */
+  async function loadTeam() {
+    const { data, error } = await window.db
+      .from('admin_users')
+      .select('id, email, role, created_at')
+      .order('created_at');
+
+    if (error) {
+      document.getElementById('teamTable').innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500">تعذّر تحميل البيانات</td></tr>`;
+      return;
+    }
+    allAdmins = data || [];
+    filteredAdmins = [...allAdmins];
+
+    // KPIs
+    ['super_admin','financial_manager','accountant','cashier'].forEach(r => {
+      const el = document.getElementById('kpi-' + r);
+      if (el) el.textContent = allAdmins.filter(a => a.role === r).length;
+    });
+    document.getElementById('kpi-total').textContent = allAdmins.length;
+
+    renderTeam();
+  }
+
+  function filterTeam() {
+    const q   = document.getElementById('teamSearch').value.trim().toLowerCase();
+    const rol = document.getElementById('teamRoleFilter').value;
+    filteredAdmins = allAdmins.filter(a =>
+      (!q   || (a.email||'').toLowerCase().includes(q)) &&
+      (!rol || a.role === rol)
+    );
+    renderTeam();
+  }
+
+  function renderTeam() {
+    const tbody = document.getElementById('teamTable');
+    if (!filteredAdmins.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">لا توجد نتائج</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filteredAdmins.map((a, i) => {
+      const meta = ROLE_META[a.role] || ROLE_META.viewer;
+      const canEdit = myRole === 'super_admin' && a.id !== myId;
+      return `
+        <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
+          <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
+          <td class="px-4 py-3 font-medium text-blue-700 text-xs" dir="ltr">${a.email || '—'}</td>
+          <td class="px-4 py-3">
+            <span class="badge ${meta.cls}">
+              <i class="fa-solid ${meta.icon} text-xs"></i> ${meta.ar}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 max-w-[220px]">${ROLE_CAPS[a.role] || ''}</td>
+          <td class="px-4 py-3 text-xs text-gray-400">${fmtDate(a.created_at)}</td>
+          <td class="px-4 py-3">
+            ${canEdit
+              ? `<button onclick="openEdit('${a.id}')"
+                   class="text-xs px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition font-bold flex items-center gap-1">
+                   <i class="fa-solid fa-pen-to-square"></i> تعديل الدور
+                 </button>`
+              : (a.id === myId ? '<span class="text-xs text-gray-400">أنت</span>' : '<span class="text-xs text-gray-300">—</span>')}
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  /* ── LOAD PERMISSION MATRIX ───────────────────────────────── */
+  async function loadPermMatrix() {
+    // Try to load from DB; fallback to hardcoded if table doesn't exist yet
+    const { data, error } = await window.db
+      .from('permission_matrix')
+      .select('permission, name_ar, category_ar, roles')
+      .order('category_ar');
+
+    if (error || !data?.length) {
+      // Fallback: hardcoded matrix
+      permMatrix = FALLBACK_MATRIX;
+    } else {
+      permMatrix = data;
+    }
+    renderMatrix();
+  }
+
+  function renderMatrix() {
+    // Build header
+    const headerRow = document.getElementById('matrixHeader');
+    ROLES_ORDER.forEach(r => {
+      const m = ROLE_META[r];
+      const th = document.createElement('th');
+      th.className = 'px-3 py-3 text-center min-w-[80px]';
+      th.innerHTML = `<span class="badge ${m.cls}" style="font-size:10px;padding:2px 7px;">${m.ar}</span>`;
+      headerRow.appendChild(th);
+    });
+
+    // Group by category
+    const cats = {};
+    permMatrix.forEach(p => {
+      if (!cats[p.category_ar]) cats[p.category_ar] = [];
+      cats[p.category_ar].push(p);
+    });
+
+    const tbody = document.getElementById('matrixBody');
+    let html = '';
+    Object.entries(cats).forEach(([cat, perms]) => {
+      // Category row
+      html += `<tr class="cat-row"><td colspan="${ROLES_ORDER.length + 1}">📁 ${cat}</td></tr>`;
+      perms.forEach(p => {
+        html += `<tr>
+          <td class="px-4 py-2 text-gray-700 font-medium">${p.name_ar}</td>
+          ${ROLES_ORDER.map(r =>
+            `<td class="px-3 py-2 text-center">
+               ${(p.roles || []).includes(r)
+                 ? '<i class="fa-solid fa-circle-check check-yes"></i>'
+                 : '<i class="fa-solid fa-circle-xmark check-no"></i>'}
+             </td>`
+          ).join('')}
+        </tr>`;
+      });
+    });
+    tbody.innerHTML = html;
+  }
+
+  /* ── LOAD ROLE DEFINITIONS ────────────────────────────────── */
+  async function loadRoleDefs() {
+    const { data } = await window.db
+      .from('role_definitions')
+      .select('*')
+      .order('sort_order');
+
+    roleDefs = data?.length ? data : FALLBACK_ROLES;
+    renderRoles();
+    buildRoleSelector();
+  }
+
+  function renderRoles() {
+    const grid = document.getElementById('rolesGrid');
+    grid.innerHTML = roleDefs.map(rd => {
+      const meta = ROLE_META[rd.role] || ROLE_META.viewer;
+      const count = allAdmins.filter(a => a.role === rd.role).length;
+      return `
+        <div class="bg-white rounded-xl shadow border border-gray-200 p-5 hover:shadow-md transition">
+          <div class="flex items-start justify-between mb-3">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center ${meta.cls} text-lg">
+              <i class="fa-solid ${meta.icon}"></i>
+            </div>
+            <span class="text-xs font-bold px-2 py-1 rounded bg-gray-100 text-gray-600">${count} ${count === 1 ? 'مشرف' : 'مشرفون'}</span>
+          </div>
+          <h3 class="font-black text-gray-800 mb-1">${rd.name_ar}</h3>
+          <p class="text-xs text-gray-500 mb-3 leading-relaxed">${rd.description_ar || ROLE_CAPS[rd.role] || ''}</p>
+          <div class="text-xs text-gray-400 dir-ltr" dir="ltr">${rd.name_en}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function buildRoleSelector() {
+    const container = document.getElementById('roleSelector');
+    container.innerHTML = ROLES_ORDER.map(r => {
+      if (r === 'super_admin') return ''; // can't assign super_admin via UI
+      const meta = ROLE_META[r];
+      return `
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-primary cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-green-50 transition">
+          <input type="radio" name="newRole" value="${r}" class="w-4 h-4 accent-green-700">
+          <span class="badge ${meta.cls}"><i class="fa-solid ${meta.icon} text-xs"></i> ${meta.ar}</span>
+          <span class="text-xs text-gray-500 flex-1">${ROLE_CAPS[r]}</span>
+        </label>`;
+    }).join('');
+  }
+
+  /* ── EDIT MODAL ───────────────────────────────────────────── */
+  function openEdit(adminId) {
+    if (myRole !== 'super_admin') return;
+    editTarget = allAdmins.find(a => a.id === adminId);
+    if (!editTarget) return;
+
+    document.getElementById('modalEmail').value = editTarget.email || '';
+    document.getElementById('modalAlert').classList.add('hidden');
+
+    // Pre-select current role
+    const radios = document.querySelectorAll('input[name="newRole"]');
+    radios.forEach(r => { r.checked = r.value === editTarget.role; });
+
+    document.getElementById('editModal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('editModal').classList.add('hidden');
+    editTarget = null;
+  }
+
+  async function saveRole() {
+    if (!editTarget || myRole !== 'super_admin') return;
+    const newRole = document.querySelector('input[name="newRole"]:checked')?.value;
+    if (!newRole) { showModalAlert('يرجى اختيار دور', 'error'); return; }
+    if (newRole === editTarget.role) { closeModal(); return; }
+
+    const btn = document.querySelector('button[onclick="saveRole()"]');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+
+    const { error } = await window.db
+      .from('admin_users')
+      .update({ role: newRole })
+      .eq('id', editTarget.id);
+
+    btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ';
+
+    if (error) {
+      showModalAlert('خطأ: ' + (error.message || 'تعذّر التحديث'), 'error');
+      return;
+    }
+
+    closeModal();
+    await loadTeam();
+    showToast(`تم تغيير دور ${editTarget.email} إلى ${ROLE_META[newRole]?.ar || newRole}`);
+  }
+
+  function showModalAlert(msg, type) {
+    const el = document.getElementById('modalAlert');
+    el.textContent = msg;
+    el.className = `mb-4 p-3 rounded-lg text-sm font-bold ${type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
+    el.classList.remove('hidden');
+  }
+
+  /* ── TABS ─────────────────────────────────────────────────── */
+  function switchTab(tab) {
+    ['team','matrix','roles'].forEach(t => {
+      document.getElementById('pane-' + t).classList.toggle('hidden', t !== tab);
+      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    });
+  }
+
+  /* ── TOAST ────────────────────────────────────────────────── */
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-primary text-white px-5 py-3 rounded-xl shadow-lg font-bold text-sm z-[200] flex items-center gap-2';
+    t.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${msg}`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  /* ── UTILS ────────────────────────────────────────────────── */
+  function fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('ar-EG');
+  }
+
+  /* ── FALLBACK DATA (if DB tables not migrated yet) ────────── */
+  const FALLBACK_ROLES = ROLES_ORDER.map((r, i) => ({
+    role: r,
+    name_ar: ROLE_META[r].ar,
+    name_en: ROLE_META[r].en || r,
+    description_ar: ROLE_CAPS[r],
+    icon: ROLE_META[r].icon,
+    sort_order: i + 1,
+  }));
+
+  const FALLBACK_MATRIX = [
+    { permission:'read_bookings',   name_ar:'عرض الحجوزات',         category_ar:'الحجوزات',  roles:['super_admin','admin','financial_manager','accountant','cashier','sales_agent','booking_agent','auditor'] },
+    { permission:'write_bookings',  name_ar:'إنشاء/تعديل الحجوزات', category_ar:'الحجوزات',  roles:['super_admin','admin','sales_agent','booking_agent'] },
+    { permission:'delete_bookings', name_ar:'حذف الحجوزات',          category_ar:'الحجوزات',  roles:['super_admin'] },
+    { permission:'read_packages',   name_ar:'عرض البرامج',           category_ar:'البرامج',   roles:['super_admin','admin','sales_agent','booking_agent','auditor','financial_manager'] },
+    { permission:'write_packages',  name_ar:'إدارة البرامج',          category_ar:'البرامج',   roles:['super_admin','admin'] },
+    { permission:'read_invoices',   name_ar:'عرض الفواتير',           category_ar:'المالية',   roles:['super_admin','financial_manager','accountant','cashier','auditor','admin'] },
+    { permission:'write_invoices',  name_ar:'إنشاء/تعديل الفواتير',  category_ar:'المالية',   roles:['super_admin','financial_manager','accountant','cashier','admin'] },
+    { permission:'read_payments',   name_ar:'عرض المدفوعات',          category_ar:'المالية',   roles:['super_admin','financial_manager','accountant','cashier','auditor','admin'] },
+    { permission:'write_payments',  name_ar:'تسجيل المدفوعات',        category_ar:'المالية',   roles:['super_admin','financial_manager','accountant','cashier','admin'] },
+    { permission:'read_journal',    name_ar:'عرض القيود المحاسبية',   category_ar:'المحاسبة',  roles:['super_admin','financial_manager','accountant','auditor'] },
+    { permission:'write_journal',   name_ar:'إدخال القيود المحاسبية', category_ar:'المحاسبة',  roles:['super_admin','financial_manager','accountant','admin'] },
+    { permission:'write_expenses',  name_ar:'تسجيل المصاريف',         category_ar:'المصاريف',  roles:['super_admin','financial_manager','accountant','admin'] },
+    { permission:'approve_expenses',name_ar:'اعتماد المصاريف',        category_ar:'الموافقات', roles:['super_admin','financial_manager'] },
+    { permission:'approve_refunds', name_ar:'اعتماد المردودات',       category_ar:'الموافقات', roles:['super_admin','financial_manager'] },
+    { permission:'read_reports',    name_ar:'عرض التقارير المالية',   category_ar:'التقارير',  roles:['super_admin','financial_manager','accountant','auditor','admin'] },
+    { permission:'read_fiscal',     name_ar:'عرض الفترات المالية',    category_ar:'الفترات',   roles:['super_admin','financial_manager','accountant','auditor','admin'] },
+    { permission:'close_period',    name_ar:'إغلاق الفترات المالية',  category_ar:'الفترات',   roles:['super_admin','financial_manager'] },
+    { permission:'year_end_close',  name_ar:'إقفال السنة المالية',    category_ar:'الفترات',   roles:['super_admin','financial_manager'] },
+    { permission:'read_coa',        name_ar:'عرض دليل الحسابات',      category_ar:'الحسابات',  roles:['super_admin','financial_manager','accountant','auditor','admin'] },
+    { permission:'write_coa',       name_ar:'تعديل دليل الحسابات',    category_ar:'الحسابات',  roles:['super_admin','financial_manager'] },
+    { permission:'read_suppliers',  name_ar:'عرض الموردين',           category_ar:'الموردون',  roles:['super_admin','financial_manager','accountant','auditor','admin','sales_agent'] },
+    { permission:'write_suppliers', name_ar:'إدارة الموردين',          category_ar:'الموردون',  roles:['super_admin','financial_manager','accountant','admin'] },
+    { permission:'read_customers',  name_ar:'عرض العملاء',            category_ar:'العملاء',   roles:['super_admin','admin','financial_manager','accountant','cashier','sales_agent','booking_agent','auditor'] },
+    { permission:'read_cash_bank',  name_ar:'عرض الخزينة والبنوك',    category_ar:'الخزينة',   roles:['super_admin','financial_manager','accountant','cashier','auditor','admin'] },
+    { permission:'write_cash_bank', name_ar:'إدارة الخزينة والبنوك',  category_ar:'الخزينة',   roles:['super_admin','financial_manager','accountant','admin'] },
+    { permission:'manage_users',    name_ar:'إدارة المستخدمين',        category_ar:'الإدارة',   roles:['super_admin'] },
+    { permission:'manage_admins',   name_ar:'إدارة المشرفين والأدوار', category_ar:'الإدارة',   roles:['super_admin'] },
+    { permission:'view_audit_log',  name_ar:'عرض سجل العمليات',       category_ar:'الإدارة',   roles:['super_admin','financial_manager','auditor','admin'] },
+    { permission:'system_settings', name_ar:'إعدادات النظام',          category_ar:'الإدارة',   roles:['super_admin'] },
+  ];
+
+  // ── Close modal on overlay click ──
+  document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ── Boot ──
+  init();
+  </script>
+</body>
+</html>

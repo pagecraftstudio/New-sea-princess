@@ -70,6 +70,7 @@
       <a href="/nsp-control-8x4k/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
       <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
       <a href="/nsp-control-8x4k/admins.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-shield-halved w-5"></i>الأدوار والصلاحيات</a>
       <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
   </nav>
 </div>
@@ -102,6 +103,7 @@
       <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
       <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
       <a href="/nsp-control-8x4k/admins.html" class="nav-link active"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link"><i class="fa-solid fa-shield-halved w-5"></i>الأدوار والصلاحيات</a>
       <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
     </nav>
     <div class="p-3 border-t border-gray-800 text-xs text-gray-500 text-center" id="adminUserEmail"></div>
@@ -200,9 +202,21 @@
       <div class="mb-6">
         <label class="block text-xs font-bold text-gray-500 mb-2">الدور</label>
         <select id="modalRole" class="field-input">
-          <option value="viewer">مشاهد — عرض فقط</option>
-          <option value="admin">مشرف — تعديل وإضافة</option>
-          <option value="super_admin">مدير عام — صلاحيات كاملة</option>
+          <optgroup label="إدارة">
+            <option value="super_admin">مدير عام — صلاحيات كاملة</option>
+            <option value="admin">مشرف — إدارة عامة</option>
+            <option value="viewer">مشاهد — عرض فقط</option>
+          </optgroup>
+          <optgroup label="مالية ومحاسبة">
+            <option value="financial_manager">مدير مالي — موافقة وإغلاق فترات</option>
+            <option value="accountant">محاسب — قيود وفواتير وتقارير</option>
+            <option value="cashier">أمين صندوق — مدفوعات فقط</option>
+            <option value="auditor">مراجع حسابات — قراءة فقط</option>
+          </optgroup>
+          <optgroup label="مبيعات وحجوزات">
+            <option value="sales_agent">موظف مبيعات — عملاء وحجوزات</option>
+            <option value="booking_agent">موظف حجوزات — إنشاء وتتبع حجوزات</option>
+          </optgroup>
         </select>
       </div>
 
@@ -284,9 +298,15 @@ async function loadAdmins() {
 
 function roleBadge(role) {
   const map = {
-    super_admin: ['role-super', 'مدير عام', 'fa-crown'],
-    admin:       ['role-admin', 'مشرف',     'fa-user-tie'],
-    viewer:      ['role-viewer','مشاهد',    'fa-eye'],
+    super_admin:       ['role-super',   'مدير عام',         'fa-crown'],
+    financial_manager: ['role-super',   'مدير مالي',         'fa-landmark'],
+    accountant:        ['role-admin',   'محاسب',             'fa-calculator'],
+    cashier:           ['role-viewer',  'أمين صندوق',        'fa-cash-register'],
+    sales_agent:       ['role-viewer',  'موظف مبيعات',       'fa-handshake'],
+    booking_agent:     ['role-viewer',  'موظف حجوزات',       'fa-calendar-check'],
+    auditor:           ['role-viewer',  'مراجع حسابات',      'fa-eye'],
+    admin:             ['role-admin',   'مشرف',              'fa-user-tie'],
+    viewer:            ['role-viewer',  'مشاهد',             'fa-eye'],
   };
   const [cls, label, icon] = map[role] || ['role-viewer', role, 'fa-user'];
   return `<span class="role-badge ${cls}"><i class="fa-solid ${icon} text-xs"></i> ${label}</span>`;
