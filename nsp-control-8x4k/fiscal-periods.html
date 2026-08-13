@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الفترات المالية | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .nav-link { display:flex; align-items:center; gap:10px; padding:12px 24px; color:#9ca3af; transition:.2s; }
+    .nav-link:hover { background:#1f2937; color:#fff; }
+    .nav-link.active { background:#1B5E20; border-right:4px solid #B8860B; color:#fff; }
+    table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    th { background:#f3f4f6; font-weight:700; padding:8px 12px; text-align:right; border-bottom:2px solid #e5e7eb; }
+    td { padding:8px 12px; border-bottom:1px solid #f3f4f6; vertical-align:middle; }
+    tr:hover td { background:#fafafa; }
+    .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:.72rem; font-weight:700; }
+    .badge-open    { background:#dcfce7; color:#166534; }
+    .badge-closing { background:#fef9c3; color:#854d0e; }
+    .badge-closed  { background:#f3f4f6; color:#374151; }
+    .section-title { font-size:1rem; font-weight:700; color:#1B5E20; border-right:3px solid #B8860B; padding-right:10px; margin-bottom:16px; }
+    .stat-card { background:#fff; border-radius:12px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    .modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:center;justify-content:center; }
+    .modal { background:#fff;border-radius:16px;padding:28px;width:90%;max-width:540px;max-height:90vh;overflow-y:auto; }
+    label { font-size:.8rem; font-weight:600; color:#374151; display:block; margin-bottom:4px; }
+    input,select,textarea { width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:.9rem;font-family:'Cairo',sans-serif; }
+    input:focus,select:focus { outline:none;border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.2); }
+    .btn-primary { background:#1B5E20;color:#fff;padding:8px 20px;border-radius:8px;font-weight:700;font-size:.85rem;cursor:pointer;border:none;transition:.15s; }
+    .btn-primary:hover { background:#2E7D32; }
+    .btn-gold { background:#B8860B;color:#fff;padding:8px 20px;border-radius:8px;font-weight:700;font-size:.85rem;cursor:pointer;border:none;transition:.15s; }
+    .btn-gold:hover { background:#DAA520; }
+    .btn-danger { background:#C62828;color:#fff;padding:8px 20px;border-radius:8px;font-weight:700;font-size:.85rem;cursor:pointer;border:none;transition:.15s; }
+    .btn-outline { background:#fff;border:1px solid #d1d5db;color:#374151;padding:8px 20px;border-radius:8px;font-weight:600;font-size:.85rem;cursor:pointer;transition:.15s; }
+    .btn-outline:hover { background:#f9fafb; }
+    .alert-warning { background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:12px 16px;color:#92400e;font-size:.82rem; }
+    .alert-danger  { background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px 16px;color:#991b1b;font-size:.82rem; }
+    .alert-success { background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;color:#166534;font-size:.82rem; }
+    @media print { .no-print { display:none !important; } }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- MOBILE TOP BAR -->
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg no-print">
+  <div class="flex items-center gap-2 font-bold text-lg text-gold"><i class="fa-solid fa-calendar-days"></i> الفترات المالية</div>
+  <button id="mobileMenuBtn" class="text-white text-2xl p-1"><i class="fa-solid fa-bars"></i></button>
+</header>
+
+<!-- MOBILE DRAWER -->
+<div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden no-print">
+  <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl">
+    <div class="h-16 flex items-center justify-between px-5 border-b border-gray-800">
+      <span class="font-bold text-gold text-lg"><i class="fa-solid fa-calendar-days ml-1"></i> الفترات المالية</span>
+      <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <a href="/nsp-control-8x4k/dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+    <a href="/nsp-control-8x4k/bookings.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+    <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+    <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+    <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+    <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+    <a href="/nsp-control-8x4k/reports.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+    <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+    <a href="/nsp-control-8x4k/expenses.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+    <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+    <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+    <a href="/nsp-control-8x4k/suppliers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+    <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+  </nav>
+</div>
+
+<div class="flex min-h-screen">
+  <!-- DESKTOP SIDEBAR -->
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="NSP" class="h-8 w-auto object-contain ml-2"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link active"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+      <a href="/nsp-control-8x4k/reports.html" class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <p class="text-xs text-gray-500 mb-2 text-center" id="adminUserEmail"></p>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+
+    <!-- HEADER -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6 no-print">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">الفترات المالية</h1>
+        <p class="text-sm text-gray-500 mt-0.5">إدارة الفترات المالية — الإقفال السنوي — نقل الأرباح المحتجزة</p>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="openCreateYearModal()" class="btn-primary flex items-center gap-2">
+          <i class="fa-solid fa-calendar-plus"></i> إنشاء سنة مالية
+        </button>
+        <button onclick="openAddPeriodModal()" class="btn-outline flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> فترة مخصصة
+        </button>
+      </div>
+    </div>
+
+    <!-- GLOBAL ALERT -->
+    <div id="globalAlert" class="hidden mb-4"></div>
+
+    <!-- STATS ROW -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="stat-card">
+        <div class="text-xs text-gray-500 mb-1">فترات مفتوحة</div>
+        <div class="text-2xl font-bold text-green-700" id="statOpen">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-xs text-gray-500 mb-1">فترات في الإقفال</div>
+        <div class="text-2xl font-bold text-yellow-600" id="statClosing">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-xs text-gray-500 mb-1">فترات مغلقة</div>
+        <div class="text-2xl font-bold text-gray-500" id="statClosed">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-xs text-gray-500 mb-1">إجمالي الفترات</div>
+        <div class="text-2xl font-bold text-gray-800" id="statTotal">—</div>
+      </div>
+    </div>
+
+    <!-- FILTER BY YEAR -->
+    <div class="bg-white rounded-xl p-4 mb-5 flex flex-wrap gap-3 items-center shadow-sm no-print">
+      <span class="text-sm font-semibold text-gray-600">السنة:</span>
+      <select id="filterYear" class="border rounded-lg px-3 py-1.5 text-sm w-32" onchange="loadPeriods()">
+        <option value="">الكل</option>
+      </select>
+      <select id="filterStatus" class="border rounded-lg px-3 py-1.5 text-sm" onchange="loadPeriods()">
+        <option value="">كل الحالات</option>
+        <option value="open">مفتوحة</option>
+        <option value="closing">في الإقفال</option>
+        <option value="closed">مغلقة</option>
+      </select>
+      <button onclick="loadPeriods()" class="btn-outline text-sm px-3 py-1.5">
+        <i class="fa-solid fa-rotate-right ml-1"></i> تحديث
+      </button>
+    </div>
+
+    <!-- INTEGRITY NOTICE -->
+    <div id="integrityNotice" class="hidden mb-4"></div>
+
+    <!-- PERIODS TABLE -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+      <div class="section-title px-5 pt-5 mb-0">قائمة الفترات المالية</div>
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>اسم الفترة</th>
+              <th>من</th>
+              <th>إلى</th>
+              <th>النوع</th>
+              <th>السنة</th>
+              <th>الإيراد</th>
+              <th>التكاليف</th>
+              <th>صافي الربح</th>
+              <th>عدد القيود</th>
+              <th>إقفال سنوي</th>
+              <th>الحالة</th>
+              <th class="no-print">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="periodsBody">
+            <tr><td colspan="12" class="text-center text-gray-400 py-10"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جاري التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- INFO BOX -->
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
+      <div class="font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-circle-info"></i> قواعد الفترات المالية</div>
+      <ul class="list-disc list-inside space-y-1 text-xs">
+        <li>القيود المرحّلة (posted) في فترة مغلقة غير قابلة للتعديل أو الحذف — استخدم قيداً عكسياً.</li>
+        <li>إقفال الفترة السنوية ينقل صافي الربح/الخسارة إلى حساب الأرباح المحتجزة تلقائياً.</li>
+        <li>لا يمكن إضافة قيود جديدة على تاريخ يقع في فترة مغلقة.</li>
+        <li>البيانات المحاسبية التاريخية محمية — لا يمكن حذفها أبداً.</li>
+        <li>يمكن إعادة فتح فترة مغلقة للتصحيح (تصبح في وضع "في الإقفال") من قِبَل المدير المالي فقط.</li>
+      </ul>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════ MODALS ═══════════════════════════ -->
+
+<!-- CREATE FISCAL YEAR MODAL -->
+<div id="createYearModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-gray-800">إنشاء سنة مالية</h2>
+      <button onclick="closeModal('createYearModal')" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label>السنة</label>
+        <input type="number" id="cyYear" min="2020" max="2035" value="" placeholder="مثال: 2025">
+      </div>
+      <div>
+        <label>نوع الفترات</label>
+        <select id="cyType">
+          <option value="monthly">شهرية (12 فترة)</option>
+          <option value="annual">سنوية واحدة</option>
+        </select>
+      </div>
+      <div class="alert-warning">
+        <i class="fa-solid fa-triangle-exclamation ml-1"></i>
+        سيتم إنشاء الفترات تلقائياً بحالة "مفتوحة". يمكنك إقفالها لاحقاً.
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="createFiscalYear()" class="btn-primary flex-1">إنشاء</button>
+        <button onclick="closeModal('createYearModal')" class="btn-outline flex-1">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CUSTOM PERIOD MODAL -->
+<div id="addPeriodModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-gray-800">إضافة فترة مالية مخصصة</h2>
+      <button onclick="closeModal('addPeriodModal')" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label>اسم الفترة</label>
+        <input type="text" id="apName" placeholder="مثال: الربع الأول 2025">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label>تاريخ البداية</label>
+          <input type="date" id="apStart">
+        </div>
+        <div>
+          <label>تاريخ النهاية</label>
+          <input type="date" id="apEnd">
+        </div>
+      </div>
+      <div>
+        <label>النوع</label>
+        <select id="apType">
+          <option value="monthly">شهرية</option>
+          <option value="quarterly">ربع سنوية</option>
+          <option value="annual">سنوية</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="apIsYearEnd" class="w-auto">
+        <label for="apIsYearEnd" class="mb-0">فترة إقفال سنوي</label>
+      </div>
+      <div>
+        <label>ملاحظات (اختياري)</label>
+        <textarea id="apNotes" rows="2" placeholder="ملاحظات..."></textarea>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="savePeriod()" class="btn-primary flex-1">حفظ</button>
+        <button onclick="closeModal('addPeriodModal')" class="btn-outline flex-1">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLOSE PERIOD MODAL -->
+<div id="closePeriodModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+        <i class="fa-solid fa-lock text-red-600"></i> إقفال الفترة المالية
+      </h2>
+      <button onclick="closeModal('closePeriodModal')" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="closePeriodContent" class="space-y-4">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- PERIOD DETAIL MODAL -->
+<div id="periodDetailModal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:680px">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-gray-800" id="detailModalTitle">تفاصيل الفترة</h2>
+      <button onclick="closeModal('periodDetailModal')" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="periodDetailContent">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Helpers ──────────────────────────────────────────────────
+function fmt(n) {
+  if (n == null) return '—';
+  return new Intl.NumberFormat('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+function statusBadge(s) {
+  const map = { open:'badge-open', closing:'badge-closing', closed:'badge-closed' };
+  const labelMap = { open:'مفتوحة', closing:'في الإقفال', closed:'مغلقة' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${labelMap[s]||s}</span>`;
+}
+function showAlert(msg, type='success') {
+  const el = document.getElementById('globalAlert');
+  const cls = type === 'success' ? 'alert-success' : type === 'warning' ? 'alert-warning' : 'alert-danger';
+  el.innerHTML = `<div class="${cls}"><i class="fa-solid fa-${type==='success'?'check-circle':'triangle-exclamation'} ml-2"></i>${msg}</div>`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 6000);
+}
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+
+// Mobile drawer
+document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+  document.getElementById('mobileDrawer').classList.remove('hidden');
+});
+function closeDrawer() { document.getElementById('mobileDrawer').classList.add('hidden'); }
+
+// ── State ────────────────────────────────────────────────────
+let currentUser = null;
+let allPeriods  = [];
+
+// ── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  await requireAdmin();
+  currentUser = (await supabase.auth.getUser()).data.user;
+  document.getElementById('adminUserEmail').textContent = currentUser?.email || '';
+  populateYearFilter();
+  await loadPeriods();
+  // Set default year in "create year" modal
+  document.getElementById('cyYear').value = new Date().getFullYear();
+});
+
+function populateYearFilter() {
+  const sel = document.getElementById('filterYear');
+  const cur = new Date().getFullYear();
+  for (let y = cur + 1; y >= cur - 5; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    if (y === cur) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+// ── Load Periods ─────────────────────────────────────────────
+async function loadPeriods() {
+  const year   = document.getElementById('filterYear').value;
+  const status = document.getElementById('filterStatus').value;
+
+  let q = supabase
+    .from('fiscal_periods')
+    .select('*')
+    .order('start_date', { ascending: false });
+
+  if (year)   q = q.eq('year', year);
+  if (status) q = q.eq('status', status);
+
+  const { data, error } = await q;
+  if (error) {
+    showAlert('خطأ في تحميل الفترات: ' + error.message, 'error');
+    return;
+  }
+
+  allPeriods = data || [];
+  renderStats();
+  renderTable();
+  checkIntegrity();
+}
+
+function renderStats() {
+  document.getElementById('statOpen').textContent    = allPeriods.filter(p => p.status === 'open').length;
+  document.getElementById('statClosing').textContent = allPeriods.filter(p => p.status === 'closing').length;
+  document.getElementById('statClosed').textContent  = allPeriods.filter(p => p.status === 'closed').length;
+  document.getElementById('statTotal').textContent   = allPeriods.length;
+}
+
+async function renderTable() {
+  const tbody = document.getElementById('periodsBody');
+  if (!allPeriods.length) {
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center text-gray-400 py-10">لا توجد فترات مالية. أنشئ سنة مالية جديدة.</td></tr>';
+    return;
+  }
+
+  // Fetch summaries for each period (batch where feasible)
+  // For performance, we'll fetch summaries via RPC for visible rows
+  tbody.innerHTML = allPeriods.map(p => `
+    <tr data-id="${p.id}">
+      <td class="font-semibold">${p.name}</td>
+      <td>${fmtDate(p.start_date)}</td>
+      <td>${fmtDate(p.end_date)}</td>
+      <td class="text-xs text-gray-500">${typeLabel(p.period_type)}</td>
+      <td class="font-mono">${p.year || '—'}</td>
+      <td class="text-green-700 font-mono text-xs" id="rev-${p.id}">
+        <span class="text-gray-300 text-xs">...</span>
+      </td>
+      <td class="text-red-700 font-mono text-xs" id="cost-${p.id}">
+        <span class="text-gray-300 text-xs">...</span>
+      </td>
+      <td class="font-mono text-xs font-bold" id="profit-${p.id}">
+        <span class="text-gray-300 text-xs">...</span>
+      </td>
+      <td class="text-center" id="jecount-${p.id}">
+        <span class="text-gray-300 text-xs">...</span>
+      </td>
+      <td class="text-center">${p.is_year_end
+        ? '<span class="badge badge-green text-xs">نعم</span>'
+        : '<span class="text-gray-300 text-xs">—</span>'}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td class="no-print">
+        <div class="flex gap-1 flex-wrap">
+          <button onclick="viewPeriodDetail('${p.id}')"
+            class="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+          ${p.status !== 'closed' ? `
+          <button onclick="openClosePeriodModal('${p.id}')"
+            class="text-xs px-2 py-1 rounded bg-red-100 hover:bg-red-200 text-red-700 font-semibold">
+            <i class="fa-solid fa-lock"></i> إقفال
+          </button>` : ''}
+          ${p.status === 'closed' ? `
+          <button onclick="confirmReopen('${p.id}','${p.name}')"
+            class="text-xs px-2 py-1 rounded bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-semibold">
+            <i class="fa-solid fa-lock-open"></i> إعادة فتح
+          </button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  // Load summaries async
+  for (const p of allPeriods) {
+    loadPeriodSummary(p.id);
+  }
+}
+
+function typeLabel(t) {
+  const m = { monthly: 'شهرية', quarterly: 'ربعية', annual: 'سنوية' };
+  return m[t] || t || '—';
+}
+
+async function loadPeriodSummary(id) {
+  const { data, error } = await supabase.rpc('get_period_summary', { p_period_id: id });
+  if (error || !data) return;
+  const d = data;
+  const profitColor = (d.net_profit || 0) >= 0 ? 'text-green-700' : 'text-red-700';
+  const revEl     = document.getElementById('rev-' + id);
+  const costEl    = document.getElementById('cost-' + id);
+  const profEl    = document.getElementById('profit-' + id);
+  const jecountEl = document.getElementById('jecount-' + id);
+  if (revEl)     revEl.textContent     = fmt(d.revenue);
+  if (costEl)    costEl.textContent    = fmt((d.direct_cost||0) + (d.expenses||0));
+  if (profEl)    { profEl.textContent = fmt(d.net_profit); profEl.className = `font-mono text-xs font-bold ${profitColor}`; }
+  if (jecountEl) jecountEl.textContent = d.posted_count + ' / ' + d.je_count;
+}
+
+// ── Integrity Check ───────────────────────────────────────────
+async function checkIntegrity() {
+  const notice = document.getElementById('integrityNotice');
+  // Check for overlapping open periods
+  const open = allPeriods.filter(p => p.status !== 'closed');
+  const overlapping = [];
+  for (let i = 0; i < open.length; i++) {
+    for (let j = i + 1; j < open.length; j++) {
+      const a = open[i], b = open[j];
+      const aStart = new Date(a.start_date), aEnd = new Date(a.end_date);
+      const bStart = new Date(b.start_date), bEnd = new Date(b.end_date);
+      if (aStart <= bEnd && bStart <= aEnd) {
+        overlapping.push(`${a.name} ↔ ${b.name}`);
+      }
+    }
+  }
+  if (overlapping.length) {
+    notice.innerHTML = `<div class="alert-warning mb-4"><i class="fa-solid fa-triangle-exclamation ml-1"></i>
+      <strong>تحذير:</strong> فترات متداخلة محتملة: ${overlapping.join(', ')}. قد يؤثر ذلك على إسناد القيود.</div>`;
+    notice.classList.remove('hidden');
+  } else {
+    notice.classList.add('hidden');
+  }
+}
+
+// ── Create Fiscal Year ────────────────────────────────────────
+function openCreateYearModal() {
+  document.getElementById('cyYear').value = new Date().getFullYear();
+  openModal('createYearModal');
+}
+
+async function createFiscalYear() {
+  const year = parseInt(document.getElementById('cyYear').value);
+  const type = document.getElementById('cyType').value;
+  if (!year || year < 2000 || year > 2099) {
+    showAlert('أدخل سنة صحيحة', 'error'); return;
+  }
+  const { data, error } = await supabase.rpc('create_fiscal_year', {
+    p_year: year,
+    p_created_by: currentUser.id,
+    p_period_type: type
+  });
+  if (error) { showAlert('خطأ: ' + error.message, 'error'); return; }
+  closeModal('createYearModal');
+  showAlert(`تم إنشاء ${data.periods_created} فترة للسنة ${year}`);
+  // Set filter to new year
+  document.getElementById('filterYear').value = year;
+  await loadPeriods();
+}
+
+// ── Add Custom Period ─────────────────────────────────────────
+function openAddPeriodModal() {
+  document.getElementById('apName').value  = '';
+  document.getElementById('apStart').value = '';
+  document.getElementById('apEnd').value   = '';
+  document.getElementById('apNotes').value = '';
+  document.getElementById('apIsYearEnd').checked = false;
+  openModal('addPeriodModal');
+}
+
+async function savePeriod() {
+  const name    = document.getElementById('apName').value.trim();
+  const start   = document.getElementById('apStart').value;
+  const end     = document.getElementById('apEnd').value;
+  const type    = document.getElementById('apType').value;
+  const notes   = document.getElementById('apNotes').value.trim();
+  const yearEnd = document.getElementById('apIsYearEnd').checked;
+
+  if (!name || !start || !end) { showAlert('الاسم والتواريخ مطلوبة', 'error'); return; }
+  if (end < start) { showAlert('تاريخ النهاية يجب أن يكون بعد تاريخ البداية', 'error'); return; }
+
+  const year = new Date(start).getFullYear();
+  const { error } = await supabase.from('fiscal_periods').insert({
+    name, start_date: start, end_date: end,
+    period_type: type, year,
+    is_year_end: yearEnd, notes: notes || null
+  });
+  if (error) { showAlert('خطأ في الحفظ: ' + error.message, 'error'); return; }
+  closeModal('addPeriodModal');
+  showAlert('تم إضافة الفترة المالية بنجاح');
+  await loadPeriods();
+}
+
+// ── Close Period ──────────────────────────────────────────────
+async function openClosePeriodModal(periodId) {
+  const period = allPeriods.find(p => p.id === periodId);
+  if (!period) return;
+
+  // Load summary first
+  const { data: summary } = await supabase.rpc('get_period_summary', { p_period_id: periodId });
+
+  // Load retained earnings accounts for selection
+  const { data: reAccounts } = await supabase
+    .from('accounts')
+    .select('id, code, name_ar')
+    .eq('type', 'equity')
+    .eq('is_active', true)
+    .order('code');
+
+  const isYearEnd = period.is_year_end;
+
+  document.getElementById('closePeriodContent').innerHTML = `
+    <div class="alert-danger mb-4">
+      <strong><i class="fa-solid fa-triangle-exclamation ml-1"></i>تحذير:</strong>
+      بعد إقفال الفترة، لن يمكن إضافة قيود جديدة بتاريخ يقع ضمنها. هذا الإجراء يتطلب مراجعة دقيقة.
+    </div>
+
+    <div class="bg-gray-50 rounded-lg p-4 mb-4 space-y-2 text-sm">
+      <div class="flex justify-between">
+        <span class="text-gray-500">الفترة:</span>
+        <strong>${period.name}</strong>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-500">من — إلى:</span>
+        <span>${fmtDate(period.start_date)} — ${fmtDate(period.end_date)}</span>
+      </div>
+      ${summary ? `
+      <div class="flex justify-between">
+        <span class="text-gray-500">الإيراد:</span>
+        <span class="text-green-700 font-bold">${fmt(summary.revenue)} ج.م</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-500">التكاليف والمصروفات:</span>
+        <span class="text-red-700 font-bold">${fmt((summary.direct_cost||0)+(summary.expenses||0))} ج.م</span>
+      </div>
+      <div class="flex justify-between border-t pt-2">
+        <span class="font-bold">صافي الربح/الخسارة:</span>
+        <span class="font-bold text-lg ${(summary.net_profit||0)>=0?'text-green-700':'text-red-700'}">
+          ${fmt(summary.net_profit)} ج.م
+        </span>
+      </div>
+      <div class="flex justify-between text-xs text-gray-400">
+        <span>قيود مرحّلة / إجمالي:</span>
+        <span>${summary.posted_count} / ${summary.je_count}</span>
+      </div>
+      ${summary.draft_count > 0 ? `
+      <div class="alert-warning mt-2">
+        <i class="fa-solid fa-triangle-exclamation ml-1"></i>
+        يوجد ${summary.draft_count} قيد في حالة مسودة — تأكد من ترحيلها أو حذفها قبل الإقفال.
+      </div>` : ''}
+      ` : ''}
+    </div>
+
+    ${isYearEnd ? `
+    <div class="mb-4">
+      <label>حساب الأرباح المحتجزة (للإقفال السنوي)</label>
+      <select id="reAccountId" class="mt-1">
+        <option value="">اختيار تلقائي (كود 3200)</option>
+        ${(reAccounts||[]).map(a => `<option value="${a.id}">${a.code} — ${a.name_ar}</option>`).join('')}
+      </select>
+      <p class="text-xs text-gray-400 mt-1">سيتم نقل صافي الربح/الخسارة إلى هذا الحساب تلقائياً.</p>
+    </div>
+    ` : ''}
+
+    <div class="mb-4">
+      <label>سبب الإقفال (اختياري)</label>
+      <textarea id="closeReason" rows="2" placeholder="ملاحظات للسجل المحاسبي..."></textarea>
+    </div>
+
+    <div class="flex items-center gap-2 mb-4">
+      <input type="checkbox" id="closeConfirm" class="w-auto">
+      <label for="closeConfirm" class="mb-0 text-sm">أؤكد رغبتي في إقفال هذه الفترة المالية</label>
+    </div>
+
+    <div class="flex gap-3">
+      <button onclick="executePeriodClose('${periodId}', ${isYearEnd})"
+        class="btn-danger flex-1 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-lock"></i> تأكيد الإقفال
+      </button>
+      <button onclick="closeModal('closePeriodModal')" class="btn-outline flex-1">إلغاء</button>
+    </div>
+  `;
+  openModal('closePeriodModal');
+}
+
+async function executePeriodClose(periodId, isYearEnd) {
+  if (!document.getElementById('closeConfirm').checked) {
+    showAlert('يجب تأكيد الإقفال أولاً', 'warning'); return;
+  }
+
+  const reAccountId = isYearEnd
+    ? (document.getElementById('reAccountId')?.value || null)
+    : null;
+
+  // First set to 'closing'
+  await supabase.from('fiscal_periods').update({ status: 'closing' }).eq('id', periodId);
+
+  // Call close function
+  const { data, error } = await supabase.rpc('close_fiscal_period', {
+    p_period_id: periodId,
+    p_closed_by: currentUser.id,
+    p_retained_earnings_account_id: reAccountId || null
+  });
+
+  if (error) {
+    // Revert to previous status
+    await supabase.from('fiscal_periods').update({ status: 'open' }).eq('id', periodId);
+    showAlert('خطأ في الإقفال: ' + error.message, 'error'); return;
+  }
+
+  closeModal('closePeriodModal');
+  const result = data;
+  showAlert(`تم إقفال الفترة بنجاح. صافي الربح المنقول: ${fmt(result.net_profit)} ج.م`);
+  await loadPeriods();
+}
+
+// ── Reopen Period ─────────────────────────────────────────────
+async function confirmReopen(periodId, name) {
+  if (!confirm(`هل تريد إعادة فتح الفترة "${name}"؟\nستصبح في وضع "في الإقفال" وسيتم تسجيل العملية في سجل التدقيق.`)) return;
+
+  const reason = prompt('سبب إعادة الفتح (مطلوب):');
+  if (!reason) { showAlert('يجب تحديد سبب إعادة الفتح', 'warning'); return; }
+
+  const { error } = await supabase.rpc('reopen_fiscal_period', {
+    p_period_id: periodId,
+    p_reopened_by: currentUser.id,
+    p_reason: reason
+  });
+  if (error) { showAlert('خطأ: ' + error.message, 'error'); return; }
+  showAlert('تم تغيير حالة الفترة إلى "في الإقفال"');
+  await loadPeriods();
+}
+
+// ── View Period Detail ────────────────────────────────────────
+async function viewPeriodDetail(periodId) {
+  const period = allPeriods.find(p => p.id === periodId);
+  if (!period) return;
+  document.getElementById('detailModalTitle').textContent = 'تفاصيل الفترة: ' + period.name;
+
+  document.getElementById('periodDetailContent').innerHTML =
+    '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl text-gray-400"></i></div>';
+  openModal('periodDetailModal');
+
+  const { data: summary } = await supabase.rpc('get_period_summary', { p_period_id: periodId });
+
+  // Load recent journal entries for this period
+  const { data: entries } = await supabase
+    .from('journal_entries')
+    .select('entry_number, entry_date, description, status, total_debit, total_credit')
+    .or(`fiscal_period_id.eq.${periodId},and(entry_date.gte.${period.start_date},entry_date.lte.${period.end_date})`)
+    .order('entry_date', { ascending: false })
+    .limit(10);
+
+  const s = summary || {};
+  document.getElementById('periodDetailContent').innerHTML = `
+    <div class="grid grid-cols-2 gap-4 mb-5">
+      <div class="bg-gray-50 rounded-lg p-3 text-sm">
+        <div class="text-gray-500 text-xs mb-1">الفترة</div>
+        <div class="font-bold">${period.name}</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-3 text-sm">
+        <div class="text-gray-500 text-xs mb-1">الحالة</div>
+        <div>${statusBadge(period.status)}</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-3 text-sm">
+        <div class="text-gray-500 text-xs mb-1">من</div>
+        <div>${fmtDate(period.start_date)}</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-3 text-sm">
+        <div class="text-gray-500 text-xs mb-1">إلى</div>
+        <div>${fmtDate(period.end_date)}</div>
+      </div>
+    </div>
+
+    <div class="section-title">ملخص مالي</div>
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <div class="bg-green-50 border border-green-100 rounded-lg p-3 text-center">
+        <div class="text-xs text-gray-500">الإيراد</div>
+        <div class="font-bold text-green-700">${fmt(s.revenue)}</div>
+      </div>
+      <div class="bg-red-50 border border-red-100 rounded-lg p-3 text-center">
+        <div class="text-xs text-gray-500">التكاليف الكلية</div>
+        <div class="font-bold text-red-700">${fmt((s.direct_cost||0)+(s.expenses||0))}</div>
+      </div>
+      <div class="bg-${(s.net_profit||0)>=0?'blue':'red'}-50 border border-${(s.net_profit||0)>=0?'blue':'red'}-100 rounded-lg p-3 text-center">
+        <div class="text-xs text-gray-500">صافي الربح</div>
+        <div class="font-bold ${(s.net_profit||0)>=0?'text-blue-700':'text-red-700'}">${fmt(s.net_profit)}</div>
+      </div>
+    </div>
+
+    <div class="section-title">آخر القيود (${entries?.length||0})</div>
+    <div class="overflow-x-auto">
+      <table>
+        <thead><tr>
+          <th>رقم القيد</th><th>التاريخ</th><th>الوصف</th>
+          <th>مدين</th><th>دائن</th><th>الحالة</th>
+        </tr></thead>
+        <tbody>
+          ${(entries||[]).map(e => `
+          <tr>
+            <td class="font-mono text-xs">${e.entry_number}</td>
+            <td class="text-xs">${fmtDate(e.entry_date)}</td>
+            <td class="text-xs max-w-xs truncate">${e.description}</td>
+            <td class="text-xs font-mono text-red-700">${fmt(e.total_debit)}</td>
+            <td class="text-xs font-mono text-green-700">${fmt(e.total_credit)}</td>
+            <td>${statusBadge(e.status)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    ${period.status === 'closed' && period.closed_at ? `
+    <div class="mt-4 text-xs text-gray-400">
+      أُقفلت بتاريخ: ${fmtDate(period.closed_at)}
+    </div>` : ''}
+    ${period.notes ? `<div class="mt-3 text-xs text-gray-500">ملاحظات: ${period.notes}</div>` : ''}
+  `;
+}
+</script>
+</body>
+</html>
