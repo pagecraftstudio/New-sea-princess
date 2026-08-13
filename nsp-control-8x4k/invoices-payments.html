@@ -456,9 +456,29 @@ async function loadKPIs() {
 
 /* ─────────────────────── CUSTOMERS SELECT ───────────── */
 async function loadCustomersSelect() {
-  const { data } = await window.db.from('profiles').select('id,full_name,email').order('full_name').limit(300);
-  allCustomers = data || [];
-  const opts = `<option value="">— اختر العميل —</option>` + allCustomers.map(c=>`<option value="${c.id}" data-name="${c.full_name||c.email}" data-email="${c.email||''}">${c.full_name||c.email}</option>`).join('');
+  // Load registered customers from profiles
+  const { data: profileData } = await window.db.from('profiles').select('id,full_name,email').order('full_name').limit(300);
+  const profileMap = {};
+  (profileData||[]).forEach(p => { profileMap[p.id] = p; });
+
+  // Also load unique customers from bookings (covers walk-in / admin-created bookings with no auth account)
+  const { data: bkData } = await window.db.from('bookings')
+    .select('user_id,customer_name,customer_email,customer_phone')
+    .order('created_at',{ascending:false}).limit(500);
+
+  // Build merged list: profiles + booking-only customers
+  const seen = new Set(Object.keys(profileMap));
+  const extraCustomers = []; // bookings with no profile
+  (bkData||[]).forEach(b => {
+    if (b.user_id && seen.has(b.user_id)) return; // already in profiles
+    const key = b.customer_email || b.customer_name;
+    if (!key || seen.has('bk_'+key)) return;
+    seen.add('bk_'+key);
+    extraCustomers.push({ id: 'bk_'+key, full_name: b.customer_name, email: b.customer_email||'', isBookingOnly: true });
+  });
+
+  allCustomers = [...(profileData||[]), ...extraCustomers];
+  const opts = `<option value="">— اختر العميل —</option>` + allCustomers.map(c=>`<option value="${c.id}" data-name="${c.full_name||c.email}" data-email="${c.email||''}" data-booking-only="${c.isBookingOnly||false}">${c.full_name||c.email}${c.isBookingOnly?' (حجز مباشر)':''}</option>`).join('');
   document.getElementById('fInvCustomer').innerHTML = opts;
   document.getElementById('fPayCustomer').innerHTML = opts;
 }
@@ -466,19 +486,43 @@ async function loadCustomersSelect() {
 async function loadCustomerBookings() {
   const custSel = document.getElementById('fInvCustomer');
   const custId = custSel.value;
-  const custEmail = custSel.selectedOptions[0]?.dataset?.email || '';
+  const custOpt = custSel.selectedOptions[0];
+  const custEmail = custOpt?.dataset?.email || '';
+  const custName  = custOpt?.dataset?.name  || custOpt?.textContent?.trim() || '';
   const sel = document.getElementById('fInvBooking');
   sel.innerHTML = '<option value="">— اختر الحجز —</option>';
   if (!custId) return;
-  // Try user_id first, fall back to customer_email match
-  let query = window.db.from('bookings').select('id,booking_number,total_price,packages(title)')
-    .order('created_at',{ascending:false}).limit(50);
-  let { data } = await query.eq('user_id', custId);
-  if (!data || !data.length) {
-    // Fallback: match by email (for bookings created without auth account)
-    const { data: d2 } = await window.db.from('bookings').select('id,booking_number,total_price,packages(title)')
-      .eq('customer_email', custEmail).order('created_at',{ascending:false}).limit(50);
-    data = d2;
+
+  let data = [];
+
+  // Booking-only customers have id prefixed with 'bk_' — skip user_id lookup
+  const isBookingOnly = custId.startsWith('bk_');
+
+  if (!isBookingOnly) {
+    // Try user_id for registered customers
+    const { data: d1 } = await window.db.from('bookings')
+      .select('id,booking_number,total_price,packages(title)')
+      .eq('user_id', custId)
+      .order('created_at',{ascending:false}).limit(50);
+    data = d1 || [];
+  }
+
+  // Fallback 1: match by email
+  if (!data.length && custEmail) {
+    const { data: d2 } = await window.db.from('bookings')
+      .select('id,booking_number,total_price,packages(title)')
+      .eq('customer_email', custEmail)
+      .order('created_at',{ascending:false}).limit(50);
+    data = d2 || [];
+  }
+
+  // Fallback 2: match by customer_name
+  if (!data.length && custName) {
+    const { data: d3 } = await window.db.from('bookings')
+      .select('id,booking_number,total_price,packages(title)')
+      .ilike('customer_name', custName + '%')
+      .order('created_at',{ascending:false}).limit(50);
+    data = d3 || [];
   }
   (data||[]).forEach(b=>{
     const opt = document.createElement('option');
@@ -512,6 +556,14 @@ async function loadPayCustomerInvoices() {
         const { data: bk2 } = await window.db.from('bookings').select('id,booking_number,packages(title)')
           .eq('customer_email', custEmail2).limit(30);
         bk = bk2;
+      }
+    }
+    if (!bk || !bk.length) {
+      const payName = document.getElementById('fPayCustomer').selectedOptions[0]?.dataset?.name || '';
+      if (payName) {
+        const { data: bk3 } = await window.db.from('bookings').select('id,booking_number,packages(title)')
+          .ilike('customer_name', payName + '%').limit(30);
+        bk = bk3;
       }
     }
     (bk||[]).forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=`${b.booking_number||b.id.slice(0,8)} — ${b.packages?.title||''}`; bkSel.appendChild(o); });
@@ -605,9 +657,10 @@ function recalcAllocations() {
 /* ─────────────────────── SAVE INVOICE ──────────────── */
 async function saveInvoice(status='draft') {
   const custSel = document.getElementById('fInvCustomer');
-  const custId  = custSel.value;
+  const custIdRaw = custSel.value;
+  const custId  = custIdRaw.startsWith('bk_') ? null : custIdRaw; // booking-only customers have no real UUID
   const custName = custSel.selectedOptions[0]?.dataset.name || custSel.selectedOptions[0]?.textContent || '';
-  if (!custId) { showErr('invErr','يجب اختيار العميل'); return; }
+  if (!custIdRaw) { showErr('invErr','يجب اختيار العميل'); return; }
 
   const items = [];
   let sub = 0;
@@ -674,9 +727,10 @@ async function saveInvoice(status='draft') {
 /* ─────────────────────── SAVE PAYMENT ──────────────── */
 async function savePayment() {
   const custSel  = document.getElementById('fPayCustomer');
-  const custId   = custSel.value;
+  const custIdRaw2 = custSel.value;
+  const custId   = custIdRaw2.startsWith('bk_') ? null : custIdRaw2;
   const custName = custSel.selectedOptions[0]?.dataset.name || '';
-  if (!custId) { showErr('payErr','يجب اختيار العميل'); return; }
+  if (!custIdRaw2) { showErr('payErr','يجب اختيار العميل'); return; }
 
   const amount = parseFloat(document.getElementById('fPayAmount').value);
   if (!amount || amount<=0) { showErr('payErr','أدخل مبلغاً صحيحاً'); return; }
