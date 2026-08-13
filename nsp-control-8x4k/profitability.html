@@ -58,17 +58,22 @@
       <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto object-contain ml-2"> الإدارة
     </div>
     <nav class="flex-1 overflow-y-auto py-3">
-      <a href="/nsp-control-8x4k/dashboard.html"       class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
-      <a href="/nsp-control-8x4k/bookings.html"        class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
-      <a href="/nsp-control-8x4k/packages.html"        class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
-      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
-      <a href="/nsp-control-8x4k/profitability.html"   class="nav-link active"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
-      <a href="/nsp-control-8x4k/reviews.html"         class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء</a>
-      <a href="/nsp-control-8x4k/newsletter.html"      class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة</a>
-      <a href="/nsp-control-8x4k/users.html"           class="nav-link"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
-      <a href="/nsp-control-8x4k/audit-log.html"       class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
-      <a href="/nsp-control-8x4k/admins.html"          class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>الأدمن</a>
-    </nav>
+        <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+        <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+        <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+        <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+        <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+        <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+        <a href="/nsp-control-8x4k/profitability.html" class="nav-link active"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+        <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+        <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+        <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+        <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+        <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+        <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+        <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+        <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      </nav>
     <div class="p-4 border-t border-gray-800">
       <div id="adminUserEmail" class="text-xs text-gray-400 text-center mb-2"></div>
       <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
@@ -125,11 +130,11 @@
     <div class="grid md:grid-cols-2 gap-4 mb-6">
       <div class="stat-card">
         <h2 class="font-bold text-gray-700 dark:text-gray-200 mb-3 text-sm">توزيع التكاليف المباشرة</h2>
-        <canvas id="costChart" height="220"></canvas>
+        <div style="position:relative;height:240px;"><canvas id="costChart"></canvas></div>
       </div>
       <div class="stat-card">
         <h2 class="font-bold text-gray-700 dark:text-gray-200 mb-3 text-sm">ربحية الحجوزات (أعلى 10)</h2>
-        <canvas id="profitChart" height="220"></canvas>
+        <div style="position:relative;height:240px;"><canvas id="profitChart"></canvas></div>
       </div>
     </div>
 
@@ -382,7 +387,7 @@ function renderCharts(rows) {
       datasets:[{ data:[totalHotel,totalFlight,totalVisa,totalTransport,totalOther],
         backgroundColor:['#1B5E20','#B8860B','#2563eb','#dc2626','#9ca3af'] }]
     },
-    options:{ plugins:{ legend:{ position:'bottom', labels:{ font:{family:'Cairo'} } } }, maintainAspectRatio:false }
+    options:{ plugins:{ legend:{ position:'bottom', labels:{ font:{family:'Cairo'} } } }, responsive:true,maintainAspectRatio:false }
   });
 
   // Profit bar chart (top 10)
@@ -400,7 +405,7 @@ function renderCharts(rows) {
     options:{
       plugins:{ legend:{ labels:{ font:{family:'Cairo'} } } },
       scales:{ y:{ ticks:{ callback: v=>fmt(v) } } },
-      maintainAspectRatio:false
+      responsive:true,maintainAspectRatio:false
     }
   });
 }

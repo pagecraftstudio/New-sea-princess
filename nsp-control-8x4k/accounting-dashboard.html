@@ -276,19 +276,21 @@
 <script>
 // ── NAV LINKS ────────────────────────────────────────────────
 const NAV_LINKS = [
-  { href:'/nsp-control-8x4k/dashboard.html',              icon:'fa-chart-pie',         label:'نظرة عامة'         },
-  { href:'/nsp-control-8x4k/accounting-dashboard.html',   icon:'fa-calculator',        label:'لوحة المحاسبة', active:true },
-  { href:'/nsp-control-8x4k/accounting-journals.html',    icon:'fa-book',              label:'القيود اليومية'    },
-  { href:'/nsp-control-8x4k/accounting-coa.html',         icon:'fa-list-tree',         label:'دليل الحسابات'     },
-  { href:'/nsp-control-8x4k/accounting-reports.html',     icon:'fa-chart-bar',         label:'التقارير المالية'  },
-  { href:'/nsp-control-8x4k/accounting-expenses.html',    icon:'fa-receipt',           label:'المصروفات'         },
-  { href:'/nsp-control-8x4k/accounting-invoices.html',    icon:'fa-file-invoice',      label:'الفواتير'          },
-  { href:'/nsp-control-8x4k/accounting-payments.html',    icon:'fa-money-bill-wave',   label:'المدفوعات'         },
-  { href:'/nsp-control-8x4k/accounting-suppliers.html',   icon:'fa-truck',             label:'الموردون'          },
-  { href:'/nsp-control-8x4k/bookings.html',               icon:'fa-address-book',      label:'الحجوزات'          },
-  { href:'/nsp-control-8x4k/packages.html',               icon:'fa-suitcase-rolling',  label:'برامج الرحلات'     },
-  { href:'/nsp-control-8x4k/users.html',                  icon:'fa-users',             label:'المستخدمون'        },
-  { href:'/nsp-control-8x4k/audit-log.html',              icon:'fa-clipboard-list',    label:'سجل العمليات'      },
+  { href:'/nsp-control-8x4k/dashboard.html', icon:'fa-chart-pie', label:'نظرة عامة' },
+  { href:'/nsp-control-8x4k/bookings.html', icon:'fa-address-book', label:'الحجوزات' },
+  { href:'/nsp-control-8x4k/packages.html', icon:'fa-suitcase-rolling', label:'برامج الرحلات' },
+  { href:'/nsp-control-8x4k/financial-dashboard.html', icon:'fa-landmark', label:'المالية والمحاسبة' },
+  { href:'/nsp-control-8x4k/accounting-dashboard.html', icon:'fa-book', label:'لوحة المحاسبة', active:true },
+  { href:'/nsp-control-8x4k/accounting-coa.html', icon:'fa-list-ol', label:'دليل الحسابات' },
+  { href:'/nsp-control-8x4k/profitability.html', icon:'fa-chart-line', label:'تحليل الربحية' },
+  { href:'/nsp-control-8x4k/customers.html', icon:'fa-users', label:'العملاء' },
+  { href:'/nsp-control-8x4k/suppliers.html', icon:'fa-truck', label:'الموردون' },
+  { href:'/nsp-control-8x4k/invoices-payments.html', icon:'fa-file-invoice-dollar', label:'الفواتير والمدفوعات' },
+  { href:'/nsp-control-8x4k/reviews.html', icon:'fa-comments', label:'الآراء والتقييمات' },
+  { href:'/nsp-control-8x4k/newsletter.html', icon:'fa-bell', label:'النشرة البريدية' },
+  { href:'/nsp-control-8x4k/users.html', icon:'fa-user', label:'المستخدمون' },
+  { href:'/nsp-control-8x4k/audit-log.html', icon:'fa-clipboard-list', label:'سجل العمليات' },
+  { href:'/nsp-control-8x4k/admins.html', icon:'fa-user-shield', label:'إدارة الأدمن' }
 ];
 function buildNav() {
   const html = NAV_LINKS.map(n =>

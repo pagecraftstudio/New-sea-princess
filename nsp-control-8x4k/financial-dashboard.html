@@ -60,17 +60,22 @@
       <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto ml-2"> الإدارة
     </div>
     <nav class="flex-1 overflow-y-auto py-3">
-      <a href="/nsp-control-8x4k/dashboard.html"           class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
-      <a href="/nsp-control-8x4k/bookings.html"            class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
-      <a href="/nsp-control-8x4k/packages.html"            class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
-      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link active"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
-      <a href="/nsp-control-8x4k/profitability.html"       class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
-      <a href="/nsp-control-8x4k/reviews.html"             class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء</a>
-      <a href="/nsp-control-8x4k/newsletter.html"          class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة</a>
-      <a href="/nsp-control-8x4k/users.html"               class="nav-link"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
-      <a href="/nsp-control-8x4k/audit-log.html"           class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
-      <a href="/nsp-control-8x4k/admins.html"              class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>الأدمن</a>
-    </nav>
+        <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+        <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+        <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+        <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link active"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+        <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+        <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+        <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+        <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+        <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+        <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+        <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+        <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+        <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+        <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+        <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      </nav>
     <div class="p-4 border-t border-gray-800">
       <div id="adminUserEmail" class="text-xs text-gray-400 text-center mb-2"></div>
       <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
@@ -116,11 +121,11 @@
     <div class="grid md:grid-cols-2 gap-4 mb-4">
       <div class="card">
         <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-column ml-1 text-primary"></i>الإيرادات مقابل المصروفات</h2>
-        <canvas id="revExpChart" height="200"></canvas>
+        <div style="position:relative;height:240px;"><canvas id="revExpChart"></canvas></div>
       </div>
       <div class="card">
         <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-line ml-1 text-gold"></i>اتجاه الربح الشهري</h2>
-        <canvas id="profitTrendChart" height="200"></canvas>
+        <div style="position:relative;height:240px;"><canvas id="profitTrendChart"></canvas></div>
       </div>
     </div>
 
@@ -128,11 +133,11 @@
     <div class="grid md:grid-cols-2 gap-4 mb-4">
       <div class="card">
         <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-pie ml-1 text-blue-500"></i>الإيراد حسب نوع الخدمة</h2>
-        <canvas id="revByServiceChart" height="200"></canvas>
+        <div style="position:relative;height:240px;"><canvas id="revByServiceChart"></canvas></div>
       </div>
       <div class="card">
         <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-pie ml-1 text-red-500"></i>المصروفات حسب النوع</h2>
-        <canvas id="expByCatChart" height="200"></canvas>
+        <div style="position:relative;height:240px;"><canvas id="expByCatChart"></canvas></div>
       </div>
     </div>
 
@@ -317,7 +322,7 @@ function renderRevExp(revenue, directCost, opEx, collected) {
         backgroundColor:['#1B5E20','#2E7D32','#dc2626','#f97316','#2563eb','#7c3aed']
       }]
     },
-    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}},maintainAspectRatio:false}
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}},responsive:true,maintainAspectRatio:false}
   });
 }
 
@@ -338,7 +343,7 @@ async function renderRevByService(from, to) {
       labels: keys.map(k=>labels[k]||k),
       datasets:[{data:keys.map(k=>svc[k]), backgroundColor:['#1B5E20','#B8860B','#2563eb','#9ca3af','#f97316']}]
     },
-    options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'}}}},maintainAspectRatio:false}
+    options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'}}}},responsive:true,maintainAspectRatio:false}
   });
 
   // Expense by category
@@ -356,7 +361,7 @@ async function renderRevByService(from, to) {
     expCatChartInst = new Chart(document.getElementById('expByCatChart'),{
       type:'doughnut',
       data:{labels:catKeys,datasets:[{data:catKeys.map(k=>catMap[k]),backgroundColor:colors}]},
-      options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'}}}},maintainAspectRatio:false}
+      options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'}}}},responsive:true,maintainAspectRatio:false}
     });
   } else {
     document.getElementById('expByCatChart').parentElement.innerHTML += '<p class="text-xs text-gray-400 text-center mt-2">لا توجد مصروفات مسجلة بعد</p>';
@@ -379,7 +384,7 @@ async function renderRevByService(from, to) {
   trendChartInst = new Chart(document.getElementById('profitTrendChart'),{
     type:'line',
     data:{labels:months,datasets:[{label:'الإيرادات',data:profits,borderColor:'#1B5E20',backgroundColor:'rgba(27,94,32,.1)',tension:.4,fill:true}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}},maintainAspectRatio:false}
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}},responsive:true,maintainAspectRatio:false}
   });
 }
 
