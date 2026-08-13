@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة المالية والمحاسبة | نيو سي برنسيس</title>
-  <script>tailwind={theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}</script>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/custom.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/supabase-config.js"></script>
-  <script src="/nsp-control-8x4k/admin.js"></script>
+  <script src="/js/admin.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     body { font-family: 'Cairo', sans-serif; }
@@ -306,13 +306,10 @@ async function loadKPIsFromBookings(from, to) {
   set('kpiNetMargin',   fmtPct(netM));
   set('kpiCash',      fmt(cash));
 
-  // AP — outstanding invoices not yet fully paid
-  let apRows = [];
-  const { data: apData, error: apErr } = await window.db.from('nsp_invoices').select('remaining_amount').in('status',['partial','overdue']);
+  // AP
+  const { data: apData, error: apErr } = await window.db.from('nsp_invoices').select('remaining_amount').eq('status','issued');
   if (apErr) console.warn('nsp_invoices (AP) query failed:', apErr.message);
-  else apRows = apData || [];
-  const ap = apRows.reduce((s,r)=>s+(r.remaining_amount||0),0);
-  set('kpiAP', fmt(ap));
+  const ap = (apData||[]).reduce((s,r)=>s+(r.remaining_amount||0),0);
   set('kpiAP', fmt(ap));
 
   // Charts
@@ -336,7 +333,10 @@ function renderRevExp(revenue, directCost, opEx, collected) {
 }
 
 async function renderRevByService(from, to) {
-  const { data: bk } = await window.db.from('bookings').select('total_price, created_at, packages(category)');
+  let bkQ = window.db.from('bookings').select('total_price, created_at, packages(category)');
+  if (from) bkQ = bkQ.gte('created_at', from);
+  if (to)   bkQ = bkQ.lte('created_at', to + 'T23:59:59');
+  const { data: bk } = await bkQ;
   const svc = {};
   (bk||[]).forEach(b=>{
     const cat = b.packages?.category || 'other';
@@ -356,8 +356,11 @@ async function renderRevByService(from, to) {
   });
 
   // Expense by category
-  const { data: expCat } = await window.db.from('nsp_expenses')
+  let expCatQ = window.db.from('nsp_expenses')
     .select('total_amount, expense_categories(name_ar)').eq('status','posted');
+  if (from) expCatQ = expCatQ.gte('expense_date', from);
+  if (to)   expCatQ = expCatQ.lte('expense_date', to);
+  const { data: expCat } = await expCatQ;
   const catMap = {};
   (expCat||[]).forEach(e=>{
     const n = e.expense_categories?.name_ar || 'أخرى';
