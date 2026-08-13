@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ذمم مدينة ودائنة | نيو سي برنسيس فرع الزقازيق</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;}
+    .nav-link:hover{background:#1f2937;color:#fff;}
+    .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.75rem;font-weight:700;}
+    .badge-green{background:#dcfce7;color:#166534;}
+    .badge-red{background:#fee2e2;color:#991b1b;}
+    .badge-yellow{background:#fef9c3;color:#854d0e;}
+    .badge-gray{background:#f3f4f6;color:#374151;}
+    .badge-blue{background:#dbeafe;color:#1e40af;}
+    .badge-orange{background:#ffedd5;color:#9a3412;}
+    .badge-purple{background:#ede9fe;color:#5b21b6;}
+    .stat-card{background:#fff;border-radius:1rem;padding:1.25rem 1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid #e5e7eb;}
+    .tab-btn{padding:.5rem 1.25rem;border-radius:.5rem;font-weight:700;font-size:.9rem;cursor:pointer;transition:.15s;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:not(.active){background:#f3f4f6;color:#374151;}
+    .tab-btn:not(.active):hover{background:#e5e7eb;}
+    .aging-cell{text-align:left;font-variant-numeric:tabular-nums;}
+    .aging-current{background:#f0fdf4;}
+    .aging-30{background:#fefce8;}
+    .aging-60{background:#fff7ed;}
+    .aging-90{background:#fef2f2;}
+    .tbl th{background:#f3f4f6;font-weight:700;padding:9px 12px;text-align:right;border-bottom:2px solid #e5e7eb;white-space:nowrap;font-size:.82rem;}
+    .tbl td{padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:.82rem;vertical-align:middle;}
+    .tbl tr:hover td{background:#f9fafb;}
+    .section-header{background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;padding:.75rem 1.25rem;border-radius:.75rem .75rem 0 0;font-weight:700;display:flex;align-items:center;gap:.5rem;}
+    @media print{
+      aside,.no-print{display:none!important;}
+      main{padding:0!important;}
+      body{background:#fff!important;}
+      .print-break{page-break-before:always;}
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen" style="font-family:'Cairo',sans-serif;">
+
+<!-- MOBILE TOP BAR -->
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg">
+  <div class="flex items-center gap-2 font-bold text-lg text-gold"><i class="fa-solid fa-scale-unbalanced-flip"></i> ذمم مدينة ودائنة</div>
+  <button id="mobileMenuBtn" class="text-white text-2xl p-1"><i class="fa-solid fa-bars"></i></button>
+</header>
+<!-- MOBILE DRAWER -->
+<div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
+  <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl overflow-y-auto">
+    <a href="/nsp-control-8x4k/dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+    <a href="/nsp-control-8x4k/bookings.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+    <a href="/nsp-control-8x4k/packages.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+    <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+    <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+    <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+    <a href="/nsp-control-8x4k/profitability.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+    <a href="/nsp-control-8x4k/customers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+    <a href="/nsp-control-8x4k/suppliers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+    <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+    <a href="/nsp-control-8x4k/expenses.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+    <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+    <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+    <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+    <a href="/nsp-control-8x4k/reviews.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+    <a href="/nsp-control-8x4k/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+    <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+    <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+    <a href="/nsp-control-8x4k/admins.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+  </nav>
+</div>
+
+<div class="flex min-h-screen">
+<!-- SIDEBAR -->
+<aside class="w-64 bg-darkBg text-white hidden md:flex flex-col sticky top-0 h-screen">
+  <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+    <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto object-contain ml-2"> الإدارة
+  </div>
+  <nav class="flex-1 overflow-y-auto py-4">
+    <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+    <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+    <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+    <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية والمحاسبة</a>
+    <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+    <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+    <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+    <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+    <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+    <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+    <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+    <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+    <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+    <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link active"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+    <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+    <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+    <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+    <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+    <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+  </nav>
+  <div class="p-4 border-t border-gray-800">
+    <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
+      <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 flex flex-col p-4 md:p-6 overflow-x-hidden">
+
+  <!-- Header -->
+  <div class="flex flex-wrap justify-between items-center mb-6 gap-4 no-print">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">الذمم المدينة والدائنة</h2>
+      <p class="text-sm text-gray-500 mt-1">تقرير تقادم المديونيات • كشوف الحساب • الإجراءات</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="exportCSV()" class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition text-sm no-print">
+        <i class="fa-solid fa-file-csv"></i> تصدير CSV
+      </button>
+      <button onclick="window.print()" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition text-sm no-print">
+        <i class="fa-solid fa-print"></i> طباعة
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">إجمالي ذمم مدينة (AR)</div>
+      <div class="text-xl font-bold text-blue-700" id="statTotalAR">—</div>
+      <div class="text-xs text-gray-400 mt-1" id="statARCount">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-red-600 mb-1 font-semibold">متأخرة (AR)</div>
+      <div class="text-xl font-bold text-red-600" id="statOverdueAR">—</div>
+      <div class="text-xs text-gray-400 mt-1" id="statOverdueARCount">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">إجمالي ذمم دائنة (AP)</div>
+      <div class="text-xl font-bold text-purple-700" id="statTotalAP">—</div>
+      <div class="text-xs text-gray-400 mt-1" id="statAPCount">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-orange-600 mb-1 font-semibold">مستحقة للموردين</div>
+      <div class="text-xl font-bold text-orange-600" id="statDueAP">—</div>
+      <div class="text-xs text-gray-400 mt-1" id="statDueAPCount">—</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 mb-6 no-print flex-wrap">
+    <button class="tab-btn active" onclick="switchTab('ar')" id="tab-ar">
+      <i class="fa-solid fa-arrow-trend-up ml-1 text-blue-500"></i> ذمم مدينة (AR)
+    </button>
+    <button class="tab-btn" onclick="switchTab('ap')" id="tab-ap">
+      <i class="fa-solid fa-arrow-trend-down ml-1 text-purple-500"></i> ذمم دائنة (AP)
+    </button>
+    <button class="tab-btn" onclick="switchTab('ar-aging')" id="tab-ar-aging">
+      <i class="fa-solid fa-clock-rotate-left ml-1 text-red-400"></i> تقادم AR
+    </button>
+    <button class="tab-btn" onclick="switchTab('ap-aging')" id="tab-ap-aging">
+      <i class="fa-solid fa-hourglass-half ml-1 text-orange-400"></i> تقادم AP
+    </button>
+    <button class="tab-btn" onclick="switchTab('statement')" id="tab-statement">
+      <i class="fa-solid fa-file-lines ml-1 text-green-600"></i> كشف حساب
+    </button>
+  </div>
+
+  <!-- Filters (shared) -->
+  <div class="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-200 no-print flex flex-wrap gap-3 items-end" id="filtersBar">
+    <div class="flex flex-col gap-1">
+      <label class="text-xs text-gray-500 font-semibold">بحث</label>
+      <input type="text" id="searchInput" placeholder="اسم العميل أو المورد…" oninput="applyFilters()"
+        class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-52 focus:ring-2 focus:ring-primary/30 focus:border-primary">
+    </div>
+    <div class="flex flex-col gap-1" id="statusFilterWrap">
+      <label class="text-xs text-gray-500 font-semibold">الحالة</label>
+      <select id="statusFilter" onchange="applyFilters()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary">
+        <option value="">كل الحالات</option>
+        <option value="current">جارية</option>
+        <option value="overdue">متأخرة</option>
+        <option value="partial">مدفوعة جزئياً</option>
+      </select>
+    </div>
+    <div class="flex flex-col gap-1" id="statementEntityWrap" style="display:none!important">
+      <label class="text-xs text-gray-500 font-semibold">اختر عميل/مورد</label>
+      <select id="statementEntity" onchange="loadStatement()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64 focus:ring-2 focus:ring-primary/30 focus:border-primary">
+        <option value="">— اختر —</option>
+      </select>
+    </div>
+    <div class="flex flex-col gap-1" id="statementTypeWrap" style="display:none!important">
+      <label class="text-xs text-gray-500 font-semibold">النوع</label>
+      <select id="statementType" onchange="loadStatement()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary">
+        <option value="customer">عميل</option>
+        <option value="supplier">مورد</option>
+      </select>
+    </div>
+    <button onclick="applyFilters()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-800 transition">
+      <i class="fa-solid fa-magnifying-glass ml-1"></i>بحث
+    </button>
+    <button onclick="resetFilters()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-200 transition">
+      <i class="fa-solid fa-rotate-right ml-1"></i>إعادة
+    </button>
+  </div>
+
+  <!-- ===== AR TAB ===== -->
+  <div id="panel-ar">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="section-header"><i class="fa-solid fa-arrow-trend-up"></i> الذمم المدينة — فواتير مستحقة على العملاء</div>
+      <div class="overflow-x-auto">
+        <table class="tbl w-full">
+          <thead>
+            <tr>
+              <th>العميل</th>
+              <th>الفاتورة</th>
+              <th>تاريخ الإصدار</th>
+              <th>تاريخ الاستحقاق</th>
+              <th>إجمالي الفاتورة</th>
+              <th>المدفوع</th>
+              <th>المتبقي</th>
+              <th>أيام التأخير</th>
+              <th>الحالة</th>
+              <th class="no-print">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="arTableBody">
+            <tr><td colspan="10" class="text-center text-gray-400 py-10"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</td></tr>
+          </tbody>
+          <tfoot>
+            <tr class="bg-gray-50 font-bold">
+              <td colspan="4" class="px-3 py-2 text-right">الإجماليات</td>
+              <td class="px-3 py-2" id="arFootTotal">—</td>
+              <td class="px-3 py-2" id="arFootPaid">—</td>
+              <td class="px-3 py-2 text-blue-700" id="arFootRemain">—</td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AP TAB ===== -->
+  <div id="panel-ap" style="display:none">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="section-header" style="background:linear-gradient(135deg,#5b21b6,#7c3aed)"><i class="fa-solid fa-arrow-trend-down"></i> الذمم الدائنة — مستحقات للموردين</div>
+      <div class="overflow-x-auto">
+        <table class="tbl w-full">
+          <thead>
+            <tr>
+              <th>المورد</th>
+              <th>رقم الفاتورة/المصروف</th>
+              <th>التاريخ</th>
+              <th>تاريخ الاستحقاق</th>
+              <th>الإجمالي</th>
+              <th>المدفوع</th>
+              <th>المتبقي</th>
+              <th>أيام الاستحقاق</th>
+              <th>الحالة</th>
+              <th class="no-print">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="apTableBody">
+            <tr><td colspan="10" class="text-center text-gray-400 py-10"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</td></tr>
+          </tbody>
+          <tfoot>
+            <tr class="bg-gray-50 font-bold">
+              <td colspan="4" class="px-3 py-2 text-right">الإجماليات</td>
+              <td class="px-3 py-2" id="apFootTotal">—</td>
+              <td class="px-3 py-2" id="apFootPaid">—</td>
+              <td class="px-3 py-2 text-purple-700" id="apFootRemain">—</td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AR AGING TAB ===== -->
+  <div id="panel-ar-aging" style="display:none">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+      <div class="section-header"><i class="fa-solid fa-clock-rotate-left"></i> تقرير تقادم الذمم المدينة (AR Aging)</div>
+      <!-- Aging summary -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-0 border-b border-gray-200" id="arAgingSummary">
+        <div class="aging-current p-4 border-l border-gray-200 text-center">
+          <div class="text-xs text-gray-500 mb-1">جارية (0-30 يوم)</div>
+          <div class="text-lg font-bold text-green-700" id="aging-ar-0">—</div>
+        </div>
+        <div class="aging-30 p-4 border-l border-gray-200 text-center">
+          <div class="text-xs text-gray-500 mb-1">30-60 يوم</div>
+          <div class="text-lg font-bold text-yellow-600" id="aging-ar-30">—</div>
+        </div>
+        <div class="aging-60 p-4 border-l border-gray-200 text-center">
+          <div class="text-xs text-gray-500 mb-1">60-90 يوم</div>
+          <div class="text-lg font-bold text-orange-500" id="aging-ar-60">—</div>
+        </div>
+        <div class="aging-90 p-4 border-l border-gray-200 text-center">
+          <div class="text-xs text-gray-500 mb-1">أكثر من 90 يوم</div>
+          <div class="text-lg font-bold text-red-600" id="aging-ar-90">—</div>
+        </div>
+        <div class="bg-gray-50 p-4 text-center">
+          <div class="text-xs text-gray-500 mb-1">الإجمالي</div>
+          <div class="text-lg font-bold text-gray-800" id="aging-ar-total">—</div>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="tbl w-full">
+          <thead>
+            <tr>
+              <th>العميل</th>
+              <th>الإجمالي المستحق</th>
+              <th class="aging-current">0-30 يوم</th>
+              <th class="aging-30">31-60 يوم</th>
+              <th class="aging-60">61-90 يوم</th>
+              <th class="aging-90">+90 يوم</th>
+              <th>عدد الفواتير</th>
+              <th class="no-print">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="arAgingBody">
+            <tr><td colspan="8" class="text-center text-gray-400 py-10"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Aging chart bars -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4 no-print">
+      <h3 class="font-bold text-gray-700 mb-3">توزيع تقادم AR</h3>
+      <div id="arAgingChart" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- ===== AP AGING TAB ===== -->
+  <div id="panel-ap-aging" style="display:none">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+      <div class="section-header" style="background:linear-gradient(135deg,#5b21b6,#7c3aed)"><i class="fa-solid fa-hourglass-half"></i> تقرير تقادم الذمم الدائنة (AP Aging)</div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-0 border-b border-gray-200">
+        <div class="aging-current p-4 border-l border-gray-200 text-center">
+          <div class="text-xs text-gray-500 mb-1">جارية (0-30 يوم)</div>
+          <div class="text-lg font-bold text-green-700" id="aging-ap-0">—</div>
+        </div>
+        <div class="aging-30 p-4 border-l border-gray-200 text-center">
+          <div class="text-xs text-gray-500 mb-1">30-60 يوم</div>
+          <div class="text-lg font-bold text-yellow-600" id="aging-ap-30">—</div>
+        </div>
+        <div class="aging-60 p-4 border-l border-gray-200 text-center">
+          <div class="text-xs text-gray-500 mb-1">60-90 يوم</div>
+          <div class="text-lg font-bold text-orange-500" id="aging-ap-60">—</div>
+        </div>
+        <div class="aging-90 p-4 border-l border-gray-200 text-center">
+          <div class="text-xs text-gray-500 mb-1">أكثر من 90 يوم</div>
+          <div class="text-lg font-bold text-red-600" id="aging-ap-90">—</div>
+        </div>
+        <div class="bg-gray-50 p-4 text-center">
+          <div class="text-xs text-gray-500 mb-1">الإجمالي</div>
+          <div class="text-lg font-bold text-gray-800" id="aging-ap-total">—</div>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="tbl w-full">
+          <thead>
+            <tr>
+              <th>المورد</th>
+              <th>الإجمالي المستحق</th>
+              <th class="aging-current">0-30 يوم</th>
+              <th class="aging-30">31-60 يوم</th>
+              <th class="aging-60">61-90 يوم</th>
+              <th class="aging-90">+90 يوم</th>
+              <th>عدد البنود</th>
+              <th class="no-print">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="apAgingBody">
+            <tr><td colspan="8" class="text-center text-gray-400 py-10"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 no-print">
+      <h3 class="font-bold text-gray-700 mb-3">توزيع تقادم AP</h3>
+      <div id="apAgingChart" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- ===== STATEMENT TAB ===== -->
+  <div id="panel-statement" style="display:none">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="statementPanel">
+      <div class="section-header" id="statementHeader"><i class="fa-solid fa-file-lines"></i> كشف الحساب</div>
+      <div id="statementEmpty" class="p-10 text-center text-gray-400">
+        <i class="fa-solid fa-user-magnifying-glass text-4xl mb-3 block text-gray-300"></i>
+        اختر عميلاً أو مورداً من الفلاتر أعلاه لعرض كشف الحساب
+      </div>
+      <div id="statementContent" style="display:none">
+        <!-- Statement header info -->
+        <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-wrap justify-between items-center gap-4">
+          <div>
+            <div class="font-bold text-lg text-gray-800" id="stmtName">—</div>
+            <div class="text-sm text-gray-500" id="stmtInfo">—</div>
+          </div>
+          <div class="flex gap-6">
+            <div class="text-center">
+              <div class="text-xs text-gray-500">رصيد افتتاحي</div>
+              <div class="font-bold text-gray-800" id="stmtOpenBal">—</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xs text-gray-500">إجمالي الفواتير</div>
+              <div class="font-bold text-blue-700" id="stmtTotalInv">—</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xs text-gray-500">إجمالي المدفوع</div>
+              <div class="font-bold text-green-700" id="stmtTotalPaid">—</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xs text-gray-500">الرصيد الختامي</div>
+              <div class="font-bold text-xl" id="stmtCloseBal">—</div>
+            </div>
+          </div>
+        </div>
+        <!-- Statement table -->
+        <div class="overflow-x-auto">
+          <table class="tbl w-full">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>المرجع</th>
+                <th>البيان</th>
+                <th>مدين</th>
+                <th>دائن</th>
+                <th>الرصيد</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="stmtBody">
+              <tr><td colspan="7" class="text-center text-gray-400 py-6">لا توجد بيانات</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Action Modal -->
+  <div id="payModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center no-print">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg text-gray-800" id="payModalTitle">تسجيل دفعة</h3>
+        <button onclick="closePayModal()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="text-sm text-gray-600 font-semibold block mb-1">الفاتورة / المرجع</label>
+          <input type="text" id="payRef" readonly class="border border-gray-300 rounded-lg px-3 py-2 w-full bg-gray-50 text-sm">
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 font-semibold block mb-1">المبلغ المستحق</label>
+          <input type="text" id="payDue" readonly class="border border-gray-300 rounded-lg px-3 py-2 w-full bg-gray-50 text-sm text-red-600 font-bold">
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 font-semibold block mb-1">مبلغ الدفعة <span class="text-red-500">*</span></label>
+          <input type="number" id="payAmount" min="0" step="0.01" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary">
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 font-semibold block mb-1">طريقة الدفع</label>
+          <select id="payMethod" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary">
+            <option value="cash">نقدي</option>
+            <option value="bank_transfer">تحويل بنكي</option>
+            <option value="card">بطاقة</option>
+            <option value="wallet">محفظة إلكترونية</option>
+            <option value="check">شيك</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 font-semibold block mb-1">ملاحظات</label>
+          <input type="text" id="payNotes" placeholder="مرجع التحويل أو أي ملاحظة…" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary">
+        </div>
+      </div>
+      <div id="payError" class="text-red-600 text-sm mt-2 hidden"></div>
+      <div class="flex justify-end gap-3 mt-5">
+        <button onclick="closePayModal()" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50">إلغاء</button>
+        <button onclick="submitPayment()" id="paySubmitBtn" class="px-5 py-2 rounded-lg bg-primary text-white font-bold text-sm hover:bg-green-800 transition">
+          <i class="fa-solid fa-check ml-1"></i>تأكيد الدفع
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const egp = n => new Intl.NumberFormat('ar-EG',{style:'currency',currency:'EGP',maximumFractionDigits:0}).format(n||0);
+const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG') : '—';
+const today = new Date(); today.setHours(0,0,0,0);
+function daysDiff(d) { const t = new Date(d); t.setHours(0,0,0,0); return Math.floor((today-t)/86400000); }
+
+let currentTab = 'ar';
+let allARData = [], allAPData = [];
+let payTarget = null;
+
+// ──────────────────────────────────────────────
+// TAB SWITCHING
+// ──────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  ['ar','ap','ar-aging','ap-aging','statement'].forEach(t => {
+    document.getElementById('panel-'+t).style.display = (t===tab)?'':'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+  // Show/hide statement-specific filters
+  const isStmt = tab === 'statement';
+  const isAging = tab.includes('aging');
+  document.getElementById('statusFilterWrap').style.display = (isStmt||isAging) ? 'none' : '';
+  document.getElementById('searchInput').closest('div').style.display = isStmt ? 'none' : '';
+  document.getElementById('statementEntityWrap').style.display = isStmt ? '' : 'none';
+  document.getElementById('statementTypeWrap').style.display = isStmt ? '' : 'none';
+}
+
+// ──────────────────────────────────────────────
+// LOAD ALL DATA
+// ──────────────────────────────────────────────
+async function loadAll() {
+  if (!window.db) { setTimeout(loadAll, 400); return; }
+  await Promise.all([loadAR(), loadAP()]);
+  populateStatementEntities();
+}
+
+async function loadAR() {
+  // Fetch invoices with remaining amount > 0
+  const { data, error } = await window.db
+    .from('nsp_invoices')
+    .select('id,invoice_number,issue_date,due_date,total_amount,paid_amount,remaining_amount,status,profiles(full_name,email),bookings(booking_number)')
+    .in('status',['issued','partial','overdue'])
+    .gt('remaining_amount', 0)
+    .order('due_date', {ascending: true});
+
+  if (error) { console.error('AR error:', error); }
+  allARData = (data||[]).map(inv => {
+    const days = inv.due_date ? daysDiff(inv.due_date) : 0;
+    return {
+      id: inv.id,
+      ref: inv.invoice_number || '—',
+      customer: inv.profiles?.full_name || inv.profiles?.email || 'عميل غير محدد',
+      issueDate: inv.issue_date,
+      dueDate: inv.due_date,
+      total: parseFloat(inv.total_amount)||0,
+      paid: parseFloat(inv.paid_amount)||0,
+      remaining: parseFloat(inv.remaining_amount)||0,
+      status: inv.status,
+      daysLate: days,
+      booking: inv.bookings?.booking_number || ''
+    };
+  });
+  renderAR();
+  renderARSummary();
+  renderARAging();
+}
+
+async function loadAP() {
+  // Fetch expenses with balance due to suppliers
+  const { data, error } = await window.db
+    .from('nsp_expenses')
+    .select('id,expense_number,expense_date,due_date,total_amount,paid_amount,status,suppliers(name),description,category')
+    .in('status',['approved','partial','posted'])
+    .order('due_date', {ascending: true, nullsFirst: false});
+
+  if (error) { console.error('AP error:', error); }
+  allAPData = (data||[]).map(exp => {
+    const paid = parseFloat(exp.paid_amount)||0;
+    const total = parseFloat(exp.total_amount)||0;
+    const remaining = total - paid;
+    const days = exp.due_date ? daysDiff(exp.due_date) : 0;
+    return {
+      id: exp.id,
+      ref: exp.expense_number || '—',
+      supplier: exp.suppliers?.name || exp.description || 'مورد غير محدد',
+      date: exp.expense_date,
+      dueDate: exp.due_date,
+      total,
+      paid,
+      remaining,
+      status: exp.status,
+      daysDue: days,
+      category: exp.category || ''
+    };
+  }).filter(r => r.remaining > 0);
+  renderAP();
+  renderAPSummary();
+  renderAPAging();
+}
+
+// ──────────────────────────────────────────────
+// RENDER AR TABLE
+// ──────────────────────────────────────────────
+function renderAR(rows) {
+  rows = rows || allARData;
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const statusF = document.getElementById('statusFilter').value;
+  if (search) rows = rows.filter(r => r.customer.toLowerCase().includes(search) || r.ref.toLowerCase().includes(search));
+  if (statusF==='current') rows = rows.filter(r => r.daysLate <= 0);
+  if (statusF==='overdue') rows = rows.filter(r => r.daysLate > 0);
+  if (statusF==='partial') rows = rows.filter(r => r.status==='partial');
+
+  const body = document.getElementById('arTableBody');
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="10" class="text-center text-gray-400 py-8">لا توجد ذمم مدينة</td></tr>'; }
+  else body.innerHTML = rows.map(r => `
+    <tr>
+      <td class="font-semibold">${r.customer}</td>
+      <td class="font-mono text-xs">${r.ref}${r.booking?` <span class="text-gray-400">(${r.booking})</span>`:''}</td>
+      <td>${fmtDate(r.issueDate)}</td>
+      <td class="${r.daysLate>0?'text-red-600 font-semibold':''}">${fmtDate(r.dueDate)}</td>
+      <td class="font-semibold">${egp(r.total)}</td>
+      <td class="text-green-700">${egp(r.paid)}</td>
+      <td class="text-blue-700 font-bold">${egp(r.remaining)}</td>
+      <td>${r.daysLate>0?`<span class="badge badge-red">+${r.daysLate} يوم</span>`:r.daysLate===0?'<span class="badge badge-green">اليوم</span>':`<span class="badge badge-blue">${Math.abs(r.daysLate)} يوم</span>`}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td class="no-print"><button onclick="openPayModal('ar','${r.id}','${r.ref.replace(/'/g,"\\'")}',${r.remaining})" class="text-xs bg-primary text-white px-3 py-1 rounded-lg hover:bg-green-800 transition"><i class="fa-solid fa-money-bill-transfer ml-1"></i>دفع</button></td>
+    </tr>`).join('');
+
+  // Footer totals
+  const tot = rows.reduce((s,r)=>s+r.total,0);
+  const paid = rows.reduce((s,r)=>s+r.paid,0);
+  const rem = rows.reduce((s,r)=>s+r.remaining,0);
+  document.getElementById('arFootTotal').textContent = egp(tot);
+  document.getElementById('arFootPaid').textContent = egp(paid);
+  document.getElementById('arFootRemain').textContent = egp(rem);
+}
+
+// ──────────────────────────────────────────────
+// RENDER AP TABLE
+// ──────────────────────────────────────────────
+function renderAP(rows) {
+  rows = rows || allAPData;
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const statusF = document.getElementById('statusFilter').value;
+  if (search) rows = rows.filter(r => r.supplier.toLowerCase().includes(search) || r.ref.toLowerCase().includes(search));
+  if (statusF==='overdue') rows = rows.filter(r => r.daysDue > 0);
+  if (statusF==='current') rows = rows.filter(r => r.daysDue <= 0);
+
+  const body = document.getElementById('apTableBody');
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="10" class="text-center text-gray-400 py-8">لا توجد ذمم دائنة</td></tr>'; }
+  else body.innerHTML = rows.map(r => `
+    <tr>
+      <td class="font-semibold">${r.supplier}</td>
+      <td class="font-mono text-xs">${r.ref}</td>
+      <td>${fmtDate(r.date)}</td>
+      <td class="${r.daysDue>0?'text-red-600 font-semibold':''}">${fmtDate(r.dueDate)||'—'}</td>
+      <td class="font-semibold">${egp(r.total)}</td>
+      <td class="text-green-700">${egp(r.paid)}</td>
+      <td class="text-purple-700 font-bold">${egp(r.remaining)}</td>
+      <td>${r.daysDue>0?`<span class="badge badge-red">+${r.daysDue} يوم</span>`:r.daysDue===0?'<span class="badge badge-yellow">مستحق</span>':`<span class="badge badge-gray">${Math.abs(r.daysDue)} يوم</span>`}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td class="no-print"><button onclick="openPayModal('ap','${r.id}','${r.ref.replace(/'/g,"\\'")}',${r.remaining})" class="text-xs bg-purple-700 text-white px-3 py-1 rounded-lg hover:bg-purple-900 transition"><i class="fa-solid fa-money-bill-transfer ml-1"></i>دفع</button></td>
+    </tr>`).join('');
+
+  const tot = rows.reduce((s,r)=>s+r.total,0);
+  const paid = rows.reduce((s,r)=>s+r.paid,0);
+  const rem = rows.reduce((s,r)=>s+r.remaining,0);
+  document.getElementById('apFootTotal').textContent = egp(tot);
+  document.getElementById('apFootPaid').textContent = egp(paid);
+  document.getElementById('apFootRemain').textContent = egp(rem);
+}
+
+// ──────────────────────────────────────────────
+// SUMMARY STAT CARDS
+// ──────────────────────────────────────────────
+function renderARSummary() {
+  const totalAR = allARData.reduce((s,r)=>s+r.remaining,0);
+  const overdueAR = allARData.filter(r=>r.daysLate>0);
+  document.getElementById('statTotalAR').textContent = egp(totalAR);
+  document.getElementById('statARCount').textContent = `${allARData.length} فاتورة مستحقة`;
+  document.getElementById('statOverdueAR').textContent = egp(overdueAR.reduce((s,r)=>s+r.remaining,0));
+  document.getElementById('statOverdueARCount').textContent = `${overdueAR.length} فاتورة متأخرة`;
+}
+function renderAPSummary() {
+  const totalAP = allAPData.reduce((s,r)=>s+r.remaining,0);
+  const dueAP = allAPData.filter(r=>r.daysDue>=0);
+  document.getElementById('statTotalAP').textContent = egp(totalAP);
+  document.getElementById('statAPCount').textContent = `${allAPData.length} بند مستحق`;
+  document.getElementById('statDueAP').textContent = egp(dueAP.reduce((s,r)=>s+r.remaining,0));
+  document.getElementById('statDueAPCount').textContent = `${dueAP.length} مستحق الدفع`;
+}
+
+// ──────────────────────────────────────────────
+// AR AGING
+// ──────────────────────────────────────────────
+function agingBucket(days) {
+  if (days <= 0) return 0;
+  if (days <= 30) return 30;
+  if (days <= 60) return 60;
+  return 90;
+}
+
+function renderARAging() {
+  const byCustomer = {};
+  allARData.forEach(r => {
+    if (!byCustomer[r.customer]) byCustomer[r.customer] = {name:r.customer, total:0, b0:0, b30:0, b60:0, b90:0, count:0};
+    const b = agingBucket(r.daysLate);
+    byCustomer[r.customer].total += r.remaining;
+    byCustomer[r.customer]['b'+b] += r.remaining;
+    byCustomer[r.customer].count++;
+  });
+  const rows = Object.values(byCustomer).sort((a,b)=>b.total-a.total);
+  const totals = {b0:0,b30:0,b60:0,b90:0,total:0};
+  rows.forEach(r=>{totals.b0+=r.b0;totals.b30+=r.b30;totals.b60+=r.b60;totals.b90+=r.b90;totals.total+=r.total;});
+
+  document.getElementById('aging-ar-0').textContent = egp(totals.b0);
+  document.getElementById('aging-ar-30').textContent = egp(totals.b30);
+  document.getElementById('aging-ar-60').textContent = egp(totals.b60);
+  document.getElementById('aging-ar-90').textContent = egp(totals.b90);
+  document.getElementById('aging-ar-total').textContent = egp(totals.total);
+
+  const body = document.getElementById('arAgingBody');
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="8" class="text-center text-gray-400 py-8">لا توجد بيانات</td></tr>'; }
+  else body.innerHTML = rows.map(r=>`
+    <tr>
+      <td class="font-semibold">${r.name}</td>
+      <td class="font-bold">${egp(r.total)}</td>
+      <td class="aging-current text-green-700">${r.b0?egp(r.b0):'—'}</td>
+      <td class="aging-30 text-yellow-600">${r.b30?egp(r.b30):'—'}</td>
+      <td class="aging-60 text-orange-500">${r.b60?egp(r.b60):'—'}</td>
+      <td class="aging-90 text-red-600 font-bold">${r.b90?egp(r.b90):'—'}</td>
+      <td class="text-center">${r.count}</td>
+      <td class="no-print"><button onclick="showCustomerStatement('${r.name.replace(/'/g,"\\'")}','ar')" class="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-800 transition">كشف حساب</button></td>
+    </tr>`).join('');
+
+  // Bar chart
+  renderAgingChart('arAgingChart', rows, totals.total);
+}
+
+function renderAPAging() {
+  const bySupplier = {};
+  allAPData.forEach(r => {
+    if (!bySupplier[r.supplier]) bySupplier[r.supplier] = {name:r.supplier, total:0, b0:0, b30:0, b60:0, b90:0, count:0};
+    const b = agingBucket(r.daysDue);
+    bySupplier[r.supplier].total += r.remaining;
+    bySupplier[r.supplier]['b'+b] += r.remaining;
+    bySupplier[r.supplier].count++;
+  });
+  const rows = Object.values(bySupplier).sort((a,b)=>b.total-a.total);
+  const totals = {b0:0,b30:0,b60:0,b90:0,total:0};
+  rows.forEach(r=>{totals.b0+=r.b0;totals.b30+=r.b30;totals.b60+=r.b60;totals.b90+=r.b90;totals.total+=r.total;});
+
+  document.getElementById('aging-ap-0').textContent = egp(totals.b0);
+  document.getElementById('aging-ap-30').textContent = egp(totals.b30);
+  document.getElementById('aging-ap-60').textContent = egp(totals.b60);
+  document.getElementById('aging-ap-90').textContent = egp(totals.b90);
+  document.getElementById('aging-ap-total').textContent = egp(totals.total);
+
+  const body = document.getElementById('apAgingBody');
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="8" class="text-center text-gray-400 py-8">لا توجد بيانات</td></tr>'; }
+  else body.innerHTML = rows.map(r=>`
+    <tr>
+      <td class="font-semibold">${r.name}</td>
+      <td class="font-bold">${egp(r.total)}</td>
+      <td class="aging-current text-green-700">${r.b0?egp(r.b0):'—'}</td>
+      <td class="aging-30 text-yellow-600">${r.b30?egp(r.b30):'—'}</td>
+      <td class="aging-60 text-orange-500">${r.b60?egp(r.b60):'—'}</td>
+      <td class="aging-90 text-red-600 font-bold">${r.b90?egp(r.b90):'—'}</td>
+      <td class="text-center">${r.count}</td>
+      <td class="no-print"><button onclick="showSupplierStatement('${r.name.replace(/'/g,"\\'")}','ap')" class="text-xs bg-purple-700 text-white px-3 py-1 rounded-lg hover:bg-purple-900 transition">كشف حساب</button></td>
+    </tr>`).join('');
+
+  renderAgingChart('apAgingChart', rows, totals.total, true);
+}
+
+function renderAgingChart(containerId, rows, grandTotal, isAP=false) {
+  const el = document.getElementById(containerId);
+  if (!el || !rows.length) return;
+  const top = rows.slice(0,8);
+  const colors = isAP
+    ? ['#7c3aed','#f59e0b','#f97316','#dc2626']
+    : ['#166534','#854d0e','#9a3412','#991b1b'];
+  el.innerHTML = top.map(r => {
+    const pct = grandTotal > 0 ? ((r.total/grandTotal)*100).toFixed(1) : 0;
+    const b0pct = r.total>0?(r.b0/r.total*100):0;
+    const b30pct = r.total>0?(r.b30/r.total*100):0;
+    const b60pct = r.total>0?(r.b60/r.total*100):0;
+    const b90pct = r.total>0?(r.b90/r.total*100):0;
+    return `<div class="flex items-center gap-3">
+      <div class="w-28 text-xs text-gray-600 truncate text-right">${r.name}</div>
+      <div class="flex-1 h-5 rounded-full overflow-hidden bg-gray-100 flex">
+        <div style="width:${b0pct}%;background:${colors[0]}" title="جارية: ${egp(r.b0)}"></div>
+        <div style="width:${b30pct}%;background:${colors[1]}" title="30-60: ${egp(r.b30)}"></div>
+        <div style="width:${b60pct}%;background:${colors[2]}" title="60-90: ${egp(r.b60)}"></div>
+        <div style="width:${b90pct}%;background:${colors[3]}" title="+90: ${egp(r.b90)}"></div>
+      </div>
+      <div class="text-xs font-bold w-24 text-left">${egp(r.total)} <span class="text-gray-400">(${pct}%)</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ──────────────────────────────────────────────
+// STATEMENT
+// ──────────────────────────────────────────────
+function populateStatementEntities() {
+  const sel = document.getElementById('statementEntity');
+  const customers = [...new Set(allARData.map(r=>r.customer))].sort();
+  const suppliers = [...new Set(allAPData.map(r=>r.supplier))].sort();
+  sel.innerHTML = '<option value="">— اختر —</option>'
+    + '<optgroup label="العملاء">' + customers.map(c=>`<option value="c:${c}">👤 ${c}</option>`).join('') + '</optgroup>'
+    + '<optgroup label="الموردون">' + suppliers.map(s=>`<option value="s:${s}">🏭 ${s}</option>`).join('') + '</optgroup>';
+}
+
+function loadStatement() {
+  const val = document.getElementById('statementEntity').value;
+  if (!val) { document.getElementById('statementEmpty').style.display=''; document.getElementById('statementContent').style.display='none'; return; }
+  const [type, name] = [val[0], val.slice(2)];
+  document.getElementById('statementEmpty').style.display='none';
+  document.getElementById('statementContent').style.display='';
+
+  let rows, title;
+  if (type==='c') {
+    const invRows = allARData.filter(r=>r.customer===name);
+    title = `كشف حساب العميل: ${name}`;
+    document.getElementById('statementHeader').innerHTML = `<i class="fa-solid fa-user"></i> ${title}`;
+    document.getElementById('stmtName').textContent = name;
+    document.getElementById('stmtInfo').textContent = `${invRows.length} فاتورة مستحقة`;
+    const totalInv = invRows.reduce((s,r)=>s+r.total,0);
+    const totalPaid = invRows.reduce((s,r)=>s+r.paid,0);
+    document.getElementById('stmtOpenBal').textContent = egp(0);
+    document.getElementById('stmtTotalInv').textContent = egp(totalInv);
+    document.getElementById('stmtTotalPaid').textContent = egp(totalPaid);
+    document.getElementById('stmtCloseBal').textContent = egp(totalInv-totalPaid);
+    document.getElementById('stmtCloseBal').className = 'font-bold text-xl ' + (totalInv-totalPaid>0?'text-red-600':'text-green-700');
+
+    let running = 0;
+    const stmtRows = invRows.flatMap(inv => {
+      const rows = [];
+      running += inv.total;
+      rows.push({date:inv.issueDate, ref:inv.ref, desc:'فاتورة مبيعات', debit:inv.total, credit:0, balance:running, status:inv.status});
+      if (inv.paid>0) {
+        running -= inv.paid;
+        rows.push({date:inv.issueDate, ref:inv.ref, desc:'دفعة مستلمة', debit:0, credit:inv.paid, balance:running, status:'received'});
+      }
+      return rows;
+    });
+    renderStatementTable(stmtRows);
+  } else {
+    const expRows = allAPData.filter(r=>r.supplier===name);
+    title = `كشف حساب المورد: ${name}`;
+    document.getElementById('statementHeader').style.background = 'linear-gradient(135deg,#5b21b6,#7c3aed)';
+    document.getElementById('statementHeader').innerHTML = `<i class="fa-solid fa-truck"></i> ${title}`;
+    document.getElementById('stmtName').textContent = name;
+    document.getElementById('stmtInfo').textContent = `${expRows.length} بند مستحق`;
+    const totalInv = expRows.reduce((s,r)=>s+r.total,0);
+    const totalPaid = expRows.reduce((s,r)=>s+r.paid,0);
+    document.getElementById('stmtOpenBal').textContent = egp(0);
+    document.getElementById('stmtTotalInv').textContent = egp(totalInv);
+    document.getElementById('stmtTotalPaid').textContent = egp(totalPaid);
+    document.getElementById('stmtCloseBal').textContent = egp(totalInv-totalPaid);
+    document.getElementById('stmtCloseBal').className = 'font-bold text-xl text-purple-700';
+
+    let running = 0;
+    const stmtRows = expRows.flatMap(exp => {
+      const rows = [];
+      running += exp.total;
+      rows.push({date:exp.date, ref:exp.ref, desc:'مصروف/فاتورة مورد', debit:exp.total, credit:0, balance:running, status:exp.status});
+      if (exp.paid>0) {
+        running -= exp.paid;
+        rows.push({date:exp.date, ref:exp.ref, desc:'دفعة للمورد', debit:0, credit:exp.paid, balance:running, status:'paid'});
+      }
+      return rows;
+    });
+    renderStatementTable(stmtRows);
+  }
+}
+
+function renderStatementTable(rows) {
+  const body = document.getElementById('stmtBody');
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-gray-400">لا توجد حركات</td></tr>'; return; }
+  body.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${fmtDate(r.date)}</td>
+      <td class="font-mono text-xs">${r.ref}</td>
+      <td>${r.desc}</td>
+      <td class="text-blue-700 font-semibold">${r.debit?egp(r.debit):'—'}</td>
+      <td class="text-green-700 font-semibold">${r.credit?egp(r.credit):'—'}</td>
+      <td class="font-bold ${r.balance>0?'text-red-600':'text-green-700'}">${egp(Math.abs(r.balance))}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`).join('');
+}
+
+function showCustomerStatement(name, type) {
+  switchTab('statement');
+  const sel = document.getElementById('statementEntity');
+  const opt = [...sel.options].find(o => o.value === `c:${name}`);
+  if (opt) { sel.value = opt.value; loadStatement(); }
+}
+function showSupplierStatement(name, type) {
+  switchTab('statement');
+  const sel = document.getElementById('statementEntity');
+  const opt = [...sel.options].find(o => o.value === `s:${name}`);
+  if (opt) { sel.value = opt.value; loadStatement(); }
+}
+
+// ──────────────────────────────────────────────
+// FILTERS
+// ──────────────────────────────────────────────
+function applyFilters() {
+  if (currentTab==='ar') renderAR();
+  else if (currentTab==='ap') renderAP();
+  else if (currentTab==='statement') loadStatement();
+}
+function resetFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('statusFilter').value = '';
+  applyFilters();
+}
+
+// ──────────────────────────────────────────────
+// PAYMENT MODAL
+// ──────────────────────────────────────────────
+function openPayModal(type, id, ref, remaining) {
+  payTarget = {type, id};
+  document.getElementById('payModalTitle').textContent = type==='ar' ? 'تسجيل دفعة من العميل' : 'تسجيل دفعة للمورد';
+  document.getElementById('payRef').value = ref;
+  document.getElementById('payDue').value = egp(remaining);
+  document.getElementById('payAmount').value = remaining;
+  document.getElementById('payNotes').value = '';
+  document.getElementById('payError').classList.add('hidden');
+  document.getElementById('payModal').classList.remove('hidden');
+  document.getElementById('payModal').classList.add('flex');
+}
+function closePayModal() {
+  document.getElementById('payModal').classList.add('hidden');
+  document.getElementById('payModal').classList.remove('flex');
+  payTarget = null;
+}
+
+async function submitPayment() {
+  if (!payTarget) return;
+  const amount = parseFloat(document.getElementById('payAmount').value);
+  const method = document.getElementById('payMethod').value;
+  const notes = document.getElementById('payNotes').value;
+  const errEl = document.getElementById('payError');
+  if (!amount || amount <= 0) { errEl.textContent='يرجى إدخال مبلغ صحيح'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
+
+  const btn = document.getElementById('paySubmitBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i>جارٍ الحفظ…';
+
+  try {
+    if (payTarget.type === 'ar') {
+      // Record a customer payment against the invoice
+      const { error } = await window.db.from('nsp_payments').insert({
+        invoice_id: payTarget.id,
+        amount,
+        payment_method: method,
+        notes,
+        status: 'received',
+        payment_date: new Date().toISOString().split('T')[0]
+      });
+      if (error) throw error;
+      // Update invoice paid_amount and remaining_amount
+      const inv = allARData.find(r=>r.id===payTarget.id);
+      if (inv) {
+        await window.db.from('nsp_invoices').update({
+          paid_amount: inv.paid + amount,
+          remaining_amount: Math.max(0, inv.remaining - amount),
+          status: (inv.remaining - amount) <= 0 ? 'paid' : 'partial'
+        }).eq('id', payTarget.id);
+      }
+    } else {
+      // Record AP payment (update expense paid_amount)
+      const exp = allAPData.find(r=>r.id===payTarget.id);
+      if (exp) {
+        const { error } = await window.db.from('nsp_expenses').update({
+          paid_amount: exp.paid + amount,
+          status: (exp.remaining - amount) <= 0 ? 'paid' : 'partial'
+        }).eq('id', payTarget.id);
+        if (error) throw error;
+      }
+    }
+    closePayModal();
+    await loadAll();
+  } catch(e) {
+    errEl.textContent = 'خطأ: ' + (e.message || 'حدث خطأ غير متوقع');
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check ml-1"></i>تأكيد الدفع';
+  }
+}
+
+// ──────────────────────────────────────────────
+// EXPORT CSV
+// ──────────────────────────────────────────────
+function exportCSV() {
+  let data, headers, filename;
+  if (currentTab==='ar') {
+    headers = ['العميل','الفاتورة','تاريخ الإصدار','تاريخ الاستحقاق','الإجمالي','المدفوع','المتبقي','أيام التأخير','الحالة'];
+    data = allARData.map(r=>[r.customer,r.ref,r.issueDate,r.dueDate,r.total,r.paid,r.remaining,r.daysLate,r.status]);
+    filename = 'ar-receivables.csv';
+  } else if (currentTab==='ap') {
+    headers = ['المورد','المرجع','التاريخ','تاريخ الاستحقاق','الإجمالي','المدفوع','المتبقي','أيام الاستحقاق','الحالة'];
+    data = allAPData.map(r=>[r.supplier,r.ref,r.date,r.dueDate,r.total,r.paid,r.remaining,r.daysDue,r.status]);
+    filename = 'ap-payables.csv';
+  } else return;
+
+  const csv = [headers, ...data].map(row => row.map(c=>`"${c}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
+
+// ──────────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────────
+function statusBadge(status) {
+  const map = {
+    issued:'<span class="badge badge-blue">مُصدرة</span>',
+    partial:'<span class="badge badge-yellow">جزئي</span>',
+    overdue:'<span class="badge badge-red">متأخرة</span>',
+    paid:'<span class="badge badge-green">مدفوعة</span>',
+    cancelled:'<span class="badge badge-gray">ملغاة</span>',
+    draft:'<span class="badge badge-gray">مسودة</span>',
+    approved:'<span class="badge badge-blue">معتمدة</span>',
+    posted:'<span class="badge badge-green">مرحّلة</span>',
+    received:'<span class="badge badge-green">مستلمة</span>',
+    submitted:'<span class="badge badge-yellow">مقدّمة</span>',
+  };
+  return map[status] || `<span class="badge badge-gray">${status}</span>`;
+}
+
+// Mobile menu
+document.getElementById('mobileMenuBtn')?.addEventListener('click',()=>{
+  const d=document.getElementById('mobileDrawer');
+  d.classList.toggle('hidden');
+});
+function closeDrawer(){document.getElementById('mobileDrawer').classList.add('hidden');}
+
+// Init
+loadAll();
+</script>
+</body>
+</html>
