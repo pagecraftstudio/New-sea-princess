@@ -175,15 +175,15 @@ CREATE POLICY "period_update" ON fiscal_periods FOR UPDATE
   USING (can_approve_financial());
 
 -- ── invoices ──
-DROP POLICY IF EXISTS "admins_all"     ON invoices;
-DROP POLICY IF EXISTS "financial_read" ON invoices;
-DROP POLICY IF EXISTS "financial_write"ON invoices;
+DROP POLICY IF EXISTS "admins_all"     ON nsp_invoices;
+DROP POLICY IF EXISTS "financial_read" ON nsp_invoices;
+DROP POLICY IF EXISTS "financial_write"ON nsp_invoices;
 
-CREATE POLICY "financial_read"   ON invoices FOR SELECT
+CREATE POLICY "financial_read"   ON nsp_invoices FOR SELECT
   USING (can_read_financial() OR can_read_bookings());
-CREATE POLICY "financial_write"  ON invoices FOR INSERT
+CREATE POLICY "financial_write"  ON nsp_invoices FOR INSERT
   WITH CHECK (can_handle_payments());
-CREATE POLICY "financial_update" ON invoices FOR UPDATE
+CREATE POLICY "financial_update" ON nsp_invoices FOR UPDATE
   USING (can_handle_payments());
 
 -- ── invoice_items ──
@@ -199,16 +199,16 @@ CREATE POLICY "financial_update" ON invoice_items FOR UPDATE
   USING (can_handle_payments());
 
 -- ── payments ──
-DROP POLICY IF EXISTS "admins_all"     ON payments;
-DROP POLICY IF EXISTS "payment_read"   ON payments;
-DROP POLICY IF EXISTS "payment_write"  ON payments;
+DROP POLICY IF EXISTS "admins_all"     ON nsp_payments;
+DROP POLICY IF EXISTS "payment_read"   ON nsp_payments;
+DROP POLICY IF EXISTS "payment_write"  ON nsp_payments;
 
-CREATE POLICY "payment_read"   ON payments FOR SELECT
+CREATE POLICY "payment_read"   ON nsp_payments FOR SELECT
   USING (can_read_financial() OR can_read_bookings());
 -- Cashier can insert payments
-CREATE POLICY "payment_write"  ON payments FOR INSERT
+CREATE POLICY "payment_write"  ON nsp_payments FOR INSERT
   WITH CHECK (can_handle_payments());
-CREATE POLICY "payment_update" ON payments FOR UPDATE
+CREATE POLICY "payment_update" ON nsp_payments FOR UPDATE
   USING (can_handle_payments());
 
 -- ── payment_allocations ──
@@ -244,27 +244,39 @@ CREATE POLICY "cash_read"   ON cash_accounts FOR SELECT
 CREATE POLICY "cash_write"  ON cash_accounts FOR ALL
   USING (can_approve_financial());
 
--- ── bank_accounts ──
-DROP POLICY IF EXISTS "admins_all"     ON bank_accounts;
-DROP POLICY IF EXISTS "bank_read"      ON bank_accounts;
-DROP POLICY IF EXISTS "bank_write"     ON bank_accounts;
+-- ── bank_accounts (if table exists) ──
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'bank_accounts') THEN
+    DROP POLICY IF EXISTS "admins_all" ON bank_accounts;
+    DROP POLICY IF EXISTS "bank_read"  ON bank_accounts;
+    DROP POLICY IF EXISTS "bank_write" ON bank_accounts;
+    EXECUTE '
+      CREATE POLICY "bank_read"  ON bank_accounts FOR SELECT
+        USING (can_read_financial());
+      CREATE POLICY "bank_write" ON bank_accounts FOR ALL
+        USING (can_approve_financial())
+    ';
+  END IF;
+END $$;
 
-CREATE POLICY "bank_read"  ON bank_accounts FOR SELECT
-  USING (can_read_financial());
-CREATE POLICY "bank_write" ON bank_accounts FOR ALL
-  USING (can_approve_financial());
-
--- ── bank_transactions ──
-DROP POLICY IF EXISTS "admins_all"     ON bank_transactions;
-DROP POLICY IF EXISTS "bank_read"      ON bank_transactions;
-DROP POLICY IF EXISTS "bank_write"     ON bank_transactions;
-
-CREATE POLICY "bank_read"  ON bank_transactions FOR SELECT
-  USING (can_read_financial());
-CREATE POLICY "bank_write" ON bank_transactions FOR INSERT
-  WITH CHECK (can_handle_payments());
-CREATE POLICY "bank_update" ON bank_transactions FOR UPDATE
-  USING (can_handle_payments());
+-- ── bank_transactions (if table exists) ──
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'bank_transactions') THEN
+    DROP POLICY IF EXISTS "admins_all"  ON bank_transactions;
+    DROP POLICY IF EXISTS "bank_read"   ON bank_transactions;
+    DROP POLICY IF EXISTS "bank_write"  ON bank_transactions;
+    EXECUTE '
+      CREATE POLICY "bank_read"   ON bank_transactions FOR SELECT
+        USING (can_read_financial());
+      CREATE POLICY "bank_write"  ON bank_transactions FOR INSERT
+        WITH CHECK (can_handle_payments());
+      CREATE POLICY "bank_update" ON bank_transactions FOR UPDATE
+        USING (can_handle_payments())
+    ';
+  END IF;
+END $$;
 
 -- ── bank_reconciliations ──
 DROP POLICY IF EXISTS "admins_all"   ON bank_reconciliations;
@@ -285,26 +297,37 @@ CREATE POLICY "cn_write"   ON credit_notes FOR INSERT
 CREATE POLICY "cn_update"  ON credit_notes FOR UPDATE
   USING (can_write_financial());
 
--- ── debit_notes ──
-DROP POLICY IF EXISTS "admins_all"   ON debit_notes;
+-- ── debit_notes (if table exists) ──
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'debit_notes') THEN
+    DROP POLICY IF EXISTS "admins_all" ON debit_notes;
+    EXECUTE '
+      CREATE POLICY "dn_read"   ON debit_notes FOR SELECT
+        USING (can_read_financial());
+      CREATE POLICY "dn_write"  ON debit_notes FOR INSERT
+        WITH CHECK (can_write_financial());
+      CREATE POLICY "dn_update" ON debit_notes FOR UPDATE
+        USING (can_write_financial())
+    ';
+  END IF;
+END $$;
 
-CREATE POLICY "dn_read"    ON debit_notes FOR SELECT
-  USING (can_read_financial());
-CREATE POLICY "dn_write"   ON debit_notes FOR INSERT
-  WITH CHECK (can_write_financial());
-CREATE POLICY "dn_update"  ON debit_notes FOR UPDATE
-  USING (can_write_financial());
-
--- ── refunds ──
-DROP POLICY IF EXISTS "admins_all"   ON refunds;
-
-CREATE POLICY "refund_read"   ON refunds FOR SELECT
-  USING (can_read_financial());
-CREATE POLICY "refund_write"  ON refunds FOR INSERT
-  WITH CHECK (can_write_financial());
--- Refund approval: financial_manager/super_admin
-CREATE POLICY "refund_approve" ON refunds FOR UPDATE
-  USING (can_approve_financial());
+-- ── refunds (if table exists) ──
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'refunds') THEN
+    DROP POLICY IF EXISTS "admins_all" ON refunds;
+    EXECUTE '
+      CREATE POLICY "refund_read"    ON refunds FOR SELECT
+        USING (can_read_financial());
+      CREATE POLICY "refund_write"   ON refunds FOR INSERT
+        WITH CHECK (can_write_financial());
+      CREATE POLICY "refund_approve" ON refunds FOR UPDATE
+        USING (can_approve_financial())
+    ';
+  END IF;
+END $$;
 
 -- ── suppliers ──
 DROP POLICY IF EXISTS "admins_all"    ON suppliers;
