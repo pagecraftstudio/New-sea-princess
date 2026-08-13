@@ -93,10 +93,10 @@
         <p class="text-sm text-gray-500" id="dateRangeLabel">جارٍ تحديد الفترة…</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button class="filter-btn active" data-period="month"   onclick="setPeriod(this)">هذا الشهر</button>
+        <button class="filter-btn"        data-period="month"   onclick="setPeriod(this)">هذا الشهر</button>
         <button class="filter-btn"        data-period="quarter" onclick="setPeriod(this)">الربع</button>
         <button class="filter-btn"        data-period="year"    onclick="setPeriod(this)">العام</button>
-        <button class="filter-btn"        data-period="all"     onclick="setPeriod(this)">الكل</button>
+        <button class="filter-btn active" data-period="all"     onclick="setPeriod(this)">الكل</button>
         <button onclick="loadAll()" class="filter-btn bg-primary text-white border-primary hover:bg-lightGreen flex items-center gap-1">
           <i class="fa-solid fa-rotate-right text-xs"></i> تحديث</button>
       </div>
@@ -208,7 +208,7 @@
 <script>
 const fmt = n => new Intl.NumberFormat('ar-EG',{style:'currency',currency:'EGP',maximumFractionDigits:0}).format(n||0);
 const fmtPct = n => (n||0).toFixed(1)+'%';
-let currentPeriod = 'month';
+let currentPeriod = 'all';
 let revExpChartInst, trendChartInst, revServiceChartInst, expCatChartInst;
 
 function setPeriod(btn) {
@@ -239,13 +239,17 @@ function getPeriodDates() {
 
 async function loadAll() {
   const { from, to } = getPeriodDates();
-  await Promise.all([
-    loadKPIsFromBookings(from, to),
-    loadRevenueVsExpChart(from, to),
-    loadJournalLedger(),
-    runHealthChecks(),
-    loadARaging(),
-  ]);
+  try {
+    await Promise.all([
+      loadKPIsFromBookings(from, to),
+      loadRevenueVsExpChart(from, to),
+      loadJournalLedger(),
+      runHealthChecks(),
+      loadARaging(),
+    ]);
+  } catch(e) {
+    console.error('loadAll error:', e);
+  }
 }
 
 // Primary KPI source: bookings table (always available even without accounting module fully seeded)
@@ -253,7 +257,8 @@ async function loadKPIsFromBookings(from, to) {
   let q = window.db.from('bookings').select('total_price, paid_amount, remaining_amount, status, created_at');
   if (from) q = q.gte('created_at', from);
   if (to)   q = q.lte('created_at', to + 'T23:59:59');
-  const { data: bookings } = await q;
+  const { data: bookings, error: bkErr } = await q;
+  if (bkErr) { console.error('bookings query failed:', bkErr); }
   const bk = bookings || [];
 
   const revenue   = bk.reduce((s,b)=>s+(b.total_price||0),0);

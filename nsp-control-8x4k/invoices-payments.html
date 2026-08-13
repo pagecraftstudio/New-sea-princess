@@ -611,9 +611,10 @@ async function saveInvoice(status='draft') {
   const currency  = document.getElementById('fInvCurrency').value;
   const issueDate = document.getElementById('fInvDate').value || today();
   const dueDate   = document.getElementById('fInvDue').value || null;
+  const fallbackInvNum = 'INV-' + issueDate.replace(/-/g,'') + '-' + Math.floor(1000+Math.random()*9000);
 
   const { data: inv, error } = await window.db.from('nsp_invoices').insert({
-    invoice_number: '',  // auto-set by trigger
+    invoice_number: fallbackInvNum,
     customer_id: custId,
     customer_name: custName,
     booking_id: bookingId,
