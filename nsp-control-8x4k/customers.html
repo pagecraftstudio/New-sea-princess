@@ -245,7 +245,7 @@ function fmtMoney(v, currency='EGP') {
 }
 
 async function loadCustomers() {
-  const sb = window.supabase;
+  const sb = window.db;
   try {
     // Get all bookings with payment data, grouped by customer
     const { data: bookings, error } = await sb
@@ -403,7 +403,7 @@ async function openLedger(customer) {
   body.innerHTML = `<div class="flex items-center justify-center py-16 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl text-primary ml-2"></i> جارٍ التحميل...</div>`;
 
   try {
-    const sb = window.supabase;
+    const sb = window.db;
     // Load bookings for this customer
     const { data: bookings } = await sb
       .from('bookings')

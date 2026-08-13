@@ -332,7 +332,7 @@ const typeMap = {hotel:'فندق',airline:'شركة طيران',visa:'تأشير
 const typeColors = {hotel:'badge-blue',airline:'badge-purple',visa:'badge-orange',transport:'badge-yellow',other:'badge-gray'};
 
 async function loadSuppliers() {
-  const sb = window.supabase;
+  const sb = window.db;
   try {
     const [{ data: suppliers, error }, { data: expenses }] = await Promise.all([
       sb.from('suppliers').select('*').order('name_ar'),
@@ -523,7 +523,7 @@ async function saveSupplier() {
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i> جارٍ الحفظ...';
 
   try {
-    const sb = window.supabase;
+    const sb = window.db;
     let error;
     if (id) {
       ({ error } = await sb.from('suppliers').update(payload).eq('id', id));
@@ -548,7 +548,7 @@ function showFormError(msg) {
 }
 
 async function toggleActive(id, current) {
-  const sb = window.supabase;
+  const sb = window.db;
   const { error } = await sb.from('suppliers').update({ is_active: !current }).eq('id', id);
   if (!error) loadSuppliers();
 }
@@ -567,7 +567,7 @@ async function openStatement(supplierId) {
   body.innerHTML = `<div class="flex items-center justify-center py-16 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl text-gold ml-2"></i> جارٍ التحميل...</div>`;
 
   try {
-    const sb = window.supabase;
+    const sb = window.db;
     const [{ data: expenses }, { data: costs }, { data: bookings }] = await Promise.all([
       sb.from('nsp_expenses').select('*').eq('supplier_id', supplierId).order('expense_date', { ascending: false }),
       sb.from('booking_costs').select('*, bookings(booking_number,package_title,status)').eq('supplier_id', supplierId).order('created_at', { ascending: false }),
