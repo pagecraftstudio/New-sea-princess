@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>الفواتير والمدفوعات | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/accounting-engine.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;}
+    .nav-link:hover{background:#1f2937;color:#fff;}
+    .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
+    .card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;white-space:nowrap;}
+    .tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#fafafa;}
+    .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+    .tab-btn{padding:8px 22px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;border:2px solid transparent;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:not(.active){background:#f3f4f6;color:#374151;}
+    /* Modal */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+    .modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:680px;margin:auto;}
+    .form-row{display:grid;gap:12px;margin-bottom:14px;}
+    .form-row.cols2{grid-template-columns:1fr 1fr;}
+    .form-row.cols3{grid-template-columns:1fr 1fr 1fr;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.12);}
+    .item-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 36px;gap:8px;align-items:center;margin-bottom:8px;}
+    .item-row input,
+    .item-row select{padding:6px 8px;font-size:12px;}
+    .alloc-row{display:grid;grid-template-columns:1fr 80px 100px 36px;gap:8px;align-items:center;margin-bottom:8px;}
+    @media print{
+      aside,header,.no-print{display:none!important;}
+      .print-area{display:block!important;}
+      body{background:#fff;}
+    }
+    .print-area{display:none;}
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- MOBILE HEADER -->
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg no-print">
+  <span class="font-bold text-gold text-lg"><i class="fa-solid fa-file-invoice-dollar ml-1"></i>الفواتير والمدفوعات</span>
+  <button onclick="toggleDrawer()" class="text-2xl"><i class="fa-solid fa-bars"></i></button>
+</header>
+<div id="drawer" class="md:hidden fixed inset-0 z-[60] hidden no-print">
+  <div class="absolute inset-0 bg-black/60" onclick="toggleDrawer()"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col">
+    <div class="h-14 flex items-center px-5 border-b border-gray-800 text-gold font-bold">الإدارة</div>
+    <div class="flex-1 py-2 overflow-y-auto" id="mobNav"></div>
+  </nav>
+</div>
+
+<div class="flex min-h-screen">
+  <!-- SIDEBAR -->
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html"         class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <a href="/nsp-control-8x4k/bookings.html"          class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html"          class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية</a>
+      <a href="/nsp-control-8x4k/profitability.html"     class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>الربحية</a>
+      <a href="/nsp-control-8x4k/customers.html"         class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/suppliers.html"         class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link active"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/reviews.html"           class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء</a>
+      <a href="/nsp-control-8x4k/users.html"             class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/audit-log.html"         class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/admins.html"            class="nav-link"><i class="fa-solid fa-shield-halved w-5"></i>الأدمن</a>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <div id="adminUserEmail" class="text-xs text-gray-400 text-center mb-2"></div>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+
+    <!-- Tabs + Actions -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5 no-print">
+      <div class="flex gap-2">
+        <button class="tab-btn active" id="tabInv" onclick="switchTab('inv')">
+          <i class="fa-solid fa-file-invoice ml-1"></i>الفواتير</button>
+        <button class="tab-btn" id="tabPay" onclick="switchTab('pay')">
+          <i class="fa-solid fa-money-bill-wave ml-1"></i>المدفوعات</button>
+      </div>
+      <div class="flex gap-2 items-center">
+        <input id="searchQ" oninput="filterTable()" placeholder="بحث…" class="border rounded-lg px-3 py-2 text-sm w-44 bg-white">
+        <select id="statusFilter" onchange="filterTable()" class="border rounded-lg px-3 py-2 text-sm bg-white">
+          <option value="">كل الحالات</option>
+          <option value="draft">مسودة</option>
+          <option value="issued">صادرة</option>
+          <option value="partial">جزئي</option>
+          <option value="paid">مسدَّدة</option>
+          <option value="overdue">متأخرة</option>
+          <option value="cancelled">ملغية</option>
+        </select>
+        <button id="addBtn" onclick="openInvModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-lightGreen">
+          <i class="fa-solid fa-plus"></i><span id="addBtnLabel">فاتورة جديدة</span></button>
+      </div>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5 no-print" id="kpiStrip"></div>
+
+    <!-- INVOICES TABLE -->
+    <div id="panelInv" class="card overflow-x-auto">
+      <div id="invLoading" class="py-8 text-center text-gray-400"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</div>
+      <table class="tbl w-full hidden" id="invTable">
+        <thead><tr>
+          <th>رقم الفاتورة</th><th>العميل</th><th>الحجز</th>
+          <th>الإصدار</th><th>الاستحقاق</th>
+          <th class="text-left">الإجمالي</th>
+          <th class="text-left">المُسدَّد</th>
+          <th class="text-left">المتبقي</th>
+          <th>الحالة</th><th>الإجراء</th>
+        </tr></thead>
+        <tbody id="invBody"></tbody>
+      </table>
+      <div id="invEmpty" class="hidden py-10 text-center text-gray-400">
+        <i class="fa-solid fa-file-invoice text-5xl mb-3 text-gray-200"></i>
+        <p class="font-semibold">لا توجد فواتير — أنشئ فاتورتك الأولى</p>
+      </div>
+    </div>
+
+    <!-- PAYMENTS TABLE -->
+    <div id="panelPay" class="card overflow-x-auto hidden">
+      <div id="payLoading" class="py-8 text-center text-gray-400"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</div>
+      <table class="tbl w-full hidden" id="payTable">
+        <thead><tr>
+          <th>رقم الدفعة</th><th>العميل</th><th>الحجز</th>
+          <th>التاريخ</th><th>طريقة الدفع</th>
+          <th class="text-left">المبلغ</th>
+          <th>العملة</th><th>الحالة</th><th>الإجراء</th>
+        </tr></thead>
+        <tbody id="payBody"></tbody>
+      </table>
+      <div id="payEmpty" class="hidden py-10 text-center text-gray-400">
+        <i class="fa-solid fa-money-bill-wave text-5xl mb-3 text-gray-200"></i>
+        <p class="font-semibold">لا توجد مدفوعات بعد</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════ INVOICE MODAL ═══════════════════ -->
+<div id="invModal" class="modal-bg hidden no-print">
+ <div class="modal">
+  <div class="flex items-center justify-between mb-5">
+    <h2 id="invModalTitle" class="font-bold text-gray-800 text-lg">فاتورة جديدة</h2>
+    <button onclick="closeInvModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+
+  <div class="form-row cols2">
+    <div><label>العميل*</label>
+      <select id="fInvCustomer" onchange="loadCustomerBookings()">
+        <option value="">— اختر العميل —</option></select></div>
+    <div><label>الحجز</label>
+      <select id="fInvBooking"><option value="">— اختر الحجز —</option></select></div>
+  </div>
+  <div class="form-row cols3">
+    <div><label>تاريخ الإصدار*</label><input type="date" id="fInvDate"></div>
+    <div><label>تاريخ الاستحقاق</label><input type="date" id="fInvDue"></div>
+    <div><label>العملة</label>
+      <select id="fInvCurrency">
+        <option value="EGP">جنيه EGP</option><option value="SAR">ريال SAR</option>
+        <option value="USD">دولار USD</option><option value="EUR">يورو EUR</option>
+      </select></div>
+  </div>
+
+  <!-- Line Items -->
+  <div class="mb-2 font-bold text-sm text-gray-700"><i class="fa-solid fa-list ml-1 text-primary"></i>بنود الفاتورة</div>
+  <div class="bg-gray-50 rounded-xl p-3 mb-3">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 36px;gap:8px;" class="mb-2">
+      <span class="text-xs font-bold text-gray-500">البيان</span>
+      <span class="text-xs font-bold text-gray-500">النوع</span>
+      <span class="text-xs font-bold text-gray-500">الكمية</span>
+      <span class="text-xs font-bold text-gray-500">السعر</span>
+      <span class="text-xs font-bold text-gray-500">الإجمالي</span>
+      <span></span>
+    </div>
+    <div id="invItems"></div>
+    <button onclick="addInvItem()" class="mt-1 text-xs text-primary font-bold flex items-center gap-1 hover:underline">
+      <i class="fa-solid fa-plus"></i> إضافة بند</button>
+  </div>
+
+  <!-- Totals -->
+  <div class="flex justify-end mb-4">
+    <div class="w-64 space-y-1 text-sm">
+      <div class="flex justify-between"><span class="text-gray-500">المجموع قبل الخصم</span><span id="invSubtotal" class="font-mono font-bold">0.00</span></div>
+      <div class="flex justify-between items-center">
+        <span class="text-gray-500">الخصم</span>
+        <input type="number" id="fInvDiscount" value="0" min="0" oninput="recalcTotals()" class="w-24 text-left py-1 px-2 text-sm border rounded">
+      </div>
+      <div class="flex justify-between items-center">
+        <span class="text-gray-500">الضريبة %</span>
+        <input type="number" id="fInvTaxPct" value="0" min="0" max="100" oninput="recalcTotals()" class="w-24 text-left py-1 px-2 text-sm border rounded">
+      </div>
+      <div class="flex justify-between font-bold text-base border-t pt-1">
+        <span>الإجمالي</span><span id="invTotal" class="font-mono text-primary">0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-row"><label>ملاحظات</label><textarea id="fInvNotes" rows="2" placeholder="ملاحظات اختيارية"></textarea></div>
+  <div id="invErr" class="text-red-600 text-sm mb-3 hidden"></div>
+
+  <div class="flex gap-3 justify-end">
+    <button onclick="closeInvModal()" class="px-5 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
+    <button onclick="saveInvoice('draft')" class="px-5 py-2 border border-gray-400 rounded-lg text-sm font-bold hover:bg-gray-50">
+      <i class="fa-solid fa-floppy-disk ml-1"></i> حفظ مسودة</button>
+    <button onclick="saveInvoice('issued')" class="bg-primary text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen">
+      <i class="fa-solid fa-paper-plane ml-1"></i> إصدار الفاتورة</button>
+  </div>
+ </div>
+</div>
+
+<!-- ═══════════════════ PAYMENT MODAL ════════════════════ -->
+<div id="payModal" class="modal-bg hidden no-print">
+ <div class="modal">
+  <div class="flex items-center justify-between mb-5">
+    <h2 class="font-bold text-gray-800 text-lg">تسجيل دفعة جديدة</h2>
+    <button onclick="closePayModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+
+  <div class="form-row cols2">
+    <div><label>العميل*</label>
+      <select id="fPayCustomer" onchange="loadPayCustomerInvoices()">
+        <option value="">— اختر العميل —</option></select></div>
+    <div><label>الحجز</label>
+      <select id="fPayBooking"><option value="">— اختر الحجز —</option></select></div>
+  </div>
+  <div class="form-row cols3">
+    <div><label>تاريخ الدفع*</label><input type="date" id="fPayDate"></div>
+    <div><label>طريقة الدفع*</label>
+      <select id="fPayMethod">
+        <option value="cash">نقدي</option>
+        <option value="bank_transfer">تحويل بنكي</option>
+        <option value="vodafone_cash">فودافون كاش</option>
+        <option value="instapay">انستاباي</option>
+        <option value="card">بطاقة</option>
+        <option value="cheque">شيك</option>
+        <option value="other">أخرى</option>
+      </select></div>
+    <div><label>العملة</label>
+      <select id="fPayCurrency">
+        <option value="EGP">جنيه EGP</option><option value="SAR">ريال SAR</option>
+        <option value="USD">دولار USD</option><option value="EUR">يورو EUR</option>
+      </select></div>
+  </div>
+  <div class="form-row cols2">
+    <div><label>المبلغ الكلي*</label>
+      <input type="number" id="fPayAmount" min="0" step="0.01" oninput="recalcAllocations()" placeholder="0.00"></div>
+    <div><label>المرجع / رقم العملية</label>
+      <input type="text" id="fPayRef" placeholder="رقم الإيصال أو التحويل"></div>
+  </div>
+
+  <!-- Multi-invoice allocation -->
+  <div class="mb-2 font-bold text-sm text-gray-700"><i class="fa-solid fa-link ml-1 text-primary"></i>توزيع المبلغ على الفواتير</div>
+  <div class="bg-gray-50 rounded-xl p-3 mb-3">
+    <div id="allocRows">
+      <p class="text-xs text-gray-400 text-center py-2">اختر العميل أولاً لتظهر فواتيره المفتوحة</p>
+    </div>
+    <div class="flex justify-between text-sm font-bold mt-2 border-t pt-2">
+      <span>الموزَّع</span><span id="allocTotal" class="font-mono text-primary">0.00</span>
+    </div>
+  </div>
+
+  <div class="form-row"><label>ملاحظات</label><textarea id="fPayNotes" rows="2"></textarea></div>
+  <div id="payErr" class="text-red-600 text-sm mb-3 hidden"></div>
+
+  <div class="flex gap-3 justify-end">
+    <button onclick="closePayModal()" class="px-5 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
+    <button onclick="savePayment()" class="bg-primary text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen">
+      <i class="fa-solid fa-circle-check ml-1"></i> تأكيد الدفعة</button>
+  </div>
+ </div>
+</div>
+
+<!-- ═══════════════════ INVOICE PRINT VIEW ══════════════ -->
+<div class="print-area" id="printArea"></div>
+
+<script>
+/* ─────────────────────── GLOBALS ────────────────────── */
+const fmt   = (n,cur='EGP') => new Intl.NumberFormat('ar-EG',{style:'currency',currency:cur,maximumFractionDigits:2}).format(n||0);
+const fmtN  = n => new Intl.NumberFormat('ar-EG',{maximumFractionDigits:2}).format(n||0);
+const today = () => new Date().toISOString().split('T')[0];
+
+const INV_STATUS = {
+  draft:     {label:'مسودة',     cls:'bg-gray-100 text-gray-600'},
+  issued:    {label:'صادرة',     cls:'bg-blue-100 text-blue-700'},
+  partial:   {label:'جزئي',      cls:'bg-yellow-100 text-yellow-700'},
+  paid:      {label:'مسدَّدة',   cls:'bg-green-100 text-green-700'},
+  overdue:   {label:'متأخرة',    cls:'bg-red-100 text-red-700'},
+  cancelled: {label:'ملغية',     cls:'bg-red-50 text-red-400'},
+  refunded:  {label:'مُستردَّة', cls:'bg-purple-100 text-purple-700'},
+};
+const PAY_METHOD = {
+  cash:'نقدي', bank_transfer:'تحويل بنكي', vodafone_cash:'فودافون كاش',
+  instapay:'انستاباي', card:'بطاقة', cheque:'شيك', other:'أخرى'
+};
+
+let currentTab = 'inv';
+let invItemCount = 0;
+let allInvoices = [], allPayments = [], allCustomers = [];
+
+/* ─────────────────────── TABS ───────────────────────── */
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('panelInv').classList.toggle('hidden', tab!=='inv');
+  document.getElementById('panelPay').classList.toggle('hidden', tab!=='pay');
+  document.getElementById('tabInv').classList.toggle('active', tab==='inv');
+  document.getElementById('tabPay').classList.toggle('active', tab==='pay');
+  document.getElementById('addBtn').onclick = tab==='inv' ? openInvModal : openPayModal;
+  document.getElementById('addBtnLabel').textContent = tab==='inv' ? 'فاتورة جديدة' : 'تسجيل دفعة';
+  document.getElementById('statusFilter').innerHTML = tab==='inv'
+    ? `<option value="">كل الحالات</option>
+       <option value="draft">مسودة</option><option value="issued">صادرة</option>
+       <option value="partial">جزئي</option><option value="paid">مسدَّدة</option>
+       <option value="overdue">متأخرة</option><option value="cancelled">ملغية</option>`
+    : `<option value="">كل الحالات</option>
+       <option value="received">مستلمة</option><option value="cancelled">ملغية</option><option value="refunded">مُستردَّة</option>`;
+}
+
+function toggleDrawer() { document.getElementById('drawer').classList.toggle('hidden'); }
+
+/* ─────────────────────── LOAD DATA ──────────────────── */
+async function loadAll() {
+  await Promise.all([loadInvoices(), loadPayments(), loadCustomersSelect()]);
+  loadKPIs();
+}
+
+async function loadInvoices() {
+  document.getElementById('invLoading').classList.remove('hidden');
+  document.getElementById('invTable').classList.add('hidden');
+  document.getElementById('invEmpty').classList.add('hidden');
+
+  // Mark overdue first (best-effort)
+  await window.db.rpc('mark_overdue_invoices').catch(()=>{});
+
+  const { data, error } = await window.db
+    .from('nsp_invoices')
+    .select('id,invoice_number,customer_name,customer_id,booking_id,issue_date,due_date,currency,total_amount,paid_amount,remaining_amount,status,notes,bookings(booking_ref)')
+    .order('issue_date',{ascending:false})
+    .limit(300);
+
+  document.getElementById('invLoading').classList.add('hidden');
+  allInvoices = data || [];
+  if (!allInvoices.length) { document.getElementById('invEmpty').classList.remove('hidden'); return; }
+  renderInvoices(allInvoices);
+}
+
+function renderInvoices(rows) {
+  if (!rows.length) { document.getElementById('invEmpty').classList.remove('hidden'); document.getElementById('invTable').classList.add('hidden'); return; }
+  document.getElementById('invTable').classList.remove('hidden');
+  document.getElementById('invEmpty').classList.add('hidden');
+  document.getElementById('invBody').innerHTML = rows.map(r=>{
+    const st = INV_STATUS[r.status] || {label:r.status,cls:'bg-gray-100 text-gray-500'};
+    const overdue = r.status==='overdue' || (r.due_date && r.due_date < today() && r.status!=='paid' && r.status!=='cancelled');
+    return `<tr>
+      <td class="font-mono text-xs font-bold text-primary">${r.invoice_number||'—'}</td>
+      <td><div class="font-semibold text-sm">${r.customer_name}</div></td>
+      <td class="text-xs text-gray-500">${r.bookings?.booking_ref||'—'}</td>
+      <td class="text-xs text-gray-500">${r.issue_date||'—'}</td>
+      <td class="text-xs ${overdue&&r.status!=='paid'?'text-red-600 font-bold':''}">${r.due_date||'—'}</td>
+      <td class="text-left font-mono font-bold">${fmt(r.total_amount,r.currency)}</td>
+      <td class="text-left font-mono text-green-700">${fmt(r.paid_amount,r.currency)}</td>
+      <td class="text-left font-mono ${r.remaining_amount>0?'text-orange-600':'text-gray-400'}">${fmt(r.remaining_amount,r.currency)}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td>
+        <div class="flex gap-1">
+          <button onclick="printInvoice('${r.id}')" title="طباعة" class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-200"><i class="fa-solid fa-print"></i></button>
+          ${r.status!=='paid'&&r.status!=='cancelled'?`<button onclick="quickPay('${r.id}','${r.customer_name.replace(/'/g,"\\'")}',${r.remaining_amount},'${r.currency}')" class="text-xs bg-green-100 text-green-700 px-2.5 py-1.5 rounded-lg hover:bg-green-200"><i class="fa-solid fa-circle-dollar-to-slot ml-0.5"></i>دفع</button>`:''}
+          ${r.status==='draft'?`<button onclick="issueInvoice('${r.id}')" class="text-xs bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded-lg hover:bg-blue-200"><i class="fa-solid fa-paper-plane ml-0.5"></i>إصدار</button>`:''}
+          ${r.status!=='cancelled'&&r.status!=='paid'?`<button onclick="cancelInvoice('${r.id}')" title="إلغاء" class="text-xs bg-red-50 text-red-500 px-2.5 py-1.5 rounded-lg hover:bg-red-100"><i class="fa-solid fa-ban"></i></button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadPayments() {
+  document.getElementById('payLoading').classList.remove('hidden');
+  document.getElementById('payTable').classList.add('hidden');
+  document.getElementById('payEmpty').classList.add('hidden');
+
+  const { data } = await window.db
+    .from('nsp_payments')
+    .select('id,payment_number,customer_name,booking_id,payment_date,payment_method,amount,currency,status,reference,bookings(booking_ref),payment_allocations(amount,nsp_invoices(invoice_number))')
+    .order('payment_date',{ascending:false})
+    .limit(300);
+
+  document.getElementById('payLoading').classList.add('hidden');
+  allPayments = data || [];
+  if (!allPayments.length) { document.getElementById('payEmpty').classList.remove('hidden'); return; }
+  renderPayments(allPayments);
+}
+
+function renderPayments(rows) {
+  if (!rows.length) { document.getElementById('payEmpty').classList.remove('hidden'); document.getElementById('payTable').classList.add('hidden'); return; }
+  document.getElementById('payTable').classList.remove('hidden');
+  document.getElementById('payEmpty').classList.add('hidden');
+  const statusCls = {received:'bg-green-100 text-green-700',cancelled:'bg-red-100 text-red-600',refunded:'bg-purple-100 text-purple-700'};
+  const statusLbl = {received:'مستلمة',cancelled:'ملغية',refunded:'مُستردَّة'};
+  document.getElementById('payBody').innerHTML = rows.map(r=>{
+    const allocs = (r.payment_allocations||[]).map(a=>a.nsp_invoices?.invoice_number||'').filter(Boolean).join('، ');
+    return `<tr>
+      <td class="font-mono text-xs font-bold text-primary">${r.payment_number||'—'}</td>
+      <td class="font-semibold text-sm">${r.customer_name}</td>
+      <td class="text-xs text-gray-500">${r.bookings?.booking_ref||'—'}</td>
+      <td class="text-xs">${r.payment_date||'—'}</td>
+      <td><span class="badge bg-blue-50 text-blue-700">${PAY_METHOD[r.payment_method]||r.payment_method}</span></td>
+      <td class="text-left font-mono font-bold text-primary">${fmt(r.amount,r.currency)}</td>
+      <td><span class="badge bg-gray-100 text-gray-600">${r.currency}</span></td>
+      <td><span class="badge ${statusCls[r.status]||'bg-gray-100 text-gray-500'}">${statusLbl[r.status]||r.status}</span>
+        ${allocs?`<div class="text-xs text-gray-400 mt-0.5">← ${allocs}</div>`:''}</td>
+      <td>
+        ${r.status==='received'?`<button onclick="refundPayment('${r.id}')" class="text-xs bg-red-50 text-red-500 px-2.5 py-1.5 rounded-lg hover:bg-red-100"><i class="fa-solid fa-rotate-left ml-0.5"></i>استرداد</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadKPIs() {
+  const totalInv  = allInvoices.reduce((s,r)=>s+(r.total_amount||0),0);
+  const totalPaid = allInvoices.reduce((s,r)=>s+(r.paid_amount||0),0);
+  const totalRem  = allInvoices.reduce((s,r)=>s+(r.remaining_amount||0),0);
+  const overdue   = allInvoices.filter(r=>r.status==='overdue').reduce((s,r)=>s+(r.remaining_amount||0),0);
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="card border-r-4 border-primary"><div class="text-xs text-gray-500 mb-1">إجمالي الفواتير</div><div class="text-xl font-bold text-primary">${fmt(totalInv)}</div></div>
+    <div class="card border-r-4 border-green-500"><div class="text-xs text-gray-500 mb-1">المحصَّل</div><div class="text-xl font-bold text-green-600">${fmt(totalPaid)}</div></div>
+    <div class="card border-r-4 border-orange-400"><div class="text-xs text-gray-500 mb-1">المتبقي</div><div class="text-xl font-bold text-orange-500">${fmt(totalRem)}</div></div>
+    <div class="card border-r-4 border-red-500"><div class="text-xs text-gray-500 mb-1">متأخرة</div><div class="text-xl font-bold text-red-600">${fmt(overdue)}</div></div>`;
+}
+
+/* ─────────────────────── CUSTOMERS SELECT ───────────── */
+async function loadCustomersSelect() {
+  const { data } = await window.db.from('profiles').select('id,full_name,email').order('full_name').limit(300);
+  allCustomers = data || [];
+  const opts = `<option value="">— اختر العميل —</option>` + allCustomers.map(c=>`<option value="${c.id}" data-name="${c.full_name||c.email}">${c.full_name||c.email}</option>`).join('');
+  document.getElementById('fInvCustomer').innerHTML = opts;
+  document.getElementById('fPayCustomer').innerHTML = opts;
+}
+
+async function loadCustomerBookings() {
+  const custId = document.getElementById('fInvCustomer').value;
+  const sel = document.getElementById('fInvBooking');
+  sel.innerHTML = '<option value="">— اختر الحجز —</option>';
+  if (!custId) return;
+  const { data } = await window.db.from('bookings').select('id,booking_ref,total_price,packages(title)')
+    .eq('user_id',custId).order('created_at',{ascending:false}).limit(50);
+  (data||[]).forEach(b=>{
+    const opt = document.createElement('option');
+    opt.value = b.id;
+    opt.textContent = `${b.booking_ref} — ${b.packages?.title||'باقة'} (${fmt(b.total_price)})`;
+    sel.appendChild(opt);
+  });
+  // Auto-fill first item description if only 1 booking
+  if (data?.length===1) {
+    document.getElementById('fInvBooking').value = data[0].id;
+    if (invItemCount===0) {
+      addInvItem(data[0].packages?.title || 'باقة سياحية', data[0].total_price);
+    }
+  }
+}
+
+async function loadPayCustomerInvoices() {
+  const custId = document.getElementById('fPayCustomer').value;
+  const custName = document.getElementById('fPayCustomer').selectedOptions[0]?.dataset.name || '';
+  const container = document.getElementById('allocRows');
+
+  // Also load bookings for this customer
+  const bkSel = document.getElementById('fPayBooking');
+  bkSel.innerHTML = '<option value="">— اختر الحجز —</option>';
+  if (custId) {
+    const { data: bk } = await window.db.from('bookings').select('id,booking_ref,packages(title)')
+      .eq('user_id',custId).limit(30);
+    (bk||[]).forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=`${b.booking_ref} — ${b.packages?.title||''}`; bkSel.appendChild(o); });
+  }
+
+  if (!custId) { container.innerHTML='<p class="text-xs text-gray-400 text-center py-2">اختر العميل أولاً لتظهر فواتيره المفتوحة</p>'; return; }
+
+  const { data: inv } = await window.db.from('nsp_invoices')
+    .select('id,invoice_number,total_amount,paid_amount,remaining_amount,currency')
+    .eq('customer_id',custId)
+    .in('status',['issued','partial','overdue'])
+    .order('issue_date',{ascending:true});
+
+  if (!inv || !inv.length) {
+    container.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">لا توجد فواتير مفتوحة لهذا العميل</p>';
+    return;
+  }
+
+  container.innerHTML = inv.map((i,idx)=>`
+    <div class="alloc-row" data-inv-id="${i.id}">
+      <div class="text-xs">
+        <span class="font-mono font-bold text-primary">${i.invoice_number}</span>
+        <span class="text-gray-400 mr-1">/ متبقي: ${fmt(i.remaining_amount,i.currency)}</span>
+      </div>
+      <label class="flex items-center gap-1 text-xs cursor-pointer">
+        <input type="checkbox" class="alloc-chk w-4 h-4" data-max="${i.remaining_amount}" data-inv="${i.id}" onchange="recalcAllocations()"> توزيع
+      </label>
+      <input type="number" class="alloc-amt text-left text-sm" data-inv="${i.id}" min="0" max="${i.remaining_amount}" step="0.01"
+        value="${i.remaining_amount}" oninput="recalcAllocations()" disabled placeholder="0.00">
+      <button onclick="this.closest('.alloc-row').remove();recalcAllocations();" class="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
+    </div>`).join('');
+
+  // Enable first allocation by default
+  const firstChk = container.querySelector('.alloc-chk');
+  if (firstChk) { firstChk.checked=true; firstChk.nextElementSibling?.classList.add('hidden'); firstChk.closest('.alloc-row').querySelector('.alloc-amt').disabled=false; }
+  recalcAllocations();
+}
+
+/* ─────────────────────── INVOICE ITEMS ─────────────── */
+function addInvItem(desc='', price=0, type='package', qty=1) {
+  invItemCount++;
+  const id = invItemCount;
+  const types = ['package','hotel','flight','visa','transport','other'];
+  const typeOpts = types.map(t=>`<option value="${t}" ${t===type?'selected':''}>${{package:'باقة',hotel:'فندق',flight:'طيران',visa:'تأشيرة',transport:'نقل',other:'أخرى'}[t]}</option>`).join('');
+  const div = document.createElement('div');
+  div.className = 'item-row';
+  div.id = `item-${id}`;
+  div.innerHTML = `
+    <input type="text" class="item-desc" value="${desc}" placeholder="وصف البند" oninput="recalcTotals()">
+    <select class="item-type">${typeOpts}</select>
+    <input type="number" class="item-qty"  value="${qty}"   min="1"   step="1"    oninput="recalcTotals()">
+    <input type="number" class="item-price" value="${price}" min="0" step="0.01" oninput="recalcTotals()">
+    <input type="number" class="item-total" value="${(qty*price).toFixed(2)}" readonly tabindex="-1" style="background:#f3f4f6;">
+    <button onclick="document.getElementById('item-${id}').remove();recalcTotals();" class="text-red-400 hover:text-red-600 text-xl leading-none">×</button>`;
+  document.getElementById('invItems').appendChild(div);
+  recalcTotals();
+}
+
+function recalcTotals() {
+  let sub = 0;
+  document.querySelectorAll('#invItems .item-row').forEach(row=>{
+    const qty   = parseFloat(row.querySelector('.item-qty')?.value)||0;
+    const price = parseFloat(row.querySelector('.item-price')?.value)||0;
+    const total = qty * price;
+    const ti = row.querySelector('.item-total');
+    if (ti) ti.value = total.toFixed(2);
+    sub += total;
+  });
+  const disc   = parseFloat(document.getElementById('fInvDiscount').value)||0;
+  const taxPct = parseFloat(document.getElementById('fInvTaxPct').value)||0;
+  const tax    = (sub - disc) * taxPct / 100;
+  const total  = sub - disc + tax;
+  document.getElementById('invSubtotal').textContent = fmtN(sub);
+  document.getElementById('invTotal').textContent    = fmtN(total);
+}
+
+function recalcAllocations() {
+  let allocated = 0;
+  document.querySelectorAll('.alloc-chk:checked').forEach(chk=>{
+    const amt = parseFloat(chk.closest('.alloc-row').querySelector('.alloc-amt').value)||0;
+    allocated += amt;
+    chk.closest('.alloc-row').querySelector('.alloc-amt').disabled = false;
+  });
+  // Disable unchecked
+  document.querySelectorAll('.alloc-chk:not(:checked)').forEach(chk=>{
+    chk.closest('.alloc-row').querySelector('.alloc-amt').disabled = true;
+  });
+  document.getElementById('allocTotal').textContent = fmtN(allocated);
+}
+
+/* ─────────────────────── SAVE INVOICE ──────────────── */
+async function saveInvoice(status='draft') {
+  const custSel = document.getElementById('fInvCustomer');
+  const custId  = custSel.value;
+  const custName = custSel.selectedOptions[0]?.dataset.name || custSel.selectedOptions[0]?.textContent || '';
+  if (!custId) { showErr('invErr','يجب اختيار العميل'); return; }
+
+  const items = [];
+  let sub = 0;
+  document.querySelectorAll('#invItems .item-row').forEach(row=>{
+    const desc  = row.querySelector('.item-desc')?.value?.trim();
+    const type  = row.querySelector('.item-type')?.value;
+    const qty   = parseInt(row.querySelector('.item-qty')?.value)||1;
+    const price = parseFloat(row.querySelector('.item-price')?.value)||0;
+    const total = qty * price;
+    if (desc) { items.push({description:desc,type,quantity:qty,unit_price:price,total}); sub+=total; }
+  });
+  if (!items.length) { showErr('invErr','أضف بنداً واحداً على الأقل'); return; }
+
+  const disc    = parseFloat(document.getElementById('fInvDiscount').value)||0;
+  const taxPct  = parseFloat(document.getElementById('fInvTaxPct').value)||0;
+  const taxAmt  = (sub-disc)*taxPct/100;
+  const total   = sub - disc + taxAmt;
+  const bookingId = document.getElementById('fInvBooking').value || null;
+  const currency  = document.getElementById('fInvCurrency').value;
+  const issueDate = document.getElementById('fInvDate').value || today();
+  const dueDate   = document.getElementById('fInvDue').value || null;
+
+  const { data: inv, error } = await window.db.from('nsp_invoices').insert({
+    invoice_number: '',  // auto-set by trigger
+    customer_id: custId,
+    customer_name: custName,
+    booking_id: bookingId,
+    issue_date: issueDate,
+    due_date: dueDate,
+    currency,
+    subtotal: sub,
+    discount_amount: disc,
+    tax_amount: taxAmt,
+    total_amount: total,
+    paid_amount: 0,
+    remaining_amount: total,
+    status,
+    notes: document.getElementById('fInvNotes').value.trim()||null,
+  }).select('id').single();
+
+  if (error) { showErr('invErr', error.message); return; }
+
+  // Insert line items
+  if (items.length) {
+    await window.db.from('invoice_items').insert(items.map(it=>({...it, invoice_id: inv.id})));
+  }
+
+  // Auto journal entry if issued
+  if (status==='issued' && window.NSPAccounting) {
+    try {
+      await window.NSPAccounting.onInvoicePosted({
+        invoiceId: inv.id, bookingId, amount: total, date: issueDate,
+        customerName: custName, category: 'tourism'
+      });
+    } catch(e) { console.warn('Journal entry failed (mapping may not be set):', e.message); }
+  }
+
+  closeInvModal();
+  loadInvoices();
+  loadKPIs();
+}
+
+/* ─────────────────────── SAVE PAYMENT ──────────────── */
+async function savePayment() {
+  const custSel  = document.getElementById('fPayCustomer');
+  const custId   = custSel.value;
+  const custName = custSel.selectedOptions[0]?.dataset.name || '';
+  if (!custId) { showErr('payErr','يجب اختيار العميل'); return; }
+
+  const amount = parseFloat(document.getElementById('fPayAmount').value);
+  if (!amount || amount<=0) { showErr('payErr','أدخل مبلغاً صحيحاً'); return; }
+
+  const bookingId = document.getElementById('fPayBooking').value || null;
+  const method    = document.getElementById('fPayMethod').value;
+  const currency  = document.getElementById('fPayCurrency').value;
+  const payDate   = document.getElementById('fPayDate').value || today();
+  const ref       = document.getElementById('fPayRef').value.trim()||null;
+
+  const { data: pay, error } = await window.db.from('nsp_payments').insert({
+    payment_number: '',
+    payment_date: payDate,
+    customer_id: custId,
+    customer_name: custName,
+    booking_id: bookingId,
+    amount,
+    currency,
+    payment_method: method,
+    reference: ref,
+    notes: document.getElementById('fPayNotes').value.trim()||null,
+    status: 'received',
+  }).select('id').single();
+
+  if (error) { showErr('payErr', error.message); return; }
+
+  // Save allocations
+  const allocations = [];
+  document.querySelectorAll('.alloc-chk:checked').forEach(chk=>{
+    const invId = chk.dataset.inv;
+    const amt   = parseFloat(chk.closest('.alloc-row').querySelector('.alloc-amt').value)||0;
+    if (invId && amt>0) allocations.push({payment_id:pay.id, invoice_id:invId, amount:amt});
+  });
+  if (allocations.length) {
+    await window.db.from('payment_allocations').insert(allocations);
+  }
+
+  // Also update booking paid_amount if linked
+  if (bookingId) {
+    const { data: bk } = await window.db.from('bookings').select('paid_amount,total_price,remaining_amount').eq('id',bookingId).single();
+    if (bk) {
+      const newPaid = (bk.paid_amount||0) + amount;
+      await window.db.from('bookings').update({
+        paid_amount: Math.min(newPaid, bk.total_price),
+        remaining_amount: Math.max((bk.total_price||0)-newPaid, 0),
+        payment_status: newPaid>=(bk.total_price||0) ? 'paid' : 'partial'
+      }).eq('id',bookingId);
+    }
+  }
+
+  // Auto journal
+  if (window.NSPAccounting) {
+    try {
+      await window.NSPAccounting.onPaymentReceived({
+        paymentId: pay.id, amount, date: payDate, customerName: custName
+      });
+    } catch(e) { console.warn('Journal entry skipped:', e.message); }
+  }
+
+  closePayModal();
+  loadPayments();
+  loadInvoices();
+  loadKPIs();
+}
+
+/* ─────────────────────── QUICK PAY ─────────────────── */
+function quickPay(invId, custName, remaining, currency) {
+  // open payment modal pre-filled with this invoice
+  openPayModal();
+  // pre-select customer by name if possible — just show amount
+  document.getElementById('fPayAmount').value = remaining;
+  document.getElementById('fPayCurrency').value = currency;
+  document.getElementById('allocRows').innerHTML = `
+    <div class="alloc-row" data-inv-id="${invId}">
+      <div class="text-xs text-primary font-mono font-bold">الفاتورة المختارة</div>
+      <label class="flex items-center gap-1 text-xs"><input type="checkbox" class="alloc-chk w-4 h-4" data-inv="${invId}" onchange="recalcAllocations()" checked> توزيع</label>
+      <input type="number" class="alloc-amt text-left text-sm" data-inv="${invId}" value="${remaining}" min="0" max="${remaining}" step="0.01" oninput="recalcAllocations()">
+      <span></span>
+    </div>`;
+  document.getElementById('allocTotal').textContent = fmtN(remaining);
+}
+
+/* ─────────────────────── ACTIONS ───────────────────── */
+async function issueInvoice(id) {
+  await window.db.from('nsp_invoices').update({status:'issued'}).eq('id',id);
+  loadInvoices();
+}
+
+async function cancelInvoice(id) {
+  if (!confirm('هل تريد إلغاء هذه الفاتورة؟')) return;
+  await window.db.from('nsp_invoices').update({status:'cancelled'}).eq('id',id);
+  loadInvoices();
+}
+
+async function refundPayment(id) {
+  if (!confirm('هل تريد تسجيل استرداد هذه الدفعة؟')) return;
+  await window.db.from('nsp_payments').update({status:'refunded'}).eq('id',id);
+  if (window.NSPAccounting) {
+    // Reversal journal — best effort
+    try { await window.NSPAccounting.onRefundIssued({refundId:id, amount:0, date:today(), customerName:''}); } catch(e){}
+  }
+  loadPayments();
+}
+
+async function printInvoice(id) {
+  const { data: inv } = await window.db.from('nsp_invoices')
+    .select('*,invoice_items(*),bookings(booking_ref,packages(title))')
+    .eq('id',id).single();
+  if (!inv) return;
+
+  const html = `
+    <style>@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+    body{font-family:Cairo,sans-serif;direction:rtl;padding:40px;color:#111;}
+    .hd{text-align:center;margin-bottom:24px;}
+    .hd h1{font-size:22px;color:#1B5E20;}
+    table{width:100%;border-collapse:collapse;margin:16px 0;}
+    th{background:#1B5E20;color:#fff;padding:8px 12px;text-align:right;}
+    td{padding:8px 12px;border-bottom:1px solid #eee;}
+    .total-row{font-weight:700;background:#f9fafb;}
+    .meta{display:flex;justify-content:space-between;margin-bottom:20px;}
+    .meta-block p{margin:3px 0;font-size:13px;}
+    .meta-block .lbl{color:#666;font-size:11px;}
+    </style>
+    <div class="hd">
+      <h1>نيو سي برنسيس للسياحة والسفر</h1>
+      <h2 style="color:#B8860B;">فاتورة رقم: ${inv.invoice_number}</h2>
+    </div>
+    <div class="meta">
+      <div class="meta-block">
+        <p class="lbl">العميل</p><p><strong>${inv.customer_name}</strong></p>
+        ${inv.bookings?.booking_ref?`<p class="lbl">رقم الحجز</p><p>${inv.bookings.booking_ref}</p>`:''}
+        ${inv.bookings?.packages?.title?`<p class="lbl">الباقة</p><p>${inv.bookings.packages.title}</p>`:''}
+      </div>
+      <div class="meta-block" style="text-align:left">
+        <p class="lbl">تاريخ الإصدار</p><p>${inv.issue_date||'—'}</p>
+        ${inv.due_date?`<p class="lbl">تاريخ الاستحقاق</p><p>${inv.due_date}</p>`:''}
+        <p class="lbl">الحالة</p><p>${INV_STATUS[inv.status]?.label||inv.status}</p>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>البيان</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+      <tbody>
+        ${(inv.invoice_items||[]).map(it=>`<tr><td>${it.description}</td><td>${it.quantity}</td><td>${fmt(it.unit_price,inv.currency)}</td><td>${fmt(it.total,inv.currency)}</td></tr>`).join('')}
+      </tbody>
+      <tfoot>
+        ${inv.discount_amount>0?`<tr class="total-row"><td colspan="3">الخصم</td><td>${fmt(inv.discount_amount,inv.currency)}</td></tr>`:''}
+        ${inv.tax_amount>0?`<tr class="total-row"><td colspan="3">الضريبة</td><td>${fmt(inv.tax_amount,inv.currency)}</td></tr>`:''}
+        <tr class="total-row" style="background:#1B5E20;color:#fff;"><td colspan="3"><strong>الإجمالي</strong></td><td><strong>${fmt(inv.total_amount,inv.currency)}</strong></td></tr>
+        <tr><td colspan="3">المُسدَّد</td><td style="color:#16a34a;">${fmt(inv.paid_amount,inv.currency)}</td></tr>
+        <tr><td colspan="3">المتبقي</td><td style="color:#ea580c;">${fmt(inv.remaining_amount,inv.currency)}</td></tr>
+      </tfoot>
+    </table>
+    ${inv.notes?`<p style="color:#555;font-size:13px;margin-top:16px;">ملاحظات: ${inv.notes}</p>`:''}
+    <p style="text-align:center;color:#888;font-size:12px;margin-top:40px;">شكراً لثقتكم في نيو سي برنسيس للسياحة والسفر</p>`;
+
+  const win = window.open('','_blank','width=800,height=900');
+  win.document.write(`<!doctype html><html dir="rtl"><head><title>فاتورة ${inv.invoice_number}</title></head><body>${html}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>win.print(), 600);
+}
+
+/* ─────────────────────── FILTER ────────────────────── */
+function filterTable() {
+  const q  = document.getElementById('searchQ').value.toLowerCase();
+  const st = document.getElementById('statusFilter').value;
+  const tbody = currentTab==='inv' ? 'invBody' : 'payBody';
+  document.querySelectorAll(`#${tbody} tr`).forEach(tr=>{
+    const text = tr.textContent.toLowerCase();
+    const matchQ  = !q  || text.includes(q);
+    const matchSt = !st || text.includes(INV_STATUS[st]?.label || st);
+    tr.style.display = (matchQ && matchSt) ? '' : 'none';
+  });
+}
+
+/* ─────────────────────── MODAL HELPERS ─────────────── */
+function openInvModal() {
+  document.getElementById('fInvDate').value = today();
+  document.getElementById('fInvDiscount').value = '0';
+  document.getElementById('fInvTaxPct').value = '0';
+  document.getElementById('invItems').innerHTML = '';
+  invItemCount = 0;
+  addInvItem();
+  recalcTotals();
+  document.getElementById('invModal').classList.remove('hidden');
+}
+function closeInvModal() { document.getElementById('invModal').classList.add('hidden'); }
+
+function openPayModal() {
+  document.getElementById('fPayDate').value = today();
+  document.getElementById('fPayAmount').value = '';
+  document.getElementById('fPayRef').value = '';
+  document.getElementById('fPayNotes').value = '';
+  document.getElementById('allocRows').innerHTML = '<p class="text-xs text-gray-400 text-center py-2">اختر العميل أولاً</p>';
+  document.getElementById('allocTotal').textContent = '0.00';
+  document.getElementById('payModal').classList.remove('hidden');
+}
+function closePayModal() { document.getElementById('payModal').classList.add('hidden'); }
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.remove('hidden');
+  setTimeout(()=>el.classList.add('hidden'), 5000);
+}
+
+/* ─────────────────────── INIT ──────────────────────── */
+document.addEventListener('DOMContentLoaded', async()=>{
+  const ok = await adminCheckAuth();
+  if (!ok) return;
+  loadAll();
+});
+</script>
+</body>
+</html>
