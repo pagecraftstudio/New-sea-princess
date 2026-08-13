@@ -252,74 +252,83 @@ async function loadAll() {
   }
 }
 
-// Primary KPI source: bookings table (always available even without accounting module fully seeded)
+// Primary KPI source: nsp_invoices + nsp_payments (actual financial records)
 async function loadKPIsFromBookings(from, to) {
-  let q = window.db.from('bookings').select('total_price, paid_amount, remaining_amount, status, created_at');
-  if (from) q = q.gte('created_at', from);
-  if (to)   q = q.lte('created_at', to + 'T23:59:59');
-  const { data: bookings, error: bkErr } = await q;
-  if (bkErr) { console.error('bookings query failed:', bkErr); }
-  const bk = bookings || [];
+  // ── Revenue & AR from invoices ──────────────────────────────
+  let invQ = window.db.from('nsp_invoices')
+    .select('total_amount, paid_amount, remaining_amount, status, issue_date')
+    .not('status','in','("cancelled","refunded")');
+  if (from) invQ = invQ.gte('issue_date', from);
+  if (to)   invQ = invQ.lte('issue_date', to);
+  const { data: invData, error: invErr } = await invQ;
+  if (invErr) console.error('nsp_invoices KPI query failed:', invErr.message);
+  const invRows = invData || [];
 
-  const revenue   = bk.reduce((s,b)=>s+(b.total_price||0),0);
-  const collected = bk.reduce((s,b)=>s+(b.paid_amount||0),0);
-  const ar        = bk.reduce((s,b)=>s+(b.remaining_amount||0),0);
+  const revenue   = invRows.reduce((s,r)=>s+(r.total_amount||0),0);
+  const ar        = invRows.reduce((s,r)=>s+(r.remaining_amount||0),0);
 
-  // Load costs
+  // ── Collected from payments ─────────────────────────────────
+  let payQ = window.db.from('nsp_payments').select('amount, payment_date').eq('status','received');
+  if (from) payQ = payQ.gte('payment_date', from);
+  if (to)   payQ = payQ.lte('payment_date', to);
+  const { data: payData, error: payErr } = await payQ;
+  if (payErr) console.warn('nsp_payments query failed:', payErr.message);
+  const collected = (payData||[]).reduce((s,r)=>s+(r.amount||0),0);
+
+  // ── Direct costs ────────────────────────────────────────────
   let costsQ = window.db.from('booking_costs').select('base_amount,type,created_at');
   if (from) costsQ = costsQ.gte('created_at', from);
   if (to)   costsQ = costsQ.lte('created_at', to + 'T23:59:59');
   const { data: costs, error: costsErr } = await costsQ;
   if (costsErr) console.warn('booking_costs query failed (table may not exist yet):', costsErr.message);
-  const c = costs || [];
   let directCost = 0;
-  c.forEach(x=>directCost+=x.base_amount||0);
+  (costs||[]).forEach(x=>directCost+=x.base_amount||0);
 
-  // Load expenses
-  let expQ = window.db.from('nsp_expenses').select('total_amount,status,expense_date').eq('status','posted');
+  // ── Operating expenses ──────────────────────────────────────
+  let expQ = window.db.from('nsp_expenses').select('total_amount,expense_date').eq('status','posted');
   if (from) expQ = expQ.gte('expense_date', from);
   if (to)   expQ = expQ.lte('expense_date', to);
   const { data: expenses, error: expErr } = await expQ;
-  if (expErr) console.warn('nsp_expenses query failed (table may not exist yet):', expErr.message);
+  if (expErr) console.warn('nsp_expenses query failed:', expErr.message);
   let opEx = 0;
   (expenses||[]).forEach(e=>opEx+=e.total_amount||0);
 
-  const gross   = revenue - directCost;
-  const net     = gross - opEx;
-  const grossM  = revenue>0 ? (gross/revenue*100) : 0;
-  const netM    = revenue>0 ? (net/revenue*100)   : 0;
+  const gross  = revenue - directCost;
+  const net    = gross - opEx;
+  const grossM = revenue>0 ? (gross/revenue*100) : 0;
+  const netM   = revenue>0 ? (net/revenue*100)   : 0;
 
-  // Cash accounts balance
+  // ── Cash accounts ───────────────────────────────────────────
   const { data: cashAccts, error: cashErr } = await window.db.from('cash_accounts').select('current_balance');
   if (cashErr) console.warn('cash_accounts query failed:', cashErr.message);
   const cash = (cashAccts||[]).reduce((s,a)=>s+(a.current_balance||0),0);
+
+  // ── AP (payables — supplier invoices unpaid) ────────────────
+  const { data: apData, error: apErr } = await window.db.from('nsp_invoices').select('remaining_amount').eq('status','issued');
+  if (apErr) console.warn('nsp_invoices AP query failed:', apErr.message);
+  const ap = (apData||[]).reduce((s,r)=>s+(r.remaining_amount||0),0);
 
   const set = (id, val, cls) => {
     const el = document.getElementById(id);
     if (el) { el.textContent = val; if (cls) el.className = 'kpi-value ' + cls; }
   };
 
-  set('kpiRevenue',   fmt(revenue));
-  set('kpiCollected', fmt(collected));
-  set('kpiAR',        fmt(ar));
-  set('kpiOverdueAR', fmt(ar), ar>0?'text-red-600':'text-green-600');
-  set('kpiDirectCost',fmt(directCost));
-  set('kpiOpEx',      fmt(opEx));
-  set('kpiGross',     fmt(gross),  gross>=0?'text-green-700':'text-red-600');
-  set('kpiNet',       fmt(net),    net>=0?'text-green-700':'text-red-600');
+  set('kpiRevenue',     fmt(revenue));
+  set('kpiCollected',   fmt(collected));
+  set('kpiAR',          fmt(ar));
+  set('kpiOverdueAR',   fmt(ar), ar>0?'text-red-600':'text-green-600');
+  set('kpiDirectCost',  fmt(directCost));
+  set('kpiOpEx',        fmt(opEx));
+  set('kpiGross',       fmt(gross),  gross>=0?'text-green-700':'text-red-600');
+  set('kpiNet',         fmt(net),    net>=0?'text-green-700':'text-red-600');
   set('kpiGrossMargin', fmtPct(grossM));
   set('kpiNetMargin',   fmtPct(netM));
-  set('kpiCash',      fmt(cash));
+  set('kpiCash',        fmt(cash));
+  set('kpiAP',          fmt(ap));
 
-  // AP
-  const { data: apData, error: apErr } = await window.db.from('nsp_invoices').select('remaining_amount').eq('status','issued');
-  if (apErr) console.warn('nsp_invoices (AP) query failed:', apErr.message);
-  const ap = (apData||[]).reduce((s,r)=>s+(r.remaining_amount||0),0);
-  set('kpiAP', fmt(ap));
-
-  // Charts
+  // ── Charts ──────────────────────────────────────────────────
   renderRevExp(revenue, directCost, opEx, collected);
-  await renderRevByService(from, to);
+  await renderRevByService(from, to, invRows);
 }
 
 function renderRevExp(revenue, directCost, opEx, collected) {
@@ -337,7 +346,7 @@ function renderRevExp(revenue, directCost, opEx, collected) {
   });
 }
 
-async function renderRevByService(from, to) {
+async function renderRevByService(from, to, invRows=[]) {
   let bkQ = window.db.from('bookings').select('total_price, created_at, packages(category)');
   if (from) bkQ = bkQ.gte('created_at', from);
   if (to)   bkQ = bkQ.lte('created_at', to + 'T23:59:59');
@@ -384,7 +393,7 @@ async function renderRevByService(from, to) {
     document.getElementById('expByCatChart').parentElement.innerHTML += '<p class="text-xs text-gray-400 text-center mt-2">لا توجد مصروفات مسجلة بعد</p>';
   }
 
-  // Profit trend — last 6 months from bookings
+  // Profit trend — last 6 months from nsp_invoices
   const months = [];
   const profits = [];
   for (let i=5; i>=0; i--) {
@@ -392,8 +401,8 @@ async function renderRevByService(from, to) {
     const y = d.getFullYear(), m = d.getMonth();
     const mFrom = new Date(y,m,1).toISOString().split('T')[0];
     const mTo   = new Date(y,m+1,0).toISOString().split('T')[0];
-    const mBk = (bk||[]).filter(b=>b.created_at>=mFrom && b.created_at<=mTo+'T23:59:59');
-    const mRev = mBk.reduce((s,b)=>s+(b.total_price||0),0);
+    const mInv = (invRows||[]).filter(r=>r.issue_date>=mFrom && r.issue_date<=mTo);
+    const mRev = mInv.reduce((s,r)=>s+(r.total_amount||0),0);
     months.push(d.toLocaleDateString('ar-EG',{month:'short'}));
     profits.push(mRev);
   }
