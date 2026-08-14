@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة المالية والمحاسبة | نيو سي برنسيس</title>
+  <title>لوحة المالية والمحاسبة | نيو سي برنسيس فرع الزقازيق</title>
   <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/supabase-config.js"></script>
   <script src="/js/admin.js"></script>
@@ -150,7 +152,7 @@
     </div>
   </aside>
 
-  <main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+  <main class="flex-1 p-4 md:p-6 overflow-x-hidden" aria-label="المحتوى الرئيسي">
 
     <!-- Header + Filters -->
     <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
@@ -187,7 +189,7 @@
     <!-- ── Charts Row 1 ───────────────────────────── -->
     <div class="grid md:grid-cols-2 gap-4 mb-4">
       <div class="card">
-        <h2 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-column ml-1 text-primary"></i>الإيرادات مقابل المصروفات</h2>
+        <h2 class="font-bold text-gray-700 text-sm mb-3" aria-label="الإيرادات مقابل المصروفات"><i class="fa-solid fa-chart-column ml-1 text-primary"></i>الإيرادات مقابل المصروفات</h2>
         <div style="position:relative;height:240px;"><canvas id="revExpChart"></canvas></div>
       </div>
       <div class="card">

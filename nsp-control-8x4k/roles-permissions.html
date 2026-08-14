@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>الأدوار والصلاحيات | نيو سي برنسيس</title>
+  <title>الأدوار والصلاحيات | نيو سي برنسيس فرع الزقازيق</title>
   <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/supabase-config.js"></script>
   <script src="/js/admin.js"></script>
@@ -179,7 +181,7 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 p-4 md:p-6 overflow-auto">
+    <main class="flex-1 p-4 md:p-6 overflow-auto" aria-label="المحتوى الرئيسي">
 
       <!-- Page Header -->
       <div class="flex flex-wrap justify-between items-start mb-6 gap-4">
@@ -295,7 +297,7 @@
         <div class="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto">
           <div class="p-4 border-b border-gray-100 flex items-center gap-2">
             <i class="fa-solid fa-table text-primary"></i>
-            <h2 class="font-black text-gray-700">مصفوفة الصلاحيات — الأدوار × الصلاحيات</h2>
+            <h2 class="font-black text-gray-700" aria-label="مصفوفة الصلاحيات — الأدوار × الصلاحيات">مصفوفة الصلاحيات — الأدوار × الصلاحيات</h2>
             <span class="text-xs text-gray-400 mr-2">✅ مسموح | ❌ غير مسموح</span>
           </div>
           <div class="overflow-x-auto" style="max-height:70vh;overflow-y:auto;">

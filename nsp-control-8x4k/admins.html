@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/supabase-config.js"></script>
   <script src="/js/admin.js"></script>
@@ -157,7 +159,7 @@
   </aside>
 
   <!-- MAIN -->
-  <main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+  <main class="flex-1 p-4 md:p-6 overflow-x-hidden" aria-label="المحتوى الرئيسي">
 
     <!-- Page header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -174,7 +176,7 @@
 
     <!-- Role permissions table -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
-      <h2 class="text-sm font-black text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-table-list text-gold"></i> جدول الصلاحيات الكامل</h2>
+      <h2 class="text-sm font-black text-gray-700 mb-4 flex items-center gap-2" aria-label="جدول الصلاحيات الكامل"><i class="fa-solid fa-table-list text-gold"></i> جدول الصلاحيات الكامل</h2>
       <div class="overflow-x-auto">
         <table class="w-full perm-table">
           <thead>

@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>الفواتير والمدفوعات | نيو سي برنسيس</title>
+  <title>الفواتير والمدفوعات | نيو سي برنسيس فرع الزقازيق</title>
   <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/supabase-config.js"></script>
   <script src="/js/admin.js"></script>
@@ -19,7 +21,7 @@
     .nav-link:hover{background:#1f2937;color:#fff;}
     .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
     .card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
-    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;white-space:nowrap;}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:2px solid #e5e7eb;}
     .tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
     .tbl tr:hover td{background:#fafafa;}
     .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
@@ -144,7 +146,7 @@
   </aside>
 
   <!-- MAIN -->
-  <main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+  <main class="flex-1 p-4 md:p-6 overflow-x-hidden" aria-label="المحتوى الرئيسي">
 
     <!-- Tabs + Actions -->
     <div class="flex flex-wrap items-center justify-between gap-3 mb-5 no-print">
@@ -218,7 +220,7 @@
 <div id="invModal" class="modal-bg hidden no-print">
  <div class="modal">
   <div class="flex items-center justify-between mb-5">
-    <h2 id="invModalTitle" class="font-bold text-gray-800 text-lg">فاتورة جديدة</h2>
+    <h2 id="invModalTitle" class="font-bold text-gray-800 text-lg" aria-label="فاتورة جديدة">فاتورة جديدة</h2>
     <button onclick="closeInvModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
   </div>
 

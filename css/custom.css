@@ -112,3 +112,10 @@ html.dark .pkg-footer {
 
 /* ── New Dark Navbar (logo redesign) ───────────────────── */
 .nav-link-dark:hover { color: #DAA520 !important; border-bottom-color: rgba(184,134,11,.4) !important; }
+
+/* ── Admin Sidebar Dark Mode (extended) ──────────────────── */
+html.dark .nav-link          { color: #9ca3af; }
+html.dark .nav-link:hover    { background: #1f2937; color: #fff; }
+html.dark .nav-link.active   { background: #1B5E20; border-right-color: #DAA520; color: #fff; }
+html.dark .nav-group         { border-bottom-color: #1a2e1c; }
+html.dark .tbl tr:hover td   { background: #1e3320; }

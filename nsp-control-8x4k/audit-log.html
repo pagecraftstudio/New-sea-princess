@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/supabase-config.js"></script>
   <script src="/js/admin.js"></script>
@@ -135,9 +137,9 @@
     </div>
   </aside>
 
-  <main class="flex-1 flex flex-col p-6">
+  <main class="flex-1 flex flex-col p-6" aria-label="المحتوى الرئيسي">
     <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-      <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-primary pb-2">سجل العمليات</h2>
+      <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-primary pb-2" aria-label="سجل العمليات">سجل العمليات</h2>
       <button onclick="loadAuditLogs()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition text-sm">
         <i class="fa-solid fa-rotate"></i> تحديث
       </button>
