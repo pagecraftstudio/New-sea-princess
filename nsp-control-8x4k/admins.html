@@ -21,6 +21,20 @@
     .role-super{background:#fef9c3;color:#92400e;}
     .role-admin{background:#dbeafe;color:#1e40af;}
     .role-viewer{background:#f3f4f6;color:#6b7280;}
+    .role-fin{background:#d1fae5;color:#065f46;}
+    .role-acct{background:#e0e7ff;color:#3730a3;}
+    .role-cashier{background:#fce7f3;color:#9d174d;}
+    .role-sales{background:#ffedd5;color:#c2410c;}
+    .role-booking{background:#fef3c7;color:#92400e;}
+    .role-auditor{background:#f3e8ff;color:#6b21a8;}
+    .perm-table th{font-size:11px;font-weight:800;color:#4b5563;padding:8px 10px;background:#f9fafb;border-bottom:1px solid #e5e7eb;white-space:nowrap;text-align:center;}
+    .perm-table th:first-child{text-align:right;}
+    .perm-table td{padding:7px 10px;font-size:12px;text-align:center;border-bottom:1px solid #f0f0f0;}
+    .perm-table td:first-child{text-align:right;color:#374151;font-weight:600;padding-right:16px;}
+    .perm-table tr:hover td{background:#fafaf8;}
+    .cat-header td{background:#f1f5f9!important;font-weight:800;color:#1e293b;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:6px 16px!important;text-align:right!important;}
+    .cell-yes{color:#16a34a;font-size:16px;}
+    .cell-no{color:#dc2626;font-size:14px;opacity:.45;}
     .field-input{width:100%;border:1.5px solid #e2dfd8;border-radius:9px;padding:10px 14px;font-family:'Cairo',sans-serif;font-size:14px;outline:none;transition:border-color .2s;background:#fafaf8;}
     .field-input:focus{border-color:#B8860B;}
     .btn-gold{background:linear-gradient(135deg,#B8860B,#9a7209);color:#fff;padding:10px 22px;border-radius:9px;font-family:'Cairo',sans-serif;font-weight:800;font-size:14px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:box-shadow .2s;}
@@ -134,25 +148,75 @@
 
     <!-- Role permissions table -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
-      <h2 class="text-sm font-black text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-table-list text-gold"></i> جدول الصلاحيات</h2>
+      <h2 class="text-sm font-black text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-table-list text-gold"></i> جدول الصلاحيات الكامل</h2>
       <div class="overflow-x-auto">
-        <table class="w-full text-center text-sm">
+        <table class="w-full perm-table">
           <thead>
             <tr>
-              <th class="text-right">الصلاحية</th>
+              <th class="text-right min-w-[180px]">الصلاحية</th>
               <th><span class="role-badge role-super">مدير عام</span></th>
+              <th><span class="role-badge role-fin">مدير مالي</span></th>
+              <th><span class="role-badge role-acct">محاسب</span></th>
+              <th><span class="role-badge role-cashier">أمين صندوق</span></th>
+              <th><span class="role-badge role-sales">مندوب مبيعات</span></th>
+              <th><span class="role-badge role-booking">موظف حجز</span></th>
+              <th><span class="role-badge role-auditor">مراجع</span></th>
               <th><span class="role-badge role-admin">مشرف</span></th>
               <th><span class="role-badge role-viewer">مشاهد</span></th>
             </tr>
           </thead>
           <tbody>
-            <tr><td class="text-right py-2 pr-4 text-gray-600">عرض الحجوزات والإحصائيات</td><td>✅</td><td>✅</td><td>✅</td></tr>
-            <tr class="bg-gray-50"><td class="text-right py-2 pr-4 text-gray-600">تغيير حالة الحجز</td><td>✅</td><td>✅</td><td>❌</td></tr>
-            <tr><td class="text-right py-2 pr-4 text-gray-600">إضافة وتعديل الباقات</td><td>✅</td><td>✅</td><td>❌</td></tr>
-            <tr class="bg-gray-50"><td class="text-right py-2 pr-4 text-gray-600">الموافقة على التقييمات</td><td>✅</td><td>✅</td><td>❌</td></tr>
-            <tr><td class="text-right py-2 pr-4 text-gray-600">حذف الباقات والتقييمات</td><td>✅</td><td>❌</td><td>❌</td></tr>
-            <tr class="bg-gray-50"><td class="text-right py-2 pr-4 text-gray-600">إيقاف وتفعيل حسابات المستخدمين</td><td>✅</td><td>❌</td><td>❌</td></tr>
-            <tr><td class="text-right py-2 pr-4 text-gray-600">إدارة الأدمن وتغيير الأدوار</td><td>✅</td><td>❌</td><td>❌</td></tr>
+            <!-- الحجوزات -->
+            <tr class="cat-header"><td colspan="10">📋 الحجوزات</td></tr>
+            <tr><td>عرض الحجوزات والإحصائيات</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td></tr>
+            <tr><td>إنشاء/تعديل الحجوزات</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>حذف الحجوزات</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <!-- البرامج -->
+            <tr class="cat-header"><td colspan="10">🧳 برامج الرحلات</td></tr>
+            <tr><td>عرض البرامج</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td></tr>
+            <tr><td>إضافة وتعديل البرامج</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>حذف البرامج والتقييمات</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <!-- المالية -->
+            <tr class="cat-header"><td colspan="10">💰 المالية والمدفوعات</td></tr>
+            <tr><td>عرض الفواتير</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>إنشاء/تعديل الفواتير</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>عرض المدفوعات</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>تسجيل المدفوعات</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <!-- المحاسبة -->
+            <tr class="cat-header"><td colspan="10">📒 المحاسبة</td></tr>
+            <tr><td>عرض القيود المحاسبية</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <tr><td>إدخال القيود المحاسبية</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>تسجيل المصاريف</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <!-- الموافقات -->
+            <tr class="cat-header"><td colspan="10">✔️ الموافقات</td></tr>
+            <tr><td>اعتماد المصاريف</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <tr><td>اعتماد المردودات</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <tr><td>الموافقة على التقييمات</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <!-- التقارير -->
+            <tr class="cat-header"><td colspan="10">📊 التقارير</td></tr>
+            <tr><td>عرض التقارير المالية</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <!-- الفترات المالية -->
+            <tr class="cat-header"><td colspan="10">📅 الفترات المالية</td></tr>
+            <tr><td>عرض الفترات المالية</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>إغلاق الفترات المالية</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <tr><td>إقفال السنة المالية</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <!-- الحسابات والموردون والعملاء -->
+            <tr class="cat-header"><td colspan="10">🏦 الحسابات والأطراف</td></tr>
+            <tr><td>عرض دليل الحسابات</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>تعديل دليل الحسابات</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <tr><td>عرض الموردين</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>إدارة الموردين</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>عرض العملاء</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <!-- الخزينة -->
+            <tr class="cat-header"><td colspan="10">🏧 الخزينة والبنوك</td></tr>
+            <tr><td>عرض الخزينة والبنوك</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>إدارة الخزينة والبنوك</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <!-- الإدارة -->
+            <tr class="cat-header"><td colspan="10">⚙️ الإدارة والنظام</td></tr>
+            <tr><td>إدارة المستخدمين</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <tr><td>إدارة المشرفين والأدوار</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
+            <tr><td>عرض سجل العمليات</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✅</td><td class="cell-yes">✅</td><td class="cell-no">—</td></tr>
+            <tr><td>إعدادات النظام</td><td class="cell-yes">✅</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td></tr>
           </tbody>
         </table>
       </div>
