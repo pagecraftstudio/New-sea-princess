@@ -92,7 +92,7 @@ BEGIN
   -- ── 8. UNRECONCILED BANK ACCOUNTS (stale > 30 days) ────────
   SELECT COUNT(*) INTO v_unreconciled_banks
   FROM cash_accounts ca
-  WHERE ca.account_type IN ('bank','wallet')
+  WHERE ca.type IN ('bank','wallet')
     AND ca.is_active = TRUE
     AND NOT EXISTS (
       SELECT 1 FROM bank_reconciliations br
