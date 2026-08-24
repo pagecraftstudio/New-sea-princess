@@ -47,92 +47,99 @@
   <!-- MOBILE DRAWER -->
   <div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
     <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
-    <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl" style="font-family:'Cairo',sans-serif;">
+    <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl">
+    <div class="h-16 flex items-center justify-between px-4 border-b border-gray-800">
+      <span class="text-gold font-bold">القائمة</span>
+      <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
       <a href="/nsp-control-8x4k/dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
       <details class="nav-group" open>
         <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/bookings.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
-        <a href="/nsp-control-8x4k/packages.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
-        <a href="/nsp-control-8x4k/reviews.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
-        <a href="/nsp-control-8x4k/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
-        <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
-        <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
-        <a href="/nsp-control-8x4k/suppliers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
-        <a href="/nsp-control-8x4k/customers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>العملاء</a>
-        <a href="/nsp-control-8x4k/expenses.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
-        <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
-        <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
-        <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
-        <a href="/nsp-control-8x4k/profitability.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
-        <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
-        <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
-        <a href="/nsp-control-8x4k/reports.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+      <a href="/nsp-control-8x4k/reports.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
-        <a href="/nsp-control-8x4k/admins.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
-        <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
-        <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
       </details>
-
+    </nav>
   </nav>
   </div>
 
   <div class="flex min-h-screen">
   <!-- Sidebar -->
-  <aside class="w-64 bg-darkBg text-white hidden md:flex flex-col sticky top-0 h-screen">
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
     <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
-      <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" class="h-8 w-auto object-contain ml-2"> الإدارة
+      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
     </div>
-    <nav class="flex-1 overflow-y-auto py-4">
+    <nav class="flex-1 overflow-y-auto py-3">
       <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
       <details class="nav-group" open>
         <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
-        <a href="/nsp-control-8x4k/packages.html" class="nav-link active"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
-        <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
-        <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link active"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
-        <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
-        <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
-        <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
-        <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
-        <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
-        <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
-        <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
-        <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
-        <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
-        <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
-        <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
-        <a href="/nsp-control-8x4k/reports.html" class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+      <a href="/nsp-control-8x4k/reports.html" class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
-        <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
-        <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
-        <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
       </details>
-
-  </nav>
+    </nav>
     <div class="p-4 border-t border-gray-800">
-      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
+      <p class="text-xs text-gray-500 mb-2 text-center" id="adminUserEmail"></p>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
         <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
       </button>
     </div>

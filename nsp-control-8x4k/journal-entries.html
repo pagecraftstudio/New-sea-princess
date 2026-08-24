@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>القيود اليومية | نيو سي برنسيس فرع الزقازيق</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/accounting-engine.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;}
+    .nav-link:hover{background:#1f2937;color:#fff;}
+    .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
+    .nav-section-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;color:#6b7280;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;list-style:none;user-select:none;transition:.2s;}
+    .nav-section-header:hover{color:#d1d5db;background:#111827;}
+    .nav-section-header i:first-child{font-size:.8rem;width:1.25rem;flex-shrink:0;}
+    .nav-section-header span{flex:1;}
+    .nav-chevron{font-size:.6rem;transition:transform .25s;}
+    details.nav-group[open] .nav-chevron{transform:rotate(180deg);}
+    details.nav-group>summary::-webkit-details-marker{display:none;}
+    details.nav-group>summary::marker{display:none;content:'';}
+    .nav-group .nav-link{padding-right:36px;font-size:.875rem;}
+    .nav-group{border-bottom:1px solid #1a2e1c;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700;}
+    .badge-green{background:#dcfce7;color:#166534;}
+    .badge-red{background:#fee2e2;color:#991b1b;}
+    .badge-yellow{background:#fef9c3;color:#854d0e;}
+    .badge-gray{background:#f3f4f6;color:#374151;}
+    .badge-blue{background:#dbeafe;color:#1e40af;}
+    .badge-purple{background:#ede9fe;color:#5b21b6;}
+    .badge-orange{background:#ffedd5;color:#9a3412;}
+    .stat-card{background:#fff;border-radius:1rem;padding:1.25rem 1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid #e5e7eb;}
+    table{width:100%;border-collapse:collapse;font-size:.82rem;}
+    th{background:#f3f4f6;font-weight:700;padding:9px 12px;text-align:right;border-bottom:2px solid #e5e7eb;white-space:nowrap;}
+    td{padding:8px 12px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    tr:hover td{background:#f0fdf4;}
+    .section-title{font-size:1rem;font-weight:700;color:#1B5E20;border-right:3px solid #B8860B;padding-right:10px;margin-bottom:16px;}
+    input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 2px #1B5E2033;}
+    /* Lines table inside modal */
+    .lines-table th{background:#f8fafc;font-size:.78rem;padding:6px 10px;}
+    .lines-table td{padding:5px 6px;font-size:.8rem;}
+    .lines-table input,.lines-table select{width:100%;border:1px solid #d1d5db;border-radius:6px;padding:4px 8px;font-size:.8rem;font-family:'Cairo',sans-serif;}
+    .lines-table input:focus,.lines-table select:focus{outline:none;box-shadow:0 0 0 2px #1B5E2033;}
+    .debit-col{color:#166534;font-weight:700;}
+    .credit-col{color:#991b1b;font-weight:700;}
+    .balance-ok{color:#166534;font-weight:700;}
+    .balance-bad{color:#991b1b;font-weight:700;}
+    @media print{aside,.no-print{display:none!important;}main{padding:0!important;}body{background:#fff!important;}}
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- MOBILE TOP BAR -->
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg no-print">
+  <div class="flex items-center gap-2 font-bold text-lg text-gold"><i class="fa-solid fa-journal-whills"></i> القيود اليومية</div>
+  <button id="mobileMenuBtn" class="text-white text-2xl p-1"><i class="fa-solid fa-bars"></i></button>
+</header>
+
+<!-- MOBILE DRAWER -->
+<div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden no-print">
+  <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
+  <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl">
+    <div class="h-16 flex items-center justify-between px-4 border-b border-gray-800">
+      <span class="text-gold font-bold">القائمة</span>
+      <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+        <a href="/nsp-control-8x4k/bookings.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+        <a href="/nsp-control-8x4k/packages.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+        <a href="/nsp-control-8x4k/reviews.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+        <a href="/nsp-control-8x4k/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      </details>
+      <details class="nav-group" open>
+        <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+        <a href="/nsp-control-8x4k/customers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+        <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
+        <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+        <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
+        <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
+        <a href="/nsp-control-8x4k/expenses.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+        <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+        <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+        <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+        <a href="/nsp-control-8x4k/profitability.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+        <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+        <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+        <a href="/nsp-control-8x4k/reports.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      </details>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+        <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+        <a href="/nsp-control-8x4k/admins.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+        <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
+      </details>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+        <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+        <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
+      </details>
+    </nav>
+  </nav>
+</div>
+
+<div class="flex min-h-screen">
+<!-- SIDEBAR -->
+<aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
+  <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+    <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
+  </div>
+  <nav class="flex-1 overflow-y-auto py-3">
+    <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+    <details class="nav-group">
+      <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+    </details>
+    <details class="nav-group" open>
+      <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link active"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+      <a href="/nsp-control-8x4k/reports.html" class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+    </details>
+    <details class="nav-group">
+      <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
+    </details>
+    <details class="nav-group">
+      <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
+    </details>
+  </nav>
+  <div class="p-4 border-t border-gray-800">
+    <a href="/nsp-control-8x4k/login.html" class="text-gray-400 hover:text-white text-sm flex items-center gap-2"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+
+  <!-- HEADER -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6 no-print">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">القيود اليومية</h1>
+      <p class="text-sm text-gray-500 mt-0.5">القيد المزدوج — إنشاء وإدارة ومراجعة القيود المحاسبية</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick="openNewEntryModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-lightGreen transition">
+        <i class="fa-solid fa-plus"></i> قيد جديد
+      </button>
+      <button onclick="window.print()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-gray-50">
+        <i class="fa-solid fa-print"></i> طباعة
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">إجمالي القيود</div>
+      <div class="text-2xl font-bold text-gray-800" id="kpiTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">مرحّلة</div>
+      <div class="text-2xl font-bold text-green-700" id="kpiPosted">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">مسودة</div>
+      <div class="text-2xl font-bold text-yellow-700" id="kpiDraft">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">مُعكوسة</div>
+      <div class="text-2xl font-bold text-red-700" id="kpiReversed">—</div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4 no-print">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <input id="fSearch" type="text" placeholder="بحث: رقم / وصف / مرجع…" class="border border-gray-300 rounded-lg px-3 py-2 text-sm col-span-2 md:col-span-2">
+      <select id="fStatus" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        <option value="">كل الحالات</option>
+        <option value="draft">مسودة</option>
+        <option value="posted">مرحّلة</option>
+        <option value="reversed">مُعكوسة</option>
+      </select>
+      <input id="fFrom" type="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+      <input id="fTo" type="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+    </div>
+    <div class="flex gap-2 mt-3 flex-wrap">
+      <button onclick="applyFilters()" class="bg-primary text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-lightGreen"><i class="fa-solid fa-filter ml-1"></i>تصفية</button>
+      <button onclick="clearFilters()" class="border border-gray-300 text-gray-600 px-4 py-1.5 rounded-lg text-sm hover:bg-gray-50">مسح</button>
+      <select id="fRefType" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+        <option value="">كل الأنواع</option>
+        <option value="manual">يدوي</option>
+        <option value="booking">حجز</option>
+        <option value="payment">دفع</option>
+        <option value="expense">مصروف</option>
+        <option value="reversal">عكس</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table>
+        <thead>
+          <tr>
+            <th>رقم القيد</th>
+            <th>التاريخ</th>
+            <th>الوصف</th>
+            <th>النوع</th>
+            <th class="text-left">إجمالي المدين</th>
+            <th class="text-left">إجمالي الدائن</th>
+            <th>العملة</th>
+            <th>الحالة</th>
+            <th class="no-print">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="entriesBody">
+          <tr><td colspan="9" class="text-center text-gray-400 py-10"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- PAGINATION -->
+    <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 no-print">
+      <span class="text-xs text-gray-500" id="pageInfo">—</span>
+      <div class="flex gap-2">
+        <button id="btnPrev" onclick="prevPage()" class="border border-gray-300 text-gray-600 px-3 py-1 rounded text-sm disabled:opacity-40" disabled>السابق</button>
+        <button id="btnNext" onclick="nextPage()" class="border border-gray-300 text-gray-600 px-3 py-1 rounded text-sm disabled:opacity-40" disabled>التالي</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: NEW / EDIT JOURNAL ENTRY
+═══════════════════════════════════════════ -->
+<div id="entryModal" class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/50 p-4 no-print">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col">
+
+    <!-- Modal header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+      <h2 class="text-lg font-bold text-gray-800" id="modalTitle">قيد يومي جديد</h2>
+      <button onclick="closeEntryModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Modal body (scrollable) -->
+    <div class="overflow-y-auto flex-1 px-6 py-4">
+
+      <!-- Header fields -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">رقم القيد</label>
+          <input id="fEntryNumber" type="text" placeholder="تلقائي" readonly
+            class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">التاريخ <span class="text-red-500">*</span></label>
+          <input id="fEntryDate" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">العملة</label>
+          <select id="fCurrency" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="EGP">جنيه مصري (EGP)</option>
+            <option value="SAR">ريال سعودي (SAR)</option>
+            <option value="USD">دولار أمريكي (USD)</option>
+            <option value="EUR">يورو (EUR)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">سعر الصرف</label>
+          <input id="fExchangeRate" type="number" step="0.000001" value="1" min="0.000001"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs font-semibold text-gray-600 mb-1">الوصف <span class="text-red-500">*</span></label>
+          <input id="fDescription" type="text" placeholder="وصف القيد المحاسبي…"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">نوع المرجع</label>
+          <select id="fRefType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="manual">يدوي</option>
+            <option value="booking">حجز</option>
+            <option value="payment">دفع</option>
+            <option value="expense">مصروف</option>
+            <option value="reversal">عكس</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">مركز التكلفة</label>
+          <select id="fCostCenter" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">— بدون —</option>
+          </select>
+        </div>
+        <div class="col-span-2 md:col-span-4">
+          <label class="block text-xs font-semibold text-gray-600 mb-1">ملاحظات</label>
+          <textarea id="fNotes" rows="2" placeholder="ملاحظات اختيارية…"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+        </div>
+      </div>
+
+      <!-- Lines table -->
+      <div class="section-title mb-3">سطور القيد</div>
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="lines-table">
+          <thead>
+            <tr>
+              <th style="width:35%">الحساب <span class="text-red-500">*</span></th>
+              <th style="width:20%">الوصف</th>
+              <th style="width:13%;text-align:left">مدين</th>
+              <th style="width:13%;text-align:left">دائن</th>
+              <th style="width:12%">مركز التكلفة</th>
+              <th style="width:7%" class="no-print"></th>
+            </tr>
+          </thead>
+          <tbody id="linesBody"></tbody>
+          <tfoot>
+            <tr class="bg-gray-50 font-bold">
+              <td colspan="2" class="px-3 py-2 text-sm text-gray-600">الإجمالي</td>
+              <td class="px-3 py-2 text-sm debit-col text-left" id="totDebit">0.00</td>
+              <td class="px-3 py-2 text-sm credit-col text-left" id="totCredit">0.00</td>
+              <td colspan="2" class="px-3 py-2 text-sm text-left" id="balanceStatus"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button onclick="addLine()" class="text-primary text-sm font-semibold flex items-center gap-1 hover:underline">
+          <i class="fa-solid fa-plus-circle"></i> إضافة سطر
+        </button>
+      </div>
+
+      <!-- Error msg -->
+      <div id="modalError" class="mt-4 hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm"></div>
+    </div>
+
+    <!-- Modal footer -->
+    <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-200 shrink-0 bg-gray-50 rounded-b-2xl no-print">
+      <div>
+        <button id="btnPost" onclick="saveEntry('posted')"
+          class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition flex items-center gap-2">
+          <i class="fa-solid fa-check-double"></i> حفظ وترحيل
+        </button>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="saveEntry('draft')"
+          class="border border-gray-300 bg-white text-gray-700 px-5 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i> حفظ كمسودة
+        </button>
+        <button onclick="closeEntryModal()" class="border border-gray-300 bg-white text-gray-500 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: VIEW ENTRY DETAILS (read-only)
+═══════════════════════════════════════════ -->
+<div id="viewModal" class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/50 p-4 no-print">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+      <h2 class="text-lg font-bold text-gray-800" id="viewTitle">تفاصيل القيد</h2>
+      <div class="flex gap-2">
+        <button onclick="printEntry()" class="border border-gray-300 text-gray-600 px-3 py-1 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-print ml-1"></i>طباعة</button>
+        <button onclick="closeViewModal()" class="text-gray-400 hover:text-gray-700 text-xl mr-2"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="overflow-y-auto flex-1 px-6 py-4" id="viewBody"></div>
+    <div class="flex gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl shrink-0" id="viewActions"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     REVERSAL CONFIRMATION
+═══════════════════════════════════════════ -->
+<div id="reversalModal" class="fixed inset-0 z-[90] hidden items-center justify-center bg-black/60 p-4 no-print">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+    <h3 class="text-lg font-bold text-gray-800 mb-2"><i class="fa-solid fa-rotate-left text-red-600 ml-2"></i>تأكيد عكس القيد</h3>
+    <p class="text-sm text-gray-600 mb-4">سيتم إنشاء قيد عكسي بتاريخ اليوم يلغي أثر هذا القيد. هذه العملية لا يمكن التراجع عنها.</p>
+    <div class="mb-4">
+      <label class="block text-xs font-semibold text-gray-600 mb-1">سبب العكس</label>
+      <input id="reversalReason" type="text" placeholder="مثال: تصحيح خطأ في الترحيل…"
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+    </div>
+    <div class="flex gap-2 justify-end">
+      <button onclick="confirmReversal()" class="bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-red-700">تأكيد العكس</button>
+      <button onclick="closeReversalModal()" class="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+const PAGE_SIZE = 25;
+let currentPage = 0;
+let totalCount = 0;
+let accounts = [];
+let costCenters = [];
+let editingId = null;
+let reversalTargetId = null;
+let lineCount = 0;
+
+// ─── INIT ────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof checkAuth === 'function') await checkAuth();
+  document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+    document.getElementById('mobileDrawer').classList.remove('hidden');
+  });
+  // Set today as default date
+  document.getElementById('fEntryDate').value = new Date().toISOString().split('T')[0];
+  await Promise.all([loadAccounts(), loadCostCenters()]);
+  await loadEntries();
+  await loadKPIs();
+});
+
+// ─── ACCOUNTS ────────────────────────────────────────────────
+async function loadAccounts() {
+  try {
+    const { data, error } = await db.from('accounts')
+      .select('id, code, name_ar, name_en, type, normal_balance, is_active')
+      .eq('is_active', true)
+      .order('code');
+    if (error) throw error;
+    accounts = data || [];
+    // Populate cost center select
+  } catch(e) { console.warn('accounts load:', e.message); }
+}
+
+async function loadCostCenters() {
+  try {
+    const { data } = await db.from('cost_centers').select('id, name_ar').eq('is_active', true).order('name_ar');
+    costCenters = data || [];
+    const sel = document.getElementById('fCostCenter');
+    (data || []).forEach(cc => {
+      const o = document.createElement('option'); o.value = cc.id; o.textContent = cc.name_ar; sel.appendChild(o);
+    });
+  } catch(e) { console.warn('cost centers:', e.message); }
+}
+
+// ─── KPIs ─────────────────────────────────────────────────────
+async function loadKPIs() {
+  try {
+    const { data } = await db.from('journal_entries').select('status');
+    const all = data || [];
+    document.getElementById('kpiTotal').textContent = all.length;
+    document.getElementById('kpiPosted').textContent = all.filter(r=>r.status==='posted').length;
+    document.getElementById('kpiDraft').textContent = all.filter(r=>r.status==='draft').length;
+    document.getElementById('kpiReversed').textContent = all.filter(r=>r.status==='reversed').length;
+  } catch(e) { console.warn('kpi:', e.message); }
+}
+
+// ─── LOAD LIST ────────────────────────────────────────────────
+async function loadEntries() {
+  const tbody = document.getElementById('entriesBody');
+  tbody.innerHTML = `<tr><td colspan="9" class="text-center text-gray-400 py-10"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</td></tr>`;
+
+  const search  = document.getElementById('fSearch').value.trim();
+  const status  = document.getElementById('fStatus').value;
+  const from    = document.getElementById('fFrom').value;
+  const to      = document.getElementById('fTo').value;
+  const refType = document.getElementById('fRefType').value;
+
+  try {
+    let q = db.from('journal_entries')
+      .select('id, entry_number, entry_date, description, reference_type, total_debit, total_credit, currency, status, created_at', { count: 'exact' })
+      .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+
+    if (status)  q = q.eq('status', status);
+    if (from)    q = q.gte('entry_date', from);
+    if (to)      q = q.lte('entry_date', to);
+    if (refType) q = q.eq('reference_type', refType);
+    if (search)  q = q.or(`entry_number.ilike.%${search}%,description.ilike.%${search}%`);
+
+    const { data, error, count } = await q;
+    if (error) throw error;
+    totalCount = count || 0;
+    renderTable(data || []);
+    updatePagination();
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-red-500 py-8">${e.message}</td></tr>`;
+  }
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('entriesBody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-gray-400 py-10">لا توجد قيود مطابقة</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const balanced = Math.abs(r.total_debit - r.total_credit) < 0.01;
+    const statusBadge = {
+      draft:    '<span class="badge badge-yellow">مسودة</span>',
+      posted:   '<span class="badge badge-green">مرحّلة</span>',
+      reversed: '<span class="badge badge-gray">مُعكوسة</span>',
+    }[r.status] || `<span class="badge badge-gray">${r.status}</span>`;
+
+    const refBadge = {
+      manual:   '<span class="badge badge-blue">يدوي</span>',
+      booking:  '<span class="badge badge-purple">حجز</span>',
+      payment:  '<span class="badge badge-green">دفع</span>',
+      expense:  '<span class="badge badge-orange">مصروف</span>',
+      reversal: '<span class="badge badge-red">عكس</span>',
+    }[r.reference_type] || `<span class="badge badge-gray">${r.reference_type||'—'}</span>`;
+
+    const debitStr  = fmt(r.total_debit);
+    const creditStr = fmt(r.total_credit);
+    const balanceWarning = !balanced ? '<i class="fa-solid fa-triangle-exclamation text-red-500 mr-1" title="القيد غير متوازن!"></i>' : '';
+
+    return `<tr>
+      <td class="font-mono text-xs font-bold text-primary">${r.entry_number}</td>
+      <td class="text-sm">${r.entry_date}</td>
+      <td class="text-sm max-w-xs truncate" title="${r.description}">${r.description}</td>
+      <td>${refBadge}</td>
+      <td class="text-left font-mono text-sm debit-col">${balanceWarning}${debitStr}</td>
+      <td class="text-left font-mono text-sm credit-col">${creditStr}</td>
+      <td class="text-xs font-semibold text-gray-500">${r.currency}</td>
+      <td>${statusBadge}</td>
+      <td class="no-print">
+        <div class="flex gap-1">
+          <button onclick="viewEntry('${r.id}')" class="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50" title="عرض"><i class="fa-solid fa-eye fa-sm"></i></button>
+          ${r.status === 'draft' ? `<button onclick="editEntry('${r.id}')" class="text-primary hover:text-lightGreen p-1.5 rounded hover:bg-green-50" title="تعديل"><i class="fa-solid fa-pencil fa-sm"></i></button>` : ''}
+          ${r.status === 'posted' ? `<button onclick="openReversalModal('${r.id}')" class="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50" title="عكس القيد"><i class="fa-solid fa-rotate-left fa-sm"></i></button>` : ''}
+          ${r.status === 'draft' ? `<button onclick="postEntry('${r.id}')" class="text-green-700 hover:text-green-900 p-1.5 rounded hover:bg-green-50" title="ترحيل"><i class="fa-solid fa-check fa-sm"></i></button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── PAGINATION ───────────────────────────────────────────────
+function updatePagination() {
+  const start = currentPage * PAGE_SIZE + 1;
+  const end   = Math.min((currentPage + 1) * PAGE_SIZE, totalCount);
+  document.getElementById('pageInfo').textContent = totalCount ? `عرض ${start}–${end} من ${totalCount}` : 'لا توجد نتائج';
+  document.getElementById('btnPrev').disabled = currentPage === 0;
+  document.getElementById('btnNext').disabled = end >= totalCount;
+}
+function prevPage() { if (currentPage > 0) { currentPage--; loadEntries(); } }
+function nextPage() { currentPage++; loadEntries(); }
+
+// ─── FILTERS ──────────────────────────────────────────────────
+function applyFilters() { currentPage = 0; loadEntries(); }
+function clearFilters() {
+  ['fSearch','fFrom','fTo'].forEach(id => document.getElementById(id).value = '');
+  ['fStatus','fRefType'].forEach(id => document.getElementById(id).value = '');
+  applyFilters();
+}
+
+// ─── MODAL OPEN/CLOSE ─────────────────────────────────────────
+function openNewEntryModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'قيد يومي جديد';
+  document.getElementById('btnPost').style.display = '';
+  resetForm();
+  addLine(); addLine(); // start with 2 lines
+  document.getElementById('entryModal').classList.remove('hidden');
+  document.getElementById('entryModal').classList.add('flex');
+}
+
+function closeEntryModal() {
+  document.getElementById('entryModal').classList.add('hidden');
+  document.getElementById('entryModal').classList.remove('flex');
+  document.getElementById('modalError').classList.add('hidden');
+}
+
+function closeViewModal() {
+  document.getElementById('viewModal').classList.add('hidden');
+  document.getElementById('viewModal').classList.remove('flex');
+}
+
+function closeReversalModal() {
+  document.getElementById('reversalModal').classList.add('hidden');
+  document.getElementById('reversalModal').classList.remove('flex');
+  reversalTargetId = null;
+}
+
+// ─── RESET FORM ───────────────────────────────────────────────
+function resetForm() {
+  document.getElementById('fEntryNumber').value = '';
+  document.getElementById('fEntryDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fCurrency').value = 'EGP';
+  document.getElementById('fExchangeRate').value = '1';
+  document.getElementById('fDescription').value = '';
+  document.getElementById('fRefType').value = 'manual';
+  document.getElementById('fCostCenter').value = '';
+  document.getElementById('fNotes').value = '';
+  document.getElementById('linesBody').innerHTML = '';
+  document.getElementById('modalError').classList.add('hidden');
+  lineCount = 0;
+  updateTotals();
+}
+
+// ─── LINES ────────────────────────────────────────────────────
+function addLine() {
+  lineCount++;
+  const id = lineCount;
+  const ccOptions = costCenters.map(cc => `<option value="${cc.id}">${cc.name_ar}</option>`).join('');
+  const accOptions = accounts.map(a =>
+    `<option value="${a.id}">[${a.code}] ${a.name_ar}</option>`
+  ).join('');
+
+  const tr = document.createElement('tr');
+  tr.id = `line_${id}`;
+  tr.innerHTML = `
+    <td>
+      <select onchange="onAccountSelect(${id})" class="account-sel">
+        <option value="">— اختر الحساب —</option>
+        ${accOptions}
+      </select>
+    </td>
+    <td><input type="text" placeholder="وصف اختياري…" class="line-desc"></td>
+    <td><input type="number" step="0.01" min="0" value="" placeholder="0.00"
+      class="line-debit text-left" oninput="onDebitInput(${id})"></td>
+    <td><input type="number" step="0.01" min="0" value="" placeholder="0.00"
+      class="line-credit text-left" oninput="onCreditInput(${id})"></td>
+    <td>
+      <select class="line-cc">
+        <option value="">—</option>
+        ${ccOptions}
+      </select>
+    </td>
+    <td class="no-print text-center">
+      <button onclick="removeLine(${id})" class="text-red-400 hover:text-red-600 p-1"><i class="fa-solid fa-trash-can fa-sm"></i></button>
+    </td>
+  `;
+  document.getElementById('linesBody').appendChild(tr);
+}
+
+function removeLine(id) {
+  const tr = document.getElementById(`line_${id}`);
+  if (tr) tr.remove();
+  updateTotals();
+}
+
+function onAccountSelect(id) {
+  const tr = document.getElementById(`line_${id}`);
+  const accId = tr.querySelector('.account-sel').value;
+  const acc   = accounts.find(a => a.id === accId);
+  if (!acc) return;
+  // Auto-focus debit or credit based on normal balance
+  if (acc.normal_balance === 'debit') tr.querySelector('.line-debit').focus();
+  else tr.querySelector('.line-credit').focus();
+}
+
+function onDebitInput(id) {
+  const tr = document.getElementById(`line_${id}`);
+  const d = parseFloat(tr.querySelector('.line-debit').value) || 0;
+  if (d > 0) tr.querySelector('.line-credit').value = '';
+  updateTotals();
+}
+
+function onCreditInput(id) {
+  const tr = document.getElementById(`line_${id}`);
+  const c = parseFloat(tr.querySelector('.line-credit').value) || 0;
+  if (c > 0) tr.querySelector('.line-debit').value = '';
+  updateTotals();
+}
+
+function updateTotals() {
+  let totalD = 0, totalC = 0;
+  document.querySelectorAll('#linesBody tr').forEach(tr => {
+    totalD += parseFloat(tr.querySelector('.line-debit')?.value || 0) || 0;
+    totalC += parseFloat(tr.querySelector('.line-credit')?.value || 0) || 0;
+  });
+  document.getElementById('totDebit').textContent  = fmt(totalD);
+  document.getElementById('totCredit').textContent = fmt(totalC);
+  const diff = Math.abs(totalD - totalC);
+  const balEl = document.getElementById('balanceStatus');
+  if (totalD === 0 && totalC === 0) {
+    balEl.innerHTML = '';
+  } else if (diff < 0.01) {
+    balEl.innerHTML = '<span class="balance-ok"><i class="fa-solid fa-check-circle ml-1"></i>متوازن</span>';
+  } else {
+    balEl.innerHTML = `<span class="balance-bad"><i class="fa-solid fa-triangle-exclamation ml-1"></i>فرق: ${fmt(diff)}</span>`;
+  }
+}
+
+// ─── COLLECT FORM DATA ────────────────────────────────────────
+function collectForm() {
+  const lines = [];
+  let lineOrder = 0;
+  document.querySelectorAll('#linesBody tr').forEach(tr => {
+    const accId  = tr.querySelector('.account-sel')?.value;
+    const desc   = tr.querySelector('.line-desc')?.value?.trim() || null;
+    const debit  = parseFloat(tr.querySelector('.line-debit')?.value) || 0;
+    const credit = parseFloat(tr.querySelector('.line-credit')?.value) || 0;
+    const ccId   = tr.querySelector('.line-cc')?.value || null;
+    if (accId && (debit > 0 || credit > 0)) {
+      lines.push({ account_id: accId, description: desc, debit, credit,
+        cost_center_id: ccId || null, line_order: lineOrder++ });
+    }
+  });
+  return {
+    entry_date:     document.getElementById('fEntryDate').value,
+    description:    document.getElementById('fDescription').value.trim(),
+    reference_type: document.getElementById('fRefType').value,
+    currency:       document.getElementById('fCurrency').value,
+    exchange_rate:  parseFloat(document.getElementById('fExchangeRate').value) || 1,
+    cost_center_id: document.getElementById('fCostCenter').value || null,
+    notes:          document.getElementById('fNotes').value.trim() || null,
+    lines,
+  };
+}
+
+// ─── SAVE ENTRY ───────────────────────────────────────────────
+async function saveEntry(status) {
+  const errEl = document.getElementById('modalError');
+  errEl.classList.add('hidden');
+
+  const form = collectForm();
+
+  // Validation
+  if (!form.entry_date)    return showModalError('التاريخ مطلوب');
+  if (!form.description)   return showModalError('الوصف مطلوب');
+  if (!form.lines.length)  return showModalError('أضف سطراً واحداً على الأقل');
+
+  if (status === 'posted') {
+    const totalD = form.lines.reduce((s,l) => s + l.debit,  0);
+    const totalC = form.lines.reduce((s,l) => s + l.credit, 0);
+    if (Math.abs(totalD - totalC) >= 0.01)
+      return showModalError(`لا يمكن ترحيل قيد غير متوازن — فرق: ${fmt(Math.abs(totalD-totalC))}`);
+    if (form.lines.length < 2)
+      return showModalError('القيد المزدوج يحتاج سطرين على الأقل');
+  }
+
+  try {
+    const totalD = form.lines.reduce((s,l) => s + l.debit,  0);
+    const totalC = form.lines.reduce((s,l) => s + l.credit, 0);
+
+    const entry = {
+      entry_date:     form.entry_date,
+      description:    form.description,
+      reference_type: form.reference_type,
+      currency:       form.currency,
+      exchange_rate:  form.exchange_rate,
+      cost_center_id: form.cost_center_id,
+      notes:          form.notes,
+      status,
+      total_debit:    totalD,
+      total_credit:   totalC,
+    };
+    if (status === 'posted') {
+      entry.posted_at = new Date().toISOString();
+    }
+
+    let entryId = editingId;
+
+    if (editingId) {
+      // Update header
+      const { error } = await db.from('journal_entries').update(entry).eq('id', editingId);
+      if (error) throw error;
+      // Delete old lines and re-insert
+      const { error: delErr } = await db.from('journal_entry_lines').delete().eq('journal_entry_id', editingId);
+      if (delErr) throw delErr;
+    } else {
+      // Generate entry number
+      const { count } = await db.from('journal_entries').select('id', { count: 'exact', head: true });
+      entry.entry_number = `JE-${String((count||0)+1).padStart(6,'0')}`;
+      const { data, error } = await db.from('journal_entries').insert(entry).select().single();
+      if (error) throw error;
+      entryId = data.id;
+    }
+
+    // Insert lines
+    const lines = form.lines.map(l => ({ ...l, journal_entry_id: entryId }));
+    const { error: lErr } = await db.from('journal_entry_lines').insert(lines);
+    if (lErr) throw lErr;
+
+    closeEntryModal();
+    await loadEntries();
+    await loadKPIs();
+  } catch(e) {
+    showModalError(e.message);
+  }
+}
+
+function showModalError(msg) {
+  const el = document.getElementById('modalError');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ─── POST DRAFT ───────────────────────────────────────────────
+async function postEntry(id) {
+  if (!confirm('ترحيل هذا القيد؟ لن تتمكن من تعديله بعد الترحيل.')) return;
+  try {
+    // Check balance first
+    const { data: lines } = await db.from('journal_entry_lines').select('debit,credit').eq('journal_entry_id', id);
+    const totalD = (lines||[]).reduce((s,l)=>s+l.debit, 0);
+    const totalC = (lines||[]).reduce((s,l)=>s+l.credit, 0);
+    if (Math.abs(totalD-totalC) >= 0.01) { alert('القيد غير متوازن — لا يمكن الترحيل'); return; }
+    const { error } = await db.from('journal_entries').update({ status:'posted', posted_at: new Date().toISOString() }).eq('id', id);
+    if (error) throw error;
+    await loadEntries(); await loadKPIs();
+  } catch(e) { alert('خطأ: ' + e.message); }
+}
+
+// ─── EDIT DRAFT ───────────────────────────────────────────────
+async function editEntry(id) {
+  try {
+    const { data: entry, error } = await db.from('journal_entries').select('*').eq('id', id).single();
+    if (error) throw error;
+    if (entry.status !== 'draft') { alert('لا يمكن تعديل قيد مرحّل أو مُعكوس'); return; }
+
+    const { data: lines } = await db.from('journal_entry_lines').select('*').eq('journal_entry_id', id).order('line_order');
+
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'تعديل القيد — ' + entry.entry_number;
+    document.getElementById('btnPost').style.display = '';
+    resetForm();
+
+    document.getElementById('fEntryNumber').value  = entry.entry_number;
+    document.getElementById('fEntryDate').value    = entry.entry_date;
+    document.getElementById('fCurrency').value     = entry.currency || 'EGP';
+    document.getElementById('fExchangeRate').value = entry.exchange_rate || 1;
+    document.getElementById('fDescription').value  = entry.description;
+    document.getElementById('fRefType').value      = entry.reference_type || 'manual';
+    document.getElementById('fCostCenter').value   = entry.cost_center_id || '';
+    document.getElementById('fNotes').value        = entry.notes || '';
+
+    (lines || []).forEach(() => addLine());
+    const rows = document.querySelectorAll('#linesBody tr');
+    (lines || []).forEach((l, i) => {
+      if (!rows[i]) return;
+      rows[i].querySelector('.account-sel').value = l.account_id;
+      rows[i].querySelector('.line-desc').value   = l.description || '';
+      rows[i].querySelector('.line-debit').value  = l.debit || '';
+      rows[i].querySelector('.line-credit').value = l.credit || '';
+      rows[i].querySelector('.line-cc').value     = l.cost_center_id || '';
+    });
+    updateTotals();
+
+    document.getElementById('entryModal').classList.remove('hidden');
+    document.getElementById('entryModal').classList.add('flex');
+  } catch(e) { alert('خطأ: ' + e.message); }
+}
+
+// ─── VIEW ENTRY ───────────────────────────────────────────────
+async function viewEntry(id) {
+  try {
+    const [{ data: entry }, { data: lines }] = await Promise.all([
+      db.from('journal_entries').select('*').eq('id', id).single(),
+      db.from('journal_entry_lines').select('*, accounts(code, name_ar)').eq('journal_entry_id', id).order('line_order'),
+    ]);
+
+    const statusLabel = { draft:'مسودة', posted:'مرحّلة', reversed:'مُعكوسة' }[entry.status] || entry.status;
+    const statusClass = { draft:'badge-yellow', posted:'badge-green', reversed:'badge-gray' }[entry.status] || 'badge-gray';
+    const totalD = (lines||[]).reduce((s,l)=>s+l.debit,0);
+    const totalC = (lines||[]).reduce((s,l)=>s+l.credit,0);
+    const balanced = Math.abs(totalD-totalC) < 0.01;
+
+    document.getElementById('viewTitle').textContent = `قيد رقم ${entry.entry_number}`;
+    document.getElementById('viewBody').innerHTML = `
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-sm">
+        <div><span class="text-gray-500 block text-xs mb-0.5">رقم القيد</span><strong class="font-mono text-primary">${entry.entry_number}</strong></div>
+        <div><span class="text-gray-500 block text-xs mb-0.5">التاريخ</span><strong>${entry.entry_date}</strong></div>
+        <div><span class="text-gray-500 block text-xs mb-0.5">الحالة</span><span class="badge ${statusClass}">${statusLabel}</span></div>
+        <div><span class="text-gray-500 block text-xs mb-0.5">العملة</span><strong>${entry.currency}</strong></div>
+        <div class="col-span-2 md:col-span-4"><span class="text-gray-500 block text-xs mb-0.5">الوصف</span><strong>${entry.description}</strong></div>
+        ${entry.notes ? `<div class="col-span-2 md:col-span-4"><span class="text-gray-500 block text-xs mb-0.5">ملاحظات</span>${entry.notes}</div>` : ''}
+      </div>
+
+      <div class="section-title mb-3">سطور القيد</div>
+      <div class="overflow-x-auto rounded-lg border border-gray-200 mb-4">
+        <table class="lines-table">
+          <thead>
+            <tr>
+              <th style="width:40%">الحساب</th>
+              <th style="width:25%">الوصف</th>
+              <th style="width:17.5%;text-align:left">مدين</th>
+              <th style="width:17.5%;text-align:left">دائن</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(lines||[]).map(l => `
+              <tr>
+                <td class="font-semibold text-xs">[${l.accounts?.code||''}] ${l.accounts?.name_ar||'—'}</td>
+                <td class="text-gray-600 text-xs">${l.description||'—'}</td>
+                <td class="text-left font-mono debit-col">${l.debit>0 ? fmt(l.debit) : ''}</td>
+                <td class="text-left font-mono credit-col">${l.credit>0 ? fmt(l.credit) : ''}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr class="bg-gray-50 font-bold">
+              <td colspan="2" class="px-3 py-2 text-sm">الإجمالي</td>
+              <td class="px-3 py-2 text-sm text-left debit-col font-mono">${fmt(totalD)}</td>
+              <td class="px-3 py-2 text-sm text-left credit-col font-mono">${fmt(totalC)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      ${!balanced ? `<div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-2 text-sm mb-2"><i class="fa-solid fa-triangle-exclamation ml-1"></i>تحذير: القيد غير متوازن — فرق ${fmt(Math.abs(totalD-totalC))}</div>` : ''}
+    `;
+
+    const actionsEl = document.getElementById('viewActions');
+    actionsEl.innerHTML = '';
+    if (entry.status === 'draft') {
+      actionsEl.innerHTML = `
+        <button onclick="closeViewModal();editEntry('${id}')" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen flex items-center gap-2"><i class="fa-solid fa-pencil"></i>تعديل</button>
+        <button onclick="closeViewModal();postEntry('${id}')" class="border border-green-600 text-green-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-50 flex items-center gap-2"><i class="fa-solid fa-check"></i>ترحيل</button>
+      `;
+    } else if (entry.status === 'posted') {
+      actionsEl.innerHTML = `
+        <button onclick="closeViewModal();openReversalModal('${id}')" class="border border-red-400 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-50 flex items-center gap-2"><i class="fa-solid fa-rotate-left"></i>عكس القيد</button>
+      `;
+    }
+
+    document.getElementById('viewModal').classList.remove('hidden');
+    document.getElementById('viewModal').classList.add('flex');
+  } catch(e) { alert('خطأ في التحميل: ' + e.message); }
+}
+
+// ─── REVERSAL ─────────────────────────────────────────────────
+function openReversalModal(id) {
+  reversalTargetId = id;
+  document.getElementById('reversalReason').value = '';
+  document.getElementById('reversalModal').classList.remove('hidden');
+  document.getElementById('reversalModal').classList.add('flex');
+}
+
+async function confirmReversal() {
+  const reason = document.getElementById('reversalReason').value.trim();
+  if (!reason) { alert('أدخل سبب العكس'); return; }
+  try {
+    const { data: orig, error: e1 } = await db.from('journal_entries').select('*').eq('id', reversalTargetId).single();
+    if (e1) throw e1;
+    if (orig.status !== 'posted') { alert('لا يمكن عكس قيد غير مرحّل'); return; }
+
+    const { data: origLines, error: e2 } = await db.from('journal_entry_lines').select('*').eq('journal_entry_id', reversalTargetId);
+    if (e2) throw e2;
+
+    // Count for new number
+    const { count } = await db.from('journal_entries').select('id', { count: 'exact', head: true });
+    const reversalEntry = {
+      entry_number:   `JE-${String((count||0)+1).padStart(6,'0')}`,
+      entry_date:     new Date().toISOString().split('T')[0],
+      description:    `عكس: ${orig.description} — ${reason}`,
+      reference_type: 'reversal',
+      currency:       orig.currency,
+      exchange_rate:  orig.exchange_rate,
+      cost_center_id: orig.cost_center_id,
+      notes:          reason,
+      status:         'posted',
+      total_debit:    orig.total_credit,
+      total_credit:   orig.total_debit,
+      reversal_of:    reversalTargetId,
+      posted_at:      new Date().toISOString(),
+    };
+
+    const { data: rev, error: e3 } = await db.from('journal_entries').insert(reversalEntry).select().single();
+    if (e3) throw e3;
+
+    // Reverse lines (swap debit/credit)
+    const revLines = (origLines||[]).map(l => ({
+      journal_entry_id: rev.id,
+      account_id:       l.account_id,
+      debit:            l.credit,
+      credit:           l.debit,
+      description:      l.description,
+      cost_center_id:   l.cost_center_id,
+      line_order:       l.line_order,
+    }));
+    const { error: e4 } = await db.from('journal_entry_lines').insert(revLines);
+    if (e4) throw e4;
+
+    // Mark original as reversed
+    const { error: e5 } = await db.from('journal_entries').update({
+      status:      'reversed',
+      reversed_at: new Date().toISOString(),
+    }).eq('id', reversalTargetId);
+    if (e5) throw e5;
+
+    closeReversalModal();
+    closeViewModal();
+    await loadEntries();
+    await loadKPIs();
+    alert(`تم إنشاء قيد العكس: ${rev.entry_number}`);
+  } catch(e) { alert('خطأ: ' + e.message); }
+}
+
+// ─── PRINT ────────────────────────────────────────────────────
+function printEntry() { window.print(); }
+
+// ─── HELPERS ──────────────────────────────────────────────────
+function fmt(n) {
+  return Number(n||0).toLocaleString('ar-EG', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+function closeDrawer() {
+  document.getElementById('mobileDrawer').classList.add('hidden');
+}
+</script>
+</body>
+</html>

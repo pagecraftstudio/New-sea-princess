@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>إشعارات الخصم والإضافة | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/accounting-engine.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;}
+    .nav-link:hover{background:#1f2937;color:#fff;}
+    .nav-link.active{background:#1B5E20;border-right:4px solid #B8860B;color:#fff;}
+    .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+    .badge-gray{background:#f3f4f6;color:#374151;}
+    .badge-blue{background:#dbeafe;color:#1e40af;}
+    .badge-green{background:#dcfce7;color:#166534;}
+    .badge-red{background:#fee2e2;color:#991b1b;}
+    .badge-purple{background:#ede9fe;color:#5b21b6;}
+    .badge-yellow{background:#fef9c3;color:#854d0e;}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;border-bottom:2px solid #e5e7eb;}
+    .tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#f0fdf4;}
+    .tab-btn{padding:10px 20px;font-size:13px;font-weight:700;border-bottom:3px solid transparent;color:#6b7280;transition:.2s;cursor:pointer;}
+    .tab-btn.active{border-bottom-color:#1B5E20;color:#1B5E20;}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+    .modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:640px;margin:auto;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.12);}
+    @media print{aside,header,.no-print{display:none!important;}}
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg no-print">
+  <span class="font-bold text-gold text-lg"><i class="fa-solid fa-file-circle-minus ml-1"></i>إشعارات الخصم والإضافة</span>
+  <button onclick="document.getElementById('mobileDrawer').classList.remove('hidden')" class="text-2xl"><i class="fa-solid fa-bars"></i></button>
+</header>
+
+<div class="flex min-h-screen">
+  <!-- SIDEBAR -->
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+        <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+        <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+        <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+        <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+        <a href="/nsp-control-8x4k/suppliers.html" class="nav-link"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
+      </details>
+      <details class="nav-group" open>
+        <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+        <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+        <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية</a>
+        <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+        <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
+        <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+        <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+        <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link active"><i class="fa-solid fa-file-circle-minus w-5"></i>إشعارات الخصم/الإضافة</a>
+        <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+        <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+        <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+        <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+        <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+        <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+        <a href="/nsp-control-8x4k/reports.html" class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      </details>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+        <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+        <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+        <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
+        <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+        <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
+      </details>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <p class="text-xs text-gray-500 mb-2 text-center" id="adminUserEmail"></p>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+    <div class="flex flex-wrap justify-between items-center mb-6 gap-4 no-print">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">إشعارات الخصم والإضافة</h2>
+        <p class="text-sm text-gray-500 mt-1">إدارة إشعارات الإضافة (Credit Notes) وإشعارات الخصم (Debit Notes) للعملاء والموردين</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="openModal('credit')" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-green-700 transition">
+          <i class="fa-solid fa-plus"></i> إشعار إضافة (Credit)
+        </button>
+        <button onclick="openModal('debit')" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-red-700 transition">
+          <i class="fa-solid fa-plus"></i> إشعار خصم (Debit)
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div class="text-xs text-gray-500 mb-1">إجمالي إشعارات الإضافة</div>
+        <div class="text-2xl font-bold text-green-700" id="kpiCNTotal">—</div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div class="text-xs text-gray-500 mb-1">مبلغ إشعارات الإضافة</div>
+        <div class="text-2xl font-bold text-green-600" id="kpiCNAmount">—</div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div class="text-xs text-gray-500 mb-1">إجمالي إشعارات الخصم</div>
+        <div class="text-2xl font-bold text-red-700" id="kpiDNTotal">—</div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div class="text-xs text-gray-500 mb-1">مبلغ إشعارات الخصم</div>
+        <div class="text-2xl font-bold text-red-600" id="kpiDNAmount">—</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="flex border-b">
+        <button class="tab-btn active" id="tabCN" onclick="switchTab('credit')">
+          <i class="fa-solid fa-file-circle-plus ml-1 text-green-600"></i> إشعارات الإضافة (Credit Notes)
+        </button>
+        <button class="tab-btn" id="tabDN" onclick="switchTab('debit')">
+          <i class="fa-solid fa-file-circle-minus ml-1 text-red-600"></i> إشعارات الخصم (Debit Notes)
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-3 p-4 border-b flex-wrap no-print">
+        <select id="filterStatus" onchange="applyFilters()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" style="width:auto">
+          <option value="">كل الحالات</option>
+          <option value="draft">مسودة</option>
+          <option value="issued">صادرة</option>
+          <option value="applied">مطبّقة</option>
+          <option value="cancelled">ملغاة</option>
+        </select>
+        <input type="date" id="filterFrom" onchange="applyFilters()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" style="width:auto" placeholder="من">
+        <input type="date" id="filterTo" onchange="applyFilters()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" style="width:auto" placeholder="إلى">
+        <button onclick="clearFilters()" class="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">مسح</button>
+      </div>
+
+      <!-- Credit Notes table -->
+      <div id="panelCN">
+        <div class="overflow-x-auto">
+          <table class="tbl w-full">
+            <thead>
+              <tr>
+                <th>رقم الإشعار</th>
+                <th>التاريخ</th>
+                <th>العميل / المورد</th>
+                <th>الفاتورة المرتبطة</th>
+                <th class="text-left">المبلغ</th>
+                <th>العملة</th>
+                <th>السبب</th>
+                <th>الحالة</th>
+                <th>القيد</th>
+                <th class="no-print">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="cnBody">
+              <tr><td colspan="10" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Debit Notes table -->
+      <div id="panelDN" class="hidden">
+        <div class="overflow-x-auto">
+          <table class="tbl w-full">
+            <thead>
+              <tr>
+                <th>رقم الإشعار</th>
+                <th>التاريخ</th>
+                <th>العميل / المورد</th>
+                <th>الفاتورة المرتبطة</th>
+                <th class="text-left">المبلغ</th>
+                <th>العملة</th>
+                <th>السبب</th>
+                <th>الحالة</th>
+                <th>القيد</th>
+                <th class="no-print">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="dnBody">
+              <tr><td colspan="10" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ التحميل…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div id="noteModal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="text-lg font-bold text-gray-800" id="modalTitle">إشعار إضافة جديد</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <input type="hidden" id="fNoteType">
+    <input type="hidden" id="fEditId">
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label>التاريخ *</label>
+        <input type="date" id="fDate">
+      </div>
+      <div>
+        <label>العميل</label>
+        <select id="fCustomer">
+          <option value="">— اختر عميل —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label>المورد</label>
+        <select id="fSupplier">
+          <option value="">— اختر مورد —</option>
+        </select>
+      </div>
+      <div>
+        <label>الفاتورة المرتبطة</label>
+        <select id="fInvoice">
+          <option value="">— بدون فاتورة —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label>المبلغ *</label>
+        <input type="number" id="fAmount" min="0.01" step="0.01" placeholder="0.00">
+      </div>
+      <div>
+        <label>العملة</label>
+        <select id="fCurrency">
+          <option value="EGP">جنيه مصري (EGP)</option>
+          <option value="SAR">ريال سعودي (SAR)</option>
+          <option value="USD">دولار أمريكي (USD)</option>
+          <option value="EUR">يورو (EUR)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label>سبب الإشعار *</label>
+      <select id="fReason">
+        <option value="">— اختر السبب —</option>
+        <option value="return">إرجاع خدمة / حجز</option>
+        <option value="discount">خصم تفضيلي</option>
+        <option value="error">تصحيح خطأ في الفاتورة</option>
+        <option value="cancellation">إلغاء رحلة / باقة</option>
+        <option value="overcharge">استرداد زيادة في الفاتورة</option>
+        <option value="price_adjustment">تعديل السعر</option>
+        <option value="other">أخرى</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label>ملاحظات / تفاصيل إضافية</label>
+      <textarea id="fNotes" rows="2" placeholder="أي تفاصيل إضافية…"></textarea>
+    </div>
+
+    <div class="mb-4">
+      <label>مركز التكلفة</label>
+      <select id="fCC">
+        <option value="">— بدون —</option>
+      </select>
+    </div>
+
+    <div id="modalError" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-3"></div>
+
+    <div class="flex gap-3 justify-end pt-2 border-t">
+      <button onclick="closeModal()" class="px-5 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
+      <button onclick="saveNote('draft')" class="px-5 py-2 bg-gray-200 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-300">حفظ كمسودة</button>
+      <button onclick="saveNote('issued')" id="btnIssue" class="px-5 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-lightGreen">
+        <i class="fa-solid fa-paper-plane ml-1"></i> إصدار + ترحيل قيد
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const sb = window.db;
+let activeTab = 'credit';
+let creditNotes = [], debitNotes = [];
+let customers = [], suppliers = [], invoices = [], costCenters = [];
+
+function fmtMoney(v, cur='EGP') {
+  const n = parseFloat(v)||0;
+  return n.toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ' + (cur==='EGP'?'ج.م':cur);
+}
+
+const statusBadge = s => ({
+  draft:     '<span class="badge badge-gray">مسودة</span>',
+  issued:    '<span class="badge badge-blue">صادرة</span>',
+  applied:   '<span class="badge badge-green">مطبّقة</span>',
+  cancelled: '<span class="badge badge-red">ملغاة</span>',
+}[s] || s);
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('panelCN').classList.toggle('hidden', tab !== 'credit');
+  document.getElementById('panelDN').classList.toggle('hidden', tab !== 'debit');
+  document.getElementById('tabCN').className = tab==='credit' ? 'tab-btn active' : 'tab-btn';
+  document.getElementById('tabDN').className = tab==='debit'  ? 'tab-btn active' : 'tab-btn';
+}
+
+async function loadAll() {
+  const [cnRes, dnRes, custRes, suppRes, invRes, ccRes] = await Promise.all([
+    sb.from('credit_notes').select('*, profiles(full_name), suppliers(name_ar), nsp_invoices(invoice_number)').order('note_date',{ascending:false}),
+    sb.from('debit_notes').select('*, profiles(full_name), suppliers(name_ar), nsp_invoices(invoice_number)').order('note_date',{ascending:false}),
+    sb.from('profiles').select('id,full_name').order('full_name'),
+    sb.from('suppliers').select('id,name_ar').eq('is_active',true).order('name_ar'),
+    sb.from('nsp_invoices').select('id,invoice_number,total_amount').order('invoice_number',{ascending:false}).limit(200),
+    sb.from('cost_centers').select('id,name_ar').eq('is_active',true),
+  ]);
+  creditNotes  = cnRes.data  || [];
+  debitNotes   = dnRes.data  || [];
+  customers    = custRes.data || [];
+  suppliers    = suppRes.data || [];
+  invoices     = invRes.data  || [];
+  costCenters  = ccRes.data   || [];
+  updateKPIs();
+  renderNotes();
+}
+
+function updateKPIs() {
+  document.getElementById('kpiCNTotal').textContent  = creditNotes.length;
+  document.getElementById('kpiCNAmount').textContent = fmtMoney(creditNotes.reduce((s,n)=>s+(parseFloat(n.amount)||0),0));
+  document.getElementById('kpiDNTotal').textContent  = debitNotes.length;
+  document.getElementById('kpiDNAmount').textContent = fmtMoney(debitNotes.reduce((s,n)=>s+(parseFloat(n.amount)||0),0));
+}
+
+function applyFilters() { renderNotes(); }
+function clearFilters() {
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterFrom').value = '';
+  document.getElementById('filterTo').value = '';
+  renderNotes();
+}
+
+function renderNotes() {
+  const status = document.getElementById('filterStatus').value;
+  const from   = document.getElementById('filterFrom').value;
+  const to     = document.getElementById('filterTo').value;
+
+  function filterNotes(notes) {
+    return notes.filter(n => {
+      if (status && n.status !== status) return false;
+      if (from && n.note_date < from) return false;
+      if (to   && n.note_date > to)   return false;
+      return true;
+    });
+  }
+
+  function renderRows(notes, tbodyId) {
+    const tbody = document.getElementById(tbodyId);
+    if (!notes.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-10 text-gray-400">لا توجد إشعارات</td></tr>';
+      return;
+    }
+    tbody.innerHTML = notes.map(n => `<tr>
+      <td class="font-mono text-xs text-gray-700">${n.note_number||'—'}</td>
+      <td class="text-xs text-gray-500">${n.note_date||'—'}</td>
+      <td class="text-xs">${n.profiles?.full_name || n.suppliers?.name_ar || '—'}</td>
+      <td class="text-xs font-mono">${n.nsp_invoices?.invoice_number||'—'}</td>
+      <td class="text-xs font-bold text-left">${fmtMoney(n.amount, n.currency)}</td>
+      <td class="text-xs text-center">${n.currency}</td>
+      <td class="text-xs text-gray-600 max-w-[120px] truncate">${n.reason||'—'}</td>
+      <td>${statusBadge(n.status)}</td>
+      <td class="text-center text-xs">${n.journal_entry_id
+        ? '<span class="text-green-600"><i class="fa-solid fa-check-circle"></i></span>'
+        : '<span class="text-orange-400"><i class="fa-solid fa-clock"></i></span>'}</td>
+      <td class="no-print text-center">
+        ${n.status === 'draft' ? `<button onclick="editNote('${n.id}','${tbodyId==='cnBody'?'credit':'debit'}')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 ml-1">تعديل</button>` : ''}
+        ${n.status === 'issued' ? `<button onclick="applyNote('${n.id}','${tbodyId==='cnBody'?'credit_notes':'debit_notes}')" class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded hover:bg-green-100 ml-1">تطبيق</button>` : ''}
+        ${n.status !== 'cancelled' && n.status !== 'applied' ? `<button onclick="cancelNote('${n.id}','${tbodyId==='cnBody'?'credit_notes':'debit_notes}')" class="text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100">إلغاء</button>` : ''}
+      </td>
+    </tr>`).join('');
+  }
+
+  renderRows(filterNotes(creditNotes), 'cnBody');
+  renderRows(filterNotes(debitNotes),  'dnBody');
+}
+
+function openModal(type, note=null) {
+  const isCN = type === 'credit';
+  document.getElementById('fNoteType').value = type;
+  document.getElementById('fEditId').value   = note?.id || '';
+  document.getElementById('modalTitle').textContent = note
+    ? (isCN ? 'تعديل إشعار إضافة' : 'تعديل إشعار خصم')
+    : (isCN ? 'إشعار إضافة جديد (Credit Note)' : 'إشعار خصم جديد (Debit Note)');
+  document.getElementById('btnIssue').className = `px-5 py-2 ${isCN?'bg-green-600 hover:bg-green-700':'bg-red-600 hover:bg-red-700'} text-white rounded-lg text-sm font-bold`;
+
+  // Populate selects
+  const custSel = document.getElementById('fCustomer');
+  const suppSel = document.getElementById('fSupplier');
+  const invSel  = document.getElementById('fInvoice');
+  const ccSel   = document.getElementById('fCC');
+  custSel.innerHTML = '<option value="">— اختر عميل —</option>';
+  suppSel.innerHTML = '<option value="">— اختر مورد —</option>';
+  invSel.innerHTML  = '<option value="">— بدون فاتورة —</option>';
+  ccSel.innerHTML   = '<option value="">— بدون —</option>';
+  customers.forEach(c => custSel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.full_name}</option>`));
+  suppliers.forEach(s => suppSel.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.name_ar}</option>`));
+  invoices.forEach(i  => invSel.insertAdjacentHTML('beforeend',  `<option value="${i.id}">${i.invoice_number} — ${fmtMoney(i.total_amount)}</option>`));
+  costCenters.forEach(c => ccSel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name_ar}</option>`));
+
+  // Set values
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('fDate').value     = note?.note_date || today;
+  document.getElementById('fAmount').value   = note?.amount || '';
+  document.getElementById('fCurrency').value = note?.currency || 'EGP';
+  document.getElementById('fReason').value   = note?.reason || '';
+  document.getElementById('fNotes').value    = note?.notes || '';
+  document.getElementById('fCustomer').value = note?.customer_id || '';
+  document.getElementById('fSupplier').value = note?.supplier_id || '';
+  document.getElementById('fInvoice').value  = note?.invoice_id || '';
+  document.getElementById('fCC').value       = note?.cost_center_id || '';
+  document.getElementById('modalError').classList.add('hidden');
+  document.getElementById('noteModal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('noteModal').classList.add('hidden'); }
+
+function showError(msg) {
+  const el = document.getElementById('modalError');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function saveNote(status) {
+  const type     = document.getElementById('fNoteType').value;
+  const editId   = document.getElementById('fEditId').value;
+  const amount   = parseFloat(document.getElementById('fAmount').value);
+  const date     = document.getElementById('fDate').value;
+  const reason   = document.getElementById('fReason').value;
+  if (!amount || amount <= 0) { showError('أدخل مبلغاً صحيحاً'); return; }
+  if (!date) { showError('أدخل التاريخ'); return; }
+  if (!reason) { showError('اختر سبب الإشعار'); return; }
+
+  const table  = type === 'credit' ? 'credit_notes' : 'debit_notes';
+  const prefix = type === 'credit' ? 'CN' : 'DN';
+  const year   = new Date().getFullYear();
+
+  // Generate note number
+  const { data: last } = await sb.from(table)
+    .select('note_number').ilike('note_number', `${prefix}-${year}-%`)
+    .order('note_number', {ascending:false}).limit(1);
+  const seq = last?.length ? (parseInt(last[0].note_number.split('-')[2]||'0')+1) : 1;
+  const note_number = editId ? undefined : `${prefix}-${year}-${String(seq).padStart(4,'0')}`;
+
+  const payload = {
+    note_date:      date,
+    amount,
+    currency:       document.getElementById('fCurrency').value,
+    reason:         reason,
+    notes:          document.getElementById('fNotes').value.trim() || null,
+    customer_id:    document.getElementById('fCustomer').value || null,
+    supplier_id:    document.getElementById('fSupplier').value || null,
+    invoice_id:     document.getElementById('fInvoice').value  || null,
+    cost_center_id: document.getElementById('fCC').value       || null,
+    status,
+    ...(note_number ? { note_number } : {}),
+  };
+
+  let data, error;
+  if (editId) {
+    ({ data, error } = await sb.from(table).update(payload).eq('id',editId).select('id').single());
+    data = data || { id: editId };
+  } else {
+    ({ data, error } = await sb.from(table).insert(payload).select('id').single());
+  }
+  if (error) { showError('خطأ: ' + error.message); return; }
+
+  // Auto journal when issued
+  if (status === 'issued' && window.NSPAccounting && data?.id) {
+    try {
+      const isCN = type === 'credit';
+      const arAcct  = await window.NSPAccounting.getAccount('ar_account');
+      const revAcct = await window.NSPAccounting.getAccount('revenue_default');
+      // CN: Dr Revenue / Cr AR  (reduce what customer owes)
+      // DN: Dr AR / Cr Revenue  (increase what customer owes)
+      await window.NSPAccounting.createJournalEntry({
+        date,
+        description: `${isCN?'إشعار إضافة':'إشعار خصم'} — ${prefix}-${year}-${String(seq).padStart(4,'0')}`,
+        reference_type: type === 'credit' ? 'credit_note' : 'debit_note',
+        reference_id:   data.id,
+        lines: isCN
+          ? [ { account_id: revAcct, debit: amount,  credit: 0      },
+              { account_id: arAcct,  debit: 0,        credit: amount } ]
+          : [ { account_id: arAcct,  debit: amount,  credit: 0      },
+              { account_id: revAcct, debit: 0,        credit: amount } ],
+      });
+      await sb.from(table).update({ journal_entry_id: (await sb.from('journal_entries').select('id').eq('reference_id',data.id).single())?.data?.id }).eq('id',data.id);
+    } catch(e) { console.warn('Note JE failed:', e.message); }
+  }
+
+  closeModal();
+  await loadAll();
+}
+
+async function applyNote(id, table) {
+  if (!confirm('تطبيق الإشعار على الفاتورة المرتبطة؟')) return;
+  const { error } = await sb.from(table).update({ status: 'applied' }).eq('id',id);
+  if (error) { alert('خطأ: ' + error.message); return; }
+  await loadAll();
+}
+
+async function cancelNote(id, table) {
+  if (!confirm('إلغاء هذا الإشعار؟')) return;
+  const { error } = await sb.from(table).update({ status: 'cancelled' }).eq('id',id);
+  if (error) { alert('خطأ: ' + error.message); return; }
+  await loadAll();
+}
+
+async function editNote(id, type) {
+  const table = type === 'credit' ? creditNotes : debitNotes;
+  const note  = table.find(n => n.id === id);
+  if (note) openModal(type, note);
+}
+
+// Init
+loadAll();
+</script>
+</body>
+</html>

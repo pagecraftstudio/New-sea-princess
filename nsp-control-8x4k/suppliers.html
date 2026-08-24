@@ -13,6 +13,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/supabase-config.js"></script>
+  <script src="/js/accounting-engine.js"></script>
   <script src="/js/admin.js"></script>
   <style>
     .nav-link{display:flex;align-items:center;gap:10px;padding:12px 24px;color:#9ca3af;transition:.2s;}
@@ -43,95 +44,102 @@
 <div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
   <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
   <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl">
+    <div class="h-16 flex items-center justify-between px-4 border-b border-gray-800">
+      <span class="text-gold font-bold">القائمة</span>
+      <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
       <a href="/nsp-control-8x4k/dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
-      <details class="nav-group">
-        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/bookings.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
-        <a href="/nsp-control-8x4k/packages.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
-        <a href="/nsp-control-8x4k/reviews.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
-        <a href="/nsp-control-8x4k/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
-      </details>
       <details class="nav-group" open>
+        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      </details>
+      <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
-        <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
-        <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
-        <a href="/nsp-control-8x4k/suppliers.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
-        <a href="/nsp-control-8x4k/customers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>العملاء</a>
-        <a href="/nsp-control-8x4k/expenses.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
-        <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
-        <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
-        <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
-        <a href="/nsp-control-8x4k/profitability.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
-        <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
-        <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
-        <a href="/nsp-control-8x4k/reports.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+      <a href="/nsp-control-8x4k/reports.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
-        <a href="/nsp-control-8x4k/admins.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
-        <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
-        <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
       </details>
-
+    </nav>
   </nav>
 </div>
 
 <div class="flex min-h-screen">
 <!-- SIDEBAR -->
-<aside class="w-64 bg-darkBg text-white hidden md:flex flex-col sticky top-0 h-screen">
-  <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
-    <img src="/assets/logo-white.png" alt="نيو سي برنسيس" class="h-8 w-auto object-contain ml-2"> الإدارة
-  </div>
-  <nav class="flex-1 overflow-y-auto py-4">
+<aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
       <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
-      <details class="nav-group">
-        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
-        <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
-        <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
-        <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
-      </details>
       <details class="nav-group" open>
+        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      </details>
+      <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
-        <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
-        <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
-        <a href="/nsp-control-8x4k/suppliers.html" class="nav-link active"><i class="fa-solid fa-truck w-5"></i>الموردون</a>
-        <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
-        <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
-        <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
-        <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
-        <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
-        <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
-        <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
-        <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
-        <a href="/nsp-control-8x4k/reports.html" class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+      <a href="/nsp-control-8x4k/reports.html" class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
-        <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
-        <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
       </details>
       <details class="nav-group">
         <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-        <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
-        <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
       </details>
-
-  </nav>
-  <div class="p-4 border-t border-gray-800">
-    <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 hover:text-white py-2 rounded transition flex justify-center items-center gap-2">
-      <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
-    </button>
-  </div>
-</aside>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <p class="text-xs text-gray-500 mb-2 text-center" id="adminUserEmail"></p>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
 
 <!-- MAIN -->
 <main class="flex-1 flex flex-col p-4 md:p-6 overflow-x-hidden" aria-label="المحتوى الرئيسي">
@@ -479,6 +487,9 @@ function renderPage() {
     </td>
     <td class="px-4 py-3 text-center no-print">
       <div class="flex justify-center gap-1">
+        <button onclick="openBillsModal('${s.id}')" title="فواتير ومدفوعات" class="text-blue-600 hover:text-blue-800 text-xs border border-blue-300 rounded px-2 py-1 hover:bg-blue-50 transition">
+          <i class="fa-solid fa-file-invoice-dollar"></i> فواتير
+        </button>
         <button onclick="openStatement('${s.id}')" title="كشف حساب" class="text-gold hover:text-yellow-700 text-xs border border-gold rounded px-2 py-1 hover:bg-yellow-50 transition">
           <i class="fa-solid fa-file-invoice"></i>
         </button>
@@ -776,6 +787,474 @@ function printStatement() {
 
 // Init
 loadSuppliers();
+</script>
+
+<!-- ══════════════════════════════════════════
+     SUPPLIER BILLS & PAYMENTS MODAL
+═══════════════════════════════════════════ -->
+<div id="billsModal" class="fixed inset-0 z-[90] hidden">
+  <div class="absolute inset-0 bg-black/60" onclick="closeBillsModal()"></div>
+  <div class="absolute inset-y-0 left-0 w-full md:w-[780px] bg-white shadow-2xl flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <div class="bg-primary text-white px-6 py-4 flex items-center justify-between shrink-0">
+      <div>
+        <h3 class="text-lg font-bold" id="billsSupplierName">فواتير المورد</h3>
+        <div class="text-green-100 text-xs mt-0.5" id="billsSupplierSub"></div>
+      </div>
+      <button onclick="closeBillsModal()" class="text-white/70 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex border-b bg-gray-50 shrink-0">
+      <button id="tabBills" onclick="switchBillTab('bills')"
+        class="px-6 py-3 text-sm font-bold border-b-2 border-primary text-primary">
+        <i class="fa-solid fa-file-invoice ml-1"></i> الفواتير
+      </button>
+      <button id="tabPayments" onclick="switchBillTab('payments')"
+        class="px-6 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        <i class="fa-solid fa-money-bill-wave ml-1"></i> المدفوعات
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto p-5">
+
+      <!-- ── BILLS TAB ── -->
+      <div id="panelBills">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex gap-3 items-center">
+            <div class="text-sm text-gray-500">الرصيد المستحق:</div>
+            <div class="text-xl font-bold text-red-600" id="billsBalance">—</div>
+          </div>
+          <button onclick="openAddBillForm()"
+            class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> فاتورة جديدة
+          </button>
+        </div>
+
+        <!-- Add bill inline form -->
+        <div id="addBillForm" class="hidden bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+          <div class="text-sm font-bold text-gray-700 mb-3"><i class="fa-solid fa-file-invoice-dollar ml-1 text-primary"></i>إضافة فاتورة مورد</div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">تاريخ الفاتورة *</label>
+              <input type="date" id="bfDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">تاريخ الاستحقاق</label>
+              <input type="date" id="bfDue" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">المبلغ *</label>
+              <input type="number" id="bfAmount" min="0" step="0.01" placeholder="0.00"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">العملة</label>
+              <select id="bfCurrency" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="EGP">جنيه مصري (EGP)</option>
+                <option value="SAR">ريال سعودي (SAR)</option>
+                <option value="USD">دولار أمريكي (USD)</option>
+                <option value="EUR">يورو (EUR)</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">رقم الفاتورة / المرجع</label>
+            <input type="text" id="bfRef" placeholder="INV-2026-001"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">البيان / الوصف</label>
+            <textarea id="bfDesc" rows="2" placeholder="وصف الخدمة أو البضاعة..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">حساب التكلفة (دليل الحسابات)</label>
+            <select id="bfCostAccount" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+              <option value="">— حساب المشتريات / التكلفة الافتراضي —</option>
+            </select>
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button onclick="cancelAddBill()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg text-sm hover:bg-gray-100">إلغاء</button>
+            <button onclick="saveBill()" class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-green-700">حفظ الفاتورة</button>
+          </div>
+        </div>
+
+        <!-- Bills table -->
+        <div class="overflow-x-auto rounded-xl border border-gray-200">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600 text-xs border-b">
+              <tr>
+                <th class="px-3 py-2 text-right">تاريخ</th>
+                <th class="px-3 py-2 text-right">رقم الفاتورة</th>
+                <th class="px-3 py-2 text-right">البيان</th>
+                <th class="px-3 py-2 text-left">المبلغ</th>
+                <th class="px-3 py-2 text-left">المدفوع</th>
+                <th class="px-3 py-2 text-left">المتبقي</th>
+                <th class="px-3 py-2 text-center">الاستحقاق</th>
+                <th class="px-3 py-2 text-center">الحالة</th>
+                <th class="px-3 py-2 text-center">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="billsBody">
+              <tr><td colspan="9" class="text-center py-8 text-gray-400">لا توجد فواتير</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── PAYMENTS TAB ── -->
+      <div id="panelPayments" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-sm text-gray-600">سجل المدفوعات للمورد</div>
+          <button onclick="openAddPaymentForm()"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> دفعة جديدة
+          </button>
+        </div>
+
+        <!-- Add payment form -->
+        <div id="addPaymentForm" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <div class="text-sm font-bold text-blue-700 mb-3"><i class="fa-solid fa-money-bill-wave ml-1"></i>تسجيل دفعة للمورد</div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">تاريخ الدفع *</label>
+              <input type="date" id="spDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">المبلغ *</label>
+              <input type="number" id="spAmount" min="0" step="0.01" placeholder="0.00"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">العملة</label>
+              <select id="spCurrency" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="EGP">جنيه مصري (EGP)</option>
+                <option value="SAR">ريال سعودي (SAR)</option>
+                <option value="USD">دولار أمريكي (USD)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">طريقة الدفع</label>
+              <select id="spMethod" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="cash">نقدي</option>
+                <option value="bank">تحويل بنكي</option>
+                <option value="cheque">شيك</option>
+                <option value="wallet">محفظة إلكترونية</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">توزيع على الفاتورة</label>
+            <select id="spBillAlloc" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="">— دفعة عامة (بدون تخصيص) —</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">حساب الدفع (من دليل الحسابات)</label>
+            <select id="spGlAccount" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="">— الصندوق / البنك الافتراضي —</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">مرجع / رقم الشيك</label>
+            <input type="text" id="spRef" placeholder="CHK-001 / TRF-001"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button onclick="cancelAddPayment()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 bg-white">إلغاء</button>
+            <button onclick="saveSupplierPayment()" class="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-blue-700">تسجيل الدفعة</button>
+          </div>
+        </div>
+
+        <!-- Payments table -->
+        <div class="overflow-x-auto rounded-xl border border-gray-200">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600 text-xs border-b">
+              <tr>
+                <th class="px-3 py-2 text-right">تاريخ</th>
+                <th class="px-3 py-2 text-right">المرجع</th>
+                <th class="px-3 py-2 text-right">طريقة الدفع</th>
+                <th class="px-3 py-2 text-left">المبلغ</th>
+                <th class="px-3 py-2 text-right">مخصص لفاتورة</th>
+                <th class="px-3 py-2 text-center">قيد محاسبي</th>
+              </tr>
+            </thead>
+            <tbody id="supplierPaymentsBody">
+              <tr><td colspan="6" class="text-center py-8 text-gray-400">لا توجد مدفوعات</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// SUPPLIER BILLS & PAYMENTS
+// ═══════════════════════════════════════════════
+let activeBillSupplierId = null;
+let supplierBills = [];
+let supplierPayments = [];
+let glAccounts = [];
+
+async function openBillsModal(supplierId) {
+  activeBillSupplierId = supplierId;
+  const s = allSuppliers.find(x => x.id === supplierId);
+  document.getElementById('billsSupplierName').textContent = s?.name_ar || 'المورد';
+  document.getElementById('billsSupplierSub').textContent  = s?.supplier_type || '';
+  document.getElementById('billsModal').classList.remove('hidden');
+  switchBillTab('bills');
+  await Promise.all([loadGlAccounts(), loadBills(), loadSupplierPayments()]);
+}
+
+function closeBillsModal() {
+  document.getElementById('billsModal').classList.add('hidden');
+  activeBillSupplierId = null;
+}
+
+function switchBillTab(tab) {
+  document.getElementById('panelBills').classList.toggle('hidden',    tab !== 'bills');
+  document.getElementById('panelPayments').classList.toggle('hidden', tab !== 'payments');
+  document.getElementById('tabBills').className    = tab === 'bills'    ? 'px-6 py-3 text-sm font-bold border-b-2 border-primary text-primary'    : 'px-6 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+  document.getElementById('tabPayments').className = tab === 'payments' ? 'px-6 py-3 text-sm font-bold border-b-2 border-primary text-primary' : 'px-6 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+}
+
+async function loadGlAccounts() {
+  if (glAccounts.length) return;
+  const { data } = await sb.from('accounts').select('id,code,name_ar,type').eq('is_active',true).order('code');
+  glAccounts = data || [];
+  // populate cost account picker
+  const bfCA = document.getElementById('bfCostAccount');
+  bfCA.innerHTML = '<option value="">— حساب التكلفة الافتراضي —</option>';
+  glAccounts.filter(a => ['direct_cost','expense'].includes(a.type))
+    .forEach(a => bfCA.insertAdjacentHTML('beforeend', `<option value="${a.id}">${a.code} — ${a.name_ar}</option>`));
+  // populate payment GL picker
+  const spGL = document.getElementById('spGlAccount');
+  spGL.innerHTML = '<option value="">— الصندوق / البنك الافتراضي —</option>';
+  glAccounts.filter(a => a.type === 'asset')
+    .forEach(a => spGL.insertAdjacentHTML('beforeend', `<option value="${a.id}">${a.code} — ${a.name_ar}</option>`));
+}
+
+async function loadBills() {
+  const { data, error } = await sb.from('supplier_bills')
+    .select('*').eq('supplier_id', activeBillSupplierId)
+    .order('bill_date', { ascending: false });
+  supplierBills = data || [];
+  renderBills();
+}
+
+function renderBills() {
+  const tbody = document.getElementById('billsBody');
+  if (!supplierBills.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400">لا توجد فواتير بعد — أضف أول فاتورة</td></tr>';
+    document.getElementById('billsBalance').textContent = '0.00 ج.م';
+    return;
+  }
+  const totalDue = supplierBills.reduce((s,b) => s + (parseFloat(b.remaining_amount)||0), 0);
+  document.getElementById('billsBalance').textContent = fmtMoney(totalDue);
+
+  const today = new Date().toISOString().slice(0,10);
+  tbody.innerHTML = supplierBills.map(b => {
+    const overdue = b.due_date && b.due_date < today && b.status !== 'paid';
+    const statusBadge = {
+      draft:    '<span class="badge-gray px-2 py-0.5 rounded text-xs">مسودة</span>',
+      issued:   '<span class="badge-blue px-2 py-0.5 rounded text-xs">صادرة</span>',
+      partial:  '<span class="badge-yellow px-2 py-0.5 rounded text-xs">جزئي</span>',
+      paid:     '<span class="badge-green px-2 py-0.5 rounded text-xs">مدفوعة</span>',
+      overdue:  '<span class="badge-red px-2 py-0.5 rounded text-xs">متأخرة</span>',
+    }[b.status] || b.status;
+    return `<tr class="${overdue?'bg-red-50':''}">
+      <td class="px-3 py-2 text-xs text-gray-500">${b.bill_date||'—'}</td>
+      <td class="px-3 py-2 text-xs font-mono text-gray-700">${b.reference||'—'}</td>
+      <td class="px-3 py-2 text-xs text-gray-600 max-w-[150px] truncate">${b.description||'—'}</td>
+      <td class="px-3 py-2 text-xs text-left font-bold">${fmtMoney(b.total_amount, b.currency)}</td>
+      <td class="px-3 py-2 text-xs text-left text-green-700">${fmtMoney(b.paid_amount||0, b.currency)}</td>
+      <td class="px-3 py-2 text-xs text-left font-bold ${overdue?'text-red-600':''}">${fmtMoney(b.remaining_amount||b.total_amount, b.currency)}</td>
+      <td class="px-3 py-2 text-xs text-center ${overdue?'text-red-500':''}">${b.due_date||'—'}</td>
+      <td class="px-3 py-2 text-center">${statusBadge}</td>
+      <td class="px-3 py-2 text-center">
+        ${b.status !== 'paid' ? `<button onclick="payBillQuick('${b.id}','${b.remaining_amount||b.total_amount}','${b.currency}')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">دفع</button>` : ''}
+        ${b.journal_entry_id ? `<span class="text-xs text-green-600 ml-1"><i class="fa-solid fa-check"></i> قيد</span>` : `<span class="text-xs text-orange-500 ml-1"><i class="fa-solid fa-triangle-exclamation"></i></span>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadSupplierPayments() {
+  const { data } = await sb.from('supplier_payments')
+    .select('*, supplier_bills(reference)')
+    .eq('supplier_id', activeBillSupplierId)
+    .order('payment_date', { ascending: false });
+  supplierPayments = data || [];
+  renderSupplierPayments();
+  // populate bill allocation dropdown
+  const spBA = document.getElementById('spBillAlloc');
+  spBA.innerHTML = '<option value="">— دفعة عامة (بدون تخصيص) —</option>';
+  supplierBills.filter(b => b.status !== 'paid')
+    .forEach(b => spBA.insertAdjacentHTML('beforeend', `<option value="${b.id}">${b.reference||b.bill_date} — متبقي: ${fmtMoney(b.remaining_amount||b.total_amount)}</option>`));
+}
+
+function renderSupplierPayments() {
+  const tbody = document.getElementById('supplierPaymentsBody');
+  if (!supplierPayments.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">لا توجد مدفوعات</td></tr>';
+    return;
+  }
+  const methodLabels = { cash:'نقدي', bank:'تحويل', cheque:'شيك', wallet:'محفظة' };
+  tbody.innerHTML = supplierPayments.map(p => `<tr>
+    <td class="px-3 py-2 text-xs text-gray-500">${p.payment_date}</td>
+    <td class="px-3 py-2 text-xs font-mono">${p.reference||'—'}</td>
+    <td class="px-3 py-2 text-xs">${methodLabels[p.payment_method]||p.payment_method||'—'}</td>
+    <td class="px-3 py-2 text-xs text-left font-bold text-blue-700">${fmtMoney(p.amount, p.currency)}</td>
+    <td class="px-3 py-2 text-xs">${p.supplier_bills?.reference||'—'}</td>
+    <td class="px-3 py-2 text-center text-xs">
+      ${p.journal_entry_id
+        ? '<span class="text-green-600"><i class="fa-solid fa-check-circle"></i> مرحّل</span>'
+        : '<span class="text-orange-500"><i class="fa-solid fa-clock"></i> لم يُرحَّل</span>'}
+    </td>
+  </tr>`).join('');
+}
+
+function openAddBillForm() {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('bfDate').value = today;
+  document.getElementById('bfDue').value  = '';
+  document.getElementById('bfAmount').value = '';
+  document.getElementById('bfRef').value  = '';
+  document.getElementById('bfDesc').value = '';
+  document.getElementById('addBillForm').classList.remove('hidden');
+}
+function cancelAddBill() { document.getElementById('addBillForm').classList.add('hidden'); }
+
+async function saveBill() {
+  const amount = parseFloat(document.getElementById('bfAmount').value);
+  const date   = document.getElementById('bfDate').value;
+  const desc   = document.getElementById('bfDesc').value.trim();
+  if (!amount || amount <= 0) { alert('أدخل مبلغاً صحيحاً'); return; }
+  if (!date) { alert('أدخل تاريخ الفاتورة'); return; }
+
+  const costAccountId = document.getElementById('bfCostAccount').value || null;
+
+  const payload = {
+    supplier_id:       activeBillSupplierId,
+    bill_date:         date,
+    due_date:          document.getElementById('bfDue').value || null,
+    total_amount:      amount,
+    paid_amount:       0,
+    remaining_amount:  amount,
+    currency:          document.getElementById('bfCurrency').value,
+    reference:         document.getElementById('bfRef').value.trim() || null,
+    description:       desc || null,
+    cost_account_id:   costAccountId,
+    status:            'issued',
+  };
+
+  const { data: bill, error } = await sb.from('supplier_bills').insert(payload).select('id').single();
+  if (error) { alert('خطأ: ' + error.message); return; }
+
+  // Auto journal: DR Cost / CR AP
+  if (window.NSPAccounting && bill?.id) {
+    try {
+      const s = allSuppliers.find(x => x.id === activeBillSupplierId);
+      await window.NSPAccounting.onBookingCostAdded({
+        bookingCostId:       bill.id,
+        amount,
+        date,
+        costType:            'other',
+        supplierApAccountId: null,
+        description:         `فاتورة مورد — ${s?.name_ar||''}`,
+      });
+    } catch(e) { console.warn('Bill JE failed:', e.message); }
+  }
+
+  cancelAddBill();
+  await loadBills();
+}
+
+function openAddPaymentForm() {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('spDate').value   = today;
+  document.getElementById('spAmount').value = '';
+  document.getElementById('spRef').value    = '';
+  document.getElementById('addPaymentForm').classList.remove('hidden');
+}
+function cancelAddPayment() { document.getElementById('addPaymentForm').classList.add('hidden'); }
+
+async function saveSupplierPayment() {
+  const amount = parseFloat(document.getElementById('spAmount').value);
+  const date   = document.getElementById('spDate').value;
+  if (!amount || amount <= 0) { alert('أدخل مبلغاً صحيحاً'); return; }
+  if (!date) { alert('أدخل تاريخ الدفع'); return; }
+
+  const billId    = document.getElementById('spBillAlloc').value || null;
+  const glAcctId  = document.getElementById('spGlAccount').value || null;
+  const currency  = document.getElementById('spCurrency').value;
+  const method    = document.getElementById('spMethod').value;
+  const ref       = document.getElementById('spRef').value.trim() || null;
+
+  const payload = {
+    supplier_id:     activeBillSupplierId,
+    supplier_bill_id: billId,
+    payment_date:    date,
+    amount,
+    currency,
+    payment_method:  method,
+    cash_gl_account_id: glAcctId,
+    reference:       ref,
+    status:          'posted',
+  };
+
+  const { data: pmt, error } = await sb.from('supplier_payments').insert(payload).select('id').single();
+  if (error) { alert('خطأ: ' + error.message); return; }
+
+  // Update bill paid/remaining amounts
+  if (billId) {
+    const bill = supplierBills.find(b => b.id === billId);
+    if (bill) {
+      const newPaid      = (parseFloat(bill.paid_amount)||0) + amount;
+      const newRemaining = Math.max(0, (parseFloat(bill.total_amount)||0) - newPaid);
+      const newStatus    = newRemaining <= 0 ? 'paid' : newPaid > 0 ? 'partial' : 'issued';
+      await sb.from('supplier_bills').update({ paid_amount: newPaid, remaining_amount: newRemaining, status: newStatus }).eq('id', billId);
+    }
+  }
+
+  // Auto journal: DR AP / CR Cash
+  if (window.NSPAccounting && pmt?.id) {
+    try {
+      const apAcct   = await window.NSPAccounting.getAccount('ap_account');
+      const cashAcct = glAcctId || (await window.NSPAccounting.getAccount('cash_account'));
+      await window.NSPAccounting.createJournalEntry({
+        date,
+        description: `دفعة لمورد — ${allSuppliers.find(x=>x.id===activeBillSupplierId)?.name_ar||''}`,
+        reference_type: 'supplier_payment',
+        reference_id:   pmt.id,
+        lines: [
+          { account_id: apAcct,   debit: amount, credit: 0      },
+          { account_id: cashAcct, debit: 0,       credit: amount },
+        ],
+      });
+    } catch(e) { console.warn('Supplier payment JE failed:', e.message); }
+  }
+
+  cancelAddPayment();
+  await Promise.all([loadBills(), loadSupplierPayments()]);
+}
+
+function payBillQuick(billId, remaining, currency) {
+  switchBillTab('payments');
+  openAddPaymentForm();
+  document.getElementById('spAmount').value = parseFloat(remaining).toFixed(2);
+  document.getElementById('spBillAlloc').value = billId;
+  document.getElementById('spCurrency').value  = currency;
+}
 </script>
 </body>
 </html>
