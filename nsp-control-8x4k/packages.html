@@ -32,118 +32,13 @@
     .nav-group { border-bottom: 1px solid #1a2e1c; }
 
   </style>
+  <script src="/js/admin-nav.js"></script>
+  <script>
+</script>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-  <!-- ══ MOBILE TOP BAR ══ -->
-  <header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg">
-    <div class="flex items-center gap-2 font-bold text-lg text-gold">
-      <i class="fa-solid fa-moon"></i> الإدارة
-    </div>
-    <button id="mobileMenuBtn" class="text-white text-2xl p-1">
-      <i class="fa-solid fa-bars"></i>
-    </button>
-  </header>
-  <!-- MOBILE DRAWER -->
-  <div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
-    <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
-    <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl">
-    <div class="h-16 flex items-center justify-between px-4 border-b border-gray-800">
-      <span class="text-gold font-bold">القائمة</span>
-      <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <nav class="flex-1 overflow-y-auto py-3">
-      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
-      <details class="nav-group" open>
-        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-      <a href="/nsp-control-8x4k/bookings.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
-      <a href="/nsp-control-8x4k/packages.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
-      <a href="/nsp-control-8x4k/reviews.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
-      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
-      </details>
-      <details class="nav-group">
-        <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-      <a href="/nsp-control-8x4k/customers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>العملاء</a>
-      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
-      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
-      <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
-      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
-      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
-      <a href="/nsp-control-8x4k/expenses.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
-      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
-      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
-      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
-      <a href="/nsp-control-8x4k/profitability.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
-      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
-      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
-      <a href="/nsp-control-8x4k/reports.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
-      </details>
-      <details class="nav-group">
-        <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-      <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
-      <a href="/nsp-control-8x4k/admins.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
-      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
-      </details>
-      <details class="nav-group">
-        <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
-      <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
-      </details>
-    </nav>
-  </nav>
-  </div>
-
-  <div class="flex min-h-screen">
-  <!-- Sidebar -->
-  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
-    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
-      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
-    </div>
-    <nav class="flex-1 overflow-y-auto py-3">
-      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
-      <details class="nav-group" open>
-        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-      <a href="/nsp-control-8x4k/bookings.html" class="nav-link"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
-      <a href="/nsp-control-8x4k/packages.html" class="nav-link active"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
-      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
-      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
-      </details>
-      <details class="nav-group">
-        <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-      <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
-      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
-      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
-      <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
-      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
-      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
-      <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
-      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
-      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
-      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
-      <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
-      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
-      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
-      <a href="/nsp-control-8x4k/reports.html" class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
-      </details>
-      <details class="nav-group">
-        <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
-      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
-      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
-      </details>
-      <details class="nav-group">
-        <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
-      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
-      <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
-      </details>
-    </nav>
-    <div class="p-4 border-t border-gray-800">
-      <p class="text-xs text-gray-500 mb-2 text-center" id="adminUserEmail"></p>
-      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
-        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
-      </button>
-    </div>
-  </aside>
+<div id="adminNavMount"></div>
 
   <main class="flex-1 flex flex-col p-6" aria-label="المحتوى الرئيسي">
     <div class="flex justify-between items-center mb-6">
@@ -176,91 +71,207 @@
   <!-- ════════════════════════════════════════
        FULL PACKAGE MODAL (Add + Edit)
   ════════════════════════════════════════ -->
-  <div id="pkgModal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-2 md:p-4">
-    <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col" style="max-height:96vh;max-height:96dvh">
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- PACKAGE MODAL — Premium Tabbed Design                 -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <style>
+    /* Tab nav */
+    .pkg-tab-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 14px; border-bottom:3px solid transparent; color:#6b7280; font-size:0.72rem; font-weight:700; cursor:pointer; transition:all .2s; white-space:nowrap; background:none; border-top:none; border-left:none; border-right:none; }
+    .pkg-tab-btn i { font-size:1.05rem; }
+    .pkg-tab-btn.active { color:#1B5E20; border-bottom-color:#1B5E20; }
+    .pkg-tab-btn:hover:not(.active) { color:#374151; background:#f9fafb; }
+    .pkg-tab-panel { display:none; }
+    .pkg-tab-panel.active { display:block; }
 
-      <!-- Modal Header -->
-      <div class="p-5 border-b flex justify-between items-center shrink-0">
-        <h3 class="text-xl font-bold text-primary" id="pkgModalTitle">إضافة برنامج جديد</h3>
-        <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-2xl transition"><i class="fa-solid fa-xmark"></i></button>
+    /* Section card */
+    .pkg-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; margin-bottom:16px; }
+    .pkg-card-title { font-size:0.8rem; font-weight:800; color:#374151; text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #f3f4f6; }
+    .pkg-card-title i { color:#1B5E20; }
+
+    /* Field label */
+    .pkg-label { display:block; font-size:0.78rem; font-weight:700; color:#374151; margin-bottom:5px; }
+    .pkg-label .req { color:#ef4444; }
+
+    /* Input / select shared */
+    .pkg-input { width:100%; border:1.5px solid #e5e7eb; border-radius:8px; padding:9px 12px; font-size:0.88rem; outline:none; background:#fff; color:#111827; transition:border .15s, box-shadow .15s; font-family:inherit; }
+    .pkg-input:focus { border-color:#1B5E20; box-shadow:0 0 0 3px rgba(27,94,32,.1); }
+    .pkg-input::placeholder { color:#9ca3af; }
+
+    /* Toggle switch */
+    .pkg-toggle { position:relative; display:inline-flex; align-items:center; gap:10px; cursor:pointer; }
+    .pkg-toggle input { position:absolute; opacity:0; width:0; }
+    .pkg-toggle-track { width:40px; height:22px; background:#d1d5db; border-radius:100px; transition:.2s; flex-shrink:0; }
+    .pkg-toggle input:checked ~ .pkg-toggle-track { background:#1B5E20; }
+    .pkg-toggle-thumb { position:absolute; left:3px; top:3px; width:16px; height:16px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .pkg-toggle input:checked ~ .pkg-toggle-track .pkg-toggle-thumb { transform:translateX(18px); }
+    .pkg-toggle-label { font-size:0.84rem; font-weight:600; color:#374151; }
+
+    /* Star rating display */
+    .star-btn { background:none; border:none; cursor:pointer; font-size:1.1rem; color:#d1d5db; padding:1px; transition:.15s; }
+    .star-btn.active { color:#f59e0b; }
+
+    /* Progress steps in header */
+    .pkg-step-dot { width:8px; height:8px; border-radius:50%; background:#d1d5db; transition:.2s; }
+    .pkg-step-dot.active { background:#1B5E20; transform:scale(1.3); }
+
+    /* Price badge */
+    .price-badge { display:inline-flex; align-items:center; gap:4px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:4px 10px; font-size:0.78rem; font-weight:700; color:#166534; }
+
+    /* Hotel card */
+    .hotel-entry { border:1.5px solid #e5e7eb; border-radius:10px; padding:14px; background:#fafafa; position:relative; margin-bottom:10px; }
+    .hotel-entry:hover { border-color:#d1fae5; background:#f0fdf4; }
+
+    /* Quick-chip buttons */
+    .quick-chip { font-size:0.72rem; border:1px solid #d1d5db; border-radius:20px; padding:3px 10px; background:#fff; color:#374151; cursor:pointer; transition:.15s; font-weight:600; }
+    .quick-chip:hover { background:#f3f4f6; border-color:#9ca3af; }
+    .quick-chip-amber { border-color:#fcd34d; background:#fffbeb; color:#92400e; }
+    .quick-chip-amber:hover { background:#fef3c7; }
+
+    /* Summary sidebar */
+    #pkgSummaryBar { background:linear-gradient(135deg,#052e0f 0%,#14532d 100%); color:#fff; border-radius:0 0 16px 16px; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+    .summary-pill { background:rgba(255,255,255,.12); border-radius:8px; padding:5px 12px; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:5px; }
+
+    /* Compact grid */
+    .g2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+    .g4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; }
+    @media(max-width:640px) { .g2,.g3,.g4 { grid-template-columns:1fr; } }
+    @media(max-width:768px) { .g3 { grid-template-columns:1fr 1fr; } .g4 { grid-template-columns:1fr 1fr; } }
+  </style>
+
+  <div id="pkgModal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-2 md:p-4" style="backdrop-filter:blur(4px)">
+    <div class="bg-white rounded-2xl w-full shadow-2xl flex flex-col" style="max-width:860px;max-height:95vh;max-height:95dvh">
+
+      <!-- ── Modal Header ── -->
+      <div class="shrink-0" style="background:linear-gradient(135deg,#052e0f 0%,#166534 100%);border-radius:16px 16px 0 0;padding:18px 22px">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-xs font-bold text-green-300 uppercase tracking-widest">إدارة البرامج</span>
+            </div>
+            <h3 class="text-xl font-black text-white" id="pkgModalTitle">إضافة برنامج جديد</h3>
+          </div>
+          <button onclick="closeModal()" class="text-white/60 hover:text-white transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+        <!-- Tab nav -->
+        <div class="flex gap-1 mt-4 -mb-px overflow-x-auto" style="scrollbar-width:none">
+          <button class="pkg-tab-btn active" id="ptab-basic" onclick="switchPkgTab('basic')">
+            <i class="fa-solid fa-circle-info"></i>أساسي
+          </button>
+          <button class="pkg-tab-btn" id="ptab-pricing" onclick="switchPkgTab('pricing')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-money-bill-wave"></i>الأسعار
+          </button>
+          <button class="pkg-tab-btn" id="ptab-hotels" onclick="switchPkgTab('hotels')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-hotel"></i>الفنادق
+          </button>
+          <button class="pkg-tab-btn" id="ptab-transport" onclick="switchPkgTab('transport')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-plane"></i>الطيران
+          </button>
+          <button class="pkg-tab-btn" id="ptab-content" onclick="switchPkgTab('content')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-list-check"></i>المحتوى
+          </button>
+          <button class="pkg-tab-btn" id="ptab-docs" onclick="switchPkgTab('docs')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-file-circle-check"></i>المستندات
+          </button>
+          <button class="pkg-tab-btn" id="ptab-settings" onclick="switchPkgTab('settings')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-gear"></i>الإعدادات
+          </button>
+        </div>
       </div>
 
-      <!-- Modal Body — scrollable -->
-      <div class="overflow-y-auto flex-1 p-6 space-y-6">
+      <!-- ── Scrollable Body ── -->
+      <div class="overflow-y-auto flex-1 p-5">
 
-        <!-- ── Section 1: Basic Info ── -->
-        <div>
-          <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
-            <i class="fa-solid fa-circle-info text-primary"></i> المعلومات الأساسية
-          </h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="md:col-span-2">
-              <label class="block text-sm font-bold mb-1">عنوان البرنامج <span class="text-red-500">*</span></label>
-              <input type="text" id="pTitle" placeholder="مثال: برنامج العمرة المتميز — رمضان 2026" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
+        <!-- ════════ TAB 1: BASIC INFO ════════ -->
+        <div class="pkg-tab-panel active" id="ppanel-basic">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-tag"></i> هوية البرنامج</div>
+            <div class="mb-4">
+              <label class="pkg-label">عنوان البرنامج <span class="req">*</span></label>
+              <input type="text" id="pTitle" placeholder="مثال: برنامج العمرة المتميز — رمضان 1447" class="pkg-input" style="font-size:1rem;font-weight:600">
             </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">الفئة <span class="text-red-500">*</span></label>
-              <div class="flex gap-2 items-center">
-                <select id="pCategory" class="flex-1 border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary bg-white">
-                  <optgroup label="عمرة">
-                    <option value="اقتصادي">🟢 اقتصادي</option>
-                    <option value="متميز">🔵 متميز</option>
-                    <option value="VIP">⭐ VIP</option>
-                    <option value="عائلي">👨‍👩‍👧 عائلي</option>
-                    <option value="نسائي">🌸 نسائي</option>
-                    <option value="شباب">🎯 شباب</option>
-                    <option value="رمضان">🌙 رمضان</option>
-                  </optgroup>
-                  <optgroup label="حج">
-                    <option value="حج اقتصادي">🕌 حج اقتصادي</option>
-                    <option value="حج متميز">🕌 حج متميز</option>
-                    <option value="حج VIP">🕌 حج VIP</option>
-                  </optgroup>
-                  <optgroup label="أخرى">
-                    <option value="زيارات دينية">🕍 زيارات دينية</option>
-                    <option value="سياحي">✈️ سياحي</option>
-                    <option value="مخصص">🔧 مخصص</option>
-                  </optgroup>
-                  <!-- custom categories injected here -->
-                </select>
-                <button type="button" title="إضافة فئة جديدة" onclick="showAddOption('category')"
-                  class="flex-shrink-0 w-9 h-9 rounded-lg bg-primary hover:bg-green-700 text-white flex items-center justify-center transition">
-                  <i class="fa-solid fa-plus text-sm"></i>
-                </button>
+            <div class="g2">
+              <div>
+                <label class="pkg-label">الفئة <span class="req">*</span></label>
+                <div class="flex gap-2">
+                  <select id="pCategory" class="pkg-input flex-1">
+                    <optgroup label="عمرة">
+                      <option value="اقتصادي">🟢 اقتصادي</option>
+                      <option value="متميز">🔵 متميز</option>
+                      <option value="VIP">⭐ VIP</option>
+                      <option value="عائلي">👨‍👩‍👧 عائلي</option>
+                      <option value="نسائي">🌸 نسائي</option>
+                      <option value="شباب">🎯 شباب</option>
+                      <option value="رمضان">🌙 رمضان</option>
+                    </optgroup>
+                    <optgroup label="حج">
+                      <option value="حج اقتصادي">🕌 حج اقتصادي</option>
+                      <option value="حج متميز">🕌 حج متميز</option>
+                      <option value="حج VIP">🕌 حج VIP</option>
+                    </optgroup>
+                    <optgroup label="أخرى">
+                      <option value="زيارات دينية">🕍 زيارات دينية</option>
+                      <option value="سياحي">✈️ سياحي</option>
+                      <option value="مخصص">🔧 مخصص</option>
+                    </optgroup>
+                  </select>
+                  <button type="button" onclick="showAddOption('category')" class="w-9 h-9 flex-shrink-0 rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center justify-center">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="pkg-label">الموسم</label>
+                <div class="flex gap-2">
+                  <select id="pSeason" class="pkg-input flex-1">
+                    <option value="رجب">رجب</option>
+                    <option value="شعبان">شعبان</option>
+                    <option value="رمضان">رمضان</option>
+                    <option value="ذو الحجة">ذو الحجة</option>
+                    <option value="طوال العام">طوال العام</option>
+                  </select>
+                  <button type="button" onclick="showAddOption('season')" class="w-9 h-9 flex-shrink-0 rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center justify-center">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                  </button>
+                </div>
               </div>
             </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">الموسم</label>
-              <div class="flex gap-2 items-center">
-                <select id="pSeason" class="flex-1 border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary bg-white">
-                  <option value="رجب">رجب</option>
-                  <option value="شعبان">شعبان</option>
-                  <option value="رمضان">رمضان</option>
-                  <option value="ذو الحجة">ذو الحجة</option>
-                  <option value="طوال العام">طوال العام</option>
-                  <!-- custom seasons injected here -->
-                </select>
-                <button type="button" title="إضافة موسم جديد" onclick="showAddOption('season')"
-                  class="flex-shrink-0 w-9 h-9 rounded-lg bg-primary hover:bg-green-700 text-white flex items-center justify-center transition">
-                  <i class="fa-solid fa-plus text-sm"></i>
-                </button>
+          </div>
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-calendar-range"></i> التواريخ والمدة</div>
+            <div class="g3">
+              <div>
+                <label class="pkg-label">تاريخ المغادرة <span class="req">*</span></label>
+                <input type="date" id="pDeparture" class="pkg-input" onchange="autoCalcDuration()">
+              </div>
+              <div>
+                <label class="pkg-label">تاريخ العودة <span class="req">*</span></label>
+                <input type="date" id="pReturn" class="pkg-input" onchange="autoCalcDuration()">
+              </div>
+              <div>
+                <label class="pkg-label">عدد الليالي <span class="req">*</span></label>
+                <div class="relative">
+                  <input type="number" id="pDuration" min="1" placeholder="محسوب تلقائياً" class="pkg-input">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold pointer-events-none">ليلة</span>
+                </div>
               </div>
             </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">تاريخ المغادرة <span class="text-red-500">*</span></label>
-              <input type="date" id="pDeparture" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
-            </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">تاريخ العودة <span class="text-red-500">*</span></label>
-              <input type="date" id="pReturn" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
-            </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">عدد الليالي <span class="text-red-500">*</span></label>
-              <input type="number" id="pDuration" min="1" placeholder="7" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
-            </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">مدينة المغادرة <span class="text-red-500">*</span></label>
-              <select id="pDepartureCity" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary bg-white">
+            <div class="mt-3">
+              <label class="pkg-label">مدينة المغادرة <span class="req">*</span></label>
+              <div class="flex gap-2 flex-wrap mt-1" id="departureCityPicker">
+                <button type="button" onclick="pickDepartureCity(this,'القاهرة')" class="quick-chip active-city" style="background:#f0fdf4;border-color:#86efac;color:#14532d">القاهرة</button>
+                <button type="button" onclick="pickDepartureCity(this,'الإسكندرية')" class="quick-chip">الإسكندرية</button>
+                <button type="button" onclick="pickDepartureCity(this,'أسيوط')" class="quick-chip">أسيوط</button>
+                <button type="button" onclick="pickDepartureCity(this,'الأقصر')" class="quick-chip">الأقصر</button>
+                <button type="button" onclick="pickDepartureCity(this,'أسوان')" class="quick-chip">أسوان</button>
+                <button type="button" onclick="pickDepartureCity(this,'الغردقة')" class="quick-chip">الغردقة</button>
+                <button type="button" onclick="pickDepartureCity(this,'شرم الشيخ')" class="quick-chip">شرم الشيخ</button>
+              </div>
+              <select id="pDepartureCity" class="pkg-input mt-2" style="display:none">
                 <option value="القاهرة">القاهرة</option>
                 <option value="الإسكندرية">الإسكندرية</option>
                 <option value="أسيوط">أسيوط</option>
@@ -271,78 +282,95 @@
               </select>
             </div>
           </div>
-        </div>
 
-        <!-- ── Section 2: Pricing & Seats ── -->
-        <div>
-          <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
-            <i class="fa-solid fa-money-bill-wave text-primary"></i> الأسعار والمقاعد
-          </h4>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-sm font-bold mb-1">سعر البالغ (ج.م) <span class="text-red-500">*</span></label>
-              <input type="number" id="pPrice" min="0" placeholder="8500" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
+        </div><!-- /tab basic -->
+
+        <!-- ════════ TAB 2: PRICING ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-pricing">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-egyptian-pound-sign"></i> أسعار المسافرين</div>
+            <div class="g3" style="margin-bottom:16px">
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-person text-green-600 ml-1"></i>سعر البالغ <span class="req">*</span></label>
+                <div class="relative">
+                  <input type="number" id="pPrice" min="0" placeholder="8500" class="pkg-input" style="padding-right:42px" oninput="updatePriceSummary()">
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">ج.م</span>
+                </div>
+              </div>
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-child text-blue-500 ml-1"></i>سعر الطفل</label>
+                <div class="relative">
+                  <input type="number" id="pPriceChild" min="0" placeholder="اختياري" class="pkg-input" style="padding-right:42px" oninput="updatePriceSummary()">
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">ج.م</span>
+                </div>
+              </div>
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-baby text-purple-500 ml-1"></i>سعر الرضيع</label>
+                <div class="relative">
+                  <input type="number" id="pPriceInfant" min="0" placeholder="مجاني افتراضياً" class="pkg-input" style="padding-right:42px" oninput="updatePriceSummary()">
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">ج.م</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">سعر الطفل (ج.م)</label>
-              <input type="number" id="pPriceChild" min="0" placeholder="اختياري" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
+
+            <!-- Live price preview -->
+            <div id="priceSummaryRow" class="flex gap-2 flex-wrap" style="padding:12px;background:#f0fdf4;border-radius:8px;margin-bottom:16px">
+              <span class="price-badge"><i class="fa-solid fa-person"></i><span id="ps-adult">—</span></span>
+              <span class="price-badge" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af"><i class="fa-solid fa-child"></i><span id="ps-child">—</span></span>
+              <span class="price-badge" style="background:#faf5ff;border-color:#e9d5ff;color:#7e22ce"><i class="fa-solid fa-baby"></i><span id="ps-infant">—</span></span>
             </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">سعر الرضيع (ج.م)</label>
-              <input type="number" id="pPriceInfant" min="0" placeholder="مجاني افتراضياً" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
-            </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">أقصى عدد مقاعد</label>
-              <input type="number" id="pMaxSeats" min="1" placeholder="40" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
-            </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">نسبة خصم %</label>
-              <input type="number" id="pDiscount" min="0" max="100" placeholder="0" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
+
+            <div class="g2">
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-percent text-amber-500 ml-1"></i>نسبة خصم</label>
+                <div class="flex items-center gap-3">
+                  <input type="range" id="pDiscountRange" min="0" max="50" value="0" step="5" style="flex:1;accent-color:#1B5E20" oninput="document.getElementById('pDiscount').value=this.value;document.getElementById('discountDisplay').textContent=this.value+'%'">
+                  <span id="discountDisplay" class="text-sm font-black text-green-700 w-10 text-center">0%</span>
+                  <input type="number" id="pDiscount" min="0" max="100" value="0" class="pkg-input" style="width:70px" oninput="document.getElementById('pDiscountRange').value=this.value;document.getElementById('discountDisplay').textContent=this.value+'%'">
+                </div>
+              </div>
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-users text-gray-500 ml-1"></i>أقصى عدد مقاعد</label>
+                <input type="number" id="pMaxSeats" min="1" placeholder="40" class="pkg-input">
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- ── Section 3: Hotels (multi-hotel + room tiers) ── -->
-        <div>
-          <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
-            <i class="fa-solid fa-hotel text-primary"></i> الفنادق وأنواع الغرف
-          </h4>
+        </div><!-- /tab pricing -->
 
-          <!-- Mecca Hotels -->
-          <div class="mb-6">
-            <div class="flex items-center justify-between mb-3">
-              <p class="font-bold text-green-800 flex items-center gap-2">
-                <i class="fa-solid fa-kaaba text-green-700"></i> فنادق مكة المكرمة
-              </p>
-              <button type="button" onclick="addHotel('mecca')"
-                      class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
+        <!-- ════════ TAB 3: HOTELS ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-hotels">
+
+          <!-- Mecca -->
+          <div class="pkg-card">
+            <div class="pkg-card-title">
+              <i class="fa-solid fa-kaaba" style="color:#15803d"></i> فنادق مكة المكرمة
+              <button type="button" onclick="addHotel('mecca')" class="mr-auto text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
                 <i class="fa-solid fa-plus"></i> إضافة فندق
               </button>
             </div>
             <div id="meccaHotelsList" class="space-y-3"></div>
-            <p id="meccaHotelsEmpty" class="text-xs text-gray-400 text-center py-3 border border-dashed border-gray-200 rounded-lg">
-              لا توجد فنادق بعد — اضغط «إضافة فندق»
+            <p id="meccaHotelsEmpty" class="text-sm text-gray-400 text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
+              <i class="fa-solid fa-hotel text-3xl text-gray-200 block mb-2"></i>لا توجد فنادق — اضغط «إضافة فندق»
             </p>
           </div>
 
-          <!-- Madina Hotels -->
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <p class="font-bold text-blue-800 flex items-center gap-2">
-                <i class="fa-solid fa-mosque text-blue-700"></i> فنادق المدينة المنورة
-              </p>
-              <button type="button" onclick="addHotel('madina')"
-                      class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
+          <!-- Madina -->
+          <div class="pkg-card">
+            <div class="pkg-card-title">
+              <i class="fa-solid fa-mosque" style="color:#1d4ed8"></i> فنادق المدينة المنورة
+              <button type="button" onclick="addHotel('madina')" class="mr-auto text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
                 <i class="fa-solid fa-plus"></i> إضافة فندق
               </button>
             </div>
             <div id="madinaHotelsList" class="space-y-3"></div>
-            <p id="madinaHotelsEmpty" class="text-xs text-gray-400 text-center py-3 border border-dashed border-gray-200 rounded-lg">
-              لا توجد فنادق بعد — اضغط «إضافة فندق»
+            <p id="madinaHotelsEmpty" class="text-sm text-gray-400 text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
+              <i class="fa-solid fa-hotel text-3xl text-gray-200 block mb-2"></i>لا توجد فنادق — اضغط «إضافة فندق»
             </p>
           </div>
 
-          <!-- Legacy single-hotel fields (hidden, kept for backward compat) -->
+          <!-- Legacy hidden -->
           <input type="hidden" id="pMeccaHotel">
           <input type="hidden" id="pMeccaStars" value="3">
           <input type="hidden" id="pNightsMecca">
@@ -351,174 +379,162 @@
           <input type="hidden" id="pMedinaStars" value="3">
           <input type="hidden" id="pNightsMedina">
           <input type="hidden" id="pMedinaDist">
-        </div>
+        </div><!-- /tab hotels -->
 
-        <!-- ── Section 4: Transport & Flight ── -->
-        <div>
-          <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
-            <i class="fa-solid fa-plane text-primary"></i> الطيران والنقل
-          </h4>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-sm font-bold mb-1">نوع الطيران</label>
-              <select id="pFlightType" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none bg-white">
-                <option value="مباشر">مباشر</option>
-                <option value="مع توقف">مع توقف</option>
-              </select>
+        <!-- ════════ TAB 4: TRANSPORT ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-transport">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-plane-departure"></i> تفاصيل الطيران</div>
+            <div class="g2">
+              <div>
+                <label class="pkg-label">نوع الرحلة</label>
+                <div class="flex gap-2 mt-1">
+                  <button type="button" id="flightTypeDirect" onclick="setFlightType('مباشر')"
+                    class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-green-500 bg-green-50 text-green-700">
+                    <i class="fa-solid fa-arrow-right-long block text-xl mb-1"></i>مباشر
+                  </button>
+                  <button type="button" id="flightTypeStop" onclick="setFlightType('مع توقف')"
+                    class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-gray-200 bg-white text-gray-500">
+                    <i class="fa-solid fa-arrows-split-up-and-left block text-xl mb-1"></i>مع توقف
+                  </button>
+                </div>
+                <select id="pFlightType" class="hidden">
+                  <option value="مباشر">مباشر</option>
+                  <option value="مع توقف">مع توقف</option>
+                </select>
+              </div>
+              <div>
+                <label class="pkg-label">شركة الطيران</label>
+                <input type="text" id="pAirline" placeholder="مصر للطيران" class="pkg-input">
+                <div class="flex gap-1.5 flex-wrap mt-2">
+                  <button type="button" onclick="document.getElementById('pAirline').value='مصر للطيران'" class="quick-chip">مصر للطيران</button>
+                  <button type="button" onclick="document.getElementById('pAirline').value='فلاي دبي'" class="quick-chip">فلاي دبي</button>
+                  <button type="button" onclick="document.getElementById('pAirline').value='السعودية'" class="quick-chip">السعودية</button>
+                  <button type="button" onclick="document.getElementById('pAirline').value='العربية للطيران'" class="quick-chip">العربية</button>
+                </div>
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">شركة الطيران</label>
-              <input type="text" id="pAirline" placeholder="مصر للطيران" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
-            </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">سعر تذكرة الطيران (ج.م/للفرد)</label>
-              <input type="number" id="pFlightTicketPrice" min="0" placeholder="0 = مشمول في السعر"
-                     class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary">
-              <p class="text-xs text-gray-400 mt-1">0 = التذكرة مشمولة في سعر البرنامج</p>
-            </div>
-            <div>
-              <label class="block text-sm font-bold mb-1">وسيلة النقل</label>
-              <select id="pTransport" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none bg-white">
-                <option value="باص VIP">باص VIP</option>
-                <option value="باص عادي">باص عادي</option>
-                <option value="تاكسي خاص">تاكسي خاص</option>
-              </select>
+            <div class="mt-4">
+              <label class="pkg-label">سعر تذكرة الطيران للفرد (ج.م)</label>
+              <div class="relative" style="max-width:240px">
+                <input type="number" id="pFlightTicketPrice" min="0" placeholder="0 = مشمول في السعر" class="pkg-input" style="padding-right:42px">
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">ج.م</span>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">القيمة صفر تعني أن التذكرة مشمولة في سعر البرنامج</p>
             </div>
           </div>
-        </div>
 
-        <!-- ── Section 5: Thumbnail Image ── -->
-        <div>
-          <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
-            <i class="fa-solid fa-image text-primary"></i> صورة البرنامج
-          </h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-            <div class="space-y-3">
-              <!-- Option A: Upload from device -->
-              <div>
-                <label class="block text-sm font-bold mb-1">
-                  <i class="fa-solid fa-upload text-primary ml-1"></i> رفع صورة من جهازك
-                </label>
-                <label id="imgUploadLabel"
-                       class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-primary rounded-xl cursor-pointer bg-green-50 hover:bg-green-100 transition">
-                  <i class="fa-solid fa-cloud-arrow-up text-2xl text-primary mb-1"></i>
-                  <span class="text-sm text-gray-500">اضغط لاختيار صورة (JPG, PNG, WEBP)</span>
-                  <input type="file" id="imgFileInput" accept="image/*" class="hidden" onchange="uploadImageFile(this)">
-                </label>
-                <div id="imgUploadProgress" class="hidden mt-2">
-                  <div class="flex items-center gap-2 text-xs text-primary font-bold">
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-bus"></i> وسيلة النقل الأرضي</div>
+            <div class="flex gap-3 flex-wrap">
+              <button type="button" onclick="setTransport(this,'باص VIP')" class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-green-500 bg-green-50 text-green-700 transport-btn" style="min-width:120px">
+                <i class="fa-solid fa-bus-simple block text-2xl mb-1"></i>باص VIP
+              </button>
+              <button type="button" onclick="setTransport(this,'باص عادي')" class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-gray-200 bg-white text-gray-500 transport-btn" style="min-width:120px">
+                <i class="fa-solid fa-bus block text-2xl mb-1"></i>باص عادي
+              </button>
+              <button type="button" onclick="setTransport(this,'تاكسي خاص')" class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-gray-200 bg-white text-gray-500 transport-btn" style="min-width:120px">
+                <i class="fa-solid fa-car-side block text-2xl mb-1"></i>تاكسي خاص
+              </button>
+            </div>
+            <select id="pTransport" class="hidden">
+              <option value="باص VIP">باص VIP</option>
+              <option value="باص عادي">باص عادي</option>
+              <option value="تاكسي خاص">تاكسي خاص</option>
+            </select>
+          </div>
+
+        </div><!-- /tab transport -->
+
+        <!-- ════════ TAB 5: CONTENT ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-content">
+
+          <!-- Image -->
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-image"></i> صورة البرنامج</div>
+            <div class="g2" style="align-items:start">
+              <div class="space-y-3">
+                <div>
+                  <label class="pkg-label"><i class="fa-solid fa-upload text-green-600 ml-1"></i>رفع من الجهاز</label>
+                  <label id="imgUploadLabel" class="flex flex-col items-center justify-center w-full border-2 border-dashed border-green-300 rounded-xl cursor-pointer bg-green-50 hover:bg-green-100 transition" style="height:80px">
+                    <i class="fa-solid fa-cloud-arrow-up text-xl text-green-600 mb-1"></i>
+                    <span class="text-xs text-gray-500">JPG, PNG, WEBP</span>
+                    <input type="file" id="imgFileInput" accept="image/*" class="hidden" onchange="uploadImageFile(this)">
+                  </label>
+                  <div id="imgUploadProgress" class="hidden mt-2 text-xs text-green-700 font-bold flex items-center gap-2">
                     <i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...
                   </div>
+                  <div id="imgUploadSuccess" class="hidden mt-2 text-xs text-green-600 font-bold">
+                    <i class="fa-solid fa-check-circle ml-1"></i> تم رفع الصورة
+                  </div>
                 </div>
-                <div id="imgUploadSuccess" class="hidden mt-2 text-xs text-green-600 font-bold">
-                  <i class="fa-solid fa-check-circle ml-1"></i> تم رفع الصورة بنجاح
+                <div>
+                  <label class="pkg-label"><i class="fa-solid fa-link text-gray-400 ml-1"></i>أو رابط صورة</label>
+                  <input type="url" id="pThumbnail" placeholder="https://example.com/image.jpg" oninput="previewImage(this.value)" class="pkg-input text-sm">
                 </div>
               </div>
-              <!-- Option B: URL -->
               <div>
-                <label class="block text-sm font-bold mb-1">
-                  <i class="fa-solid fa-link text-gray-400 ml-1"></i> أو الصق رابط صورة
-                </label>
-                <input type="url" id="pThumbnail" placeholder="https://example.com/image.jpg"
-                       oninput="previewImage(this.value)"
-                       class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-primary text-sm">
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-bold mb-2">معاينة الصورة</label>
-              <div id="imgPreviewBox" class="bg-gray-100 rounded-xl border-2 border-dashed border-gray-200 h-40 flex items-center justify-center overflow-hidden">
-                <span id="imgPreviewPlaceholder" class="text-gray-400 text-sm"><i class="fa-solid fa-image text-3xl block mb-1 text-center"></i>لا توجد صورة</span>
-                <img id="imgPreview" src="" alt="معاينة" class="hidden w-full h-full object-cover rounded-xl">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Section 6: Includes / Excludes ── -->
-        <div>
-          <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
-            <i class="fa-solid fa-list-check text-primary"></i> يشمل / لا يشمل
-          </h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="block text-sm font-bold mb-1 text-green-700"><i class="fa-solid fa-check ml-1"></i>يشمل البرنامج</label>
-              <textarea id="pIncludes" rows="4" placeholder="تذكرة الطيران ذهاباً وإياباً&#10;الإقامة في الفنادق&#10;وجبة الإفطار يومياً&#10;التأشيرة" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:border-primary"></textarea>
-              <p class="text-xs text-gray-400 mt-1">كل سطر = عنصر واحد</p>
-            </div>
-            <div>
-              <label class="block text-sm font-bold mb-1 text-red-600"><i class="fa-solid fa-xmark ml-1"></i>لا يشمل البرنامج</label>
-              <textarea id="pExcludes" rows="4" placeholder="الوجبات الإضافية&#10;المصروف الشخصي&#10;التطعيمات" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:border-primary"></textarea>
-              <p class="text-xs text-gray-400 mt-1">كل سطر = عنصر واحد</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Section 7: Itinerary ── -->
-        <div>
-          <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
-            <i class="fa-solid fa-calendar-days text-primary"></i> خطة الرحلة يوم بيوم
-          </h4>
-          <div id="itineraryList" class="space-y-3 mb-3"></div>
-          <button type="button" onclick="addDay()"
-                  class="border-2 border-dashed border-primary text-primary hover:bg-primary hover:text-white px-4 py-2 rounded-lg font-bold text-sm transition w-full">
-            <i class="fa-solid fa-plus ml-1"></i> إضافة يوم
-          </button>
-        </div>
-
-        <!-- ── Section 8: Notes & Options ── -->
-        <div>
-          <h4 class="font-bold text-gray-700 mb-3 pb-1 border-b flex items-center gap-2">
-            <i class="fa-solid fa-gear text-primary"></i> خيارات إضافية
-          </h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-bold mb-1">ملاحظات</label>
-              <textarea id="pNotes" rows="3" placeholder="أي ملاحظات إضافية..." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:border-primary"></textarea>
-            </div>
-            <div class="space-y-3">
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" id="pVisaIncluded" checked class="w-4 h-4 accent-primary">
-                <span class="font-bold text-sm">التأشيرة مشمولة في السعر</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" id="pIsFeatured" class="w-4 h-4 accent-primary">
-                <span class="font-bold text-sm">عرضه في الصفحة الرئيسية (مميز)</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" id="pIsActive" checked class="w-4 h-4 accent-primary">
-                <span class="font-bold text-sm">البرنامج نشط وظاهر للعملاء</span>
-              </label>
-              <!-- ── Pre-order ── -->
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" id="pIsPreorder" class="w-4 h-4 accent-amber-500" onchange="document.getElementById('preorderNoteWrap').classList.toggle('hidden',!this.checked)">
-                <span class="font-bold text-sm text-amber-700"><i class="fa-solid fa-clock-rotate-left ml-1 text-amber-500"></i>حجز مسبق (Preorder)</span>
-              </label>
-              <div id="preorderNoteWrap" class="hidden mt-1 pr-7">
-                <input type="text" id="pPreorderNote" placeholder="مثال: التفاصيل ستُحدد قبل 30 يوم من السفر" class="w-full border border-amber-300 bg-amber-50 rounded-lg p-2 text-sm outline-none focus:border-amber-500">
+                <label class="pkg-label">معاينة</label>
+                <div id="imgPreviewBox" class="bg-gray-100 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden" style="height:140px">
+                  <span id="imgPreviewPlaceholder" class="text-gray-400 text-center text-sm"><i class="fa-solid fa-image text-3xl block mb-1 text-gray-300"></i>لا توجد صورة</span>
+                  <img id="imgPreview" src="" alt="معاينة" class="hidden w-full h-full object-cover rounded-xl">
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Documents config -->
-          <div class="mt-5 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <h5 class="font-bold text-blue-800 mb-1 flex items-center gap-2 text-sm">
-              <i class="fa-solid fa-file-circle-check text-blue-600"></i>
-              متطلبات المستندات لكل مسافر
-            </h5>
+          <!-- Includes / Excludes -->
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-list-check"></i> يشمل / لا يشمل</div>
+            <div class="g2">
+              <div>
+                <label class="pkg-label" style="color:#15803d"><i class="fa-solid fa-check ml-1"></i>يشمل البرنامج</label>
+                <textarea id="pIncludes" rows="5" placeholder="تذكرة الطيران ذهاباً وإياباً&#10;الإقامة في الفنادق&#10;وجبة الإفطار يومياً&#10;التأشيرة" class="pkg-input" style="resize:vertical"></textarea>
+                <p class="text-xs text-gray-400 mt-1">كل سطر = عنصر واحد</p>
+              </div>
+              <div>
+                <label class="pkg-label" style="color:#dc2626"><i class="fa-solid fa-xmark ml-1"></i>لا يشمل البرنامج</label>
+                <textarea id="pExcludes" rows="5" placeholder="الوجبات الإضافية&#10;المصروف الشخصي&#10;التطعيمات" class="pkg-input" style="resize:vertical"></textarea>
+                <p class="text-xs text-gray-400 mt-1">كل سطر = عنصر واحد</p>
+              </div>
+            </div>
+          </div>
 
-            <!-- Quick presets -->
-            <!-- Per-traveler-type doc config tabs -->
-            <div class="flex gap-1 mb-3 mt-2 border-b border-blue-200">
+          <!-- Itinerary -->
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-calendar-days"></i> خطة الرحلة يوم بيوم</div>
+            <div id="itineraryList" class="space-y-3 mb-3"></div>
+            <button type="button" onclick="addDay()" class="w-full border-2 border-dashed border-green-300 text-green-700 hover:bg-green-50 px-4 py-3 rounded-xl font-bold text-sm transition">
+              <i class="fa-solid fa-plus ml-1"></i> إضافة يوم
+            </button>
+          </div>
+
+          <!-- Notes -->
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-note-sticky"></i> ملاحظات</div>
+            <textarea id="pNotes" rows="3" placeholder="أي ملاحظات إضافية..." class="pkg-input" style="resize:vertical"></textarea>
+          </div>
+
+        </div><!-- /tab content -->
+
+        <!-- ════════ TAB 6: DOCUMENTS ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-docs">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-file-circle-check"></i> متطلبات المستندات لكل مسافر</div>
+
+            <div class="flex gap-1 mb-4 border-b border-gray-200">
               <button type="button" onclick="switchDocTab('adult')" id="docTab-adult"
-                class="px-3 py-1.5 text-xs font-bold rounded-t border border-b-0 border-blue-200 bg-blue-600 text-white">
+                class="px-4 py-2 text-xs font-bold border-b-2 border-green-600 text-green-700">
                 👤 بالغ
               </button>
               <button type="button" onclick="switchDocTab('child')" id="docTab-child"
-                class="px-3 py-1.5 text-xs font-bold rounded-t border border-b-0 border-blue-200 bg-white text-blue-600">
+                class="px-4 py-2 text-xs font-bold border-b-2 border-transparent text-gray-500">
                 🧒 طفل
               </button>
               <button type="button" onclick="switchDocTab('infant')" id="docTab-infant"
-                class="px-3 py-1.5 text-xs font-bold rounded-t border border-b-0 border-blue-200 bg-white text-blue-600">
+                class="px-4 py-2 text-xs font-bold border-b-2 border-transparent text-gray-500">
                 👶 رضيع
               </button>
             </div>
@@ -528,22 +544,21 @@
               ['adult','child','infant'].forEach(t => {
                 document.getElementById('docPanel-'+t).classList.toggle('hidden', t !== type);
                 const tab = document.getElementById('docTab-'+t);
-                if (t === type) { tab.classList.add('bg-blue-600','text-white'); tab.classList.remove('bg-white','text-blue-600'); }
-                else            { tab.classList.remove('bg-blue-600','text-white'); tab.classList.add('bg-white','text-blue-600'); }
+                if (t === type) { tab.classList.add('border-green-600','text-green-700'); tab.classList.remove('border-transparent','text-gray-500'); }
+                else            { tab.classList.remove('border-green-600','text-green-700'); tab.classList.add('border-transparent','text-gray-500'); }
               });
             }
             </script>
 
-            <!-- Shared doc table builder -->
             <script>
             function docTableHTML(prefix, rows) {
-              return `<table class="w-full text-sm"><thead><tr class="text-xs text-gray-500 border-b border-blue-200">
+              return `<table class="w-full text-sm"><thead><tr class="text-xs text-gray-500 border-b">
                 <th class="text-right pb-2 font-semibold">المستند</th>
                 <th class="pb-2 font-semibold text-center text-red-600"><i class="fa-solid fa-circle-exclamation text-xs ml-1"></i>إلزامي</th>
                 <th class="pb-2 font-semibold text-center text-amber-600"><i class="fa-solid fa-circle-minus text-xs ml-1"></i>اختياري</th>
                 <th class="pb-2 font-semibold text-center text-gray-400"><i class="fa-solid fa-eye-slash text-xs ml-1"></i>مخفي</th>
-              </tr></thead><tbody class="divide-y divide-blue-100">
-              ${rows.map(r=>`<tr><td class="py-2 font-medium">${r.label}</td>
+              </tr></thead><tbody class="divide-y divide-gray-100">
+              ${rows.map(r=>`<tr><td class="py-2.5 font-medium">${r.label}</td>
                 <td class="text-center"><input type="radio" name="${prefix}_${r.key}" value="required" ${r.def==='required'?'checked':''} class="accent-red-500 w-4 h-4"></td>
                 <td class="text-center"><input type="radio" name="${prefix}_${r.key}" value="optional" ${r.def==='optional'?'checked':''} class="accent-amber-500 w-4 h-4"></td>
                 <td class="text-center"><input type="radio" name="${prefix}_${r.key}" value="hidden"   ${r.def==='hidden'?'checked':''} class="accent-gray-400 w-4 h-4"></td>
@@ -552,99 +567,247 @@
             }
             </script>
 
-            <!-- Adult docs panel -->
             <div id="docPanel-adult" class="overflow-x-auto">
               <div id="docTableAdult"></div>
-              <script>
-              document.getElementById('docTableAdult').innerHTML = docTableHTML('adult_doc', [
-                {key:'passport',       label:'<i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر',         def:'required'},
-                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية',    def:'optional'},
-                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية', def:'required'},
+              <script>document.getElementById('docTableAdult').innerHTML = docTableHTML('adult_doc', [
+                {key:'passport',       label:'<i class="fa-solid fa-passport text-green-700 text-xs ml-1"></i> جواز السفر',         def:'required'},
+                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-green-700 text-xs ml-1"></i> البطاقة الوطنية',    def:'optional'},
+                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-green-700 text-xs ml-1"></i> الصورة الشخصية', def:'required'},
                 {key:'meningitis',     label:'<i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية', def:'optional'},
                 {key:'covid',          label:'<i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19', def:'optional'},
                 {key:'birth_cert',     label:'<i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد',       def:'hidden'},
-              ]);
-              </script>
+              ]);</script>
             </div>
-
-            <!-- Child docs panel -->
             <div id="docPanel-child" class="overflow-x-auto hidden">
               <div id="docTableChild"></div>
-              <script>
-              document.getElementById('docTableChild').innerHTML = docTableHTML('child_doc', [
-                {key:'passport',       label:'<i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر',         def:'required'},
-                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية',    def:'hidden'},
-                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية', def:'required'},
+              <script>document.getElementById('docTableChild').innerHTML = docTableHTML('child_doc', [
+                {key:'passport',       label:'<i class="fa-solid fa-passport text-green-700 text-xs ml-1"></i> جواز السفر',         def:'required'},
+                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-green-700 text-xs ml-1"></i> البطاقة الوطنية',    def:'hidden'},
+                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-green-700 text-xs ml-1"></i> الصورة الشخصية', def:'required'},
                 {key:'meningitis',     label:'<i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية', def:'optional'},
                 {key:'covid',          label:'<i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19', def:'optional'},
                 {key:'birth_cert',     label:'<i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد',       def:'required'},
-              ]);
-              </script>
+              ]);</script>
             </div>
-
-            <!-- Infant docs panel -->
             <div id="docPanel-infant" class="overflow-x-auto hidden">
               <div id="docTableInfant"></div>
-              <script>
-              document.getElementById('docTableInfant').innerHTML = docTableHTML('infant_doc', [
-                {key:'passport',       label:'<i class="fa-solid fa-passport text-primary text-xs ml-1"></i> جواز السفر',         def:'optional'},
-                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-primary text-xs ml-1"></i> البطاقة الوطنية',    def:'hidden'},
-                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-primary text-xs ml-1"></i> الصورة الشخصية', def:'optional'},
+              <script>document.getElementById('docTableInfant').innerHTML = docTableHTML('infant_doc', [
+                {key:'passport',       label:'<i class="fa-solid fa-passport text-green-700 text-xs ml-1"></i> جواز السفر',         def:'optional'},
+                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-green-700 text-xs ml-1"></i> البطاقة الوطنية',    def:'hidden'},
+                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-green-700 text-xs ml-1"></i> الصورة الشخصية', def:'optional'},
                 {key:'meningitis',     label:'<i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية', def:'hidden'},
                 {key:'covid',          label:'<i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19', def:'hidden'},
                 {key:'birth_cert',     label:'<i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد',       def:'required'},
-              ]);
-              </script>
+              ]);</script>
             </div>
 
-            <!-- Add custom document -->
-            <div class="mt-3 border-t border-blue-200 pt-3">
-              <p class="text-xs font-bold text-blue-700 mb-2"><i class="fa-solid fa-plus ml-1"></i>إضافة مستند إضافي</p>
-              <div class="flex gap-2 flex-wrap">
-                <input type="text" id="customDocName" placeholder="مثال: عقد الزواج" class="flex-1 min-w-0 border border-blue-300 rounded-lg p-2 text-sm outline-none focus:border-blue-500 bg-white">
-                <button type="button" onclick="addCustomDoc()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap">
+            <div class="mt-4 pt-4 border-t">
+              <p class="text-xs font-bold text-gray-600 mb-2"><i class="fa-solid fa-plus ml-1 text-green-600"></i>إضافة مستند مخصص</p>
+              <div class="flex gap-2">
+                <input type="text" id="customDocName" placeholder="مثال: عقد الزواج" class="pkg-input flex-1">
+                <button type="button" onclick="addCustomDoc()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap">
                   <i class="fa-solid fa-plus ml-1"></i> إضافة
                 </button>
               </div>
-              <!-- Common quick-add -->
               <div class="flex flex-wrap gap-1.5 mt-2">
                 <span class="text-xs text-gray-400 font-bold self-center">شائع:</span>
-                <button type="button" onclick="quickAddDoc('عقد الزواج')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">عقد الزواج</button>
-                <button type="button" onclick="quickAddDoc('وثيقة المحرم')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">وثيقة المحرم</button>
-                <button type="button" onclick="quickAddDoc('كشف حساب بنكي')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">كشف حساب بنكي</button>
-                <button type="button" onclick="quickAddDoc('شهادة القيد العائلي')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">شهادة القيد العائلي</button>
-                <button type="button" onclick="quickAddDoc('صورة بطاقة الطفل')" class="text-xs border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded font-medium transition">صورة بطاقة الطفل</button>
-              </div>
-            </div>
-
-            <!-- Special conditions -->
-            <div class="mt-4 border-t border-blue-200 pt-3">
-              <p class="text-xs font-bold text-blue-700 mb-2"><i class="fa-solid fa-triangle-exclamation text-amber-500 ml-1"></i>شروط خاصة بالمستندات</p>
-              <textarea id="pDocConditions" rows="3" placeholder="مثال:&#10;- يُشترط أن يكون الجواز صالحاً 6 أشهر بعد تاريخ العودة&#10;- المرأة دون 45 سنة تحتاج محرم&#10;- الأطفال دون 18 سنة يحتاجون موافقة الوالدين" class="w-full border border-blue-300 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500 bg-white"></textarea>
-              <!-- Common conditions quick-add -->
-              <div class="flex flex-wrap gap-1.5 mt-2">
-                <span class="text-xs text-gray-400 font-bold self-center">إضافة سريعة:</span>
-                <button type="button" onclick="appendDocCondition('يُشترط أن يكون الجواز صالحاً 6 أشهر على الأقل بعد تاريخ العودة')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">صلاحية الجواز 6 أشهر</button>
-                <button type="button" onclick="appendDocCondition('المرأة دون 45 سنة يجب أن تسافر مع محرم أو ضمن مجموعة نسائية معتمدة')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">اشتراط المحرم</button>
-                <button type="button" onclick="appendDocCondition('يُشترط تقديم شهادة التطعيم ضد الحمى الشوكية (MenACYW) لا تزيد عن 5 سنوات')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">تطعيم الحمى الشوكية</button>
-                <button type="button" onclick="appendDocCondition('الأطفال دون 18 سنة يحتاجون موافقة خطية من الوالدين أو ولي الأمر')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">موافقة الأطفال</button>
-                <button type="button" onclick="appendDocCondition('يجب تقديم جميع المستندات كاملةً قبل 14 يوم من تاريخ المغادرة')" class="text-xs border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium transition">موعد تسليم المستندات</button>
+                <button type="button" onclick="quickAddDoc('عقد الزواج')" class="quick-chip">عقد الزواج</button>
+                <button type="button" onclick="quickAddDoc('وثيقة المحرم')" class="quick-chip">وثيقة المحرم</button>
+                <button type="button" onclick="quickAddDoc('كشف حساب بنكي')" class="quick-chip">كشف حساب</button>
+                <button type="button" onclick="quickAddDoc('شهادة القيد العائلي')" class="quick-chip">القيد العائلي</button>
               </div>
             </div>
           </div>
-        </div>
 
-      </div><!-- end scrollable body -->
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i> شروط المستندات</div>
+            <textarea id="pDocConditions" rows="4" placeholder="مثال:&#10;- يُشترط أن يكون الجواز صالحاً 6 أشهر بعد تاريخ العودة&#10;- المرأة دون 45 سنة تحتاج محرم&#10;- الأطفال دون 18 سنة يحتاجون موافقة الوالدين" class="pkg-input" style="resize:vertical"></textarea>
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              <span class="text-xs text-gray-400 font-bold self-center">إضافة سريعة:</span>
+              <button type="button" onclick="appendDocCondition('يُشترط أن يكون الجواز صالحاً 6 أشهر على الأقل بعد تاريخ العودة')" class="quick-chip quick-chip-amber">صلاحية الجواز 6 أشهر</button>
+              <button type="button" onclick="appendDocCondition('المرأة دون 45 سنة يجب أن تسافر مع محرم أو ضمن مجموعة نسائية معتمدة')" class="quick-chip quick-chip-amber">اشتراط المحرم</button>
+              <button type="button" onclick="appendDocCondition('يُشترط تقديم شهادة التطعيم ضد الحمى الشوكية (MenACYW) لا تزيد عن 5 سنوات')" class="quick-chip quick-chip-amber">تطعيم الحمى الشوكية</button>
+              <button type="button" onclick="appendDocCondition('يجب تقديم جميع المستندات كاملةً قبل 14 يوم من تاريخ المغادرة')" class="quick-chip quick-chip-amber">موعد التسليم</button>
+            </div>
+          </div>
 
-      <!-- Modal Footer -->
-      <div class="p-5 border-t bg-gray-50 flex justify-between items-center shrink-0">
-        <button onclick="closeModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-bold transition">إلغاء</button>
-        <button onclick="savePackage()" class="bg-primary hover:bg-green-700 text-white px-8 py-2 rounded-lg font-bold transition flex items-center gap-2">
-          <i class="fa-solid fa-floppy-disk"></i> حفظ البرنامج
+        </div><!-- /tab docs -->
+
+        <!-- ════════ TAB 7: SETTINGS ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-settings">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-toggle-on"></i> حالة البرنامج وخياراته</div>
+            <div class="space-y-4">
+
+              <label class="pkg-toggle">
+                <input type="checkbox" id="pIsActive" checked>
+                <div class="pkg-toggle-track"><div class="pkg-toggle-thumb"></div></div>
+                <div>
+                  <div class="pkg-toggle-label">البرنامج نشط وظاهر للعملاء</div>
+                  <p class="text-xs text-gray-400 mt-0.5">إيقاف التشغيل يُخفي البرنامج من الموقع</p>
+                </div>
+              </label>
+
+              <label class="pkg-toggle">
+                <input type="checkbox" id="pIsFeatured">
+                <div class="pkg-toggle-track"><div class="pkg-toggle-thumb"></div></div>
+                <div>
+                  <div class="pkg-toggle-label">عرضه في الصفحة الرئيسية (مميز)</div>
+                  <p class="text-xs text-gray-400 mt-0.5">يظهر في قسم العروض المميزة</p>
+                </div>
+              </label>
+
+              <label class="pkg-toggle">
+                <input type="checkbox" id="pVisaIncluded" checked>
+                <div class="pkg-toggle-track"><div class="pkg-toggle-thumb"></div></div>
+                <div>
+                  <div class="pkg-toggle-label">التأشيرة مشمولة في السعر</div>
+                  <p class="text-xs text-gray-400 mt-0.5">يُعرض شارة «تأشيرة مشمولة» على البرنامج</p>
+                </div>
+              </label>
+
+              <label class="pkg-toggle">
+                <input type="checkbox" id="pIsPreorder" onchange="document.getElementById('preorderNoteWrap').classList.toggle('hidden',!this.checked)">
+                <div class="pkg-toggle-track" style="background:#d1d5db"><div class="pkg-toggle-thumb"></div></div>
+                <div>
+                  <div class="pkg-toggle-label" style="color:#92400e"><i class="fa-solid fa-clock-rotate-left ml-1 text-amber-500"></i>حجز مسبق (Preorder)</div>
+                  <p class="text-xs text-gray-400 mt-0.5">التفاصيل تُحدد قريباً</p>
+                </div>
+              </label>
+
+              <div id="preorderNoteWrap" class="hidden pr-12">
+                <input type="text" id="pPreorderNote" placeholder="مثال: التفاصيل ستُحدد قبل 30 يوم من السفر" class="pkg-input" style="border-color:#fcd34d;background:#fffbeb">
+              </div>
+
+            </div>
+          </div>
+
+        </div><!-- /tab settings -->
+
+      </div><!-- /scrollable body -->
+
+      <!-- ── Summary Bar ── -->
+      <div id="pkgSummaryBar" class="shrink-0">
+        <span class="text-xs text-white/60 font-bold ml-2">ملخص:</span>
+        <span class="summary-pill" id="sum-title"><i class="fa-solid fa-tag"></i><span id="sumTitleText">بدون عنوان</span></span>
+        <span class="summary-pill" id="sum-dates"><i class="fa-solid fa-calendar"></i><span id="sumDatesText">بدون تواريخ</span></span>
+        <span class="summary-pill" id="sum-price"><i class="fa-solid fa-money-bill"></i><span id="sumPriceText">بدون سعر</span></span>
+      </div>
+
+      <!-- ── Footer ── -->
+      <div class="p-4 border-t bg-gray-50 flex justify-between items-center shrink-0 gap-3" style="border-radius:0 0 16px 16px">
+        <button onclick="closeModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-600 bg-white border border-gray-200 hover:bg-gray-100 transition">
+          <i class="fa-solid fa-xmark ml-1"></i>إلغاء
         </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="switchPkgTabPrev()" class="px-4 py-2.5 rounded-xl font-bold text-sm text-gray-600 bg-white border border-gray-200 hover:bg-gray-100 transition" id="pkgTabPrevBtn" style="display:none">
+            <i class="fa-solid fa-arrow-right ml-1"></i>السابق
+          </button>
+          <button type="button" onclick="switchPkgTabNext()" class="px-4 py-2.5 rounded-xl font-bold text-sm text-white bg-green-700 hover:bg-green-800 transition" id="pkgTabNextBtn">
+            التالي<i class="fa-solid fa-arrow-left mr-1"></i>
+          </button>
+          <button onclick="savePackage()" class="px-6 py-2.5 rounded-xl font-black text-sm text-white flex items-center gap-2 transition" id="pkgSaveBtn"
+            style="background:linear-gradient(135deg,#15803d,#166534);box-shadow:0 4px 12px rgba(21,128,61,.35)">
+            <i class="fa-solid fa-floppy-disk"></i> حفظ البرنامج
+          </button>
+        </div>
       </div>
     </div>
   </div>
+
+  <script>
+  // ── Tab switching ────────────────────────────────────────
+  const PKG_TABS = ['basic','pricing','hotels','transport','content','docs','settings'];
+  let _pkgTabIdx = 0;
+
+  function switchPkgTab(name) {
+    _pkgTabIdx = PKG_TABS.indexOf(name);
+    PKG_TABS.forEach(t => {
+      const btn = document.getElementById('ptab-'+t);
+      const panel = document.getElementById('ppanel-'+t);
+      const isActive = t === name;
+      btn.classList.toggle('active', isActive);
+      btn.style.color = isActive ? '#1B5E20' : 'rgba(255,255,255,.55)';
+      btn.style.borderBottomColor = isActive ? '#1B5E20' : 'transparent';
+      panel.classList.toggle('active', isActive);
+    });
+    document.getElementById('pkgTabPrevBtn').style.display = _pkgTabIdx === 0 ? 'none' : '';
+    document.getElementById('pkgTabNextBtn').style.display = _pkgTabIdx === PKG_TABS.length-1 ? 'none' : '';
+    updateSummaryBar();
+  }
+  function switchPkgTabNext() { if (_pkgTabIdx < PKG_TABS.length-1) switchPkgTab(PKG_TABS[_pkgTabIdx+1]); }
+  function switchPkgTabPrev() { if (_pkgTabIdx > 0) switchPkgTab(PKG_TABS[_pkgTabIdx-1]); }
+
+  // ── Summary bar ─────────────────────────────────────────
+  function updateSummaryBar() {
+    const title = document.getElementById('pTitle')?.value?.trim() || 'بدون عنوان';
+    document.getElementById('sumTitleText').textContent = title.length > 25 ? title.slice(0,25)+'…' : title;
+    const dep = document.getElementById('pDeparture')?.value;
+    const ret = document.getElementById('pReturn')?.value;
+    document.getElementById('sumDatesText').textContent = (dep && ret) ? dep + ' → ' + ret : 'بدون تواريخ';
+    const price = document.getElementById('pPrice')?.value;
+    document.getElementById('sumPriceText').textContent = price ? Number(price).toLocaleString('ar-EG') + ' ج.م' : 'بدون سعر';
+  }
+  ['pTitle','pDeparture','pReturn','pPrice'].forEach(id => {
+    setTimeout(() => { const el = document.getElementById(id); if(el) el.addEventListener('input', updateSummaryBar); }, 300);
+  });
+
+  // ── Price summary badges ─────────────────────────────────
+  function updatePriceSummary() {
+    const fmt = v => v ? Number(v).toLocaleString('ar-EG') + ' ج.م' : '—';
+    document.getElementById('ps-adult').textContent  = fmt(document.getElementById('pPrice')?.value);
+    document.getElementById('ps-child').textContent  = fmt(document.getElementById('pPriceChild')?.value);
+    document.getElementById('ps-infant').textContent = fmt(document.getElementById('pPriceInfant')?.value);
+  }
+
+  // ── Auto-calc duration ──────────────────────────────────
+  function autoCalcDuration() {
+    const d = document.getElementById('pDeparture')?.value;
+    const r = document.getElementById('pReturn')?.value;
+    if (d && r) {
+      const nights = Math.round((new Date(r) - new Date(d)) / 86400000);
+      if (nights > 0) document.getElementById('pDuration').value = nights;
+    }
+    updateSummaryBar();
+  }
+
+  // ── Departure city picker ────────────────────────────────
+  function pickDepartureCity(btn, city) {
+    document.querySelectorAll('#departureCityPicker .quick-chip').forEach(b => {
+      b.style.background = ''; b.style.borderColor = ''; b.style.color = '';
+    });
+    btn.style.background = '#f0fdf4'; btn.style.borderColor = '#86efac'; btn.style.color = '#14532d';
+    document.getElementById('pDepartureCity').value = city;
+  }
+  // sync select → chips on load
+  function syncDepartureCityChips(city) {
+    document.querySelectorAll('#departureCityPicker .quick-chip').forEach(b => {
+      const match = b.textContent.trim() === city;
+      b.style.background = match ? '#f0fdf4' : '';
+      b.style.borderColor = match ? '#86efac' : '';
+      b.style.color = match ? '#14532d' : '';
+    });
+  }
+
+  // ── Flight type toggle ──────────────────────────────────
+  function setFlightType(val) {
+    document.getElementById('pFlightType').value = val;
+    const isDirect = val === 'مباشر';
+    document.getElementById('flightTypeDirect').className = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm ' + (isDirect ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-500');
+    document.getElementById('flightTypeStop').className   = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm ' + (!isDirect ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-500');
+  }
+
+  // ── Transport toggle ────────────────────────────────────
+  function setTransport(btn, val) {
+    document.getElementById('pTransport').value = val;
+    document.querySelectorAll('.transport-btn').forEach(b => {
+      b.className = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-gray-200 bg-white text-gray-500 transport-btn';
+    });
+    btn.className = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-green-500 bg-green-50 text-green-700 transport-btn';
+    btn.style.minWidth = '120px';
+  }
+  </script>
 
 <script>
   let itineraryItems = [];
@@ -1073,6 +1236,24 @@
     }
 
     renderItinerary();
+    // Reset to first tab
+    if (typeof switchPkgTab === 'function') switchPkgTab('basic');
+    // Sync departure city chips
+    const depCity = document.getElementById('pDepartureCity')?.value;
+    if (depCity && typeof syncDepartureCityChips === 'function') syncDepartureCityChips(depCity);
+    // Sync flight type UI
+    const ft = document.getElementById('pFlightType')?.value || 'مباشر';
+    if (typeof setFlightType === 'function') setFlightType(ft);
+    // Sync transport UI
+    const tr = document.getElementById('pTransport')?.value || 'باص VIP';
+    document.querySelectorAll('.transport-btn').forEach(b => {
+      const match = b.textContent.trim() === tr;
+      b.className = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm transport-btn ' + (match ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-500');
+      b.style.minWidth = '120px';
+    });
+    // Sync price badges
+    if (typeof updatePriceSummary === 'function') updatePriceSummary();
+    if (typeof updateSummaryBar === 'function') updateSummaryBar();
     document.getElementById('pkgModal').classList.remove('hidden');
     document.getElementById('pkgModal').classList.add('flex');
   }
@@ -1267,6 +1448,16 @@
             <div>
               <p class="font-bold text-gray-800 max-w-[220px] truncate">${pkg.title}</p>
               <p class="text-xs text-gray-400">${pkg.season || ''}</p>
+              ${(() => {
+                const mh = Array.isArray(pkg.mecca_hotels)  ? pkg.mecca_hotels  : [];
+                const dh = Array.isArray(pkg.madina_hotels) ? pkg.madina_hotels : [];
+                const hasMeccaTiers  = mh.length > 0 && mh.some(h => (h.room_tiers||[]).length > 0);
+                const hasMadinaTiers = dh.length > 0 && dh.some(h => (h.room_tiers||[]).length > 0);
+                if (!hasMeccaTiers || !hasMadinaTiers) {
+                  return `<span class="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold mt-0.5"><i class="fa-solid fa-triangle-exclamation fa-xs"></i>يحتاج فنادق وغرف</span>`;
+                }
+                return '';
+              })()}
             </div>
           </div>
         </td>
@@ -1528,13 +1719,8 @@ ${pkg.notes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-ra
 
   document.addEventListener('DOMContentLoaded', async () => {
     adminCheckAuth().then(ok => { if (ok) loadAdminPackages(); });
-    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-      document.getElementById('mobileDrawer').classList.remove('hidden');
-    });
-  });
-  function closeDrawer() { document.getElementById('mobileDrawer').classList.add('hidden'); }
-
-  // ══════════════════════════════════════
+});
+// ══════════════════════════════════════
   //  DOCUMENT CONFIG HELPERS
   // ══════════════════════════════════════
 

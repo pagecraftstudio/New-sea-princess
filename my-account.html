@@ -135,7 +135,7 @@
 <header class="site-header">
   <div class="header-inner">
     <a href="/index.html" style="display:flex;align-items:center;gap:6px;color:#fff;font-size:16px;font-weight:900;text-decoration:none;">
-      <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" style="height:38px;" onerror="this.style.display='none'">
+      <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" style="height:38px;" decoding="async" onerror="this.style.display='none'">
     </a>
     <nav class="hidden md:flex" style="gap:18px;">
       <a href="/index.html">الرئيسية</a>
@@ -627,5 +627,14 @@ document.addEventListener('DOMContentLoaded', loadUser);
     </a>
     &nbsp;— Founded by <span style="color:#c9a84c;font-weight:600;">Moaaz &amp; Malak</span>
   </div>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(reg => { setInterval(() => reg.update(), 3600000); })
+      .catch(() => {});
+  });
+}
+</script>
 </body>
 </html>

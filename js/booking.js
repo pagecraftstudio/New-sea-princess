@@ -228,7 +228,7 @@ const bookingController = {
                     n.innerHTML = `<p class="font-bold"><i class="fa-solid fa-star ml-2 text-blue-500"></i>هذا البرنامج متاح كحجز مسبق (Pre-order)</p>
                         <p class="text-blue-600 mt-1">${data.preorder_note || 'سيتواصل معك فريقنا لإتمام التفاصيل بعد تأكيد المواعيد.'}</p>`;
                     const step0 = document.getElementById('step0');
-                    if (step0) step0.prepend(n);
+                    if (step0) step0.prepend(n);  // counts step is step0
                 }
             }
 
@@ -273,18 +273,17 @@ const bookingController = {
         const madinaHotels = pkg.madina_hotels || [];
         const allHotels    = [...meccaHotels, ...madinaHotels];
 
-        const step0 = document.getElementById('step0');
+        const stepHotel = document.getElementById('step1');
 
-        // If no hotels at all — skip step 0 entirely and jump straight to step 1
+        // If no hotels at all — skip hotel step entirely
         if (allHotels.length === 0) {
-            this._skipStep0();
+            this.hotelsRequired = false;
             const noHotelNotice = document.getElementById('noHotelNotice');
             if (noHotelNotice) noHotelNotice.classList.remove('hidden');
             return;
         }
-
-        // Show step0
-        if (step0) step0.classList.remove('hidden');
+        this.hotelsRequired = true;
+        // Note: step1 visibility is managed by nextStep() navigation — do not show here
 
         const fill = (city, hotels, wrapperId, selectId) => {
             const wrapper = document.getElementById(wrapperId);
@@ -321,18 +320,10 @@ const bookingController = {
         fill('madina', madinaHotels, 'madinaHotelWrapper', 'madinaHotelSelect');
     },
 
-    // Skip step 0 — used when package has no hotels
+    // _skipStep0 kept for compatibility — hotel step is now step1; counts is step0 (already shown)
     _skipStep0() {
-        this.step = 1;
-        const step0 = document.getElementById('step0');
-        const step1 = document.getElementById('step1');
-        const label0 = document.getElementById('stepLabel0');
-        const label1 = document.getElementById('stepLabel1');
-        if (step0) step0.classList.add('hidden');
-        if (step1) step1.classList.remove('hidden');
-        if (label0) { label0.classList.remove('text-primary'); label0.classList.add('text-gray-300'); }
-        if (label1) label1.classList.add('text-primary');
-        document.getElementById('progressBar').style.width = '50%';
+        // Hotel step (step1) is skipped — counts (step0) is already the first visible step
+        this.step = 0;
     },
 
     // Render multi-room quantity selectors for a hotel's room tiers
@@ -584,17 +575,19 @@ const bookingController = {
     },
 
     nextStep() {
+        console.log("[booking] nextStep called, step=", this.step);
         if (!this.packageData) {
             showInlineError('booking-validation-error', 'تعذّر تحميل بيانات البرنامج. الرجاء العودة لاختيار برنامج صالح.');
             return;
         }
 
-        // ── Step 0: validate hotel selection ──────────────────────────
-        if (this.step === 0) {
+        // ── Step 0: counts & pricing — no extra validation needed ────
+
+        // ── Step 1: validate hotel selection + rooms fit passengers ────
+        if (this.step === 1) {
             const meccaHotels  = this.packageData.mecca_hotels  || [];
             const madinaHotels = this.packageData.madina_hotels || [];
 
-            // Require selection only when there are multiple hotels per city
             if (meccaHotels.length > 1 && !this.selectedMeccaHotel) {
                 const errEl = document.getElementById('booking-validation-error-step0');
                 if (errEl) { errEl.querySelector('[data-msg]').textContent = 'يرجى اختيار فندق مكة المكرمة.'; errEl.classList.remove('hidden'); }
@@ -607,13 +600,9 @@ const bookingController = {
                 document.getElementById('madinaHotelWrapper')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
-            // Hide error if all good
             const errEl = document.getElementById('booking-validation-error-step0');
             if (errEl) errEl.classList.add('hidden');
-        }
 
-        // ── Step 1: validate rooms fit passengers ──────────────────────
-        if (this.step === 1) {
             if (!this._roomsFitPassengers('mecca')) {
                 showInlineError('booking-validation-error', '⚠️ الغرف المختارة في مكة المكرمة غير كافية لعدد المسافرين. يرجى إضافة غرف إضافية.');
                 document.getElementById('meccaRoomFitStatus')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -624,6 +613,7 @@ const bookingController = {
                 document.getElementById('madinaRoomFitStatus')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
+
             this.buildTravelersForm();
         }
 
@@ -1282,6 +1272,17 @@ const bookingController = {
             document.getElementById('goToTrackingBtn').onclick = () => {
                 window.location.href = `/tracking.html?booking=${data.booking_number}`;
             };
+
+            // ── Send confirmation email (non-blocking — never fails the booking) ──
+            if (data.customer_email) {
+                window.db.functions.invoke('send-booking-email', { body: { booking: data } })
+                    .then(({ error: emailErr }) => {
+                        if (emailErr) console.warn('[NSP] Email send failed (non-critical):', emailErr);
+                        else console.log('[NSP] Booking confirmation email sent to', data.customer_email);
+                    })
+                    .catch(err => console.warn('[NSP] Email invoke error (non-critical):', err));
+            }
+
             this.sendWhatsApp(data, docWarningsList);
 
         } catch(err) {

@@ -74,13 +74,21 @@
     <div class="btns">
       <a href="/index.html"    class="btn btn-green"><i class="fa-solid fa-house"></i> الرئيسية</a>
       <a href="/packages.html" class="btn btn-gold"><i class="fa-solid fa-suitcase-rolling"></i> البرامج</a>
-      <a href="https://wa.me/201555154996" target="_blank" class="btn btn-wa"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>
+      <a id="backBtn"          class="btn" style="background:rgba(255,255,255,.08);color:#d1d5db;border-color:#374151;cursor:pointer;" onclick="history.length>1?history.back():location.href='/index.html'">
+        <i class="fa-solid fa-arrow-right"></i> الصفحة السابقة
+      </a>
     </div>
+
+    <p id="redirectNotice" style="font-size:12px;color:#6b7280;margin-bottom:16px;display:none;">
+      سيتم توجيهك للرئيسية خلال <span id="countdown">10</span> ثوانٍ…
+      <a href="/index.html" style="color:#B8860B;font-weight:700;margin-right:4px;">اذهب الآن</a>
+    </p>
 
     <div class="quick">
       <a href="/guide.html">دليل العمرة</a><span>•</span>
       <a href="/hajj-guide.html">دليل الحج</a><span>•</span>
       <a href="/tracking.html">تتبع حجزك</a><span>•</span>
+      <a href="/compare.html">مقارنة البرامج</a><span>•</span>
       <a href="/reviews.html">آراء العملاء</a><span>•</span>
       <a href="/contact.html">تواصل معنا</a>
     </div>
@@ -89,6 +97,22 @@
   <div class="footer-bar">نيو سي برنسيس  فرع الزقازيق | د. شيماء السعداوي ود. محمد دحروج</div>
 
   <script>
+    // Auto-redirect countdown (only for non-admin pages)
+    const isAdmin = document.referrer.includes('/nsp-control-8x4k/');
+    if (!isAdmin) {
+      const notice = document.getElementById('redirectNotice');
+      const tick   = document.getElementById('countdown');
+      notice.style.display = 'block';
+      let n = 10;
+      const t = setInterval(() => {
+        n--;
+        tick.textContent = n;
+        if (n <= 0) { clearInterval(t); window.location.href = '/index.html'; }
+      }, 1000);
+      // Cancel if user interacts
+      document.querySelectorAll('.btn, .quick a').forEach(el => el.addEventListener('click', () => clearInterval(t)));
+    }
+
     // Stars
     const c = document.getElementById('stars');
     for(let i=0;i<60;i++){
@@ -112,5 +136,12 @@
     </a>
     &nbsp;— Founded by <span style="color:#c9a84c;font-weight:600;">Moaaz &amp; Malak</span>
   </div>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
+</script>
 </body>
 </html>

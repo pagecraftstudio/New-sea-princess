@@ -173,7 +173,7 @@
   <!-- Mobile Drawer -->
   <div id="mobileNavDrawer" style="position:fixed;top:0;right:0;height:100%;width:288px;background:linear-gradient(180deg,#0D1B0E 0%,#0A150B 100%);z-index:10002;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,.4);">
     <div style="padding:20px 20px 16px;border-bottom:1px solid rgba(184,134,11,.2);display:flex;justify-content:space-between;align-items:center;">
-      <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" style="height:38px;width:auto;">
+      <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" style="height:38px;width:auto;" decoding="async">
       <button onclick="closeMobileNav()" style="color:rgba(255,255,255,.6);background:none;border:none;font-size:1.4rem;cursor:pointer;line-height:1;">✕</button>
     </div>
     <nav style="flex:1;overflow-y:auto;padding:10px 0;">
@@ -202,7 +202,7 @@
   <header style="position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#0D1B0E 0%,#102213 100%);box-shadow:0 2px 16px rgba(0,0,0,.25);border-bottom:1px solid rgba(184,134,11,.25);">
     <div class="container mx-auto px-4 flex justify-between items-center" style="height:68px;">
       <a href="/index.html" style="display:flex;align-items:center;text-decoration:none;flex-shrink:0;">
-        <img loading="lazy" src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" style="height:46px;width:auto;">
+        <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" style="height:46px;width:auto;" decoding="async">
       </a>
 
       <nav class="hidden md:flex items-center" style="gap:22px;">
@@ -354,7 +354,7 @@
         <div class="order-1 md:order-2 flex justify-center relative">
           <div class="relative">
             <div class="arch-frame">
-              <img loading="lazy" src="/assets/hero-supervisors.jpg" alt="مشرفو نيو سي برنسيس فرع الزقازيق في رحلة العمرة">
+              <img fetchpriority="high" decoding="async" src="/assets/hero-supervisors.jpg" alt="مشرفو نيو سي برنسيس فرع الزقازيق في رحلة العمرة">
             </div>
             <div class="arch-frame-border"></div>
             <div class="arch-medallion" style="top:-10px;left:50%;transform:translateX(-50%);"><i class="fa-solid fa-kaaba"></i></div>
@@ -362,13 +362,13 @@
             <div class="arch-medallion" style="bottom:-10px;right:-10px;width:26px;height:26px;"><i class="fa-solid fa-star" style="font-size:9px;"></i></div>
 
             <!-- Floating supervisor logo: Dr. Mohamed -->
-            <img loading="lazy" src="/assets/dr-mohamed.jpg" alt="الداعية د. محمد دحروج" class="floating-logo"
+            <img loading="lazy" decoding="async" src="/assets/dr-mohamed.jpg" alt="الداعية د. محمد دحروج" class="floating-logo"
                  style="position:absolute;top:30%;left:-60px;width:84px;height:84px;border-radius:50%;object-fit:cover;
                         box-shadow:0 0 0 4px rgba(13,27,14,.9), 0 0 28px 6px rgba(46,125,50,.65);
                         animation:floatLogo 4.5s ease-in-out infinite;z-index:20;">
 
             <!-- Floating supervisor logo: Dr. Shaimaa -->
-            <img loading="lazy" src="/assets/dr-shaimaa.jpg" alt="د. شيماء السعداوي" class="floating-logo"
+            <img loading="lazy" decoding="async" src="/assets/dr-shaimaa.jpg" alt="د. شيماء السعداوي" class="floating-logo"
                  style="position:absolute;top:25%;right:-60px;width:84px;height:84px;border-radius:50%;object-fit:cover;
                         box-shadow:0 0 0 4px rgba(13,27,14,.9), 0 0 28px 6px rgba(184,134,11,.65);
                         animation:floatLogo 4.5s ease-in-out infinite .8s;z-index:20;">
@@ -494,7 +494,7 @@
   <footer class="bg-darkBg text-offWhite pt-16 pb-8 relative" style="border-top:1px solid transparent;background-image:linear-gradient(#0D1B0E,#0D1B0E),linear-gradient(90deg,transparent,#B8860B,transparent);background-origin:border-box;background-clip:padding-box,border-box;border-top-width:2px;">
     <div class="container mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
       <div class="col-span-1 md:col-span-2">
-        <img loading="lazy" src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" class="h-16 w-auto object-contain mb-4">
+        <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" class="h-16 w-auto object-contain mb-4">
         <p class="mb-4 text-gray-400">إدارة: د. شيماء السعداوي والداعية د. محمد دحروج وأ. ياسمين منصور</p>
         <div class="inline-flex items-center gap-2 bg-gold/10 border border-gold/30 rounded-lg px-4 py-2 mb-4">
           <i class="fa-solid fa-certificate text-gold text-sm"></i>
@@ -635,7 +635,7 @@ async function subscribeNewsletter() {
               <div class="pkg-card" style="border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;position:relative;transition:.3s;border-top:3px solid #B8860B;">
                 <div style="position:absolute;top:12px;right:12px;${badgeStyle};padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700;z-index:10;">${pkg.category}</div>
                 <div class="pkg-img-wrap" style="height:192px;overflow:hidden;position:relative;">
-                  <img src="${img}" alt="${pkg.title}" style="width:100%;height:100%;object-fit:cover;transition:.5s;" onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='flex'">
+                  <img loading="lazy" decoding="async" src="${img}" alt="${pkg.title}" style="width:100%;height:100%;object-fit:cover;transition:.5s;" onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='flex'">
                   <div class="img-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
                     <i class="fa-solid fa-kaaba" style="font-size:40px;color:#1B5E20;opacity:.4;"></i>
                   </div>
@@ -680,5 +680,14 @@ async function subscribeNewsletter() {
     </a>
     &nbsp;— Founded by <span style="color:#c9a84c;font-weight:600;">Moaaz &amp; Malak</span>
   </div>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(reg => { setInterval(() => reg.update(), 3600000); })
+      .catch(() => {});
+  });
+}
+</script>
 </body>
 </html>

@@ -97,7 +97,7 @@
     <!-- Header -->
     <div class="auth-card-header">
       <a href="/index.html">
-        <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" style="height:40px;margin:0 auto 14px;display:block;"
+        <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" style="height:40px;margin:0 auto 14px;display:block;" decoding="async"
              onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex'">
         <div id="logoFallback" style="display:none;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;">
           <i class="fa-solid fa-kaaba" style="color:#DAA520;font-size:22px;"></i>
@@ -407,5 +407,12 @@ document.addEventListener('DOMContentLoaded', () => {
     </a>
     &nbsp;— Founded by <span style="color:#c9a84c;font-weight:600;">Moaaz &amp; Malak</span>
   </div>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
+</script>
 </body>
 </html>
