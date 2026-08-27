@@ -391,45 +391,6 @@
                          class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">تاريخ انتهاء الجواز <span class="text-red-500">*</span></label>
-                  <input id="nb_passport_expiry" type="date"
-                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
-                  <p class="text-xs text-amber-600 mt-0.5"><i class="fa-solid fa-triangle-exclamation ml-1"></i>صالح 6 أشهر على الأقل بعد المغادرة</p>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">الجنسية <span class="text-red-500">*</span></label>
-                  <input id="nb_nationality" type="text" placeholder="مصري / Egyptian" value="مصري" maxlength="50"
-                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">محل الميلاد <span class="text-red-500">*</span></label>
-                  <input id="nb_place_of_birth" type="text" placeholder="القاهرة" maxlength="80"
-                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">تاريخ الميلاد <span class="text-red-500">*</span></label>
-                  <input id="nb_dob" type="date"
-                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">الجنس <span class="text-red-500">*</span></label>
-                  <select id="nb_gender" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white">
-                    <option value="">— اختر —</option>
-                    <option value="male">ذكر</option>
-                    <option value="female">أنثى</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">الحالة الاجتماعية <span class="text-red-500">*</span></label>
-                  <select id="nb_marital" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white">
-                    <option value="">— اختر —</option>
-                    <option value="single">أعزب / عزباء</option>
-                    <option value="married">متزوج / متزوجة</option>
-                    <option value="divorced">مطلق / مطلقة</option>
-                    <option value="widowed">أرمل / أرملة</option>
-                  </select>
-                </div>
-                <div>
                   <label class="block text-xs font-bold text-gray-500 mb-1">المحافظة</label>
                   <select id="nb_governorate" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white">
                     <option value="">-- اختر المحافظة --</option>
@@ -498,15 +459,45 @@
                 </div>
               </div>
 
-              <!-- Traveler detail cards (optional) -->
+              <!-- Traveler detail cards (required — one per passenger) -->
               <div class="flex justify-between items-center mb-2">
-                <p class="text-xs font-bold text-gray-600"><i class="fa-solid fa-id-card ml-1 text-primary"></i>بيانات المرافقين (اختياري)</p>
+                <p class="text-xs font-bold text-gray-600"><i class="fa-solid fa-id-card ml-1 text-primary"></i>بيانات المسافرين <span class="text-red-500">*</span></p>
                 <button type="button" onclick="nbAddTravelerCard()"
                         class="text-xs bg-primary/10 hover:bg-primary/20 text-primary font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1">
-                  <i class="fa-solid fa-plus"></i> إضافة مرافق
+                  <i class="fa-solid fa-plus"></i> إضافة مسافر
                 </button>
               </div>
-              <div id="nb_travelers_list" class="space-y-2"></div>
+              <p class="text-xs text-amber-600 mb-2"><i class="fa-solid fa-triangle-exclamation ml-1"></i>يرجى إضافة بيانات كل مسافر حسب متطلبات البرنامج</p>
+              <div id="nb_travelers_list" class="space-y-3"></div>
+            </fieldset>
+
+            <!-- Hotel selection (shown when package has hotels) -->
+            <fieldset id="nb_hotel_section" class="hidden border border-blue-200 rounded-2xl p-4 bg-blue-50/30">
+              <legend class="text-xs font-bold text-primary px-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-hotel text-blue-500"></i> اختيار الفندق والغرف
+              </legend>
+              <!-- Mecca hotel -->
+              <div id="nb_mecca_hotel_wrapper" class="hidden mt-3">
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">
+                  <i class="fa-solid fa-kaaba ml-1 text-primary"></i>فندق مكة المكرمة <span class="text-red-500">*</span>
+                </label>
+                <select id="nb_mecca_hotel_select" onchange="nbOnHotelChange('mecca')"
+                        class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white mb-2">
+                  <option value="">-- اختر فندق مكة --</option>
+                </select>
+                <div id="nb_mecca_rooms_grid" class="space-y-2"></div>
+              </div>
+              <!-- Madina hotel -->
+              <div id="nb_madina_hotel_wrapper" class="hidden mt-3">
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">
+                  <i class="fa-solid fa-mosque ml-1 text-green-600"></i>فندق المدينة المنورة <span class="text-red-500">*</span>
+                </label>
+                <select id="nb_madina_hotel_select" onchange="nbOnHotelChange('madina')"
+                        class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white mb-2">
+                  <option value="">-- اختر فندق المدينة --</option>
+                </select>
+                <div id="nb_madina_rooms_grid" class="space-y-2"></div>
+              </div>
             </fieldset>
 
             <!-- Special requests -->
@@ -2125,12 +2116,29 @@
       if (!name)    { nbShowError('يرجى إدخال اسم العميل'); return false; }
       if (!phone)   { nbShowError('يرجى إدخال رقم الهاتف'); return false; }
       if (adults < 1){ nbShowError('يجب وجود بالغ واحد على الأقل'); return false; }
-      if (!document.getElementById('nb_passport_expiry').value)  { nbShowError('يرجى إدخال تاريخ انتهاء الجواز'); return false; }
-      if (!document.getElementById('nb_nationality').value.trim()){ nbShowError('يرجى إدخال الجنسية'); return false; }
-      if (!document.getElementById('nb_place_of_birth').value.trim()){ nbShowError('يرجى إدخال محل الميلاد'); return false; }
-      if (!document.getElementById('nb_dob').value)              { nbShowError('يرجى إدخال تاريخ الميلاد'); return false; }
-      if (!document.getElementById('nb_gender').value)           { nbShowError('يرجى تحديد الجنس'); return false; }
-      if (!document.getElementById('nb_marital').value)          { nbShowError('يرجى تحديد الحالة الاجتماعية'); return false; }
+
+      // Validate each traveler card
+      const cards = document.querySelectorAll('#nb_travelers_list .traveler-card');
+      for (const card of cards) {
+        const idx  = card.id.replace('tcard_','');
+        const tname = document.getElementById(`t_name_${idx}`)?.value?.trim();
+        if (!tname) { nbShowError('يرجى إدخال اسم كل مسافر'); return false; }
+      }
+
+      // Validate hotels (if section visible)
+      const hotelSection = document.getElementById('nb_hotel_section');
+      if (!hotelSection.classList.contains('hidden')) {
+        const meccaWrap  = document.getElementById('nb_mecca_hotel_wrapper');
+        const madinaWrap = document.getElementById('nb_madina_hotel_wrapper');
+        if (meccaWrap && !meccaWrap.classList.contains('hidden')) {
+          const val = document.getElementById('nb_mecca_hotel_select')?.value;
+          if (!val && val !== '0') { nbShowError('يرجى اختيار فندق مكة المكرمة'); return false; }
+        }
+        if (madinaWrap && !madinaWrap.classList.contains('hidden')) {
+          const val = document.getElementById('nb_madina_hotel_select')?.value;
+          if (!val && val !== '0') { nbShowError('يرجى اختيار فندق المدينة المنورة'); return false; }
+        }
+      }
     }
     if (step === 3) {
       const total = parseFloat(document.getElementById('nb_total_price').value) || 0;
@@ -2142,8 +2150,7 @@
   // ── Reset ─────────────────────────────────────────────
   function resetNewBookingForm() {
     ['nb_customer_name','nb_customer_phone','nb_customer_phone2','nb_customer_email',
-     'nb_national_id','nb_passport','nb_passport_expiry','nb_nationality','nb_place_of_birth',
-     'nb_dob','nb_pkg_search','nb_special_requests',
+     'nb_national_id','nb_passport','nb_pkg_search','nb_special_requests',
      'nb_coupon_code','nb_payment_note'].forEach(id => {
        const el = document.getElementById(id);
        if (el) el.value = '';
@@ -2156,13 +2163,14 @@
     document.getElementById('nb_remaining').value    = '';
     document.getElementById('nb_status').value       = 'pending';
     document.getElementById('nb_booking_type').value = 'standard';
-    document.getElementById('nb_gender').value        = '';
-    document.getElementById('nb_marital').value       = '';
-    document.getElementById('nb_nationality').value   = 'مصري';
     document.getElementById('nb_nid_age').classList.add('hidden');
     document.getElementById('nb_coupon_result').classList.add('hidden');
     document.getElementById('nb_package_card').classList.add('hidden');
     document.getElementById('nb_travelers_list').innerHTML = '';
+    _nbHotelSelections = { mecca: null, madina: null };
+    window._nbRoomTierSelections = {};
+    document.getElementById('nb_hotel_section')?.classList.add('hidden');
+    _travelerIdx = 0;
     document.getElementById('nb_pay_bar').style.width = '0%';
     document.getElementById('nb_pay_pct').textContent = '0%';
     document.getElementById('nbSubmitBtn').disabled = false;
@@ -2180,7 +2188,7 @@
       '<p class="text-xs text-gray-400 text-center py-4"><i class="fa-solid fa-spinner animate-spin ml-2"></i>جاري التحميل…</p>';
     const { data, error } = await window.db
       .from('packages')
-      .select('id, title, price_per_person, price_child, price_infant, departure_date, category, available_seats')
+      .select('id, title, price_per_person, price_child, price_infant, departure_date, category, available_seats, mecca_hotels, madina_hotels')
       .eq('is_active', true)
       .order('departure_date', { ascending: true, nullsFirst: false });
     if (error || !data) {
@@ -2248,6 +2256,7 @@
     document.getElementById('nb_pkg_price_child').textContent = pkg.price_child ? window.formatCurrency(pkg.price_child) : '—';
     document.getElementById('nb_pkg_seats').textContent       = pkg.available_seats > 0 ? `${pkg.available_seats} مقعد` : 'ممتلئ';
     nbHideError();
+    nbRenderHotelSection(pkg);
   }
 
   // ── Traveler counter buttons ───────────────────────────
@@ -2259,81 +2268,92 @@
     recalcNbTotal();
   }
 
-  // ── Traveler detail cards ─────────────────────────────
+  // ── Traveler detail cards (full — matches customer-facing form) ──────────
   let _travelerIdx = 0;
-  function nbAddTravelerCard() {
+  function nbAddTravelerCard(defaultType = 'adult') {
     const idx = _travelerIdx++;
     const el = document.createElement('div');
-    el.className = 'traveler-card';
+    el.className = 'traveler-card border border-gray-200 rounded-2xl p-4 bg-white relative';
     el.id = `tcard_${idx}`;
     el.innerHTML = `
       <button type="button" onclick="nbRemoveTraveler(${idx})"
-              class="absolute top-2 left-2 text-gray-300 hover:text-red-500 transition text-sm">
-        <i class="fa-solid fa-circle-xmark"></i>
+              class="absolute top-2 left-2 text-gray-300 hover:text-red-500 transition text-sm z-10">
+        <i class="fa-solid fa-circle-xmark text-base"></i>
       </button>
-      <p class="text-xs font-bold text-primary mb-3"><i class="fa-solid fa-user ml-1"></i>مرافق ${idx+1}</p>
-      <div class="grid grid-cols-2 gap-2">
-        <div class="col-span-2">
-          <label class="block text-xs text-gray-500 mb-0.5">الاسم الرباعي <span class="text-red-500">*</span></label>
-          <input type="text" placeholder="الاسم كما في الجواز" maxlength="80"
-                 id="t_name_${idx}"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
+
+      <!-- Header row: type selector -->
+      <div class="flex items-center gap-3 mb-4 pr-6">
+        <i class="fa-solid fa-user-circle text-primary text-lg"></i>
+        <select id="t_type_${idx}" onchange="nbOnTravelerTypeChange(${idx})"
+                class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold focus:border-primary outline-none bg-gray-50">
+          <option value="adult"${defaultType==='adult'?' selected':''}>بالغ (18+)</option>
+          <option value="child"${defaultType==='child'?' selected':''}>طفل (2–11)</option>
+          <option value="infant"${defaultType==='infant'?' selected':''}>رضيع (0–2)</option>
+        </select>
+        <span class="text-xs text-gray-400" id="t_label_${idx}">مسافر ${idx+1}</span>
+      </div>
+
+      <!-- Basic info -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-gray-500 mb-1">الاسم الرباعي <span class="text-red-500">*</span></label>
+          <input type="text" id="t_name_${idx}" placeholder="الاسم كما في جواز السفر" maxlength="100" required
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none">
         </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">النوع</label>
-          <select id="t_type_${idx}" class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none bg-white">
-            <option value="adult">بالغ</option>
-            <option value="child">طفل (2–11)</option>
-            <option value="infant">رضيع (0–2)</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">الرقم القومي</label>
-          <input type="text" placeholder="14 رقم" maxlength="14" dir="ltr"
-                 id="t_id_${idx}"
+        <div id="t_nid_wrap_${idx}">
+          <label class="block text-xs font-bold text-gray-500 mb-1">الرقم القومي</label>
+          <input type="text" id="t_nid_${idx}" placeholder="14 رقم" maxlength="14"
                  oninput="this.value=this.value.replace(/[^0-9]/g,'')"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none" dir="ltr">
         </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">رقم الجواز</label>
-          <input type="text" placeholder="A00000000" maxlength="20" dir="ltr"
-                 id="t_passport_${idx}"
+        <div id="t_passport_wrap_${idx}">
+          <label class="block text-xs font-bold text-gray-500 mb-1">رقم جواز السفر <span class="text-red-500">*</span></label>
+          <input type="text" id="t_passport_${idx}" placeholder="A00000000" maxlength="20"
                  oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase()"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none" dir="ltr">
+        </div>
+        <div id="t_passport_exp_wrap_${idx}">
+          <label class="block text-xs font-bold text-gray-500 mb-1">تاريخ انتهاء الجواز <span class="text-red-500">*</span></label>
+          <input type="date" id="t_passport_exp_${idx}"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none text-gray-600">
+          <p class="text-xs text-amber-600 mt-0.5"><i class="fa-solid fa-triangle-exclamation ml-1"></i>يجب صلاحية 6 أشهر على الأقل</p>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-0.5">تاريخ انتهاء الجواز <span class="text-red-500">*</span></label>
-          <input type="date" id="t_passport_exp_${idx}" dir="ltr"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
+          <label class="block text-xs font-bold text-gray-500 mb-1">الجنسية <span class="text-red-500">*</span></label>
+          <input type="text" id="t_nationality_${idx}" placeholder="مصري / Egyptian" value="مصري" maxlength="50"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none">
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-0.5">الجنسية <span class="text-red-500">*</span></label>
-          <input type="text" placeholder="مصري" maxlength="50" value="مصري"
-                 id="t_nationality_${idx}"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
+          <label class="block text-xs font-bold text-gray-500 mb-1">محل الميلاد <span class="text-red-500">*</span></label>
+          <input type="text" id="t_pob_${idx}" placeholder="القاهرة" maxlength="80"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none">
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-0.5">محل الميلاد <span class="text-red-500">*</span></label>
-          <input type="text" placeholder="القاهرة" maxlength="80"
-                 id="t_place_of_birth_${idx}"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
+          <label class="block text-xs font-bold text-gray-500 mb-1">تاريخ الميلاد <span class="text-red-500">*</span></label>
+          <input type="date" id="t_dob_${idx}"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none text-gray-600">
         </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">تاريخ الميلاد <span class="text-red-500">*</span></label>
-          <input type="date" id="t_dob_${idx}" dir="ltr"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
+        <!-- Age (shown for child/infant only) -->
+        <div id="t_age_wrap_${idx}" class="hidden">
+          <label class="block text-xs font-bold text-gray-500 mb-1">العمر <span class="text-red-500">*</span></label>
+          <input type="number" id="t_age_${idx}" placeholder="العمر" min="0" max="17"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none">
         </div>
+      </div>
+
+      <!-- Gender, marital, age range (adults only) -->
+      <div id="t_adult_fields_${idx}" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 bg-blue-50 border border-blue-200 rounded-xl p-3">
         <div>
-          <label class="block text-xs text-gray-500 mb-0.5">الجنس <span class="text-red-500">*</span></label>
-          <select id="t_gender_${idx}" class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none bg-white">
+          <label class="block text-xs font-bold text-gray-600 mb-1"><i class="fa-solid fa-venus-mars ml-1 text-blue-500"></i>الجنس <span class="text-red-500">*</span></label>
+          <select id="t_gender_${idx}" class="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-sm focus:border-primary outline-none bg-white">
             <option value="">— اختر —</option>
             <option value="male">ذكر</option>
             <option value="female">أنثى</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-0.5">الحالة الاجتماعية</label>
-          <select id="t_marital_${idx}" class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none bg-white">
+          <label class="block text-xs font-bold text-gray-600 mb-1"><i class="fa-solid fa-ring ml-1 text-pink-500"></i>الحالة الاجتماعية <span class="text-red-500">*</span></label>
+          <select id="t_marital_${idx}" class="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-sm focus:border-primary outline-none bg-white">
             <option value="">— اختر —</option>
             <option value="single">أعزب / عزباء</option>
             <option value="married">متزوج / متزوجة</option>
@@ -2341,8 +2361,39 @@
             <option value="widowed">أرمل / أرملة</option>
           </select>
         </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1"><i class="fa-solid fa-calendar-days ml-1 text-green-600"></i>الفئة العمرية</label>
+          <select id="t_age_range_${idx}" class="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-sm focus:border-primary outline-none bg-white">
+            <option value="adult">بالغ (18+ سنة)</option>
+            <option value="youth">شاب (12–17 سنة)</option>
+          </select>
+        </div>
       </div>`;
     document.getElementById('nb_travelers_list').appendChild(el);
+    nbOnTravelerTypeChange(idx); // apply initial visibility
+  }
+
+  function nbOnTravelerTypeChange(idx) {
+    const type = document.getElementById(`t_type_${idx}`)?.value;
+    const isAdult  = type === 'adult';
+    const isChild  = type === 'child';
+    const isInfant = type === 'infant';
+
+    const show = (id, visible) => { document.getElementById(id)?.classList.toggle('hidden', !visible); };
+
+    show(`t_adult_fields_${idx}`, isAdult);
+    show(`t_nid_wrap_${idx}`,     isAdult);
+    show(`t_passport_wrap_${idx}`, isAdult || isChild);
+    show(`t_passport_exp_wrap_${idx}`, isAdult || isChild);
+    show(`t_age_wrap_${idx}`, isChild || isInfant);
+
+    // Update age limits
+    const ageEl = document.getElementById(`t_age_${idx}`);
+    if (ageEl) { ageEl.min = isInfant ? '0' : '2'; ageEl.max = isInfant ? '1' : '11'; ageEl.placeholder = isInfant ? 'العمر بالأشهر' : 'العمر (2–11)'; }
+
+    const lbl = { adult: 'بالغ', child: 'طفل', infant: 'رضيع' }[type] || '';
+    const labelEl = document.getElementById(`t_label_${idx}`);
+    if (labelEl) labelEl.textContent = `مسافر — ${lbl}`;
   }
 
   function nbRemoveTraveler(idx) {
@@ -2353,19 +2404,113 @@
     const cards = document.querySelectorAll('#nb_travelers_list .traveler-card');
     return Array.from(cards).map(card => {
       const idx = card.id.replace('tcard_','');
+      const type = document.getElementById(`t_type_${idx}`)?.value || 'adult';
       return {
-        name:           document.getElementById(`t_name_${idx}`)?.value?.trim() || '',
-        type:           document.getElementById(`t_type_${idx}`)?.value || 'adult',
-        national_id:    document.getElementById(`t_id_${idx}`)?.value?.trim() || '',
-        passport_number:document.getElementById(`t_passport_${idx}`)?.value?.trim() || '',
-        passport_expiry:document.getElementById(`t_passport_exp_${idx}`)?.value || null,
-        nationality:    document.getElementById(`t_nationality_${idx}`)?.value?.trim() || '',
-        place_of_birth: document.getElementById(`t_place_of_birth_${idx}`)?.value?.trim() || '',
-        date_of_birth:  document.getElementById(`t_dob_${idx}`)?.value || null,
-        gender:         document.getElementById(`t_gender_${idx}`)?.value || '',
-        marital_status: document.getElementById(`t_marital_${idx}`)?.value || '',
+        name:            document.getElementById(`t_name_${idx}`)?.value?.trim()         || '',
+        type,
+        national_id:     document.getElementById(`t_nid_${idx}`)?.value?.trim()          || '',
+        passport_number: document.getElementById(`t_passport_${idx}`)?.value?.trim()     || '',
+        passport_expiry: document.getElementById(`t_passport_exp_${idx}`)?.value         || '',
+        nationality:     document.getElementById(`t_nationality_${idx}`)?.value?.trim()  || '',
+        place_of_birth:  document.getElementById(`t_pob_${idx}`)?.value?.trim()          || '',
+        date_of_birth:   document.getElementById(`t_dob_${idx}`)?.value                  || '',
+        age:             document.getElementById(`t_age_${idx}`)?.value                  || '',
+        gender:          document.getElementById(`t_gender_${idx}`)?.value               || '',
+        marital_status:  document.getElementById(`t_marital_${idx}`)?.value              || '',
+        age_range:       document.getElementById(`t_age_range_${idx}`)?.value            || '',
       };
     }).filter(t => t.name);
+  }
+
+  // ── Hotel selection (mirrors customer-facing renderHotelSelectors) ────────
+  let _nbHotelSelections = { mecca: null, madina: null };
+
+  function nbRenderHotelSection(pkg) {
+    const meccaHotels  = pkg?.mecca_hotels  || [];
+    const madinaHotels = pkg?.madina_hotels || [];
+    const section = document.getElementById('nb_hotel_section');
+    _nbHotelSelections = { mecca: null, madina: null };
+
+    if (!meccaHotels.length && !madinaHotels.length) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+
+    const fillCity = (city, hotels, wrapperId, selectId) => {
+      const wrapper = document.getElementById(wrapperId);
+      const sel     = document.getElementById(selectId);
+      if (!wrapper || !sel) return;
+      if (!hotels.length) { wrapper.classList.add('hidden'); return; }
+      wrapper.classList.remove('hidden');
+      sel.innerHTML = `<option value="">-- اختر فندق ${city === 'mecca' ? 'مكة' : 'المدينة'} --</option>`;
+      hotels.forEach((h, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = h.name + (h.stars ? ` (${h.stars}⭐)` : '');
+        sel.appendChild(opt);
+      });
+      // Auto-select if only one
+      if (hotels.length === 1) {
+        sel.value = '0';
+        _nbHotelSelections[city] = hotels[0];
+        nbRenderRoomTiers(city, hotels[0]);
+      } else {
+        document.getElementById(`nb_${city}_rooms_grid`).innerHTML = '';
+      }
+    };
+
+    fillCity('mecca',  meccaHotels,  'nb_mecca_hotel_wrapper',  'nb_mecca_hotel_select');
+    fillCity('madina', madinaHotels, 'nb_madina_hotel_wrapper', 'nb_madina_hotel_select');
+  }
+
+  function nbOnHotelChange(city) {
+    const pkg = _nbPackages.find(p => p.id === _nbSelectedPkgId);
+    const hotels = city === 'mecca' ? (pkg?.mecca_hotels||[]) : (pkg?.madina_hotels||[]);
+    const idx = document.getElementById(`nb_${city}_hotel_select`)?.value;
+    const hotel = idx !== '' ? hotels[parseInt(idx,10)] : null;
+    _nbHotelSelections[city] = hotel || null;
+    nbRenderRoomTiers(city, hotel);
+  }
+
+  function nbRenderRoomTiers(city, hotel) {
+    const grid = document.getElementById(`nb_${city}_rooms_grid`);
+    if (!grid) return;
+    const tiers = hotel?.room_tiers || [];
+    if (!tiers.length) { grid.innerHTML = ''; return; }
+    grid.innerHTML = `
+      <p class="text-xs font-bold text-gray-600 mb-2"><i class="fa-solid fa-bed ml-1 text-blue-400"></i>نوع الغرفة</p>
+      <div class="grid grid-cols-2 gap-2">
+        ${tiers.map((tier, ti) => `
+          <label class="flex items-center gap-2 border border-gray-200 rounded-xl p-2.5 cursor-pointer hover:border-primary transition bg-white">
+            <input type="radio" name="nb_room_${city}" value="${ti}"
+                   class="accent-primary"
+                   onchange="_nbRoomTierSelections=_nbRoomTierSelections||{};_nbRoomTierSelections['${city}']=${ti}">
+            <span class="text-xs font-bold text-gray-700 flex-1">${tier.name || tier.label || 'غرفة '+ti}</span>
+            ${tier.extra_price ? `<span class="text-xs text-green-700 font-bold">+${window.formatCurrency(tier.extra_price)}</span>` : ''}
+          </label>
+        `).join('')}
+      </div>`;
+  }
+
+  function nbGetHotelSelections() {
+    const tierSelections = window._nbRoomTierSelections || {};
+    const pkg = _nbPackages.find(p => p.id === _nbSelectedPkgId);
+    const meccaHotels  = pkg?.mecca_hotels  || [];
+    const madinaHotels = pkg?.madina_hotels || [];
+
+    const getRoom = (city, hotels) => {
+      const tidx = tierSelections[city];
+      const hotel = _nbHotelSelections[city];
+      if (!hotel) return null;
+      const tier = tidx !== undefined ? (hotel.room_tiers||[])[parseInt(tidx,10)] : null;
+      return { hotel_name: hotel.name, room_type: tier?.name || tier?.label || null };
+    };
+
+    return {
+      mecca_hotel:  getRoom('mecca',  meccaHotels),
+      madina_hotel: getRoom('madina', madinaHotels),
+    };
   }
 
   // ── NID age extractor ─────────────────────────────────
@@ -2516,15 +2661,11 @@
       ['البريد',            email||'—'],
       ['الرقم القومي',      nid||'—'],
       ['رقم الجواز',        pass||'—'],
-      ['انتهاء الجواز',     document.getElementById('nb_passport_expiry').value||'—'],
-      ['الجنسية',           document.getElementById('nb_nationality').value||'—'],
-      ['محل الميلاد',       document.getElementById('nb_place_of_birth').value||'—'],
-      ['تاريخ الميلاد',     document.getElementById('nb_dob').value||'—'],
-      ['الجنس',             document.getElementById('nb_gender').options[document.getElementById('nb_gender').selectedIndex]?.text||'—'],
-      ['الحالة الاجتماعية', document.getElementById('nb_marital').options[document.getElementById('nb_marital').selectedIndex]?.text||'—'],
       ['المحافظة',          document.getElementById('nb_governorate').value||'—'],
       ['مصدر العميل',       document.getElementById('nb_lead_source').options[document.getElementById('nb_lead_source').selectedIndex]?.text||'—'],
       ['المسافرون',         `${adults} بالغ / ${children} طفل / ${infants} رضيع`],
+      ...((_nbHotelSelections?.mecca)  ? [['فندق مكة',   `${_nbHotelSelections.mecca.name}${(window._nbRoomTierSelections?.mecca!==undefined && _nbHotelSelections.mecca.room_tiers?.[window._nbRoomTierSelections.mecca]?.name) ? ' — ' + _nbHotelSelections.mecca.room_tiers[window._nbRoomTierSelections.mecca].name : ''}`]] : []),
+      ...((_nbHotelSelections?.madina) ? [['فندق المدينة', `${_nbHotelSelections.madina.name}${(window._nbRoomTierSelections?.madina!==undefined && _nbHotelSelections.madina.room_tiers?.[window._nbRoomTierSelections.madina]?.name) ? ' — ' + _nbHotelSelections.madina.room_tiers[window._nbRoomTierSelections.madina].name : ''}`]] : []),
       ['الإجمالي',          window.formatCurrency(total)],
       ['المدفوع',           window.formatCurrency(paid)],
       ['المتبقي',           window.formatCurrency(remaining)],
@@ -2582,18 +2723,17 @@
       customer_email:           document.getElementById('nb_customer_email').value.trim()  || null,
       customer_national_id:     document.getElementById('nb_national_id').value.trim()     || null,
       customer_passport_number: document.getElementById('nb_passport').value.trim()        || null,
-      customer_passport_expiry: document.getElementById('nb_passport_expiry').value        || null,
-      customer_nationality:     document.getElementById('nb_nationality').value.trim()     || null,
-      customer_place_of_birth:  document.getElementById('nb_place_of_birth').value.trim() || null,
-      customer_date_of_birth:   document.getElementById('nb_dob').value                   || null,
-      customer_gender:          document.getElementById('nb_gender').value                 || null,
-      customer_marital_status:  document.getElementById('nb_marital').value                || null,
       customer_governorate:     document.getElementById('nb_governorate').value             || null,
       lead_source:              document.getElementById('nb_lead_source').value             || null,
       adults_count:             adults,
       children_count:           parseInt(document.getElementById('nb_children').value)    || 0,
       infants_count:            parseInt(document.getElementById('nb_infants').value)     || 0,
       travelers:                nbGetTravelers(),
+      hotel_selections:         nbGetHotelSelections(),
+      mecca_hotel:              nbGetHotelSelections().mecca_hotel?.hotel_name  || null,
+      madina_hotel:             nbGetHotelSelections().madina_hotel?.hotel_name || null,
+      mecca_room_type:          nbGetHotelSelections().mecca_hotel?.room_type   || null,
+      madina_room_type:         nbGetHotelSelections().madina_hotel?.room_type  || null,
       total_price:              totalPrice,
       paid_amount:              paid,
       remaining_amount:         remaining,
