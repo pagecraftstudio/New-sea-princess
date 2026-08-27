@@ -462,10 +462,7 @@
               <!-- Traveler detail cards (required — one per passenger) -->
               <div class="flex justify-between items-center mb-2">
                 <p class="text-xs font-bold text-gray-600"><i class="fa-solid fa-id-card ml-1 text-primary"></i>بيانات المسافرين <span class="text-red-500">*</span></p>
-                <button type="button" onclick="nbAddTravelerCard()"
-                        class="text-xs bg-primary/10 hover:bg-primary/20 text-primary font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1">
-                  <i class="fa-solid fa-plus"></i> إضافة مسافر
-                </button>
+                <!-- Cards auto-generated from passenger counts above -->
               </div>
               <p class="text-xs text-amber-600 mb-2"><i class="fa-solid fa-triangle-exclamation ml-1"></i>يرجى إضافة بيانات كل مسافر حسب متطلبات البرنامج</p>
               <div id="nb_travelers_list" class="space-y-3"></div>
@@ -2062,6 +2059,7 @@
     modal.style.display = '';
     modal.classList.remove('hidden');
     wbRenderStep();
+    nbSyncTravelerCards(); // populate initial 1-adult card
     await loadNbPackages();
   }
 
@@ -2266,6 +2264,45 @@
     const max = parseInt(el.max || '99');
     el.value = Math.max(min, Math.min(max, (parseInt(el.value)||0) + delta));
     recalcNbTotal();
+    nbSyncTravelerCards();
+  }
+
+  // Auto-sync traveler cards to match counts
+  function nbSyncTravelerCards() {
+    const adults   = parseInt(document.getElementById('nb_adults').value)   || 0;
+    const children = parseInt(document.getElementById('nb_children').value) || 0;
+    const infants  = parseInt(document.getElementById('nb_infants').value)  || 0;
+    const total = adults + children + infants;
+
+    const list = document.getElementById('nb_travelers_list');
+    const desired = [
+      ...Array(adults).fill('adult'),
+      ...Array(children).fill('child'),
+      ...Array(infants).fill('infant'),
+    ];
+
+    // Add missing cards
+    const existing = Array.from(list.querySelectorAll('.traveler-card'));
+    for (let i = existing.length; i < total; i++) {
+      nbAddTravelerCard(desired[i]);
+    }
+
+    // Remove excess cards from the end
+    const cards = Array.from(list.querySelectorAll('.traveler-card'));
+    cards.slice(total).forEach(card => card.remove());
+
+    // Re-label and fix type selectors to match desired sequence
+    Array.from(list.querySelectorAll('.traveler-card')).forEach((card, i) => {
+      const idx = card.id.replace('tcard_', '');
+      const typeEl  = document.getElementById('t_type_'  + idx);
+      const labelEl = document.getElementById('t_label_' + idx);
+      if (typeEl && desired[i] && typeEl.value !== desired[i]) {
+        typeEl.value = desired[i];
+        nbOnTravelerTypeChange(parseInt(idx));
+      }
+      const lbl = { adult: 'بالغ', child: 'طفل', infant: 'رضيع' }[desired[i]] || '';
+      if (labelEl) labelEl.textContent = 'مسافر ' + (i+1) + ' — ' + lbl;
+    });
   }
 
   // ── Traveler detail cards (full — matches customer-facing form) ──────────
