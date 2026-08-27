@@ -44,7 +44,119 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
 
+<<<<<<< HEAD
 <div id="adminNavMount"></div>
+=======
+  <!-- ══ MOBILE TOP BAR ══ -->
+  <header class="md:hidden sticky top-0 z-50 bg-darkBg text-white flex items-center justify-between px-4 py-3 shadow-lg">
+    <div class="flex items-center gap-2 font-bold text-lg text-gold">
+      <i class="fa-solid fa-moon"></i> الإدارة
+    </div>
+    <button id="mobileMenuBtn" class="text-white text-2xl p-1">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </header>
+  <!-- MOBILE DRAWER -->
+  <div id="mobileDrawer" class="md:hidden fixed inset-0 z-[60] hidden">
+    <div id="drawerOverlay" class="absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
+    <nav class="absolute top-0 right-0 h-full w-64 bg-darkBg text-white flex flex-col shadow-2xl">
+    <div class="h-16 flex items-center justify-between px-4 border-b border-gray-800">
+      <span class="text-gold font-bold">القائمة</span>
+      <button onclick="closeDrawer()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <details class="nav-group" open>
+        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link active" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      </details>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+      <a href="/nsp-control-8x4k/reports.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      </details>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
+      </details>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
+      </details>
+    </nav>
+  </nav>
+  </div>
+
+  <div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="hidden md:flex w-64 bg-darkBg text-white flex-col sticky top-0 h-screen shrink-0 no-print">
+    <div class="h-16 flex items-center justify-center border-b border-gray-800 text-gold font-bold text-xl px-4">
+      <img src="/assets/logo-white.png" alt="" class="h-8 w-auto ml-2" onerror="this.style.display='none'"> الإدارة
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <a href="/nsp-control-8x4k/dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+      <details class="nav-group" open>
+        <summary class="nav-section-header"><i class="fa-solid fa-plane-departure"></i><span>العمليات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/bookings.html" class="nav-link active"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+      <a href="/nsp-control-8x4k/packages.html" class="nav-link"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+      <a href="/nsp-control-8x4k/reviews.html" class="nav-link"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+      <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+      </details>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-coins"></i><span>المالية والمحاسبة</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/customers.html" class="nav-link"><i class="fa-solid fa-users w-5"></i>العملاء</a>
+      <a href="/nsp-control-8x4k/financial-dashboard.html" class="nav-link"><i class="fa-solid fa-landmark w-5"></i>المالية - نظرة عامة</a>
+      <a href="/nsp-control-8x4k/accounting-dashboard.html" class="nav-link"><i class="fa-solid fa-book w-5"></i>لوحة المحاسبة</a>
+      <a href="/nsp-control-8x4k/journal-entries.html" class="nav-link"><i class="fa-solid fa-journal-whills w-5"></i>القيود اليومية</a>
+      <a href="/nsp-control-8x4k/invoices-payments.html" class="nav-link"><i class="fa-solid fa-file-invoice-dollar w-5"></i>الفواتير والمدفوعات</a>
+      <a href="/nsp-control-8x4k/credit-debit-notes.html" class="nav-link"><i class="fa-solid fa-file-circle-plus w-5"></i>إشعارات الخصم والإضافة</a>
+      <a href="/nsp-control-8x4k/expenses.html" class="nav-link"><i class="fa-solid fa-receipt w-5"></i>المصاريف</a>
+      <a href="/nsp-control-8x4k/cash-bank-wallets.html" class="nav-link"><i class="fa-solid fa-vault w-5"></i>الخزينة والبنوك</a>
+      <a href="/nsp-control-8x4k/bank-reconciliation.html" class="nav-link"><i class="fa-solid fa-scale-balanced w-5"></i>المطابقة البنكية</a>
+      <a href="/nsp-control-8x4k/ar-ap.html" class="nav-link"><i class="fa-solid fa-scale-unbalanced-flip w-5"></i>الذمم المدينة/الدائنة</a>
+      <a href="/nsp-control-8x4k/profitability.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i>تحليل الربحية</a>
+      <a href="/nsp-control-8x4k/accounting-coa.html" class="nav-link"><i class="fa-solid fa-list-ol w-5"></i>دليل الحسابات</a>
+      <a href="/nsp-control-8x4k/fiscal-periods.html" class="nav-link"><i class="fa-solid fa-calendar-days w-5"></i>الفترات المالية</a>
+      <a href="/nsp-control-8x4k/reports.html" class="nav-link"><i class="fa-solid fa-file-chart-column w-5"></i>التقارير المالية</a>
+      </details>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-users-gear"></i><span>المستخدمون والصلاحيات</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/users.html" class="nav-link"><i class="fa-solid fa-user w-5"></i>المستخدمون</a>
+      <a href="/nsp-control-8x4k/admins.html" class="nav-link"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      <a href="/nsp-control-8x4k/roles-permissions.html" class="nav-link"><i class="fa-solid fa-lock w-5"></i>الأدوار والصلاحيات</a>
+      </details>
+      <details class="nav-group">
+        <summary class="nav-section-header"><i class="fa-solid fa-gear"></i><span>النظام</span><i class="fa-solid fa-chevron-down nav-chevron"></i></summary>
+      <a href="/nsp-control-8x4k/audit-log.html" class="nav-link"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+      <a href="/nsp-control-8x4k/accounting-health.html" class="nav-link"><i class="fa-solid fa-heart-pulse w-5"></i>سلامة النظام</a>
+      </details>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <p class="text-xs text-gray-500 mb-2 text-center" id="adminUserEmail"></p>
+      <button onclick="adminLogout()" class="w-full bg-red-900/50 text-red-300 hover:bg-red-800 py-2 rounded transition flex justify-center items-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+      </button>
+    </div>
+  </aside>
+>>>>>>> 6270350 (fix: repair package.json syntax error)
 
   <main class="flex-1 flex flex-col p-6" aria-label="المحتوى الرئيسي">
     <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
@@ -389,45 +501,6 @@
                   <label class="block text-xs font-bold text-gray-500 mb-1">رقم الجواز</label>
                   <input id="nb_passport" type="text" placeholder="A00000000" maxlength="20"
                          class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">تاريخ انتهاء الجواز <span class="text-red-500">*</span></label>
-                  <input id="nb_passport_expiry" type="date"
-                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
-                  <p class="text-xs text-amber-600 mt-0.5"><i class="fa-solid fa-triangle-exclamation ml-1"></i>صالح 6 أشهر على الأقل بعد المغادرة</p>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">الجنسية <span class="text-red-500">*</span></label>
-                  <input id="nb_nationality" type="text" placeholder="مصري / Egyptian" value="مصري" maxlength="50"
-                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">محل الميلاد <span class="text-red-500">*</span></label>
-                  <input id="nb_place_of_birth" type="text" placeholder="القاهرة" maxlength="80"
-                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">تاريخ الميلاد <span class="text-red-500">*</span></label>
-                  <input id="nb_dob" type="date"
-                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">الجنس <span class="text-red-500">*</span></label>
-                  <select id="nb_gender" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white">
-                    <option value="">— اختر —</option>
-                    <option value="male">ذكر</option>
-                    <option value="female">أنثى</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-500 mb-1">الحالة الاجتماعية <span class="text-red-500">*</span></label>
-                  <select id="nb_marital" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white">
-                    <option value="">— اختر —</option>
-                    <option value="single">أعزب / عزباء</option>
-                    <option value="married">متزوج / متزوجة</option>
-                    <option value="divorced">مطلق / مطلقة</option>
-                    <option value="widowed">أرمل / أرملة</option>
-                  </select>
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-gray-500 mb-1">المحافظة</label>
@@ -2125,12 +2198,6 @@
       if (!name)    { nbShowError('يرجى إدخال اسم العميل'); return false; }
       if (!phone)   { nbShowError('يرجى إدخال رقم الهاتف'); return false; }
       if (adults < 1){ nbShowError('يجب وجود بالغ واحد على الأقل'); return false; }
-      if (!document.getElementById('nb_passport_expiry').value)  { nbShowError('يرجى إدخال تاريخ انتهاء الجواز'); return false; }
-      if (!document.getElementById('nb_nationality').value.trim()){ nbShowError('يرجى إدخال الجنسية'); return false; }
-      if (!document.getElementById('nb_place_of_birth').value.trim()){ nbShowError('يرجى إدخال محل الميلاد'); return false; }
-      if (!document.getElementById('nb_dob').value)              { nbShowError('يرجى إدخال تاريخ الميلاد'); return false; }
-      if (!document.getElementById('nb_gender').value)           { nbShowError('يرجى تحديد الجنس'); return false; }
-      if (!document.getElementById('nb_marital').value)          { nbShowError('يرجى تحديد الحالة الاجتماعية'); return false; }
     }
     if (step === 3) {
       const total = parseFloat(document.getElementById('nb_total_price').value) || 0;
@@ -2142,8 +2209,7 @@
   // ── Reset ─────────────────────────────────────────────
   function resetNewBookingForm() {
     ['nb_customer_name','nb_customer_phone','nb_customer_phone2','nb_customer_email',
-     'nb_national_id','nb_passport','nb_passport_expiry','nb_nationality','nb_place_of_birth',
-     'nb_dob','nb_pkg_search','nb_special_requests',
+     'nb_national_id','nb_passport','nb_pkg_search','nb_special_requests',
      'nb_coupon_code','nb_payment_note'].forEach(id => {
        const el = document.getElementById(id);
        if (el) el.value = '';
@@ -2156,9 +2222,6 @@
     document.getElementById('nb_remaining').value    = '';
     document.getElementById('nb_status').value       = 'pending';
     document.getElementById('nb_booking_type').value = 'standard';
-    document.getElementById('nb_gender').value        = '';
-    document.getElementById('nb_marital').value       = '';
-    document.getElementById('nb_nationality').value   = 'مصري';
     document.getElementById('nb_nid_age').classList.add('hidden');
     document.getElementById('nb_coupon_result').classList.add('hidden');
     document.getElementById('nb_package_card').classList.add('hidden');
@@ -2271,75 +2334,24 @@
               class="absolute top-2 left-2 text-gray-300 hover:text-red-500 transition text-sm">
         <i class="fa-solid fa-circle-xmark"></i>
       </button>
-      <p class="text-xs font-bold text-primary mb-3"><i class="fa-solid fa-user ml-1"></i>مرافق ${idx+1}</p>
+      <p class="text-xs font-bold text-primary mb-2"><i class="fa-solid fa-user ml-1"></i>مرافق ${idx+1}</p>
       <div class="grid grid-cols-2 gap-2">
         <div class="col-span-2">
-          <label class="block text-xs text-gray-500 mb-0.5">الاسم الرباعي <span class="text-red-500">*</span></label>
-          <input type="text" placeholder="الاسم كما في الجواز" maxlength="80"
+          <input type="text" placeholder="الاسم الكامل" maxlength="80"
                  id="t_name_${idx}"
                  class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-0.5">النوع</label>
           <select id="t_type_${idx}" class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none bg-white">
             <option value="adult">بالغ</option>
-            <option value="child">طفل (2–11)</option>
-            <option value="infant">رضيع (0–2)</option>
+            <option value="child">طفل</option>
+            <option value="infant">رضيع</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-0.5">الرقم القومي</label>
-          <input type="text" placeholder="14 رقم" maxlength="14" dir="ltr"
+          <input type="text" placeholder="رقم قومي أو جواز" maxlength="20"
                  id="t_id_${idx}"
-                 oninput="this.value=this.value.replace(/[^0-9]/g,'')"
                  class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
-        </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">رقم الجواز</label>
-          <input type="text" placeholder="A00000000" maxlength="20" dir="ltr"
-                 id="t_passport_${idx}"
-                 oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase()"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
-        </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">تاريخ انتهاء الجواز <span class="text-red-500">*</span></label>
-          <input type="date" id="t_passport_exp_${idx}" dir="ltr"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
-        </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">الجنسية <span class="text-red-500">*</span></label>
-          <input type="text" placeholder="مصري" maxlength="50" value="مصري"
-                 id="t_nationality_${idx}"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
-        </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">محل الميلاد <span class="text-red-500">*</span></label>
-          <input type="text" placeholder="القاهرة" maxlength="80"
-                 id="t_place_of_birth_${idx}"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
-        </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">تاريخ الميلاد <span class="text-red-500">*</span></label>
-          <input type="date" id="t_dob_${idx}" dir="ltr"
-                 class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none">
-        </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">الجنس <span class="text-red-500">*</span></label>
-          <select id="t_gender_${idx}" class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none bg-white">
-            <option value="">— اختر —</option>
-            <option value="male">ذكر</option>
-            <option value="female">أنثى</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-0.5">الحالة الاجتماعية</label>
-          <select id="t_marital_${idx}" class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:border-primary outline-none bg-white">
-            <option value="">— اختر —</option>
-            <option value="single">أعزب / عزباء</option>
-            <option value="married">متزوج / متزوجة</option>
-            <option value="divorced">مطلق / مطلقة</option>
-            <option value="widowed">أرمل / أرملة</option>
-          </select>
         </div>
       </div>`;
     document.getElementById('nb_travelers_list').appendChild(el);
@@ -2354,16 +2366,9 @@
     return Array.from(cards).map(card => {
       const idx = card.id.replace('tcard_','');
       return {
-        name:           document.getElementById(`t_name_${idx}`)?.value?.trim() || '',
-        type:           document.getElementById(`t_type_${idx}`)?.value || 'adult',
-        national_id:    document.getElementById(`t_id_${idx}`)?.value?.trim() || '',
-        passport_number:document.getElementById(`t_passport_${idx}`)?.value?.trim() || '',
-        passport_expiry:document.getElementById(`t_passport_exp_${idx}`)?.value || null,
-        nationality:    document.getElementById(`t_nationality_${idx}`)?.value?.trim() || '',
-        place_of_birth: document.getElementById(`t_place_of_birth_${idx}`)?.value?.trim() || '',
-        date_of_birth:  document.getElementById(`t_dob_${idx}`)?.value || null,
-        gender:         document.getElementById(`t_gender_${idx}`)?.value || '',
-        marital_status: document.getElementById(`t_marital_${idx}`)?.value || '',
+        name:      document.getElementById(`t_name_${idx}`)?.value?.trim() || '',
+        type:      document.getElementById(`t_type_${idx}`)?.value || 'adult',
+        national_id: document.getElementById(`t_id_${idx}`)?.value?.trim() || '',
       };
     }).filter(t => t.name);
   }
@@ -2516,12 +2521,6 @@
       ['البريد',            email||'—'],
       ['الرقم القومي',      nid||'—'],
       ['رقم الجواز',        pass||'—'],
-      ['انتهاء الجواز',     document.getElementById('nb_passport_expiry').value||'—'],
-      ['الجنسية',           document.getElementById('nb_nationality').value||'—'],
-      ['محل الميلاد',       document.getElementById('nb_place_of_birth').value||'—'],
-      ['تاريخ الميلاد',     document.getElementById('nb_dob').value||'—'],
-      ['الجنس',             document.getElementById('nb_gender').options[document.getElementById('nb_gender').selectedIndex]?.text||'—'],
-      ['الحالة الاجتماعية', document.getElementById('nb_marital').options[document.getElementById('nb_marital').selectedIndex]?.text||'—'],
       ['المحافظة',          document.getElementById('nb_governorate').value||'—'],
       ['مصدر العميل',       document.getElementById('nb_lead_source').options[document.getElementById('nb_lead_source').selectedIndex]?.text||'—'],
       ['المسافرون',         `${adults} بالغ / ${children} طفل / ${infants} رضيع`],
@@ -2582,12 +2581,6 @@
       customer_email:           document.getElementById('nb_customer_email').value.trim()  || null,
       customer_national_id:     document.getElementById('nb_national_id').value.trim()     || null,
       customer_passport_number: document.getElementById('nb_passport').value.trim()        || null,
-      customer_passport_expiry: document.getElementById('nb_passport_expiry').value        || null,
-      customer_nationality:     document.getElementById('nb_nationality').value.trim()     || null,
-      customer_place_of_birth:  document.getElementById('nb_place_of_birth').value.trim() || null,
-      customer_date_of_birth:   document.getElementById('nb_dob').value                   || null,
-      customer_gender:          document.getElementById('nb_gender').value                 || null,
-      customer_marital_status:  document.getElementById('nb_marital').value                || null,
       customer_governorate:     document.getElementById('nb_governorate').value             || null,
       lead_source:              document.getElementById('nb_lead_source').value             || null,
       adults_count:             adults,
