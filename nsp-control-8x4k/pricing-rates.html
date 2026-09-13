@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>خطط التسعير وأسعار الموردين | Flow Travel</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .plan-card {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 20px;
+      transition: border-color .18s, box-shadow .18s;
+      cursor: pointer;
+    }
+    .plan-card:hover { border-color: #1B5E20; box-shadow: 0 4px 16px rgba(27,94,32,.1); }
+    .plan-card.selected { border-color: #1B5E20; background: #f0fdf4; box-shadow: 0 0 0 3px rgba(27,94,32,.15); }
+    .plan-mode-badge {
+      display: inline-flex; align-items: center; padding: 2px 10px;
+      border-radius: 20px; font-size: .7rem; font-weight: 700;
+    }
+    .mode-cost_plus     { background:#dbeafe; color:#1e40af; }
+    .mode-margin_target { background:#dcfce7; color:#166534; }
+    .mode-fixed         { background:#fef9c3; color:#854d0e; }
+    .mode-contract      { background:#ede9fe; color:#5b21b6; }
+    .cat-badge { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700; }
+    .cat-hotel{background:#dbeafe;color:#1d4ed8} .cat-transfer{background:#fef3c7;color:#b45309}
+    .cat-guide{background:#d1fae5;color:#065f46} .cat-activity{background:#ede9fe;color:#6d28d9}
+    .cat-ticket{background:#fce7f3;color:#9d174d} .cat-meal{background:#fff7ed;color:#c2410c}
+    .cat-flight{background:#e0f2fe;color:#0369a1} .cat-visa{background:#f0fdf4;color:#166534}
+    .cat-insurance{background:#fdf2f8;color:#86198f} .cat-transport{background:#fef9c3;color:#854d0e}
+    .cat-other{background:#f9fafb;color:#6b7280}
+    .expiry-ok   { color: #166534; }
+    .expiry-warn { color: #854d0e; }
+    .expiry-past { color: #991b1b; }
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<div id="toast"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-tags ml-2 text-gold"></i>خطط التسعير وأسعار الموردين</h1>
+      <p class="erp-page-subtitle">إدارة خطط الأسعار B2C / B2B وأسعار الموردين المتعاقد عليها</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="openPlanModal()" class="erp-btn erp-btn-primary text-sm">
+        <i class="fa-solid fa-plus ml-1"></i>خطة تسعير جديدة
+      </button>
+      <button onclick="openRateModal()" class="erp-btn erp-btn-gold text-sm">
+        <i class="fa-solid fa-file-invoice ml-1"></i>سعر مورد جديد
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 mb-5 border-b border-gray-200 pb-0">
+    <button onclick="switchTab('plans')" id="tab-plans"
+      class="tab-active px-5 py-2.5 text-sm font-bold border-b-2 border-primary text-primary transition">
+      <i class="fa-solid fa-layer-group ml-1"></i>خطط التسعير
+    </button>
+    <button onclick="switchTab('rates')" id="tab-rates"
+      class="px-5 py-2.5 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">
+      <i class="fa-solid fa-file-invoice ml-1"></i>أسعار الموردين
+    </button>
+  </div>
+
+  <!-- ═══ TAB: RATE PLANS ═══ -->
+  <div id="pane-plans">
+    <div id="plansGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="col-span-full flex justify-center py-12 text-gray-400">
+        <i class="fa-solid fa-spinner fa-spin ml-2"></i> جارٍ التحميل…
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: SUPPLIER RATES ═══ -->
+  <div id="pane-rates" class="hidden">
+
+    <!-- Filters -->
+    <div class="erp-filter-bar mb-4">
+      <div class="erp-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="rateSearch" placeholder="بحث في أسعار الموردين…" oninput="filterRates()">
+      </div>
+      <select id="rateCatFilter" onchange="filterRates()" class="w-40">
+        <option value="">كل الفئات</option>
+        <option value="hotel">فندق</option>
+        <option value="transfer">نقل</option>
+        <option value="guide">مرشد</option>
+        <option value="activity">نشاط</option>
+        <option value="ticket">تذكرة</option>
+        <option value="meal">وجبة</option>
+        <option value="flight">طيران</option>
+        <option value="visa">تأشيرة</option>
+        <option value="insurance">تأمين</option>
+        <option value="transport">مركبة</option>
+        <option value="other">أخرى</option>
+      </select>
+      <select id="rateExpFilter" onchange="filterRates()" class="w-40">
+        <option value="">كل الحالات</option>
+        <option value="active">سارية</option>
+        <option value="expiring">تنتهي قريبًا</option>
+        <option value="expired">منتهية</option>
+      </select>
+    </div>
+
+    <!-- Rates Table -->
+    <div class="erp-card overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="tbl w-full" id="ratesTable">
+          <thead>
+            <tr>
+              <th>اسم السعر</th>
+              <th>المورد</th>
+              <th>الفئة</th>
+              <th>الوجهة</th>
+              <th>نوع السعر</th>
+              <th>التكلفة</th>
+              <th>العملة</th>
+              <th>الصلاحية من</th>
+              <th>الصلاحية إلى</th>
+              <th class="no-print">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="ratesBody">
+            <tr><td colspan="10" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ═══ RATE PLAN MODAL ═══ -->
+<div id="planModal" class="erp-modal-bg hidden" onclick="if(event.target===this)closePlanModal()">
+  <div class="erp-modal" style="max-width:580px;max-height:90vh;overflow-y:auto;">
+    <div class="erp-modal-header">
+      <h2 class="erp-modal-title" id="planModalTitle">خطة تسعير جديدة</h2>
+      <button onclick="closePlanModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+    </div>
+
+    <div class="erp-form-row cols2">
+      <div>
+        <label class="erp-form-label">الكود <span class="text-red-500">*</span></label>
+        <input type="text" id="pCode" class="erp-form-input" placeholder="RETAIL / B2B / VIP">
+      </div>
+      <div>
+        <label class="erp-form-label">الاسم بالعربية <span class="text-red-500">*</span></label>
+        <input type="text" id="pNameAr" class="erp-form-input" placeholder="تجزئة / B2B">
+      </div>
+    </div>
+
+    <div class="erp-form-row cols2">
+      <div>
+        <label class="erp-form-label">الاسم بالإنجليزية</label>
+        <input type="text" id="pNameEn" class="erp-form-input" placeholder="Retail / B2B">
+      </div>
+      <div>
+        <label class="erp-form-label">نوع العميل المستهدف</label>
+        <select id="pTargetType" class="erp-form-input">
+          <option value="b2c">B2C — أفراد</option>
+          <option value="b2b">B2B — شركاء</option>
+          <option value="corporate">Corporate</option>
+          <option value="mice">MICE</option>
+          <option value="vip">VIP</option>
+          <option value="group">Group</option>
+          <option value="all">الجميع</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="erp-form-row cols2">
+      <div>
+        <label class="erp-form-label">طريقة التسعير</label>
+        <select id="pMode" class="erp-form-input" onchange="updateModeHelp()">
+          <option value="cost_plus">Cost Plus (تكلفة + هامش)</option>
+          <option value="margin_target">Margin Target (نسبة ربح مستهدفة)</option>
+          <option value="fixed">Fixed (سعر ثابت من الكتالوج)</option>
+          <option value="contract">Contract (سعر متعاقد + هامش)</option>
+        </select>
+        <p id="modeHelp" class="text-xs text-gray-500 mt-1">سعر البيع = تكلفة × (1 + نسبة الهامش)</p>
+      </div>
+      <div>
+        <label class="erp-form-label">العملة الافتراضية</label>
+        <select id="pCurrency" class="erp-form-input">
+          <option value="EGP">EGP — جنيه مصري</option>
+          <option value="USD">USD — دولار</option>
+          <option value="EUR">EUR — يورو</option>
+          <option value="SAR">SAR — ريال سعودي</option>
+          <option value="AED">AED — درهم إماراتي</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="erp-form-row cols3">
+      <div>
+        <label class="erp-form-label">هامش ربح افتراضي %</label>
+        <input type="number" id="pMarginPct" class="erp-form-input" value="20" min="0" max="100" step="0.5">
+      </div>
+      <div>
+        <label class="erp-form-label">علاوة الفرد المنفرد %</label>
+        <input type="number" id="pSingleSup" class="erp-form-input" value="30" min="0" step="0.5">
+      </div>
+      <div>
+        <label class="erp-form-label">خصم افتراضي %</label>
+        <input type="number" id="pDiscountPct" class="erp-form-input" value="0" min="0" max="100" step="0.5">
+      </div>
+    </div>
+
+    <div class="erp-form-row cols3">
+      <div>
+        <label class="erp-form-label">سعر الطفل %</label>
+        <input type="number" id="pChildPct" class="erp-form-input" value="75" min="0" max="100">
+      </div>
+      <div>
+        <label class="erp-form-label">سعر الرضيع %</label>
+        <input type="number" id="pInfantPct" class="erp-form-input" value="10" min="0" max="100">
+      </div>
+      <div>
+        <label class="erp-form-label">الحالة</label>
+        <select id="pActive" class="erp-form-input">
+          <option value="true">نشط</option>
+          <option value="false">متوقف</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="erp-form-label">ملاحظات</label>
+      <textarea id="pDesc" class="erp-form-input" rows="2" placeholder="وصف اختياري لهذه الخطة…"></textarea>
+    </div>
+
+    <div class="flex gap-3">
+      <button onclick="savePlan()" id="savePlanBtn"
+        class="flex-1 erp-btn erp-btn-primary flex items-center justify-center gap-2">
+        <i class="fa-solid fa-save"></i> حفظ الخطة
+      </button>
+      <button onclick="closePlanModal()" class="flex-1 erp-btn bg-gray-100 text-gray-700">إلغاء</button>
+    </div>
+    <div id="planErr" class="hidden mt-3 text-red-600 text-sm text-center"></div>
+  </div>
+</div>
+
+<!-- ═══ SUPPLIER RATE MODAL ═══ -->
+<div id="rateModal" class="erp-modal-bg hidden" onclick="if(event.target===this)closeRateModal()">
+  <div class="erp-modal" style="max-width:620px;max-height:90vh;overflow-y:auto;">
+    <div class="erp-modal-header">
+      <h2 class="erp-modal-title" id="rateModalTitle">سعر مورد جديد</h2>
+      <button onclick="closeRateModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+    </div>
+
+    <div class="erp-form-row cols2">
+      <div>
+        <label class="erp-form-label">المورد <span class="text-red-500">*</span></label>
+        <select id="rSupplier" class="erp-form-input">
+          <option value="">— اختر المورد —</option>
+        </select>
+      </div>
+      <div>
+        <label class="erp-form-label">اسم السعر <span class="text-red-500">*</span></label>
+        <input type="text" id="rNameAr" class="erp-form-input" placeholder="مثال: غرفة مزدوجة — رمضان 2027">
+      </div>
+    </div>
+
+    <div class="erp-form-row cols2">
+      <div>
+        <label class="erp-form-label">الفئة <span class="text-red-500">*</span></label>
+        <select id="rCategory" class="erp-form-input">
+          <option value="hotel">فندق</option>
+          <option value="transfer">نقل</option>
+          <option value="guide">مرشد</option>
+          <option value="activity">نشاط</option>
+          <option value="ticket">تذكرة دخول</option>
+          <option value="meal">وجبة</option>
+          <option value="flight">طيران</option>
+          <option value="visa">تأشيرة</option>
+          <option value="insurance">تأمين سفر</option>
+          <option value="transport">مركبة / باص</option>
+          <option value="other">أخرى</option>
+        </select>
+      </div>
+      <div>
+        <label class="erp-form-label">الوجهة</label>
+        <input type="text" id="rDest" class="erp-form-input" placeholder="مكة / الأقصر / شرم الشيخ">
+      </div>
+    </div>
+
+    <div class="erp-form-row cols3">
+      <div>
+        <label class="erp-form-label">نوع السعر</label>
+        <select id="rRateType" class="erp-form-input">
+          <option value="net">Net (صافي)</option>
+          <option value="gross">Gross (شامل العمولة)</option>
+          <option value="commission">Commission (عمولة %)</option>
+        </select>
+      </div>
+      <div>
+        <label class="erp-form-label">وحدة الاحتساب</label>
+        <select id="rUnit" class="erp-form-input">
+          <option value="per_person">لكل شخص</option>
+          <option value="per_room">لكل غرفة</option>
+          <option value="per_group">للمجموعة</option>
+          <option value="per_vehicle">لكل مركبة</option>
+          <option value="per_day">لكل يوم</option>
+          <option value="fixed">ثابت</option>
+        </select>
+      </div>
+      <div>
+        <label class="erp-form-label">العملة</label>
+        <select id="rCurrency" class="erp-form-input">
+          <option value="EGP">EGP</option>
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="SAR">SAR</option>
+          <option value="AED">AED</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="erp-form-row cols2">
+      <div>
+        <label class="erp-form-label">التكلفة الأساسية <span class="text-red-500">*</span></label>
+        <input type="number" id="rCostAmount" class="erp-form-input" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div>
+        <label class="erp-form-label">عمولة % (إن وجدت)</label>
+        <input type="number" id="rCommPct" class="erp-form-input" value="0" min="0" max="100" step="0.1">
+      </div>
+    </div>
+
+    <!-- Hotel occupancy rates -->
+    <div id="hotelRates" class="hidden">
+      <p class="text-xs font-bold text-gray-500 mb-2 mt-1">أسعار الإشغال (للفنادق — اختياري)</p>
+      <div class="erp-form-row cols3">
+        <div>
+          <label class="erp-form-label">غرفة مفردة</label>
+          <input type="number" id="rSingleRate" class="erp-form-input" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <div>
+          <label class="erp-form-label">غرفة مزدوجة / شخص</label>
+          <input type="number" id="rDoubleRate" class="erp-form-input" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <div>
+          <label class="erp-form-label">غرفة ثلاثية / شخص</label>
+          <input type="number" id="rTripleRate" class="erp-form-input" placeholder="0.00" min="0" step="0.01">
+        </div>
+      </div>
+    </div>
+
+    <div class="erp-form-row cols2">
+      <div>
+        <label class="erp-form-label">صالح من <span class="text-red-500">*</span></label>
+        <input type="date" id="rValidFrom" class="erp-form-input">
+      </div>
+      <div>
+        <label class="erp-form-label">صالح حتى <span class="text-red-500">*</span></label>
+        <input type="date" id="rValidTo" class="erp-form-input">
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="erp-form-label">ملاحظات</label>
+      <textarea id="rNotes" class="erp-form-input" rows="2" placeholder="شروط خاصة، استثناءات، مواعيد…"></textarea>
+    </div>
+
+    <div class="flex gap-3">
+      <button onclick="saveRate()" id="saveRateBtn"
+        class="flex-1 erp-btn erp-btn-gold flex items-center justify-center gap-2">
+        <i class="fa-solid fa-save"></i> حفظ السعر
+      </button>
+      <button onclick="closeRateModal()" class="flex-1 erp-btn bg-gray-100 text-gray-700">إلغاء</button>
+    </div>
+    <div id="rateErr" class="hidden mt-3 text-red-600 text-sm text-center"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let allPlans   = [];
+let allRates   = [];
+let allSuppliers = [];
+let editPlanId = null;
+let editRateId = null;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const toast = (msg, err=false) => {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? '#C62828' : '#1B5E20';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+};
+
+const esc = s => s == null ? '' : String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const fmt = (n, cur='EGP') => n == null ? '—' : new Intl.NumberFormat('ar-EG',{style:'currency',currency:cur,maximumFractionDigits:0}).format(n);
+
+const CAT_LABELS = {hotel:'فندق',transfer:'نقل',guide:'مرشد',activity:'نشاط',ticket:'تذكرة',meal:'وجبة',flight:'طيران',visa:'تأشيرة',insurance:'تأمين',transport:'مركبة',camp:'مخيم',other:'أخرى'};
+const MODE_LABELS = {cost_plus:'Cost Plus',margin_target:'Margin Target',fixed:'Fixed',contract:'Contract'};
+const TYPE_LABELS = {b2c:'B2C أفراد',b2b:'B2B شركاء',corporate:'Corporate',mice:'MICE',vip:'VIP',group:'Group',all:'الجميع'};
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  await Promise.all([loadPlans(), loadRates(), loadSuppliers()]);
+});
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('pane-plans').classList.toggle('hidden', tab !== 'plans');
+  document.getElementById('pane-rates').classList.toggle('hidden', tab !== 'rates');
+  document.getElementById('tab-plans').className = tab === 'plans'
+    ? 'px-5 py-2.5 text-sm font-bold border-b-2 border-primary text-primary transition'
+    : 'px-5 py-2.5 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
+  document.getElementById('tab-rates').className = tab === 'rates'
+    ? 'px-5 py-2.5 text-sm font-bold border-b-2 border-primary text-primary transition'
+    : 'px-5 py-2.5 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
+}
+
+// ── LOAD DATA ─────────────────────────────────────────────────────────────────
+async function loadPlans() {
+  const { data, error } = await db.from('rate_plans').select('*').order('code');
+  if (error) { console.error(error); return; }
+  allPlans = data || [];
+  renderPlans();
+}
+
+async function loadRates() {
+  const { data, error } = await db
+    .from('supplier_rates')
+    .select('*, supplier:suppliers(id, name)')
+    .order('valid_from', { ascending: false });
+  if (error) { console.error(error); return; }
+  allRates = data || [];
+  renderRates(allRates);
+}
+
+async function loadSuppliers() {
+  const { data } = await db.from('suppliers').select('id, name').order('name');
+  allSuppliers = data || [];
+  const sel = document.getElementById('rSupplier');
+  sel.innerHTML = '<option value="">— اختر المورد —</option>' +
+    allSuppliers.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+}
+
+// ── RENDER PLANS ──────────────────────────────────────────────────────────────
+function renderPlans() {
+  const grid = document.getElementById('plansGrid');
+  if (!allPlans.length) {
+    grid.innerHTML = `
+      <div class="col-span-full flex flex-col items-center py-16 text-gray-400">
+        <i class="fa-solid fa-tags text-5xl mb-4 text-gray-200"></i>
+        <p class="text-sm">لا توجد خطط تسعير بعد</p>
+        <button onclick="openPlanModal()" class="mt-4 erp-btn erp-btn-primary text-sm">
+          <i class="fa-solid fa-plus ml-1"></i>إضافة أول خطة
+        </button>
+      </div>`;
+    return;
+  }
+  grid.innerHTML = allPlans.map(p => `
+    <div class="plan-card ${p.is_active ? '' : 'opacity-60'}" onclick="openPlanModal('${p.id}')">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <span class="font-mono text-xs font-bold text-primary bg-green-50 px-2 py-0.5 rounded">${esc(p.code)}</span>
+          <span class="${p.is_active ? 'badge badge-green' : 'badge badge-gray'} mr-2 text-xs">${p.is_active ? 'نشط' : 'متوقف'}</span>
+        </div>
+        <span class="plan-mode-badge mode-${p.pricing_mode}">${MODE_LABELS[p.pricing_mode] || p.pricing_mode}</span>
+      </div>
+      <h3 class="font-bold text-gray-800 text-base mb-0.5">${esc(p.name_ar)}</h3>
+      <p class="text-gray-400 text-xs mb-3">${esc(p.name_en || p.description || '')}</p>
+      <div class="grid grid-cols-3 gap-2 text-center text-xs pt-3 border-t border-gray-100">
+        <div><div class="font-bold text-gray-800">${p.default_margin_pct}%</div><div class="text-gray-400">هامش</div></div>
+        <div><div class="font-bold text-gray-800">${p.child_price_pct}%</div><div class="text-gray-400">طفل</div></div>
+        <div><div class="font-bold text-gray-800">${p.single_supplement_pct}%</div><div class="text-gray-400">منفرد</div></div>
+      </div>
+      <div class="mt-3 text-xs text-gray-400">${TYPE_LABELS[p.target_type] || p.target_type} · ${p.currency || 'EGP'}</div>
+    </div>`).join('');
+}
+
+// ── RENDER RATES ──────────────────────────────────────────────────────────────
+function renderRates(rates) {
+  const tbody = document.getElementById('ratesBody');
+  if (!rates.length) {
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center py-10 text-gray-400">لا توجد أسعار موردين</td></tr>`;
+    return;
+  }
+  const today = new Date().toISOString().slice(0,10);
+  const soon  = new Date(Date.now() + 30*864e5).toISOString().slice(0,10);
+  tbody.innerHTML = rates.map(r => {
+    const expired  = r.valid_to && r.valid_to < today;
+    const expiring = !expired && r.valid_to && r.valid_to <= soon;
+    const expCls   = expired ? 'expiry-past' : expiring ? 'expiry-warn' : 'expiry-ok';
+    const supName  = r.supplier?.name || '—';
+    return `
+      <tr class="hover:bg-gray-50 cursor-pointer" onclick="openRateModal('${r.id}')">
+        <td class="font-semibold text-gray-800">${esc(r.name_ar)}</td>
+        <td class="text-gray-600 text-xs">${esc(supName)}</td>
+        <td><span class="cat-badge cat-${r.service_category}">${CAT_LABELS[r.service_category] || r.service_category}</span></td>
+        <td class="text-gray-500 text-xs">${esc(r.destination || '—')}</td>
+        <td class="text-xs">${r.rate_type === 'net' ? 'صافي' : r.rate_type === 'gross' ? 'إجمالي' : 'عمولة'}</td>
+        <td class="font-mono text-sm font-bold text-gray-800">${fmt(r.cost_amount, r.currency)}</td>
+        <td class="text-xs text-gray-500">${esc(r.currency)}</td>
+        <td class="text-xs text-gray-600">${esc(r.valid_from || '—')}</td>
+        <td class="text-xs ${expCls} font-semibold">${esc(r.valid_to || '—')}${expired ? ' ⚠' : expiring ? ' ⏳' : ''}</td>
+        <td onclick="event.stopPropagation()">
+          <button onclick="deleteRate('${r.id}')" class="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function filterRates() {
+  const q   = document.getElementById('rateSearch').value.toLowerCase();
+  const cat = document.getElementById('rateCatFilter').value;
+  const exp = document.getElementById('rateExpFilter').value;
+  const today = new Date().toISOString().slice(0,10);
+  const soon  = new Date(Date.now() + 30*864e5).toISOString().slice(0,10);
+
+  renderRates(allRates.filter(r => {
+    if (q && !r.name_ar?.toLowerCase().includes(q) && !r.supplier?.name?.toLowerCase().includes(q) && !r.destination?.toLowerCase().includes(q)) return false;
+    if (cat && r.service_category !== cat) return false;
+    if (exp === 'expired'  && !(r.valid_to && r.valid_to < today)) return false;
+    if (exp === 'expiring' && !(r.valid_to && r.valid_to >= today && r.valid_to <= soon)) return false;
+    if (exp === 'active'   && (r.valid_to && r.valid_to < today)) return false;
+    return true;
+  }));
+}
+
+// ── PLAN MODAL ────────────────────────────────────────────────────────────────
+function openPlanModal(id = null) {
+  editPlanId = id;
+  clearPlanForm();
+  document.getElementById('planModalTitle').textContent = id ? 'تعديل خطة التسعير' : 'خطة تسعير جديدة';
+
+  if (id) {
+    const p = allPlans.find(x => x.id === id);
+    if (p) {
+      document.getElementById('pCode').value       = p.code || '';
+      document.getElementById('pNameAr').value     = p.name_ar || '';
+      document.getElementById('pNameEn').value     = p.name_en || '';
+      document.getElementById('pTargetType').value = p.target_type || 'b2c';
+      document.getElementById('pMode').value       = p.pricing_mode || 'cost_plus';
+      document.getElementById('pCurrency').value   = p.currency || 'EGP';
+      document.getElementById('pMarginPct').value  = p.default_margin_pct ?? 20;
+      document.getElementById('pSingleSup').value  = p.single_supplement_pct ?? 30;
+      document.getElementById('pDiscountPct').value= p.default_discount_pct ?? 0;
+      document.getElementById('pChildPct').value   = p.child_price_pct ?? 75;
+      document.getElementById('pInfantPct').value  = p.infant_price_pct ?? 10;
+      document.getElementById('pActive').value     = String(p.is_active !== false);
+      document.getElementById('pDesc').value       = p.description || '';
+      updateModeHelp();
+    }
+  }
+  document.getElementById('planModal').classList.remove('hidden');
+  document.getElementById('pCode').focus();
+}
+
+function closePlanModal() { document.getElementById('planModal').classList.add('hidden'); editPlanId = null; }
+
+function clearPlanForm() {
+  ['pCode','pNameAr','pNameEn','pDesc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pTargetType').value  = 'b2c';
+  document.getElementById('pMode').value        = 'cost_plus';
+  document.getElementById('pCurrency').value    = 'EGP';
+  document.getElementById('pMarginPct').value   = '20';
+  document.getElementById('pSingleSup').value   = '30';
+  document.getElementById('pDiscountPct').value = '0';
+  document.getElementById('pChildPct').value    = '75';
+  document.getElementById('pInfantPct').value   = '10';
+  document.getElementById('pActive').value      = 'true';
+  document.getElementById('planErr').classList.add('hidden');
+  updateModeHelp();
+}
+
+function updateModeHelp() {
+  const m = document.getElementById('pMode').value;
+  const helps = {
+    cost_plus:     'سعر البيع = تكلفة × (1 + نسبة الهامش)',
+    margin_target: 'سعر البيع = تكلفة ÷ (1 − نسبة الهامش)',
+    fixed:         'سعر البيع مأخوذ مباشرة من الكتالوج',
+    contract:      'سعر المورد المتعاقد + هامش ربح',
+  };
+  document.getElementById('modeHelp').textContent = helps[m] || '';
+}
+
+async function savePlan() {
+  const code   = document.getElementById('pCode').value.trim().toUpperCase();
+  const nameAr = document.getElementById('pNameAr').value.trim();
+  if (!code || !nameAr) { showPlanErr('الكود والاسم مطلوبان'); return; }
+
+  const payload = {
+    code,
+    name_ar:                nameAr,
+    name_en:                document.getElementById('pNameEn').value.trim() || null,
+    description:            document.getElementById('pDesc').value.trim() || null,
+    target_type:            document.getElementById('pTargetType').value,
+    pricing_mode:           document.getElementById('pMode').value,
+    currency:               document.getElementById('pCurrency').value,
+    default_margin_pct:     parseFloat(document.getElementById('pMarginPct').value) || 20,
+    single_supplement_pct:  parseFloat(document.getElementById('pSingleSup').value) || 30,
+    default_discount_pct:   parseFloat(document.getElementById('pDiscountPct').value) || 0,
+    child_price_pct:        parseFloat(document.getElementById('pChildPct').value) || 75,
+    infant_price_pct:       parseFloat(document.getElementById('pInfantPct').value) || 10,
+    is_active:              document.getElementById('pActive').value === 'true',
+  };
+
+  const btn = document.getElementById('savePlanBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+  try {
+    if (editPlanId) {
+      const { error } = await db.from('rate_plans').update(payload).eq('id', editPlanId);
+      if (error) throw error;
+      toast('تم تحديث الخطة');
+    } else {
+      const { error } = await db.from('rate_plans').insert(payload);
+      if (error) throw error;
+      toast('تم إضافة خطة التسعير');
+    }
+    closePlanModal();
+    await loadPlans();
+  } catch (e) {
+    showPlanErr(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-save"></i> حفظ الخطة';
+  }
+}
+
+function showPlanErr(msg) {
+  const el = document.getElementById('planErr');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ── RATE MODAL ────────────────────────────────────────────────────────────────
+function openRateModal(id = null) {
+  editRateId = id;
+  clearRateForm();
+  document.getElementById('rateModalTitle').textContent = id ? 'تعديل سعر المورد' : 'سعر مورد جديد';
+
+  if (id) {
+    const r = allRates.find(x => x.id === id);
+    if (r) {
+      document.getElementById('rSupplier').value   = r.supplier_id || '';
+      document.getElementById('rNameAr').value     = r.name_ar || '';
+      document.getElementById('rCategory').value   = r.service_category || 'hotel';
+      document.getElementById('rDest').value       = r.destination || '';
+      document.getElementById('rRateType').value   = r.rate_type || 'net';
+      document.getElementById('rUnit').value       = r.unit || 'per_person';
+      document.getElementById('rCurrency').value   = r.currency || 'EGP';
+      document.getElementById('rCostAmount').value = r.cost_amount || '';
+      document.getElementById('rCommPct').value    = r.commission_pct || 0;
+      document.getElementById('rValidFrom').value  = r.valid_from || '';
+      document.getElementById('rValidTo').value    = r.valid_to || '';
+      document.getElementById('rNotes').value      = r.notes || '';
+      if (r.service_category === 'hotel') {
+        document.getElementById('hotelRates').classList.remove('hidden');
+        document.getElementById('rSingleRate').value = r.single_rate || '';
+        document.getElementById('rDoubleRate').value = r.double_rate || '';
+        document.getElementById('rTripleRate').value = r.triple_rate || '';
+      }
+    }
+  }
+  document.getElementById('rateModal').classList.remove('hidden');
+  document.getElementById('rCategory').onchange = () => {
+    document.getElementById('hotelRates').classList.toggle('hidden', document.getElementById('rCategory').value !== 'hotel');
+  };
+}
+
+function closeRateModal() { document.getElementById('rateModal').classList.add('hidden'); editRateId = null; }
+
+function clearRateForm() {
+  ['rNameAr','rDest','rNotes','rSingleRate','rDoubleRate','rTripleRate','rValidFrom','rValidTo'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('rSupplier').value   = '';
+  document.getElementById('rCategory').value   = 'hotel';
+  document.getElementById('rRateType').value   = 'net';
+  document.getElementById('rUnit').value       = 'per_person';
+  document.getElementById('rCurrency').value   = 'EGP';
+  document.getElementById('rCostAmount').value = '';
+  document.getElementById('rCommPct').value    = '0';
+  document.getElementById('hotelRates').classList.add('hidden');
+  document.getElementById('rateErr').classList.add('hidden');
+}
+
+async function saveRate() {
+  const supplierId = document.getElementById('rSupplier').value;
+  const nameAr     = document.getElementById('rNameAr').value.trim();
+  const cost       = parseFloat(document.getElementById('rCostAmount').value);
+  const validFrom  = document.getElementById('rValidFrom').value;
+  const validTo    = document.getElementById('rValidTo').value;
+
+  if (!supplierId) { showRateErr('اختر المورد'); return; }
+  if (!nameAr)     { showRateErr('اسم السعر مطلوب'); return; }
+  if (isNaN(cost)) { showRateErr('التكلفة مطلوبة'); return; }
+  if (!validFrom)  { showRateErr('تاريخ البداية مطلوب'); return; }
+  if (!validTo)    { showRateErr('تاريخ الانتهاء مطلوب'); return; }
+
+  const cat = document.getElementById('rCategory').value;
+  const payload = {
+    supplier_id:      supplierId,
+    name_ar:          nameAr,
+    service_category: cat,
+    destination:      document.getElementById('rDest').value.trim() || null,
+    rate_type:        document.getElementById('rRateType').value,
+    unit:             document.getElementById('rUnit').value,
+    currency:         document.getElementById('rCurrency').value,
+    cost_amount:      cost,
+    commission_pct:   parseFloat(document.getElementById('rCommPct').value) || 0,
+    valid_from:       validFrom,
+    valid_to:         validTo,
+    notes:            document.getElementById('rNotes').value.trim() || null,
+    single_rate:      cat === 'hotel' ? parseFloat(document.getElementById('rSingleRate').value) || null : null,
+    double_rate:      cat === 'hotel' ? parseFloat(document.getElementById('rDoubleRate').value) || null : null,
+    triple_rate:      cat === 'hotel' ? parseFloat(document.getElementById('rTripleRate').value) || null : null,
+  };
+
+  const btn = document.getElementById('saveRateBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+  try {
+    if (editRateId) {
+      const { error } = await db.from('supplier_rates').update(payload).eq('id', editRateId);
+      if (error) throw error;
+      toast('تم تحديث سعر المورد');
+    } else {
+      const { error } = await db.from('supplier_rates').insert(payload);
+      if (error) throw error;
+      toast('تم إضافة سعر المورد');
+    }
+    closeRateModal();
+    await loadRates();
+  } catch (e) {
+    showRateErr(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-save"></i> حفظ السعر';
+  }
+}
+
+async function deleteRate(id) {
+  if (!confirm('حذف سعر المورد هذا؟ لا يمكن التراجع.')) return;
+  const { error } = await db.from('supplier_rates').delete().eq('id', id);
+  if (error) { toast(error.message, true); return; }
+  toast('تم الحذف');
+  await loadRates();
+}
+
+function showRateErr(msg) {
+  const el = document.getElementById('rateErr');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1336 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بناء الجدول السياحي | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <script src="/js/ai-service.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+
+    /* ── Day card ─────────────────────────────────────── */
+    .day-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      transition: box-shadow .2s;
+    }
+    .day-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+    .day-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      user-select: none;
+    }
+    .day-badge {
+      background: #1B5E20;
+      color: #fff;
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-size: .78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .day-body { padding: 14px 18px; }
+
+    /* ── Service item ─────────────────────────────────── */
+    .svc-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: #fafafa;
+      position: relative;
+    }
+    .svc-item:hover { border-color: #1B5E20; background: #f0fdf4; }
+    .svc-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; flex-shrink: 0; margin-top: 2px;
+    }
+    .cat-hotel      { background: #dbeafe; color: #1d4ed8; }
+    .cat-transfer   { background: #fef3c7; color: #b45309; }
+    .cat-guide      { background: #d1fae5; color: #065f46; }
+    .cat-activity   { background: #ede9fe; color: #6d28d9; }
+    .cat-ticket     { background: #fce7f3; color: #9d174d; }
+    .cat-meal       { background: #fff7ed; color: #c2410c; }
+    .cat-flight     { background: #e0f2fe; color: #0369a1; }
+    .cat-visa       { background: #f0fdf4; color: #166534; }
+    .cat-insurance  { background: #fdf2f8; color: #86198f; }
+    .cat-transport  { background: #fef9c3; color: #854d0e; }
+    .cat-camp       { background: #f1f5f9; color: #475569; }
+    .cat-other      { background: #f9fafb; color: #6b7280; }
+
+    /* ── Catalog modal ───────────────────────────────── */
+    .catalog-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: .15s;
+    }
+    .catalog-item:hover { border-color: #1B5E20; background: #f0fdf4; }
+
+    /* ── Summary bar ─────────────────────────────────── */
+    .summary-bar {
+      background: linear-gradient(135deg, #1B5E20, #2E7D32);
+      color: #fff;
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .summary-kpi { text-align: center; }
+    .summary-kpi .val { font-size: 1.2rem; font-weight: 700; }
+    .summary-kpi .lbl { font-size: .72rem; opacity: .8; margin-top: 1px; }
+
+    /* ── Drag handle ─────────────────────────────────── */
+    .drag-handle { color: #d1d5db; cursor: grab; font-size: .9rem; padding: 2px 4px; }
+    .drag-handle:hover { color: #1B5E20; }
+
+    /* ── Inputs ──────────────────────────────────────── */
+    label { font-size: 12px; font-weight: 700; color: #374151; display: block; margin-bottom: 3px; }
+    input, select, textarea {
+      width: 100%; border: 1px solid #d1d5db; border-radius: 8px;
+      padding: 8px 11px; font-family: 'Cairo',sans-serif; font-size: 13px;
+      outline: none; background: #fff;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #1B5E20; box-shadow: 0 0 0 3px rgba(27,94,32,.1); }
+
+    /* ── Toast ───────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1B5E20; color: #fff; padding: 10px 24px;
+      border-radius: 24px; font-size: .85rem; font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2); z-index: 9999;
+      opacity: 0; transition: opacity .3s; pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+
+    html.dark .day-card { background: #1a2e1b; border-color: #2d4a2e; }
+    html.dark .svc-item { background: #162418; border-color: #2d4a2e; }
+    html.dark .svc-item:hover { background: #1a3320; }
+    html.dark input, html.dark select, html.dark textarea { background: #162418; color: #e5e7eb; border-color: #2d4a2e; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-map-location-dot ml-2"></i>بناء الجدول السياحي</h1>
+      <p class="erp-page-subtitle" id="itnSubtitle">جدول جديد</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick="saveDraft()" id="btnSave"
+        class="erp-page-btn"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ</button>
+      <button onclick="openCatalogModal(null)"
+        class="erp-page-btn"><i class="fa-solid fa-plus ml-1"></i>إضافة خدمة</button>
+      <button onclick="addDay()"
+        class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-calendar-plus ml-1"></i>إضافة يوم</button>
+      <button onclick="linkToQuote()"
+        class="erp-page-btn"><i class="fa-solid fa-link ml-1"></i>ربط بعرض سعر</button>
+      <button onclick="finalizeItinerary()" id="btnFinalize"
+        class="erp-page-btn text-green-700 border-green-300 hover:bg-green-50"><i class="fa-solid fa-circle-check ml-1"></i>تأكيد نهائي</button>
+      <button onclick="printItinerary()"
+        class="erp-page-btn"><i class="fa-solid fa-print ml-1"></i>طباعة</button>
+    </div>
+  </div>
+
+  <!-- Meta form -->
+  <div class="erp-card mb-6">
+    <div class="erp-card-header">
+      <h3 class="erp-card-title"><i class="fa-solid fa-circle-info ml-2"></i>معلومات الرحلة</h3>
+      <button onclick="toggleMetaForm()" class="text-xs text-gray-500 hover:text-primary transition" id="metaToggleBtn">إخفاء</button>
+    </div>
+    <div id="metaFormBody" class="p-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div>
+          <label>عنوان الرحلة *</label>
+          <input type="text" id="fTitle" placeholder="مثال: رحلة القاهرة والأقصر 7 أيام">
+        </div>
+        <div>
+          <label>الوجهة الرئيسية</label>
+          <input type="text" id="fDestination" placeholder="مثال: مصر">
+        </div>
+        <div>
+          <label>نوع الرحلة</label>
+          <select id="fTripType">
+            <option value="custom">مخصصة / Tailor-Made</option>
+            <option value="group">مجموعة</option>
+            <option value="leisure">سياحة ترفيهية</option>
+            <option value="adventure">مغامرة</option>
+            <option value="corporate">شركات</option>
+            <option value="mice">MICE</option>
+            <option value="hajj">حج</option>
+            <option value="umrah">عمرة</option>
+          </select>
+        </div>
+        <div>
+          <label>تاريخ البدء</label>
+          <input type="date" id="fDateFrom">
+        </div>
+        <div>
+          <label>تاريخ الانتهاء</label>
+          <input type="date" id="fDateTo">
+        </div>
+        <div>
+          <label>العملة</label>
+          <select id="fCurrency">
+            <option value="EGP">EGP — جنيه مصري</option>
+            <option value="USD">USD — دولار أمريكي</option>
+            <option value="EUR">EUR — يورو</option>
+            <option value="SAR">SAR — ريال سعودي</option>
+          </select>
+        </div>
+        <div>
+          <label>عدد البالغين</label>
+          <input type="number" id="fAdults" value="2" min="1">
+        </div>
+        <div>
+          <label>عدد الأطفال</label>
+          <input type="number" id="fChildren" value="0" min="0">
+        </div>
+        <div>
+          <label>ملاحظات داخلية</label>
+          <input type="text" id="fNotes" placeholder="ملاحظات للفريق الداخلي فقط">
+        </div>
+      </div>
+      <div class="mt-3 flex gap-2 items-center">
+        <input type="checkbox" id="fIsTemplate" class="w-4 h-4 accent-primary">
+        <label for="fIsTemplate" class="mb-0 cursor-pointer">حفظ كقالب قابل للإعادة استخدام</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="summary-bar" id="summaryBar">
+    <div class="summary-kpi">
+      <div class="val" id="sumDays">0</div>
+      <div class="lbl">أيام</div>
+    </div>
+    <div class="summary-kpi">
+      <div class="val" id="sumItems">0</div>
+      <div class="lbl">خدمة</div>
+    </div>
+    <div class="summary-kpi">
+      <div class="val" id="sumCost">0</div>
+      <div class="lbl">إجمالي التكلفة</div>
+    </div>
+    <div class="summary-kpi">
+      <div class="val" id="sumSell">0</div>
+      <div class="lbl">إجمالي البيع</div>
+    </div>
+    <div class="summary-kpi">
+      <div class="val" id="sumProfit">0</div>
+      <div class="lbl">الربح الإجمالي</div>
+    </div>
+    <div class="summary-kpi">
+      <div class="val" id="sumMargin">0%</div>
+      <div class="lbl">هامش الربح</div>
+    </div>
+  </div>
+
+  <!-- Days container -->
+  <div id="daysContainer">
+    <div class="text-center py-16 text-gray-400" id="emptyState">
+      <i class="fa-solid fa-calendar-days text-4xl mb-3 block"></i>
+      <p class="font-semibold text-lg">لا توجد أيام بعد</p>
+      <p class="text-sm mt-1">اضغط "إضافة يوم" لبدء بناء الجدول السياحي</p>
+      <button onclick="addDay()" class="mt-4 bg-primary text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-calendar-plus ml-1"></i>إضافة اليوم الأول
+      </button>
+    </div>
+  </div>
+
+  <!-- AI Itinerary Assistant -->
+  <div class="erp-card mt-6">
+    <div class="erp-card-header mb-3">
+      <h3 class="erp-card-title"><i class="fa-solid fa-sparkles text-purple-600 ml-2"></i>مساعد الجداول الذكي</h3>
+    </div>
+    <!-- Draft Generator -->
+    <div class="border border-purple-100 rounded-xl p-4 mb-4 bg-purple-50/30">
+      <h4 class="font-bold text-sm text-purple-800 mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> توليد مسودة جدول سياحي
+      </h4>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الوجهة</label>
+          <input id="ai_destination" type="text" placeholder="مثال: الأقصر، أسوان"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:border-purple-400 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">عدد الأيام</label>
+          <input id="ai_days" type="number" value="7" min="1" max="30"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:border-purple-400 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">عدد البالغين</label>
+          <input id="ai_pax" type="number" value="2" min="1"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:border-purple-400 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الميزانية التقريبية</label>
+          <input id="ai_budget" type="text" placeholder="مثال: 5000 USD"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:border-purple-400 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">نمط السفر</label>
+          <select id="ai_style" class="w-full border rounded-lg px-3 py-2 text-sm focus:border-purple-400 outline-none">
+            <option value="سياحة عامة">سياحة عامة</option>
+            <option value="فاخر">فاخر</option>
+            <option value="مغامرة">مغامرة</option>
+            <option value="عائلي">عائلي</option>
+            <option value="ثقافي وتاريخي">ثقافي وتاريخي</option>
+            <option value="شهر العسل">شهر العسل</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات خاصة</label>
+          <input id="ai_notes" type="text" placeholder="أي متطلبات إضافية"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:border-purple-400 outline-none">
+        </div>
+      </div>
+      <button onclick="runItineraryAI('itinerary_draft')"
+        class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-700 transition flex items-center gap-2">
+        <i class="fa-solid fa-sparkles"></i> توليد مسودة ذكية
+      </button>
+      <p class="text-xs text-gray-400 mt-2">
+        <i class="fa-solid fa-triangle-exclamation text-yellow-500 ml-1"></i>
+        المسودة للمراجعة فقط — لا تُضاف تلقائياً للجدول. راجعها وأضف ما يناسبك يدوياً.
+      </p>
+    </div>
+    <!-- Improve existing itinerary (shown when itinerary ID exists) -->
+    <div id="aiImproveSection" class="hidden border border-blue-100 rounded-xl p-4 bg-blue-50/30">
+      <h4 class="font-bold text-sm text-blue-800 mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-wand-sparkles"></i> تحسين الجدول الحالي
+      </h4>
+      <button onclick="runItineraryAI('itinerary_improve')"
+        class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition flex items-center gap-2">
+        <i class="fa-solid fa-arrow-up-right-dots"></i> مراجعة وتحسين
+      </button>
+    </div>
+    <!-- Result container -->
+    <div id="itineraryAiContainer" class="mt-3"></div>
+  </div>
+
+</main>
+
+<!-- ═══ Catalog Modal ════════════════════════════════════════════════════════ -->
+<div id="catalogModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h3 class="font-bold text-lg text-primary"><i class="fa-solid fa-boxes-stacked ml-2"></i>كتالوج الخدمات</h3>
+      <div class="flex gap-2">
+        <button onclick="openManualServiceModal()" class="text-xs bg-gray-100 hover:bg-primary hover:text-white text-gray-600 px-3 py-1.5 rounded-lg transition font-semibold">
+          <i class="fa-solid fa-plus ml-1"></i>خدمة مخصصة
+        </button>
+        <button onclick="closeCatalogModal()" class="text-gray-400 hover:text-red-500 text-xl transition">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+    </div>
+    <!-- Search & filter -->
+    <div class="p-4 border-b border-gray-100 flex gap-3">
+      <input type="text" id="catalogSearch" placeholder="بحث في الخدمات..." oninput="filterCatalog()" class="flex-1">
+      <select id="catalogCatFilter" onchange="filterCatalog()" class="w-44">
+        <option value="">كل الفئات</option>
+        <option value="hotel">فندق</option>
+        <option value="transfer">نقل</option>
+        <option value="guide">مرشد</option>
+        <option value="activity">نشاط</option>
+        <option value="ticket">تذكرة</option>
+        <option value="meal">وجبة</option>
+        <option value="flight">طيران</option>
+        <option value="visa">تأشيرة</option>
+        <option value="insurance">تأمين</option>
+        <option value="transport">باص / مركبة</option>
+        <option value="other">أخرى</option>
+      </select>
+    </div>
+    <div id="catalogList" class="overflow-y-auto flex-1 p-4 grid gap-2">
+      <div class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Manual Service Modal ════════════════════════════════════════════════ -->
+<div id="manualSvcModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h3 class="font-bold text-lg text-primary"><i class="fa-solid fa-pen-to-square ml-2"></i>إضافة خدمة مخصصة</h3>
+      <button onclick="closeManualServiceModal()" class="text-gray-400 hover:text-red-500 text-xl transition">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+    <div class="p-5 grid gap-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2">
+          <label>اسم الخدمة *</label>
+          <input type="text" id="msName" placeholder="مثال: جولة خاصة في المتحف المصري">
+        </div>
+        <div>
+          <label>الفئة *</label>
+          <select id="msCat">
+            <option value="hotel">فندق</option>
+            <option value="transfer">نقل</option>
+            <option value="guide">مرشد</option>
+            <option value="activity" selected>نشاط / جولة</option>
+            <option value="ticket">تذكرة دخول</option>
+            <option value="meal">وجبة</option>
+            <option value="flight">طيران</option>
+            <option value="visa">تأشيرة</option>
+            <option value="insurance">تأمين</option>
+            <option value="transport">باص / مركبة</option>
+            <option value="camp">مخيم</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div>
+          <label>وحدة الحساب</label>
+          <select id="msUnit">
+            <option value="per_person">لكل شخص</option>
+            <option value="per_group">للمجموعة</option>
+            <option value="per_room">للغرفة</option>
+            <option value="per_vehicle">للمركبة</option>
+            <option value="per_day">لليوم</option>
+            <option value="fixed">سعر ثابت</option>
+          </select>
+        </div>
+        <div>
+          <label>الكمية / العدد</label>
+          <input type="number" id="msQty" value="1" min="0.01" step="0.01">
+        </div>
+        <div>
+          <label>التكلفة (للوحدة)</label>
+          <input type="number" id="msCost" value="0" min="0" step="0.01" placeholder="0">
+        </div>
+        <div>
+          <label>سعر البيع (للوحدة)</label>
+          <input type="number" id="msSell" value="0" min="0" step="0.01" placeholder="0">
+        </div>
+        <div>
+          <label>وقت البدء</label>
+          <input type="time" id="msTimeStart">
+        </div>
+        <div>
+          <label>المكان / نقطة التجمع</label>
+          <input type="text" id="msLocation" placeholder="مثال: لوبي الفندق">
+        </div>
+        <div class="col-span-2">
+          <label>وصف / ملاحظات</label>
+          <textarea id="msDesc" rows="2" placeholder="تفاصيل إضافية..."></textarea>
+        </div>
+        <div class="col-span-2 flex gap-4">
+          <label class="flex items-center gap-2 cursor-pointer mb-0">
+            <input type="checkbox" id="msOptional" class="w-4 h-4 accent-primary">
+            <span class="text-sm">خدمة اختيارية</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer mb-0">
+            <input type="checkbox" id="msIncluded" checked class="w-4 h-4 accent-primary">
+            <span class="text-sm">مشمولة في السعر</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end p-5 border-t border-gray-100">
+      <button onclick="closeManualServiceModal()" class="erp-page-btn">إلغاء</button>
+      <button onclick="addManualService()" class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-plus ml-1"></i>إضافة للجدول
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Link to Quote Modal ═════════════════════════════════════════════════ -->
+<div id="linkQuoteModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h3 class="font-bold text-lg text-primary"><i class="fa-solid fa-link ml-2"></i>ربط بعرض سعر</h3>
+      <button onclick="document.getElementById('linkQuoteModal').classList.add('hidden')" class="text-gray-400 hover:text-red-500 text-xl">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+    <div class="p-5">
+      <label>اختر عرض السعر</label>
+      <select id="quoteSelectLink" class="mb-4">
+        <option value="">جاري التحميل...</option>
+      </select>
+      <p class="text-xs text-gray-400 mb-4">سيتم ربط هذا الجدول السياحي بعرض السعر المختار وتحديث إجمالياته.</p>
+    </div>
+    <div class="flex gap-3 justify-end p-5 border-t border-gray-100">
+      <button onclick="document.getElementById('linkQuoteModal').classList.add('hidden')" class="erp-page-btn">إلغاء</button>
+      <button onclick="confirmLinkToQuote()" class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-check ml-1"></i>ربط
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+//  FLOW DMC — ITINERARY BUILDER  (Phase 4)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+let ITINERARY_ID = null;          // UUID of loaded/created itinerary
+let _days        = [];            // [{id, day_number, title, city, date, items:[]}]
+let _catalog     = [];            // full catalog from DB
+let _targetDayId = null;          // which day the catalog modal is for
+let _metaOpen    = true;
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+
+  const p = new URLSearchParams(location.search);
+  ITINERARY_ID = p.get('id');
+
+  if (ITINERARY_ID) {
+    await loadItinerary();
+  } else {
+    renderDays();
+  }
+  await loadCatalog();
+  await loadQuotesForLink();
+});
+
+// ── Load existing itinerary ───────────────────────────────────────────────────
+async function loadItinerary() {
+  const { data: itn } = await db.from('itineraries').select('*').eq('id', ITINERARY_ID).single();
+  if (!itn) { toast('لم يتم العثور على الجدول السياحي', true); return; }
+
+  document.getElementById('fTitle').value       = itn.title || '';
+  document.getElementById('fDestination').value = itn.destination || '';
+  document.getElementById('fTripType').value    = itn.trip_type || 'custom';
+  document.getElementById('fDateFrom').value    = itn.travel_date_from || '';
+  document.getElementById('fDateTo').value      = itn.travel_date_to || '';
+  document.getElementById('fCurrency').value    = itn.currency || 'EGP';
+  document.getElementById('fAdults').value      = itn.adults_count || 2;
+  document.getElementById('fChildren').value    = itn.children_count || 0;
+  document.getElementById('fNotes').value       = itn.notes || '';
+  document.getElementById('fIsTemplate').checked = itn.is_template || false;
+  document.getElementById('itnSubtitle').textContent = itn.itinerary_number + ' — ' + itn.title;
+
+  // Reflect finalized state
+  if (itn.status === 'final') {
+    const btn = document.getElementById('btnFinalize');
+    btn.textContent = '✓ نهائي';
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+  }
+
+  // Load days + items
+  const { data: days } = await db.from('itinerary_days')
+    .select('*').eq('itinerary_id', ITINERARY_ID).order('sort_order');
+
+  for (const day of (days || [])) {
+    const { data: items } = await db.from('itinerary_items')
+      .select('*').eq('itinerary_day_id', day.id).order('sort_order');
+    _days.push({ ...day, items: items || [] });
+  }
+  renderDays();
+}
+
+// ── Load catalog ──────────────────────────────────────────────────────────────
+async function loadCatalog() {
+  const { data } = await db.from('service_catalog')
+    .select('*').eq('is_active', true).order('category').order('name_ar');
+  _catalog = data || [];
+}
+
+// ── Render all days ───────────────────────────────────────────────────────────
+function renderDays() {
+  const c = document.getElementById('daysContainer');
+  const empty = document.getElementById('emptyState');
+  if (!_days.length) { empty && (empty.style.display = ''); return; }
+  if (empty) empty.style.display = 'none';
+
+  // Keep existing cards, rebuild
+  // Remove old day cards (not emptyState)
+  [...c.children].forEach(el => { if (!el.id || el.id !== 'emptyState') el.remove(); });
+
+  _days.forEach((day, idx) => renderDayCard(day, idx));
+  updateSummary();
+}
+
+function renderDayCard(day, idx) {
+  const c      = document.getElementById('daysContainer');
+  const dateStr = day.date ? ` — ${new Date(day.date).toLocaleDateString('ar-EG', {day:'numeric',month:'long'})}` : '';
+  const card   = document.createElement('div');
+  card.className = 'day-card';
+  card.dataset.dayId = day.id || ('_new_' + idx);
+
+  card.innerHTML = `
+    <div class="day-header" onclick="toggleDay(this)">
+      <span class="day-badge">اليوم ${day.day_number}</span>
+      <span class="font-semibold text-sm flex-1 text-gray-800">${esc(day.title || day.city || ('يوم ' + day.day_number))}${esc(dateStr)}</span>
+      <span class="text-xs text-gray-400">${day.items.length} خدمة</span>
+      <div class="flex gap-1 mr-2" onclick="event.stopPropagation()">
+        <button onclick="editDayMeta(${idx})" class="text-gray-400 hover:text-primary p-1 rounded transition text-xs" title="تعديل اليوم">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button onclick="duplicateDay(${idx})" class="text-gray-400 hover:text-blue-500 p-1 rounded transition text-xs" title="تكرار اليوم">
+          <i class="fa-solid fa-copy"></i>
+        </button>
+        <button onclick="moveDay(${idx},'up')" class="text-gray-400 hover:text-primary p-1 rounded transition text-xs" ${idx===0?'disabled style="opacity:.3"':''}>
+          <i class="fa-solid fa-arrow-up"></i>
+        </button>
+        <button onclick="moveDay(${idx},'down')" class="text-gray-400 hover:text-primary p-1 rounded transition text-xs" ${idx===_days.length-1?'disabled style="opacity:.3"':''}>
+          <i class="fa-solid fa-arrow-down"></i>
+        </button>
+        <button onclick="confirmDeleteDay(${idx})" class="text-gray-400 hover:text-red-500 p-1 rounded transition text-xs" title="حذف اليوم">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+      <i class="fa-solid fa-chevron-down text-xs text-gray-300 mr-2 toggle-icon transition-transform duration-200"></i>
+    </div>
+    <div class="day-body">
+      ${renderDayEditForm(day, idx)}
+      <div class="items-list mb-3">
+        ${day.items.map((item, ii) => renderServiceItem(item, idx, ii)).join('')}
+      </div>
+      <button onclick="openCatalogModal('${day.id || idx}')" class="w-full border-2 border-dashed border-gray-200 hover:border-primary text-gray-400 hover:text-primary py-3 rounded-xl text-sm font-semibold transition">
+        <i class="fa-solid fa-plus ml-1"></i>إضافة خدمة لهذا اليوم
+      </button>
+    </div>`;
+
+  c.appendChild(card);
+}
+
+function renderDayEditForm(day, idx) {
+  return `
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-3 bg-gray-50 rounded-xl">
+    <div>
+      <label>المدينة</label>
+      <input type="text" value="${esc(day.city||'')}" onchange="_days[${idx}].city=this.value;updateDayHeader(${idx})" placeholder="مثال: القاهرة">
+    </div>
+    <div>
+      <label>التاريخ</label>
+      <input type="date" value="${day.date||''}" onchange="_days[${idx}].date=this.value;updateDayHeader(${idx})">
+    </div>
+    <div>
+      <label>عنوان اليوم</label>
+      <input type="text" value="${esc(day.title||'')}" onchange="_days[${idx}].title=this.value;updateDayHeader(${idx})" placeholder="اختياري">
+    </div>
+    <div>
+      <label>الليلة في</label>
+      <input type="text" value="${esc(day.overnight_city||'')}" onchange="_days[${idx}].overnight_city=this.value" placeholder="المدينة">
+    </div>
+    <div>
+      <label>وجبات</label>
+      <select onchange="_days[${idx}].meal_plan=this.value">
+        <option value="none" ${day.meal_plan==='none'?'selected':''}>لا يوجد</option>
+        <option value="breakfast" ${day.meal_plan==='breakfast'?'selected':''}>إفطار</option>
+        <option value="half_board" ${day.meal_plan==='half_board'?'selected':''}>نصف إقامة</option>
+        <option value="full_board" ${day.meal_plan==='full_board'?'selected':''}>إقامة كاملة</option>
+        <option value="all_inclusive" ${day.meal_plan==='all_inclusive'?'selected':''}>كل شيء شامل</option>
+      </select>
+    </div>
+    <div class="md:col-span-3">
+      <label>وصف اليوم (يظهر في PDF)</label>
+      <input type="text" value="${esc(day.description||'')}" onchange="_days[${idx}].description=this.value" placeholder="برنامج اليوم...">
+    </div>
+  </div>`;
+}
+
+function renderServiceItem(item, dayIdx, itemIdx) {
+  const iconMap = {
+    hotel:'fa-bed',transfer:'fa-car',guide:'fa-user-tie',activity:'fa-person-hiking',
+    ticket:'fa-ticket',meal:'fa-utensils',flight:'fa-plane',visa:'fa-passport',
+    insurance:'fa-shield-halved',transport:'fa-bus',camp:'fa-tent',other:'fa-box'
+  };
+  const icon = iconMap[item.category] || 'fa-box';
+  const gp   = (item.sell_unit - item.cost_unit) * (item.quantity || 1);
+
+  return `
+  <div class="svc-item" data-item-idx="${itemIdx}">
+    <div class="svc-icon cat-${item.category}">
+      <i class="fa-solid ${icon}"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center justify-between gap-2">
+        <span class="font-semibold text-sm text-gray-800 truncate">${esc(item.name_ar)}</span>
+        <div class="flex gap-1 shrink-0">
+          ${item.is_optional ? '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">اختياري</span>' : ''}
+          ${!item.is_included ? '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">غير مشمول</span>' : ''}
+        </div>
+      </div>
+      ${item.description ? `<div class="text-xs text-gray-400 mt-0.5 truncate">${esc(item.description)}</div>` : ''}
+      ${item.time_start ? `<div class="text-xs text-gray-400 mt-0.5"><i class="fa-regular fa-clock ml-1"></i>${item.time_start}</div>` : ''}
+      <div class="flex gap-4 mt-1.5 text-xs">
+        <span class="text-gray-500">الكمية: <b>${item.quantity}</b></span>
+        <span class="text-red-600">تكلفة: <b>${fmt(item.cost_unit * (item.quantity||1))}</b></span>
+        <span class="text-green-700">بيع: <b>${fmt(item.sell_unit * (item.quantity||1))}</b></span>
+        <span class="font-bold ${gp>=0?'text-primary':'text-red-600'}">ر.إ: <b>${fmt(gp)}</b></span>
+      </div>
+    </div>
+    <div class="flex flex-col gap-1 shrink-0">
+      <button onclick="editServiceItem(${dayIdx},${itemIdx})" class="text-gray-300 hover:text-primary text-xs p-1 rounded" title="تعديل">
+        <i class="fa-solid fa-pen"></i>
+      </button>
+      <button onclick="removeServiceItem(${dayIdx},${itemIdx})" class="text-gray-300 hover:text-red-500 text-xs p-1 rounded" title="حذف">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </div>
+  </div>`;
+}
+
+// ── Day actions ───────────────────────────────────────────────────────────────
+function addDay() {
+  const dayNum = _days.length + 1;
+  const prevDate = _days.length ? _days[_days.length-1].date : document.getElementById('fDateFrom').value;
+  let newDate = '';
+  if (prevDate) {
+    const d = new Date(prevDate);
+    d.setDate(d.getDate() + 1);
+    newDate = d.toISOString().split('T')[0];
+  }
+  _days.push({ id: null, day_number: dayNum, title: '', city: '', date: newDate,
+    description: '', overnight_city: '', meal_plan: 'none', items: [], sort_order: _days.length });
+  renderDays();
+  // Scroll to new day
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.day-card');
+    if (cards.length) cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'center' });
+  }, 100);
+}
+
+function toggleDay(header) {
+  const body = header.nextElementSibling;
+  const icon = header.querySelector('.toggle-icon');
+  const isHidden = body.style.display === 'none';
+  body.style.display = isHidden ? '' : 'none';
+  if (icon) icon.style.transform = isHidden ? '' : 'rotate(-90deg)';
+}
+
+function updateDayHeader(idx) {
+  const cards = document.querySelectorAll('.day-card');
+  const card  = cards[idx];
+  if (!card) return;
+  const day   = _days[idx];
+  const dateStr = day.date ? ` — ${new Date(day.date).toLocaleDateString('ar-EG', {day:'numeric',month:'long'})}` : '';
+  const titleEl = card.querySelector('.day-header .font-semibold');
+  if (titleEl) titleEl.textContent = (day.title || day.city || ('يوم ' + day.day_number)) + dateStr;
+}
+
+function editDayMeta(idx) { /* inline edit is already in card */ }
+
+function duplicateDay(idx) {
+  const orig = JSON.parse(JSON.stringify(_days[idx]));
+  orig.id = null;
+  orig.day_number = _days.length + 1;
+  orig.sort_order = _days.length;
+  orig.items = orig.items.map(i => ({ ...i, id: null }));
+  // Advance date by 1
+  if (orig.date) {
+    const d = new Date(orig.date);
+    d.setDate(d.getDate() + 1);
+    orig.date = d.toISOString().split('T')[0];
+  }
+  _days.push(orig);
+  renumberDays();
+  renderDays();
+  toast('تم تكرار اليوم');
+}
+
+function moveDay(idx, dir) {
+  const swap = dir === 'up' ? idx - 1 : idx + 1;
+  if (swap < 0 || swap >= _days.length) return;
+  [_days[idx], _days[swap]] = [_days[swap], _days[idx]];
+  renumberDays();
+  renderDays();
+}
+
+function renumberDays() {
+  _days.forEach((d, i) => { d.day_number = i + 1; d.sort_order = i; });
+}
+
+function confirmDeleteDay(idx) {
+  if (!confirm(`حذف اليوم ${_days[idx].day_number}؟ لا يمكن التراجع.`)) return;
+  _days.splice(idx, 1);
+  renumberDays();
+  renderDays();
+  toast('تم حذف اليوم');
+}
+
+// ── Catalog Modal ─────────────────────────────────────────────────────────────
+function openCatalogModal(dayId) {
+  _targetDayId = dayId;
+  document.getElementById('catalogModal').classList.remove('hidden');
+  document.getElementById('catalogSearch').value = '';
+  document.getElementById('catalogCatFilter').value = '';
+  renderCatalog(_catalog);
+}
+
+function closeCatalogModal() {
+  document.getElementById('catalogModal').classList.add('hidden');
+  _targetDayId = null;
+}
+
+function renderCatalog(items) {
+  const list = document.getElementById('catalogList');
+  if (!items.length) {
+    list.innerHTML = '<p class="text-center text-gray-400 py-8">لا توجد خدمات مطابقة</p>';
+    return;
+  }
+  const iconMap = {
+    hotel:'fa-bed',transfer:'fa-car',guide:'fa-user-tie',activity:'fa-person-hiking',
+    ticket:'fa-ticket',meal:'fa-utensils',flight:'fa-plane',visa:'fa-passport',
+    insurance:'fa-shield-halved',transport:'fa-bus',camp:'fa-tent',other:'fa-box'
+  };
+  list.innerHTML = items.map(svc => `
+    <div class="catalog-item" onclick="addServiceFromCatalog('${svc.id}')">
+      <div class="svc-icon cat-${svc.category} shrink-0">
+        <i class="fa-solid ${iconMap[svc.category]||'fa-box'}"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm truncate">${esc(svc.name_ar)}</div>
+        <div class="text-xs text-gray-400">${catLabel(svc.category)} · ${unitLabel(svc.unit)}</div>
+      </div>
+      <div class="text-left shrink-0 text-xs">
+        <div class="text-red-500">${fmt(svc.cost_amount)}</div>
+        <div class="text-green-700 font-bold">${fmt(svc.sell_amount)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function filterCatalog() {
+  const q   = document.getElementById('catalogSearch').value.toLowerCase();
+  const cat = document.getElementById('catalogCatFilter').value;
+  const filtered = _catalog.filter(s =>
+    (!q   || s.name_ar.includes(q) || (s.name_en||'').toLowerCase().includes(q)) &&
+    (!cat || s.category === cat)
+  );
+  renderCatalog(filtered);
+}
+
+function addServiceFromCatalog(svcId) {
+  const svc = _catalog.find(s => s.id === svcId);
+  if (!svc) return;
+  const dayIdx = getDayIdxFromTarget();
+  if (dayIdx === null) return;
+
+  _days[dayIdx].items.push({
+    id: null,
+    service_catalog_id: svc.id,
+    name_ar:    svc.name_ar,
+    name_en:    svc.name_en,
+    category:   svc.category,
+    description: svc.description,
+    unit:        svc.unit,
+    quantity:    1,
+    cost_unit:   svc.cost_amount,
+    sell_unit:   svc.sell_amount,
+    is_optional: false,
+    is_included: true,
+    time_start:  null,
+    location:    null,
+    sort_order:  _days[dayIdx].items.length
+  });
+
+  renderDays();
+  closeCatalogModal();
+  toast(`تمت إضافة "${svc.name_ar}" لليوم ${_days[dayIdx].day_number}`);
+}
+
+// ── Manual service ────────────────────────────────────────────────────────────
+function openManualServiceModal() {
+  closeCatalogModal();
+  document.getElementById('manualSvcModal').classList.remove('hidden');
+  document.getElementById('msName').value     = '';
+  document.getElementById('msCost').value     = '0';
+  document.getElementById('msSell').value     = '0';
+  document.getElementById('msQty').value      = '1';
+  document.getElementById('msDesc').value     = '';
+  document.getElementById('msTimeStart').value = '';
+  document.getElementById('msLocation').value = '';
+  document.getElementById('msOptional').checked = false;
+  document.getElementById('msIncluded').checked = true;
+}
+
+function closeManualServiceModal() {
+  document.getElementById('manualSvcModal').classList.add('hidden');
+}
+
+function addManualService() {
+  const name = document.getElementById('msName').value.trim();
+  if (!name) { alert('الرجاء إدخال اسم الخدمة'); return; }
+  const dayIdx = getDayIdxFromTarget();
+  if (dayIdx === null) return;
+
+  _days[dayIdx].items.push({
+    id: null,
+    service_catalog_id: null,
+    name_ar:    name,
+    category:   document.getElementById('msCat').value,
+    description: document.getElementById('msDesc').value.trim(),
+    unit:        document.getElementById('msUnit').value,
+    quantity:    parseFloat(document.getElementById('msQty').value) || 1,
+    cost_unit:   parseFloat(document.getElementById('msCost').value) || 0,
+    sell_unit:   parseFloat(document.getElementById('msSell').value) || 0,
+    is_optional: document.getElementById('msOptional').checked,
+    is_included: document.getElementById('msIncluded').checked,
+    time_start:  document.getElementById('msTimeStart').value || null,
+    location:    document.getElementById('msLocation').value.trim() || null,
+    sort_order:  _days[dayIdx].items.length
+  });
+
+  closeManualServiceModal();
+  renderDays();
+  updateSummary();
+  toast(`تمت إضافة "${name}"`);
+}
+
+function getDayIdxFromTarget() {
+  if (_targetDayId === null) {
+    if (!_days.length) addDay();
+    return _days.length - 1;
+  }
+  // Could be actual UUID or _new_{idx}
+  const byId = _days.findIndex(d => d.id === _targetDayId);
+  if (byId !== -1) return byId;
+  // Try numeric index
+  const match = String(_targetDayId).match(/(\d+)$/);
+  return match ? parseInt(match[1]) : _days.length - 1;
+}
+
+// ── Edit service item ─────────────────────────────────────────────────────────
+function editServiceItem(dayIdx, itemIdx) {
+  const item = _days[dayIdx].items[itemIdx];
+  _targetDayId = _days[dayIdx].id || dayIdx;
+  document.getElementById('msName').value     = item.name_ar || '';
+  document.getElementById('msCat').value      = item.category || 'activity';
+  document.getElementById('msUnit').value     = item.unit || 'per_person';
+  document.getElementById('msQty').value      = item.quantity || 1;
+  document.getElementById('msCost').value     = item.cost_unit || 0;
+  document.getElementById('msSell').value     = item.sell_unit || 0;
+  document.getElementById('msDesc').value     = item.description || '';
+  document.getElementById('msTimeStart').value = item.time_start || '';
+  document.getElementById('msLocation').value = item.location || '';
+  document.getElementById('msOptional').checked = item.is_optional || false;
+  document.getElementById('msIncluded').checked = item.is_included !== false;
+  document.getElementById('manualSvcModal').classList.remove('hidden');
+
+  // Override add button to update
+  const addBtn = document.querySelector('#manualSvcModal button[onclick="addManualService()"]');
+  if (addBtn) {
+    addBtn.onclick = () => {
+      item.name_ar     = document.getElementById('msName').value.trim();
+      item.category    = document.getElementById('msCat').value;
+      item.unit        = document.getElementById('msUnit').value;
+      item.quantity    = parseFloat(document.getElementById('msQty').value) || 1;
+      item.cost_unit   = parseFloat(document.getElementById('msCost').value) || 0;
+      item.sell_unit   = parseFloat(document.getElementById('msSell').value) || 0;
+      item.description = document.getElementById('msDesc').value.trim();
+      item.time_start  = document.getElementById('msTimeStart').value || null;
+      item.location    = document.getElementById('msLocation').value.trim() || null;
+      item.is_optional = document.getElementById('msOptional').checked;
+      item.is_included = document.getElementById('msIncluded').checked;
+      closeManualServiceModal();
+      renderDays();
+      updateSummary();
+      toast('تم تحديث الخدمة');
+      // Restore default handler
+      addBtn.onclick = addManualService;
+    };
+  }
+}
+
+function removeServiceItem(dayIdx, itemIdx) {
+  if (!confirm('حذف هذه الخدمة؟')) return;
+  _days[dayIdx].items.splice(itemIdx, 1);
+  renderDays();
+  toast('تم حذف الخدمة');
+}
+
+// ── Summary ───────────────────────────────────────────────────────────────────
+function updateSummary() {
+  let totalItems = 0, totalCost = 0, totalSell = 0;
+  _days.forEach(day => {
+    day.items.forEach(item => {
+      if (!item.is_included) return;
+      totalItems++;
+      const q = item.quantity || 1;
+      totalCost += (item.cost_unit || 0) * q;
+      totalSell += (item.sell_unit || 0) * q;
+    });
+  });
+  const gp   = totalSell - totalCost;
+  const marg = totalSell > 0 ? (gp / totalSell * 100).toFixed(1) : 0;
+  const cur  = document.getElementById('fCurrency').value || 'EGP';
+
+  document.getElementById('sumDays').textContent   = _days.length;
+  document.getElementById('sumItems').textContent  = totalItems;
+  document.getElementById('sumCost').textContent   = fmt(totalCost) + ' ' + cur;
+  document.getElementById('sumSell').textContent   = fmt(totalSell) + ' ' + cur;
+  document.getElementById('sumProfit').textContent = fmt(gp) + ' ' + cur;
+  document.getElementById('sumMargin').textContent = marg + '%';
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+async function saveDraft() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { alert('الرجاء إدخال عنوان الرحلة'); return; }
+
+  setBtnLoading('btnSave', true);
+
+  const meta = {
+    title,
+    destination:      document.getElementById('fDestination').value.trim() || null,
+    trip_type:        document.getElementById('fTripType').value,
+    travel_date_from: document.getElementById('fDateFrom').value || null,
+    travel_date_to:   document.getElementById('fDateTo').value   || null,
+    currency:         document.getElementById('fCurrency').value,
+    adults_count:     parseInt(document.getElementById('fAdults').value) || 1,
+    children_count:   parseInt(document.getElementById('fChildren').value) || 0,
+    notes:            document.getElementById('fNotes').value.trim() || null,
+    is_template:      document.getElementById('fIsTemplate').checked,
+    status:           'draft',
+  };
+
+  let itnId = ITINERARY_ID;
+  if (!itnId) {
+    const { data, error } = await db.from('itineraries').insert(meta).select('id').single();
+    if (error) { toast('خطأ في الحفظ: ' + error.message, true); setBtnLoading('btnSave', false); return; }
+    itnId = data.id;
+    ITINERARY_ID = itnId;
+    history.replaceState({}, '', '?id=' + itnId);
+  } else {
+    await db.from('itineraries').update({ ...meta, updated_at: new Date().toISOString() }).eq('id', itnId);
+  }
+
+  // Save days
+  for (let di = 0; di < _days.length; di++) {
+    const day = _days[di];
+    const dayPayload = {
+      itinerary_id:   itnId,
+      day_number:     day.day_number,
+      date:           day.date || null,
+      city:           day.city || null,
+      title:          day.title || null,
+      description:    day.description || null,
+      overnight_city: day.overnight_city || null,
+      meal_plan:      day.meal_plan || 'none',
+      sort_order:     di,
+    };
+
+    let dayId = day.id;
+    if (!dayId) {
+      const { data: dd } = await db.from('itinerary_days').insert(dayPayload).select('id').single();
+      if (dd) { dayId = dd.id; _days[di].id = dayId; }
+    } else {
+      await db.from('itinerary_days').update({ ...dayPayload, updated_at: new Date().toISOString() }).eq('id', dayId);
+    }
+
+    if (!dayId) continue;
+
+    // ── Delete all existing items for this day, then re-insert ──────────────
+    // This is the safest approach: avoids orphan rows when items are removed.
+    await db.from('itinerary_items').delete().eq('itinerary_day_id', dayId);
+
+    for (let ii = 0; ii < day.items.length; ii++) {
+      const item = day.items[ii];
+      const itemPayload = {
+        itinerary_day_id:   dayId,
+        itinerary_id:       itnId,
+        service_catalog_id: item.service_catalog_id || null,
+        name_ar:            item.name_ar,
+        category:           item.category,
+        description:        item.description || null,
+        unit:               item.unit || 'per_person',
+        quantity:           item.quantity || 1,
+        cost_unit:          item.cost_unit || 0,
+        sell_unit:          item.sell_unit || 0,
+        time_start:         item.time_start || null,
+        location:           item.location || null,
+        is_optional:        item.is_optional || false,
+        is_included:        item.is_included !== false,
+        sort_order:         ii,
+      };
+      const { data: newItem } = await db.from('itinerary_items').insert(itemPayload).select('id').single();
+      if (newItem) _days[di].items[ii].id = newItem.id;
+    }
+  }
+
+  // ── Remove DB days that were deleted from _days[] ───────────────────────
+  if (ITINERARY_ID) {
+    const keepDayIds = _days.map(d => d.id).filter(Boolean);
+    const { data: dbDays } = await db.from('itinerary_days').select('id').eq('itinerary_id', itnId);
+    const orphanDayIds = (dbDays || []).map(d => d.id).filter(id => !keepDayIds.includes(id));
+    for (const oid of orphanDayIds) {
+      await db.from('itinerary_items').delete().eq('itinerary_day_id', oid);
+      await db.from('itinerary_days').delete().eq('id', oid);
+    }
+  }
+
+  setBtnLoading('btnSave', false);
+  toast('تم الحفظ بنجاح ✓');
+  document.getElementById('itnSubtitle').textContent = title;
+  updateSummary();
+}
+
+// ── Finalize ──────────────────────────────────────────────────────────────────
+async function finalizeItinerary() {
+  if (!_days.length) { toast('لا يمكن تأكيد جدول بدون أيام', true); return; }
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { toast('الرجاء إدخال عنوان الرحلة أولاً', true); return; }
+
+  if (!confirm('تأكيد الجدول السياحي كنسخة نهائية؟ يمكن العودة إلى المسودة لاحقاً من صفحة الجداول.')) return;
+
+  // Save first to persist any unsaved changes
+  await saveDraft();
+
+  if (!ITINERARY_ID) { toast('خطأ في الحفظ، لم يتم التأكيد', true); return; }
+
+  const { error } = await db.from('itineraries')
+    .update({ status: 'final', updated_at: new Date().toISOString() })
+    .eq('id', ITINERARY_ID);
+
+  if (error) { toast('خطأ: ' + error.message, true); return; }
+
+  toast('تم تأكيد الجدول السياحي كنهائي ✓');
+  document.getElementById('btnFinalize').textContent = '✓ نهائي';
+  document.getElementById('btnFinalize').disabled = true;
+  document.getElementById('btnFinalize').classList.add('opacity-50');
+}
+
+// ── Link to Quote ─────────────────────────────────────────────────────────────
+async function loadQuotesForLink() {
+  const { data } = await db.from('quotations')
+    .select('id, quote_number, title, status')
+    .in('status', ['draft','internal_review','sent'])
+    .order('created_at', { ascending: false })
+    .limit(50);
+  const sel = document.getElementById('quoteSelectLink');
+  sel.innerHTML = '<option value="">— اختر عرض سعر —</option>' +
+    (data||[]).map(q => `<option value="${q.id}">${q.quote_number} — ${q.title} (${q.status})</option>`).join('');
+}
+
+function linkToQuote() {
+  if (!ITINERARY_ID) { toast('احفظ الجدول أولاً قبل الربط', true); return; }
+  document.getElementById('linkQuoteModal').classList.remove('hidden');
+}
+
+async function confirmLinkToQuote() {
+  const qId = document.getElementById('quoteSelectLink').value;
+  if (!qId) { toast('الرجاء اختيار عرض سعر', true); return; }
+  await db.from('quotations').update({ itinerary_id: ITINERARY_ID }).eq('id', qId);
+  document.getElementById('linkQuoteModal').classList.add('hidden');
+  toast('تم ربط الجدول بعرض السعر ✓');
+}
+
+// ── Print / PDF ───────────────────────────────────────────────────────────────
+function printItinerary() {
+  if (!_days.length) { toast('لا يوجد شيء للطباعة', true); return; }
+  const title = document.getElementById('fTitle').value || 'الجدول السياحي';
+  const dest  = document.getElementById('fDestination').value || '';
+  const df    = document.getElementById('fDateFrom').value;
+  const dt    = document.getElementById('fDateTo').value;
+  const adults= document.getElementById('fAdults').value;
+  const cur   = document.getElementById('fCurrency').value;
+
+  let html = `
+    <html dir="rtl"><head><meta charset="UTF-8">
+    <title>${title}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      *{box-sizing:border-box}
+      body{font-family:'Cairo',sans-serif;color:#1a1a1a;margin:0;padding:20px 30px}
+      h1{color:#1B5E20;font-size:1.5rem;margin-bottom:4px}
+      .meta{color:#6b7280;font-size:.85rem;margin-bottom:20px}
+      .day-block{margin-bottom:24px;page-break-inside:avoid}
+      .day-title{background:#1B5E20;color:#fff;padding:8px 14px;border-radius:8px;font-weight:700;font-size:.9rem;margin-bottom:10px}
+      .day-desc{color:#374151;font-size:.85rem;margin-bottom:8px;padding:0 4px}
+      table{width:100%;border-collapse:collapse;font-size:.82rem}
+      th{background:#f3f4f6;padding:7px 10px;text-align:right;font-weight:700;color:#374151}
+      td{padding:7px 10px;border-bottom:1px solid #f3f4f6;color:#374151}
+      .opt{color:#b45309;font-size:.72rem}
+      .excl{color:#dc2626;font-size:.72rem}
+      .totals{margin-top:20px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px}
+      @media print{body{padding:10px 20px}}
+    </style></head><body>
+    <h1>${title}</h1>
+    <div class="meta">
+      ${dest ? `الوجهة: ${dest} · ` : ''}
+      ${df ? `من: ${df}` : ''} ${dt ? `— إلى: ${dt}` : ''} · 
+      ${adults} بالغ
+    </div>`;
+
+  let totalCost = 0, totalSell = 0;
+  _days.forEach(day => {
+    html += `<div class="day-block">
+      <div class="day-title">اليوم ${day.day_number}${day.city ? ' — ' + day.city : ''}${day.title ? ' · ' + day.title : ''}</div>
+      ${day.description ? `<div class="day-desc">${day.description}</div>` : ''}
+      <table>
+        <tr><th>الخدمة</th><th>الوقت</th><th>الكمية</th><th>تكلفة</th><th>بيع</th><th>ملاحظة</th></tr>
+        ${day.items.map(item => {
+          const ct = (item.cost_unit||0)*(item.quantity||1);
+          const st = (item.sell_unit||0)*(item.quantity||1);
+          if (item.is_included) { totalCost += ct; totalSell += st; }
+          return `<tr>
+            <td><b>${item.name_ar}</b> ${item.is_optional ? '<span class="opt">اختياري</span>' : ''} ${!item.is_included ? '<span class="excl">غير مشمول</span>' : ''}</td>
+            <td>${item.time_start || '—'}</td>
+            <td>${item.quantity}</td>
+            <td>${fmt(ct)} ${cur}</td>
+            <td>${fmt(st)} ${cur}</td>
+            <td>${item.description || ''}</td>
+          </tr>`;
+        }).join('')}
+      </table>
+    </div>`;
+  });
+
+  const gp   = totalSell - totalCost;
+  const marg = totalSell > 0 ? (gp/totalSell*100).toFixed(1) : 0;
+  html += `<div class="totals">
+    <b>ملخص مالي:</b> &nbsp;
+    إجمالي التكلفة: <b>${fmt(totalCost)} ${cur}</b> &nbsp; | &nbsp;
+    إجمالي البيع: <b>${fmt(totalSell)} ${cur}</b> &nbsp; | &nbsp;
+    الربح: <b>${fmt(gp)} ${cur}</b> &nbsp; | &nbsp;
+    الهامش: <b>${marg}%</b>
+  </div></body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
+// ── Meta form toggle ──────────────────────────────────────────────────────────
+function toggleMetaForm() {
+  _metaOpen = !_metaOpen;
+  document.getElementById('metaFormBody').style.display = _metaOpen ? '' : 'none';
+  document.getElementById('metaToggleBtn').textContent = _metaOpen ? 'إخفاء' : 'إظهار';
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return (n||0).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function catLabel(c) {
+  const m = { hotel:'فندق',transfer:'نقل',guide:'مرشد',activity:'نشاط',ticket:'تذكرة',
+    meal:'وجبة',flight:'طيران',visa:'تأشيرة',insurance:'تأمين',transport:'مركبة',camp:'مخيم',other:'أخرى' };
+  return m[c] || c;
+}
+function unitLabel(u) {
+  const m = { per_person:'لكل شخص',per_group:'للمجموعة',per_room:'للغرفة',
+    per_vehicle:'للمركبة',per_day:'لليوم',fixed:'سعر ثابت' };
+  return m[u] || u;
+}
+function toast(msg, err) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = err ? '#c62828' : '#1B5E20';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+function setBtnLoading(id, on) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  b.disabled = on;
+  b.innerHTML = on
+    ? '<i class="fa-solid fa-spinner fa-spin ml-1"></i>جاري الحفظ...'
+    : '<i class="fa-solid fa-floppy-disk ml-1"></i>حفظ';
+}
+
+// ── AI Itinerary Assistant ─────────────────────────────────────────────────
+async function runItineraryAI(feature) {
+  const container = document.getElementById('itineraryAiContainer');
+  if (!window.AI) {
+    container.innerHTML = '<p class="text-red-500 text-sm text-center py-4">خدمة الذكاء الاصطناعي غير متاحة</p>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="flex items-center justify-center gap-2 py-6 text-purple-600">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <span class="text-sm">جارٍ توليد المسودة… قد يستغرق 10-15 ثانية</span>
+    </div>`;
+  try {
+    let extraData = { context_type: 'itinerary' };
+    let contextId = null;
+
+    if (feature === 'itinerary_draft') {
+      extraData = {
+        ...extraData,
+        destination:  document.getElementById('ai_destination')?.value || '',
+        days:         document.getElementById('ai_days')?.value || 7,
+        pax_adults:   document.getElementById('ai_pax')?.value || 2,
+        budget:       document.getElementById('ai_budget')?.value || '',
+        travel_style: document.getElementById('ai_style')?.value || '',
+        notes:        document.getElementById('ai_notes')?.value || '',
+      };
+    } else if (feature === 'itinerary_improve') {
+      const params = new URLSearchParams(window.location.search);
+      contextId = params.get('id') || null;
+    }
+
+    const result = await window.AI.analyze(feature, contextId, extraData);
+    container.innerHTML = `
+      <div class="border border-purple-200 rounded-xl bg-white p-5 shadow-sm">
+        <div class="flex items-center gap-2 text-purple-700 font-bold text-sm mb-3">
+          <i class="fa-solid fa-sparkles"></i>
+          ${feature === 'itinerary_draft' ? 'مسودة الجدول السياحي' : 'تقرير مراجعة الجدول'}
+        </div>
+        <div class="prose prose-sm max-w-none text-gray-800 leading-relaxed">
+          ${window.AIPanel.renderMarkdown(result)}
+        </div>
+        <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p class="text-xs text-yellow-800 font-bold">
+            <i class="fa-solid fa-triangle-exclamation ml-1"></i>
+            تذكير: هذه مسودة ذكية مقترحة فقط — راجعها وعدّلها قبل إرسالها للعميل.
+            لا تؤثر على الجدول الفعلي في النظام.
+          </p>
+        </div>
+      </div>`;
+  } catch(err) {
+    container.innerHTML = `<p class="text-red-500 text-sm text-center py-4">خطأ: ${err.message}</p>`;
+  }
+}
+
+// Show improve section if itinerary already exists
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('id')) {
+    const sec = document.getElementById('aiImproveSection');
+    if (sec) sec.classList.remove('hidden');
+  }
+});
+</script>
+</body>
+</html>

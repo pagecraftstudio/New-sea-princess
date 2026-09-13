@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مركز التواصل | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .tab-btn{padding:7px 16px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;transition:.2s;border:2px solid transparent;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:not(.active){color:#6b7280;}
+    .tab-btn:not(.active):hover{background:#f3f4f6;}
+    .ch-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:9999px;font-size:.7rem;font-weight:700;}
+    .msg-card{border-right:3px solid #e5e7eb;padding:12px 14px;border-radius:0 8px 8px 0;background:#f9fafb;margin-bottom:8px;transition:.15s;}
+    .msg-card:hover{background:#f0fdf4;}
+    .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+    select,input,textarea{font-family:'Cairo',sans-serif!important;}
+    #composeModal{display:none;}#composeModal.open{display:flex;}
+    #templateModal{display:none;}#templateModal.open{display:flex;}
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-comments ml-2 text-primary"></i>مركز التواصل</h1>
+      <p class="erp-page-subtitle" id="statsBar">جارٍ التحميل…</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick="openTemplateModal()"
+        class="border border-primary text-primary text-sm font-bold px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition flex items-center gap-2">
+        <i class="fa-solid fa-file-lines"></i> القوالب
+      </button>
+      <button onclick="openComposeModal()"
+        class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-lightGreen transition flex items-center gap-2">
+        <i class="fa-solid fa-paper-plane"></i> رسالة جديدة
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5" id="kpiStrip">
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-green-500 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-blue-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-amber-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-red-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="erp-card mb-4">
+    <div class="flex gap-2 flex-wrap" id="tabBar">
+      <button class="tab-btn active" data-tab="queue">قائمة الانتظار</button>
+      <button class="tab-btn" data-tab="history">سجل الرسائل</button>
+      <button class="tab-btn" data-tab="by-trip">حسب الرحلة</button>
+    </div>
+  </div>
+
+  <!-- Queue Tab -->
+  <div id="tab-queue" class="erp-card">
+    <div class="flex items-center justify-between mb-4">
+      <span class="erp-card-title"><i class="fa-solid fa-clock-rotate-left text-primary"></i>قائمة الانتظار والمرسلة</span>
+      <div class="flex gap-2">
+        <select id="queueStatusFilter" onchange="loadQueue()" class="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-2 focus:ring-primary outline-none">
+          <option value="">كل الحالات</option>
+          <option value="pending">معلق</option>
+          <option value="sent">مُرسَل</option>
+          <option value="failed">فشل</option>
+        </select>
+        <select id="queueChannelFilter" onchange="loadQueue()" class="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-2 focus:ring-primary outline-none">
+          <option value="">كل القنوات</option>
+          <option value="email">بريد إلكتروني</option>
+          <option value="whatsapp">واتساب</option>
+          <option value="in_app">داخلي</option>
+        </select>
+      </div>
+    </div>
+    <div id="queueList">
+      <p class="text-gray-400 text-sm text-center py-10 animate-pulse">جارٍ التحميل…</p>
+    </div>
+    <div class="flex justify-between items-center pt-3 border-t border-gray-100 mt-2">
+      <span id="queuePaginationInfo" class="text-xs text-gray-400"></span>
+      <div class="flex gap-2">
+        <button id="qPrevBtn" onclick="changeQPage(-1)" class="text-xs px-3 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40" disabled>السابق</button>
+        <button id="qNextBtn" onclick="changeQPage(1)"  class="text-xs px-3 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40" disabled>التالي</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Tab -->
+  <div id="tab-history" class="hidden erp-card">
+    <div class="erp-card-header mb-4">
+      <span class="erp-card-title"><i class="fa-solid fa-timeline text-primary"></i>كل الرسائل المُرسَلة</span>
+    </div>
+    <div id="historyList">
+      <p class="text-gray-400 text-sm text-center py-10 animate-pulse">جارٍ التحميل…</p>
+    </div>
+  </div>
+
+  <!-- By Trip Tab -->
+  <div id="tab-by-trip" class="hidden erp-card">
+    <div class="erp-card-header mb-4">
+      <span class="erp-card-title"><i class="fa-solid fa-folder-open text-primary"></i>تواصل حسب الرحلة</span>
+      <div>
+        <input id="tripSearch" type="text" placeholder="ابحث برقم الرحلة أو اسم العميل…"
+          class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none"
+          oninput="loadTripSearch()" style="font-family:'Cairo',sans-serif;">
+      </div>
+    </div>
+    <div id="tripList">
+      <p class="text-gray-400 text-sm text-center py-10">ابحث عن رحلة لعرض سجل التواصل</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- Compose Modal -->
+<div id="composeModal" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-5 border-b">
+      <h2 class="font-bold text-gray-800">إرسال رسالة جديدة</h2>
+      <button onclick="closeComposeModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-5 space-y-4">
+
+      <!-- Trip / Booking link -->
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">ربط برحلة (اختياري)</label>
+        <input id="cm_trip_search" type="text" placeholder="ابحث باسم العميل أو رقم الحجز…"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+          oninput="searchTripForCompose()" autocomplete="off">
+        <div id="cm_trip_results" class="hidden border border-gray-200 rounded-lg mt-1 max-h-40 overflow-y-auto bg-white shadow-md z-50 relative"></div>
+        <p id="cm_trip_selected" class="text-xs text-primary font-bold mt-1 hidden"></p>
+      </div>
+
+      <!-- Template -->
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">قالب (اختياري)</label>
+        <select id="cm_template" onchange="applyTemplate()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+          <option value="">— بدون قالب —</option>
+        </select>
+      </div>
+
+      <!-- Channel -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">القناة *</label>
+          <select id="cm_channel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="email">📧 بريد إلكتروني</option>
+            <option value="whatsapp">💬 واتساب</option>
+            <option value="in_app">📋 داخلي</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">اسم المستلم</label>
+          <input id="cm_name" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">البريد الإلكتروني</label>
+          <input id="cm_email" type="email" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">رقم واتساب</label>
+          <input id="cm_phone" type="tel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">الموضوع (للبريد)</label>
+        <input id="cm_subject" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">نص الرسالة *</label>
+        <textarea id="cm_body" rows="6" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none resize-none"></textarea>
+        <p class="text-xs text-gray-400 mt-1">المتغيرات المتاحة: {{customer_name}} {{booking_number}} {{destination}} {{travel_date}} {{balance}}</p>
+      </div>
+
+      <!-- WhatsApp helper -->
+      <div id="waHelper" class="hidden bg-green-50 border border-green-200 rounded-lg p-3 text-xs">
+        <p class="font-bold text-green-700 mb-2"><i class="fa-brands fa-whatsapp ml-1"></i>إرسال عبر واتساب</p>
+        <p class="text-green-600 mb-2">سيتم حفظ الرسالة كمُرسَلة. افتح الرابط أدناه لإرسالها يدوياً:</p>
+        <a id="waLink" href="#" target="_blank"
+          class="inline-flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-700 transition">
+          <i class="fa-brands fa-whatsapp"></i>فتح واتساب
+        </a>
+      </div>
+
+      <div id="cm_error" class="hidden text-red-600 text-xs font-bold"></div>
+    </div>
+    <div class="flex gap-3 p-5 border-t">
+      <button onclick="sendMessage()" id="sendBtn"
+        class="flex-1 bg-primary text-white font-bold py-2.5 rounded-lg hover:bg-lightGreen transition text-sm flex items-center justify-center gap-2">
+        <i class="fa-solid fa-paper-plane"></i>إرسال
+      </button>
+      <button onclick="closeComposeModal()" class="px-5 border border-gray-200 text-gray-600 font-bold py-2 rounded-lg text-sm">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Template Manager Modal -->
+<div id="templateModal" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b shrink-0">
+      <h2 class="font-bold text-gray-800">إدارة قوالب الرسائل</h2>
+      <button onclick="closeTemplateModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-5">
+      <div id="templateList" class="space-y-2">
+        <p class="text-gray-400 text-sm text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+    <div class="p-4 border-t shrink-0">
+      <button onclick="openNewTemplateForm()"
+        class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-lightGreen transition flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i>قالب جديد
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Constants ──────────────────────────────────────────────────────────────
+const CH_ICON  = { email:'fa-envelope', whatsapp:'fa-brands fa-whatsapp', in_app:'fa-bell', sms:'fa-comment-sms', phone:'fa-phone', portal:'fa-globe', internal_note:'fa-lock' };
+const CH_COLOR = { email:'#3b82f6', whatsapp:'#16a34a', in_app:'#8b5cf6', sms:'#f59e0b', phone:'#6b7280', portal:'#14b8a6', internal_note:'#9ca3af' };
+const CH_AR    = { email:'بريد', whatsapp:'واتساب', in_app:'داخلي', sms:'SMS', phone:'هاتف', portal:'بوابة', internal_note:'ملاحظة' };
+const ST_COLOR = { sent:'#16a34a', pending:'#f59e0b', failed:'#ef4444', cancelled:'#6b7280', skipped:'#9ca3af' };
+const ST_AR    = { sent:'مُرسَل', pending:'معلق', failed:'فشل', cancelled:'ملغي', skipped:'متخطى' };
+const TR_AR = {
+  booking_confirmed:'تأكيد الحجز', payment_received:'تأكيد الدفع', payment_reminder:'تذكير دفع',
+  document_missing:'وثيقة مفقودة', document_approved:'موافقة وثيقة',
+  hotel_confirmed:'تأكيد فندق', driver_assigned:'تعيين سائق', guide_assigned:'تعيين مرشد',
+  pickup_reminder:'تذكير استلام', trip_starts_tomorrow:'رحلة غداً',
+  daily_itinerary:'برنامج يومي', trip_completed:'اكتمال رحلة',
+  review_request:'طلب تقييم', emergency_notice:'طارئ', custom:'مخصص',
+};
+
+let currentTab = 'queue';
+let queuePage  = 0;
+const PAGE = 15;
+let allTemplates = [];
+let selectedTripFileId  = null;
+let selectedBookingId   = null;
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+
+  document.getElementById('tabBar').addEventListener('click', e => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTab = btn.dataset.tab;
+    document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+    document.getElementById('tab-' + currentTab).classList.remove('hidden');
+    if (currentTab === 'history') loadHistory();
+  });
+
+  document.getElementById('cm_channel').addEventListener('change', toggleWaHelper);
+
+  await Promise.all([loadStats(), loadQueue(), loadTemplates()]);
+});
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  const { data } = await db.rpc('get_communication_stats');
+  if (!data) return;
+
+  document.getElementById('statsBar').textContent =
+    `أُرسل اليوم: ${data.total_sent_today} · هذا الشهر: ${data.total_this_month} · قوالب نشطة: ${data.templates_active}`;
+
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-green-500">
+      <p class="text-xs text-gray-500 font-bold mb-1">أُرسل اليوم</p>
+      <p class="text-2xl font-black text-green-600">${data.total_sent_today}</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-blue-400">
+      <p class="text-xs text-gray-500 font-bold mb-1">هذا الشهر</p>
+      <p class="text-2xl font-black text-blue-600">${data.total_this_month}</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-amber-400">
+      <p class="text-xs text-gray-500 font-bold mb-1">معلق</p>
+      <p class="text-2xl font-black text-amber-600">${data.pending}</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-red-400">
+      <p class="text-xs text-gray-500 font-bold mb-1">فشل</p>
+      <p class="text-2xl font-black ${data.failed > 0 ? 'text-red-600' : 'text-gray-400'}">${data.failed}</p>
+    </div>`;
+}
+
+// ─── Queue ────────────────────────────────────────────────────────────────────
+async function loadQueue() {
+  const status  = document.getElementById('queueStatusFilter').value;
+  const channel = document.getElementById('queueChannelFilter').value;
+
+  let q = db.from('communication_queue')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(queuePage * PAGE, queuePage * PAGE + PAGE - 1);
+
+  if (status)  q = q.eq('status', status);
+  if (channel) q = q.eq('channel', channel);
+
+  const { data, count } = await q;
+  const rows = data || [];
+  const total = count || 0;
+
+  document.getElementById('queuePaginationInfo').textContent =
+    total ? `${queuePage * PAGE + 1}–${Math.min(queuePage * PAGE + PAGE, total)} من ${total}` : '';
+  document.getElementById('qPrevBtn').disabled = queuePage === 0;
+  document.getElementById('qNextBtn').disabled = queuePage * PAGE + PAGE >= total;
+
+  if (!rows.length) {
+    document.getElementById('queueList').innerHTML = '<p class="text-gray-400 text-sm text-center py-10">لا توجد رسائل</p>';
+    return;
+  }
+
+  document.getElementById('queueList').innerHTML = rows.map(m => `
+    <div class="msg-card" style="border-right-color:${CH_COLOR[m.channel]||'#e5e7eb'}">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <i class="fa-solid ${CH_ICON[m.channel]||'fa-comment'} text-sm" style="color:${CH_COLOR[m.channel]};flex-shrink:0"></i>
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-gray-800 truncate">${m.recipient_name||m.recipient_email||m.recipient_phone||'—'}</p>
+            <p class="text-xs text-gray-500 truncate">${(m.body||'').slice(0,80)}…</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:${ST_COLOR[m.status]||'#6b7280'}22;color:${ST_COLOR[m.status]||'#6b7280'}">
+            ${ST_AR[m.status]||m.status}
+          </span>
+          <span class="text-xs text-gray-400">${new Date(m.created_at).toLocaleDateString('ar-EG')}</span>
+          ${m.status==='failed' ? `<button onclick="retryMessage('${m.id}')" class="text-xs text-blue-600 hover:underline font-bold">إعادة</button>` : ''}
+        </div>
+      </div>
+      ${m.channel==='whatsapp' && m.recipient_phone ? `
+        <div class="mt-2">
+          <a href="https://wa.me/${m.recipient_phone.replace(/\D/g,'')}" target="_blank"
+            class="text-xs text-green-700 font-bold hover:underline flex items-center gap-1">
+            <i class="fa-brands fa-whatsapp"></i>فتح في واتساب
+          </a>
+        </div>` : ''}
+    </div>`).join('');
+}
+
+function changeQPage(dir) { queuePage += dir; loadQueue(); }
+
+async function retryMessage(queueId) {
+  // Re-invoke send for failed message
+  const { data: msg } = await db.from('communication_queue').select('*').eq('id', queueId).single();
+  if (!msg) return;
+  await db.from('communication_queue').update({ status: 'pending', retry_count: (msg.retry_count||0)+1 }).eq('id', queueId);
+  await db.functions.invoke('send-communication', { body: { queue_id: queueId, ...msg } });
+  await loadQueue();
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const { data } = await db.from('trip_communications')
+    .select('*').order('sent_at', { ascending: false }).limit(50);
+
+  const rows = data || [];
+  if (!rows.length) {
+    document.getElementById('historyList').innerHTML = '<p class="text-gray-400 text-sm text-center py-10">لا يوجد سجل</p>';
+    return;
+  }
+
+  document.getElementById('historyList').innerHTML = rows.map(m => `
+    <div class="msg-card" style="border-right-color:${CH_COLOR[m.channel]||'#e5e7eb'}">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="ch-badge shrink-0" style="background:${CH_COLOR[m.channel]||'#6b7280'}22;color:${CH_COLOR[m.channel]||'#6b7280'}">
+            <i class="fa-solid ${CH_ICON[m.channel]||'fa-comment'}"></i>${CH_AR[m.channel]||m.channel}
+          </span>
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-gray-800 truncate">${m.recipient_name||'—'}${m.subject?' · '+m.subject:''}</p>
+            <p class="text-xs text-gray-500 truncate">${(m.summary||'').slice(0,80)}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          ${m.is_automated ? '<span class="text-xs bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-full">تلقائي</span>' : ''}
+          <span class="text-xs text-gray-400">${new Date(m.sent_at).toLocaleString('ar-EG')}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── Trip search ──────────────────────────────────────────────────────────────
+async function loadTripSearch() {
+  const q = document.getElementById('tripSearch').value.trim();
+  if (!q) { document.getElementById('tripList').innerHTML = '<p class="text-gray-400 text-sm text-center py-10">ابحث عن رحلة</p>'; return; }
+
+  const { data } = await db.from('trip_files')
+    .select('id,trip_number,customer_name,destination,ops_status')
+    .or(`trip_number.ilike.%${q}%,customer_name.ilike.%${q}%,destination.ilike.%${q}%`)
+    .limit(10);
+
+  if (!data?.length) {
+    document.getElementById('tripList').innerHTML = '<p class="text-gray-400 text-sm text-center py-6">لا توجد نتائج</p>';
+    return;
+  }
+
+  document.getElementById('tripList').innerHTML = data.map(tf => `
+    <div class="p-3 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer transition mb-2" onclick="loadTripComms('${tf.id}','${tf.customer_name}')">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="font-bold text-gray-800 text-sm">${tf.customer_name}</p>
+          <p class="text-xs text-gray-400">${tf.trip_number} · ${tf.destination||'—'}</p>
+        </div>
+        <span class="text-xs text-primary font-bold">عرض التواصل ←</span>
+      </div>
+    </div>`).join('');
+}
+
+async function loadTripComms(tripFileId, customerName) {
+  const { data } = await db.rpc('get_trip_communications', { p_trip_file_id: tripFileId });
+  const rows = data || [];
+
+  const header = `
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-bold text-gray-800">${customerName} — سجل التواصل</p>
+      <button onclick="openComposeModal('${tripFileId}')" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-bold hover:bg-lightGreen">+ رسالة</button>
+    </div>`;
+
+  if (!rows.length) {
+    document.getElementById('tripList').innerHTML = header + '<p class="text-gray-400 text-sm text-center py-6">لا يوجد تواصل بعد</p>';
+    return;
+  }
+
+  document.getElementById('tripList').innerHTML = header + rows.map(m => `
+    <div class="msg-card" style="border-right-color:${CH_COLOR[m.channel]||'#e5e7eb'}">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid ${CH_ICON[m.channel]||'fa-comment'} text-sm shrink-0" style="color:${CH_COLOR[m.channel]}"></i>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-bold text-gray-700 truncate">${CH_AR[m.channel]||m.channel}${m.subject?' · '+m.subject:''}</p>
+            <span class="text-xs text-gray-400 shrink-0 mr-2">${new Date(m.sent_at).toLocaleString('ar-EG')}</span>
+          </div>
+          <p class="text-xs text-gray-500 truncate mt-0.5">${(m.summary||'').slice(0,100)}</p>
+        </div>
+        ${m.is_automated?'<span class="text-xs bg-purple-100 text-purple-700 font-bold px-1.5 py-0.5 rounded shrink-0">تلقائي</span>':''}
+      </div>
+    </div>`).join('');
+}
+
+// ─── Templates ────────────────────────────────────────────────────────────────
+async function loadTemplates() {
+  const { data } = await db.from('communication_templates')
+    .select('*').eq('is_active', true).order('trigger_event');
+
+  allTemplates = data || [];
+
+  // Populate template select in compose modal
+  const sel = document.getElementById('cm_template');
+  sel.innerHTML = '<option value="">— بدون قالب —</option>' +
+    allTemplates.map(t => `<option value="${t.id}">${TR_AR[t.trigger_event]||t.trigger_event} · ${CH_AR[t.channel]||t.channel} · ${t.name}</option>`).join('');
+}
+
+async function renderTemplateList() {
+  const { data } = await db.from('communication_templates')
+    .select('*').order('trigger_event');
+  const rows = data || [];
+
+  document.getElementById('templateList').innerHTML = rows.map(t => `
+    <div class="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 mb-0.5">
+          <span class="ch-badge text-xs" style="background:${CH_COLOR[t.channel]||'#6b7280'}22;color:${CH_COLOR[t.channel]||'#6b7280'}">
+            <i class="fa-solid ${CH_ICON[t.channel]||'fa-comment'}"></i>${CH_AR[t.channel]||t.channel}
+          </span>
+          <span class="text-xs font-bold text-gray-600">${TR_AR[t.trigger_event]||t.trigger_event}</span>
+          ${t.is_default?'<span class="text-xs bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded">افتراضي</span>':''}
+          ${!t.is_active?'<span class="text-xs bg-gray-100 text-gray-500 font-bold px-1.5 py-0.5 rounded">غير نشط</span>':''}
+        </div>
+        <p class="font-bold text-gray-800 text-sm">${t.name}</p>
+        <p class="text-xs text-gray-400 truncate max-w-md">${(t.body_ar||'').slice(0,80)}…</p>
+      </div>
+      <div class="flex gap-2 shrink-0 mr-3">
+        <button onclick="toggleTemplate('${t.id}','${t.is_active}')"
+          class="text-xs px-2 py-1 rounded border font-bold ${t.is_active?'text-red-500 border-red-200 hover:bg-red-50':'text-green-600 border-green-200 hover:bg-green-50'}">
+          ${t.is_active?'إخفاء':'تفعيل'}
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleTemplate(id, current) {
+  await db.from('communication_templates').update({ is_active: current === 'true' ? false : true }).eq('id', id);
+  renderTemplateList();
+  loadTemplates();
+}
+
+function openNewTemplateForm() {
+  alert('قريباً: نموذج إنشاء قالب مخصص. يمكنك حالياً إضافة قوالب مباشرةً من Supabase Dashboard.');
+}
+
+// ─── Compose ──────────────────────────────────────────────────────────────────
+function openComposeModal(tripFileId = null) {
+  selectedTripFileId = tripFileId;
+  selectedBookingId  = null;
+  document.getElementById('composeModal').classList.add('open');
+  document.getElementById('cm_error').classList.add('hidden');
+  if (tripFileId) {
+    document.getElementById('cm_trip_selected').textContent = 'مرتبط برحلة: ' + tripFileId;
+    document.getElementById('cm_trip_selected').classList.remove('hidden');
+  }
+}
+
+function closeComposeModal() {
+  document.getElementById('composeModal').classList.remove('open');
+  selectedTripFileId = null;
+  selectedBookingId  = null;
+  document.getElementById('cm_trip_selected').classList.add('hidden');
+  document.getElementById('cm_trip_results').classList.add('hidden');
+  ['cm_trip_search','cm_name','cm_email','cm_phone','cm_subject','cm_body'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+async function searchTripForCompose() {
+  const q = document.getElementById('cm_trip_search').value.trim();
+  if (!q) { document.getElementById('cm_trip_results').classList.add('hidden'); return; }
+
+  const { data } = await db.from('trip_files')
+    .select('id,trip_number,customer_name,customer_email,customer_phone,destination,booking_id')
+    .or(`trip_number.ilike.%${q}%,customer_name.ilike.%${q}%`)
+    .limit(5);
+
+  const res = document.getElementById('cm_trip_results');
+  if (!data?.length) { res.classList.add('hidden'); return; }
+
+  res.classList.remove('hidden');
+  res.innerHTML = data.map(tf => `
+    <div class="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-100 last:border-0"
+      onclick="selectTripForCompose('${tf.id}','${tf.booking_id||''}','${tf.customer_name}','${tf.customer_email||''}','${tf.customer_phone||''}')">
+      <p class="font-bold text-gray-800">${tf.customer_name}</p>
+      <p class="text-xs text-gray-400">${tf.trip_number} · ${tf.destination||'—'}</p>
+    </div>`).join('');
+}
+
+function selectTripForCompose(tripFileId, bookingId, name, email, phone) {
+  selectedTripFileId = tripFileId;
+  selectedBookingId  = bookingId;
+  document.getElementById('cm_name').value  = name;
+  document.getElementById('cm_email').value = email;
+  document.getElementById('cm_phone').value = phone;
+  document.getElementById('cm_trip_selected').textContent = `رحلة محددة: ${name}`;
+  document.getElementById('cm_trip_selected').classList.remove('hidden');
+  document.getElementById('cm_trip_results').classList.add('hidden');
+  document.getElementById('cm_trip_search').value = name;
+}
+
+function applyTemplate() {
+  const tid = document.getElementById('cm_template').value;
+  if (!tid) return;
+  const tmpl = allTemplates.find(t => t.id === tid);
+  if (!tmpl) return;
+  document.getElementById('cm_channel').value = tmpl.channel;
+  document.getElementById('cm_subject').value = tmpl.subject || '';
+  document.getElementById('cm_body').value    = tmpl.body_ar;
+  toggleWaHelper();
+}
+
+function toggleWaHelper() {
+  const ch   = document.getElementById('cm_channel').value;
+  const phone = document.getElementById('cm_phone').value.replace(/\D/g,'');
+  const body  = encodeURIComponent(document.getElementById('cm_body').value);
+  const helper = document.getElementById('waHelper');
+  if (ch === 'whatsapp') {
+    helper.classList.remove('hidden');
+    document.getElementById('waLink').href = `https://wa.me/${phone}?text=${body}`;
+  } else {
+    helper.classList.add('hidden');
+  }
+}
+
+async function sendMessage() {
+  const channel = document.getElementById('cm_channel').value;
+  const body    = document.getElementById('cm_body').value.trim();
+  const email   = document.getElementById('cm_email').value.trim();
+  const errEl   = document.getElementById('cm_error');
+
+  if (!body) { errEl.textContent='نص الرسالة مطلوب'; errEl.classList.remove('hidden'); return; }
+  if (channel === 'email' && !email) { errEl.textContent='البريد الإلكتروني مطلوب للقناة الإلكترونية'; errEl.classList.remove('hidden'); return; }
+
+  errEl.classList.add('hidden');
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>جارٍ الإرسال…';
+
+  try {
+    const templateId = document.getElementById('cm_template').value || null;
+
+    const { data, error } = await db.functions.invoke('send-communication', {
+      body: {
+        trip_file_id:    selectedTripFileId,
+        booking_id:      selectedBookingId,
+        template_id:     templateId,
+        channel,
+        recipient_name:  document.getElementById('cm_name').value.trim(),
+        recipient_email: email,
+        recipient_phone: document.getElementById('cm_phone').value.trim(),
+        subject:         document.getElementById('cm_subject').value.trim(),
+        body,
+        is_automated:    false,
+      }
+    });
+
+    if (error) throw new Error(error.message);
+
+    if (data?.error && !data?.success) throw new Error(data.error);
+
+    closeComposeModal();
+    await Promise.all([loadStats(), loadQueue()]);
+    if (currentTab === 'history') loadHistory();
+  } catch(err) {
+    errEl.textContent = 'خطأ: ' + err.message;
+    errEl.classList.remove('hidden');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>إرسال';
+}
+
+// ─── Template Modal ───────────────────────────────────────────────────────────
+function openTemplateModal()  { document.getElementById('templateModal').classList.add('open'); renderTemplateList(); }
+function closeTemplateModal() { document.getElementById('templateModal').classList.remove('open'); }
+</script>
+</body>
+</html>

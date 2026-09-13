@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ذكاء المبيعات | Flow Travel</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body { font-family:'Cairo',sans-serif; }
+    .period-btn { padding:5px 14px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;border:1px solid #e5e7eb;background:#fff;color:#374151;transition:.15s; }
+    .period-btn.active { background:#1B5E20;color:#fff;border-color:#1B5E20; }
+    .kpi { background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid #f3f4f6; }
+    .kpi-label { font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:4px; }
+    .kpi-value { font-size:26px;font-weight:900;color:#111827;line-height:1; }
+    .kpi-sub { font-size:11px;color:#6b7280;margin-top:4px; }
+    .kpi-up   { color:#16a34a; }
+    .kpi-down { color:#dc2626; }
+    .section-card { background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid #f3f4f6; }
+    .section-title { font-size:14px;font-weight:900;color:#1B5E20;margin-bottom:16px;display:flex;align-items:center;gap:8px; }
+    .tbl th { background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:8px 12px;text-align:right;border-bottom:2px solid #e5e7eb;white-space:nowrap; }
+    .tbl td { padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle; }
+    .tbl tr:last-child td { border-bottom:none; }
+    .tbl tr:hover td { background:#fafafa; }
+    .badge { display:inline-flex;align-items:center;padding:2px 9px;border-radius:9999px;font-size:.7rem;font-weight:700; }
+    .funnel-bar { height:36px;border-radius:8px;transition:width .5s ease;display:flex;align-items:center;padding-right:10px;font-size:12px;font-weight:700;color:#fff;min-width:40px; }
+    .star { color:#f59e0b; }
+    .rank-1 { background:linear-gradient(90deg,#B8860B,#DAA520);color:#fff;border-radius:8px; }
+    .rank-2 { background:linear-gradient(90deg,#9ca3af,#d1d5db);color:#fff;border-radius:8px; }
+    .rank-3 { background:linear-gradient(90deg,#92400e,#d97706);color:#fff;border-radius:8px; }
+    .source-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+    .progress-bar { height:8px;border-radius:4px;background:#e5e7eb;overflow:hidden; }
+    .progress-fill { height:100%;border-radius:4px;transition:width .5s; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-chart-line ml-2 text-primary"></i>ذكاء المبيعات</h1>
+      <p class="erp-page-subtitle">تحليل متقدم لأداء المبيعات والـ pipeline</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button class="period-btn active" onclick="setPeriod(30,this)">30 يوم</button>
+      <button class="period-btn" onclick="setPeriod(60,this)">60 يوم</button>
+      <button class="period-btn" onclick="setPeriod(90,this)">90 يوم</button>
+      <button class="period-btn" onclick="setPeriod(365,this)">سنة</button>
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6" id="kpiStrip">
+    <!-- filled by JS -->
+    <div class="kpi col-span-2 md:col-span-4 lg:col-span-8 animate-pulse"><div class="h-8 bg-gray-100 rounded w-48"></div></div>
+  </div>
+
+  <!-- Row 1: Funnel + Forecast -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+
+    <!-- Funnel -->
+    <div class="section-card">
+      <div class="section-title"><i class="fa-solid fa-filter text-primary"></i>قمع المبيعات</div>
+      <div id="funnelChart" class="space-y-2"></div>
+    </div>
+
+    <!-- Pipeline Forecast -->
+    <div class="section-card">
+      <div class="section-title"><i class="fa-solid fa-crystal-ball text-gold"></i>توقعات الإيرادات</div>
+      <div id="forecastPanel"></div>
+      <div class="mt-4">
+        <canvas id="pipelineChart" height="180"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: Agent Scorecards (full width) -->
+  <div class="section-card mb-4">
+    <div class="section-title"><i class="fa-solid fa-ranking-star text-gold"></i>أداء فريق المبيعات</div>
+    <div class="overflow-x-auto">
+      <table class="w-full tbl" id="agentTable">
+        <thead>
+          <tr>
+            <th class="w-8">#</th>
+            <th>الموظف</th>
+            <th class="hidden md:table-cell">الدور</th>
+            <th>عملاء جدد</th>
+            <th>فرص مفتوحة</th>
+            <th>مكسوب</th>
+            <th>قيمة المكسوب</th>
+            <th>نسبة الفوز</th>
+            <th class="hidden lg:table-cell">عروض أسعار</th>
+            <th class="hidden lg:table-cell">متوسط الرد (ساعة)</th>
+            <th class="hidden lg:table-cell">مهام مفتوحة</th>
+          </tr>
+        </thead>
+        <tbody id="agentBody">
+          <tr><td colspan="11" class="text-center py-8 text-gray-400 animate-pulse">جارٍ التحميل…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Row 3: Lost Reasons + Source Performance -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+
+    <!-- Lost Reasons -->
+    <div class="section-card">
+      <div class="section-title"><i class="fa-solid fa-heart-crack text-red-500"></i>أسباب الخسارة</div>
+      <div id="lostChart"><canvas id="lostCanvas" height="240"></canvas></div>
+      <div id="lostList" class="mt-4 space-y-2"></div>
+    </div>
+
+    <!-- Source Performance -->
+    <div class="section-card">
+      <div class="section-title"><i class="fa-solid fa-share-nodes text-blue-500"></i>مصادر العملاء</div>
+      <div id="sourceList" class="space-y-3"></div>
+    </div>
+
+  </div>
+
+  <!-- Row 4: Pipeline by Stage Table -->
+  <div class="section-card mb-4">
+    <div class="section-title"><i class="fa-solid fa-table-columns text-primary"></i>الـ Pipeline حسب المرحلة</div>
+    <div class="overflow-x-auto">
+      <table class="w-full tbl">
+        <thead>
+          <tr>
+            <th>المرحلة</th>
+            <th>عدد الفرص</th>
+            <th>إجمالي القيمة</th>
+            <th>متوسط الاحتمالية</th>
+            <th>القيمة المرجحة</th>
+            <th>التوزيع</th>
+          </tr>
+        </thead>
+        <tbody id="pipelineBody">
+          <tr><td colspan="6" class="text-center py-8 text-gray-400 animate-pulse">جارٍ التحميل…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  PHASE 15 — Sales Intelligence Dashboard
+// ═══════════════════════════════════════════════════════════════
+
+let currentPeriod = 30;
+let lostChartInst = null;
+let pipelineChartInst = null;
+
+const SOURCE_AR = {
+  website:'الموقع الإلكتروني', whatsapp:'واتساب', phone:'هاتف',
+  email:'بريد إلكتروني', social:'تواصل اجتماعي', referral:'إحالة',
+  b2b:'شريك B2B', campaign:'حملة تسويقية', manual:'إدخال يدوي', other:'أخرى'
+};
+const SOURCE_COLORS = ['#1B5E20','#2563eb','#d97706','#7c3aed','#0891b2','#dc2626','#059669','#9333ea','#ea580c','#64748b'];
+const LOST_REASON_AR = {
+  price:'السعر', destination:'الوجهة', timing:'التوقيت', competitor:'المنافس',
+  no_response:'لم يرد', customer_cancelled:'العميل ألغى', supplier_unavailable:'المورد غير متاح',
+  visa:'التأشيرة', budget:'الميزانية', other:'أخرى'
+};
+
+const fmt    = n => Number(n||0).toLocaleString('ar-EG');
+const fmtEGP = n => Number(n||0).toLocaleString('ar-EG', {minimumFractionDigits:0,maximumFractionDigits:0});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  await loadAll();
+});
+
+function setPeriod(days, btn) {
+  currentPeriod = days;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadAll();
+}
+
+async function loadAll() {
+  const [kpis, funnel, agents, pipeline, lost, sources, forecast] = await Promise.all([
+    call('get_sales_kpis',             { p_days: currentPeriod }),
+    call('get_sales_funnel',           { p_days: currentPeriod }),
+    call('get_agent_scorecards',       { p_days: currentPeriod }),
+    call('get_pipeline_value',         {}),
+    call('get_lost_reason_analysis',   { p_days: currentPeriod }),
+    call('get_lead_source_performance',{ p_days: currentPeriod }),
+    call('get_sales_forecast',         {}),
+  ]);
+  renderKPIs(kpis);
+  renderFunnel(funnel);
+  renderForecast(forecast, pipeline);
+  renderAgents(agents);
+  renderLost(lost);
+  renderSources(sources);
+  renderPipelineTable(pipeline);
+}
+
+async function call(fn, params) {
+  const { data, error } = await db.rpc(fn, params);
+  if (error) { console.error(fn, error); return null; }
+  return typeof data === 'string' ? JSON.parse(data) : data;
+}
+
+// ── KPIs ───────────────────────────────────────────────────────
+
+function renderKPIs(d) {
+  if (!d) return;
+  const delta = (cur, prev) => {
+    if (!prev) return '';
+    const diff = cur - prev;
+    const pct  = prev > 0 ? Math.abs(Math.round(diff * 100 / prev)) : 0;
+    const cls  = diff >= 0 ? 'kpi-up' : 'kpi-down';
+    const icon = diff >= 0 ? '▲' : '▼';
+    return `<span class="${cls}">${icon} ${pct}%</span>`;
+  };
+
+  const winRate   = Number(d.opp_win_rate || 0);
+  const winColor  = winRate >= 40 ? '#16a34a' : winRate >= 20 ? '#d97706' : '#dc2626';
+  const cycleVal  = d.avg_sales_cycle_days ? d.avg_sales_cycle_days + ' يوم' : '—';
+
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-label"><i class="fa-solid fa-user-plus ml-1"></i>عملاء محتملون جدد</div>
+      <div class="kpi-value">${fmt(d.new_leads)}</div>
+      <div class="kpi-sub">${delta(d.new_leads, d.new_leads_prev)} مقارنة بالفترة السابقة</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><i class="fa-solid fa-crosshairs ml-1"></i>فرص مفتوحة</div>
+      <div class="kpi-value">${fmt(d.open_opps)}</div>
+      <div class="kpi-sub">${fmtEGP(d.open_opps_value)} EGP</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><i class="fa-solid fa-trophy ml-1 text-yellow-500"></i>صفقات مكسوبة</div>
+      <div class="kpi-value text-green-600">${fmt(d.won_count)}</div>
+      <div class="kpi-sub">${fmtEGP(d.won_value)} EGP ${delta(d.won_count, d.won_count_prev)}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><i class="fa-solid fa-x ml-1 text-red-400"></i>صفقات خاسرة</div>
+      <div class="kpi-value text-red-500">${fmt(d.lost_count)}</div>
+      <div class="kpi-sub">${fmtEGP(d.lost_value)} EGP</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><i class="fa-solid fa-file-contract ml-1"></i>عروض أسعار</div>
+      <div class="kpi-value">${fmt(d.quotes_sent)}</div>
+      <div class="kpi-sub">${fmt(d.quotes_accepted)} مقبول</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><i class="fa-solid fa-percent ml-1"></i>نسبة التحويل</div>
+      <div class="kpi-value" style="color:${winColor}">${d.opp_win_rate || 0}%</div>
+      <div class="kpi-sub">lead→opp: ${d.lead_to_opp_rate || 0}%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><i class="fa-solid fa-clock ml-1"></i>متوسط دورة البيع</div>
+      <div class="kpi-value text-sm mt-1">${cycleVal}</div>
+      <div class="kpi-sub">من العميل للإغلاق</div>
+    </div>
+    <div class="kpi" style="border-right:3px solid #ef4444">
+      <div class="kpi-label"><i class="fa-solid fa-bell ml-1 text-red-400"></i>متابعات متأخرة</div>
+      <div class="kpi-value text-red-500">${fmt(d.overdue_followups)}</div>
+      <div class="kpi-sub"><a href="/nsp-control-8x4k/leads.html" class="text-primary underline text-xs">عرض الكل</a></div>
+    </div>`;
+}
+
+// ── FUNNEL ─────────────────────────────────────────────────────
+
+function renderFunnel(stages) {
+  const el = document.getElementById('funnelChart');
+  if (!stages || !stages.length) { el.innerHTML = '<p class="text-gray-400 text-sm text-center py-6">لا توجد بيانات</p>'; return; }
+
+  const maxCount = Math.max(...stages.map(s => s.count || 0), 1);
+  const colors   = ['#1B5E20','#2E7D32','#388E3C','#43A047','#4CAF50','#66BB6A'];
+
+  el.innerHTML = stages.map((s, i) => {
+    const pct     = Math.round((s.count / maxCount) * 100);
+    const conv    = i > 0 ? Math.round((s.count / (stages[i-1]?.count||1)) * 100) : 100;
+    const valStr  = s.value > 0 ? `<span class="text-xs font-bold text-white opacity-80 mr-2">${fmtEGP(s.value)} EGP</span>` : '';
+    return `
+      <div class="flex items-center gap-3">
+        <div class="text-xs font-bold text-gray-500 w-24 flex-shrink-0 text-left">${s.stage_ar}</div>
+        <div class="flex-1">
+          <div class="funnel-bar" style="width:${pct}%;background:${colors[i]||colors[5]}">
+            ${s.count} ${valStr}
+          </div>
+        </div>
+        ${i > 0 ? `<div class="text-xs font-bold flex-shrink-0 w-12 text-left" style="color:${conv>=50?'#16a34a':conv>=25?'#d97706':'#dc2626'}">${conv}%</div>` : '<div class="w-12"></div>'}
+      </div>`;
+  }).join('');
+}
+
+// ── FORECAST ───────────────────────────────────────────────────
+
+function renderForecast(f, pipeline) {
+  const el = document.getElementById('forecastPanel');
+  if (!f) { el.innerHTML = '<p class="text-gray-400 text-sm">لا توجد بيانات</p>'; return; }
+
+  const growth = f.won_last_month > 0
+    ? Math.round((f.won_this_month - f.won_last_month) / f.won_last_month * 100) : null;
+  const growthHtml = growth !== null
+    ? `<span class="${growth >= 0 ? 'text-green-600' : 'text-red-500'} font-bold text-xs mr-2">${growth >= 0 ? '▲' : '▼'} ${Math.abs(growth)}%</span>`
+    : '';
+
+  el.innerHTML = `
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div class="bg-green-50 rounded-xl p-3 border border-green-100">
+        <div class="text-xs text-green-700 font-bold mb-1">مكسوب هذا الشهر</div>
+        <div class="font-black text-green-700 text-lg">${fmtEGP(f.won_this_month)}</div>
+        <div class="text-xs text-green-600">EGP ${growthHtml}</div>
+      </div>
+      <div class="bg-blue-50 rounded-xl p-3 border border-blue-100">
+        <div class="text-xs text-blue-700 font-bold mb-1">Pipeline المرجح</div>
+        <div class="font-black text-blue-700 text-lg">${fmtEGP(f.weighted_forecast)}</div>
+        <div class="text-xs text-blue-600">من ${fmtEGP(f.total_pipeline)} EGP إجمالي</div>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+      <div class="bg-gray-50 rounded-lg p-2">
+        <div class="font-bold text-gray-700">${fmtEGP(f.closing_30d)}</div>
+        <div class="text-gray-400">30 يوم</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-2">
+        <div class="font-bold text-gray-700">${fmtEGP(f.closing_60d)}</div>
+        <div class="text-gray-400">60 يوم</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-2">
+        <div class="font-bold text-gray-700">${fmtEGP(f.closing_90d)}</div>
+        <div class="text-gray-400">90 يوم</div>
+      </div>
+    </div>
+    ${f.overdue_opps > 0 ? `<div class="mt-3 text-xs bg-red-50 text-red-700 rounded-lg px-3 py-2 font-bold"><i class="fa-solid fa-triangle-exclamation ml-1"></i>${f.overdue_opps} فرصة متأخرة عن تاريخ الإغلاق المتوقع</div>` : ''}`;
+
+  // Pipeline donut chart
+  if (pipelineChartInst) pipelineChartInst.destroy();
+  const ctx = document.getElementById('pipelineChart');
+  if (!pipeline || !pipeline.length) return;
+
+  const CHART_COLORS = ['#1B5E20','#2563eb','#d97706','#7c3aed','#0891b2','#dc2626','#059669','#ea580c','#64748b'];
+  pipelineChartInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: pipeline.map(p => p.stage_ar),
+      datasets: [{ data: pipeline.map(p => p.total_value || 0), backgroundColor: CHART_COLORS, borderWidth: 2 }]
+    },
+    options: {
+      plugins: { legend: { position:'right', labels:{ font:{family:'Cairo',size:11}, boxWidth:12 } } },
+      cutout: '60%'
+    }
+  });
+}
+
+// ── AGENTS ─────────────────────────────────────────────────────
+
+function renderAgents(agents) {
+  const tbody = document.getElementById('agentBody');
+  if (!agents || !agents.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-6 text-gray-400">لا توجد بيانات كافية</td></tr>';
+    return;
+  }
+  const ROLE_AR = { sales_agent:'موظف مبيعات', booking_agent:'موظف حجوزات', admin:'مشرف', super_admin:'مدير عام', financial_manager:'مدير مالي' };
+  tbody.innerHTML = agents.map((a, i) => {
+    const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+    const wr = Number(a.win_rate_pct || 0);
+    const wrColor = wr >= 50 ? '#16a34a' : wr >= 25 ? '#d97706' : '#dc2626';
+    const stars = i < 3 ? '<i class="fa-solid fa-star star ml-1"></i>'.repeat(3 - i) : '';
+    return `<tr>
+      <td class="text-center">
+        <span class="${rankClass} inline-block w-6 h-6 text-center leading-6 text-xs font-black">${i + 1}</span>
+      </td>
+      <td>
+        <div class="font-bold text-gray-800">${a.agent_name} ${stars}</div>
+        <div class="text-xs text-gray-400">${a.active_leads || 0} عميل نشط</div>
+      </td>
+      <td class="hidden md:table-cell">
+        <span class="badge badge-gray text-xs">${ROLE_AR[a.agent_role] || a.agent_role}</span>
+      </td>
+      <td class="font-bold text-center">${fmt(a.new_leads)}</td>
+      <td class="text-center">${fmt(a.open_opps)}</td>
+      <td class="text-center font-bold text-green-600">${fmt(a.won_count)}</td>
+      <td class="font-bold text-primary">${fmtEGP(a.won_value)} <span class="text-xs text-gray-400 font-normal">EGP</span></td>
+      <td>
+        <div class="flex items-center gap-2">
+          <div class="progress-bar w-16 flex-shrink-0">
+            <div class="progress-fill" style="width:${wr}%;background:${wrColor}"></div>
+          </div>
+          <span class="font-bold text-sm" style="color:${wrColor}">${wr}%</span>
+        </div>
+      </td>
+      <td class="hidden lg:table-cell text-center">${fmt(a.quotes_sent)}</td>
+      <td class="hidden lg:table-cell text-center text-sm">
+        ${a.avg_response_hours != null ? a.avg_response_hours + ' س' : '—'}
+      </td>
+      <td class="hidden lg:table-cell text-center">
+        ${a.open_tasks > 0 ? `<span class="badge badge-yellow">${a.open_tasks}</span>` : '<span class="text-gray-300">—</span>'}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── LOST REASONS ───────────────────────────────────────────────
+
+function renderLost(lost) {
+  if (!lost || !lost.length) {
+    document.getElementById('lostList').innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لا توجد خسائر مسجلة</p>';
+    document.getElementById('lostCanvas').style.display = 'none';
+    return;
+  }
+  const total = lost.reduce((s, r) => s + (r.count || 0), 0);
+  const COLORS = ['#dc2626','#ea580c','#d97706','#ca8a04','#65a30d','#059669','#0891b2','#2563eb','#7c3aed','#db2777'];
+
+  if (lostChartInst) lostChartInst.destroy();
+  lostChartInst = new Chart(document.getElementById('lostCanvas'), {
+    type: 'bar',
+    data: {
+      labels: lost.map(r => LOST_REASON_AR[r.reason] || r.reason),
+      datasets: [{
+        data: lost.map(r => r.count),
+        backgroundColor: COLORS,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family:'Cairo' } } },
+        y: { grid: { display: false }, ticks: { font: { family:'Cairo', size: 11 } } }
+      }
+    }
+  });
+
+  document.getElementById('lostList').innerHTML = lost.slice(0, 5).map((r, i) => {
+    const pct = Math.round((r.count / total) * 100);
+    return `<div class="flex items-center gap-3">
+      <div class="source-dot flex-shrink-0" style="background:${COLORS[i]||COLORS[9]}"></div>
+      <div class="flex-1 text-sm font-bold text-gray-700">${LOST_REASON_AR[r.reason] || r.reason}</div>
+      <div class="text-xs text-gray-500">${r.count} (${pct}%)</div>
+      ${r.lost_value > 0 ? `<div class="text-xs font-bold text-red-500">${fmtEGP(r.lost_value)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── SOURCE PERFORMANCE ─────────────────────────────────────────
+
+function renderSources(sources) {
+  const el = document.getElementById('sourceList');
+  if (!sources || !sources.length) {
+    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لا توجد بيانات</p>';
+    return;
+  }
+  const maxLeads = Math.max(...sources.map(s => s.leads_count || 0), 1);
+  el.innerHTML = sources.map((s, i) => {
+    const pct = Math.round((s.leads_count / maxLeads) * 100);
+    const cr  = Number(s.conversion_rate || 0);
+    const crColor = cr >= 20 ? '#16a34a' : cr >= 10 ? '#d97706' : '#dc2626';
+    return `
+      <div class="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+        <div class="source-dot mt-1.5 flex-shrink-0" style="background:${SOURCE_COLORS[i % SOURCE_COLORS.length]}"></div>
+        <div class="flex-1">
+          <div class="flex justify-between items-center mb-1">
+            <span class="font-bold text-sm text-gray-700">${SOURCE_AR[s.source] || s.source}</span>
+            <div class="flex gap-3 text-xs text-gray-500">
+              <span>${fmt(s.leads_count)} عميل</span>
+              <span class="font-bold" style="color:${crColor}">${cr}% تحويل</span>
+              ${s.won_value > 0 ? `<span class="font-bold text-primary">${fmtEGP(s.won_value)}</span>` : ''}
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${pct}%;background:${SOURCE_COLORS[i % SOURCE_COLORS.length]}"></div>
+          </div>
+          <div class="flex gap-3 mt-1 text-xs text-gray-400">
+            <span>مؤهل: ${fmt(s.qualified_count)}</span>
+            <span>فرص: ${fmt(s.opp_count)}</span>
+            <span>مكسوب: ${fmt(s.won_count)}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── PIPELINE TABLE ─────────────────────────────────────────────
+
+function renderPipelineTable(pipeline) {
+  const tbody = document.getElementById('pipelineBody');
+  if (!pipeline || !pipeline.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-400">لا توجد فرص مفتوحة</td></tr>';
+    return;
+  }
+  const maxVal = Math.max(...pipeline.map(p => p.total_value || 0), 1);
+  tbody.innerHTML = pipeline.map(p => {
+    const pct  = Math.round((p.total_value / maxVal) * 100);
+    const prob = Number(p.avg_probability || 0);
+    const probColor = prob >= 70 ? '#16a34a' : prob >= 40 ? '#d97706' : '#6b7280';
+    return `<tr>
+      <td class="font-bold text-gray-800">${p.stage_ar}</td>
+      <td class="text-center font-bold">${fmt(p.opp_count)}</td>
+      <td class="font-bold">${fmtEGP(p.total_value)} <span class="text-xs text-gray-400 font-normal">${p.currency||'EGP'}</span></td>
+      <td>
+        <span class="font-bold" style="color:${probColor}">${prob}%</span>
+      </td>
+      <td class="font-bold text-primary">${fmtEGP(p.weighted_value)} <span class="text-xs text-gray-400 font-normal">${p.currency||'EGP'}</span></td>
+      <td class="w-32">
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${pct}%;background:#1B5E20"></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

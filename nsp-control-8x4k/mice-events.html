@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MICE والفعاليات | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css"><link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script><script src="/js/admin.js"></script><script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 3px rgba(27,94,32,.1);}
+    .tab-btn{padding:7px 16px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;border:none;transition:.15s;white-space:nowrap;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:not(.active){background:#f3f4f6;color:#374151;}
+    .tab-btn:not(.active):hover{background:#e5e7eb;}
+    .tab-panel{display:none;}.tab-panel.active{display:block;}
+    .svc-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:700;background:#dcfce7;color:#166534;}
+    .budget-row:hover{background:#f9fafb;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-star ml-2"></i>MICE والفعاليات</h1>
+      <p class="erp-page-subtitle">إدارة فعاليات المؤتمرات والحوافز والمعارض</p>
+    </div>
+    <button onclick="openNew()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+      <i class="fa-solid fa-plus ml-1"></i>فعالية جديدة
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid mb-5" id="kpiStrip">
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-primary" id="kTotal">—</div><div class="text-xs text-gray-400 mt-1">إجمالي</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-blue-600" id="kConfirmed">—</div><div class="text-xs text-gray-400 mt-1">مؤكدة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-amber-600" id="kRevenue">—</div><div class="text-xs text-gray-400 mt-1">إجمالي الإيرادات</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-green-700" id="kProfit">—</div><div class="text-xs text-gray-400 mt-1">إجمالي الأرباح</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex gap-2 mb-4 flex-wrap items-center">
+    <div class="flex gap-1 flex-wrap">
+      <button onclick="setF('all',this)" class="tab-btn active">الكل</button>
+      <button onclick="setF('inquiry',this)" class="tab-btn">استفسار</button>
+      <button onclick="setF('proposal',this)" class="tab-btn">عرض</button>
+      <button onclick="setF('confirmed',this)" class="tab-btn">مؤكدة</button>
+      <button onclick="setF('in_execution',this)" class="tab-btn">قيد التنفيذ</button>
+      <button onclick="setF('completed',this)" class="tab-btn">مكتملة</button>
+    </div>
+    <input type="text" id="search" placeholder="بحث…" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-48 mr-auto" oninput="render()">
+  </div>
+
+  <!-- Table -->
+  <div class="erp-card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-100 bg-gray-50">
+          <th class="text-right p-3 text-xs font-bold text-gray-500">رقم</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">اسم الفعالية</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">النوع</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">العميل</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">تاريخ البداية</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">المندوبون</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">الإيراد</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">الربح</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">الحالة</th>
+          <th class="p-3"></th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="10" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- ── DETAIL DRAWER ── -->
+<div id="drawer" class="hidden fixed inset-0 z-50 flex">
+  <div class="flex-1 bg-black/40" onclick="closeDrawer()"></div>
+  <div class="bg-white w-full max-w-3xl flex flex-col shadow-2xl overflow-hidden">
+    <div class="flex items-center justify-between p-5 border-b bg-white sticky top-0 z-10">
+      <div>
+        <h3 class="font-bold text-lg text-primary" id="drawerTitle">فعالية جديدة</h3>
+        <p class="text-xs text-gray-400" id="drawerSubtitle"></p>
+      </div>
+      <div class="flex items-center gap-2">
+        <select id="dStatus" onchange="updateStatus(this.value)"
+          class="border-2 border-primary rounded-lg px-3 py-1.5 text-sm font-bold text-primary bg-green-50 outline-none hidden" id="statusSelect">
+          <option value="inquiry">استفسار</option>
+          <option value="proposal">عرض أسعار</option>
+          <option value="confirmed">مؤكدة</option>
+          <option value="in_execution">قيد التنفيذ</option>
+          <option value="completed">مكتملة</option>
+          <option value="cancelled">ملغاة</option>
+        </select>
+        <button onclick="closeDrawer()" class="text-gray-400 hover:text-red-500 text-xl w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 px-5 py-3 border-b bg-gray-50 overflow-x-auto">
+      <button class="tab-btn active" onclick="switchTab('info',this)"><i class="fa-solid fa-circle-info ml-1"></i>المعلومات</button>
+      <button class="tab-btn" onclick="switchTab('budget',this)"><i class="fa-solid fa-coins ml-1"></i>الميزانية</button>
+      <button class="tab-btn" onclick="switchTab('services',this)"><i class="fa-solid fa-concierge-bell ml-1"></i>الخدمات</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-5">
+
+      <!-- INFO TAB -->
+      <div class="tab-panel active" id="tab-info">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="col-span-2"><label>اسم الفعالية *</label><input type="text" id="d_name"></div>
+          <div>
+            <label>نوع الفعالية *</label>
+            <select id="d_type">
+              <option value="conference">مؤتمر</option><option value="meeting">اجتماع</option>
+              <option value="incentive">تحفيزية</option><option value="exhibition">معرض</option>
+              <option value="team_building">بناء الفريق</option><option value="gala">حفل گالا</option>
+              <option value="workshop">ورشة عمل</option><option value="product_launch">إطلاق منتج</option>
+              <option value="other">أخرى</option>
+            </select>
+          </div>
+          <div><label>العميل / الشركة</label><input type="text" id="d_client"></div>
+          <div><label>جهة الاتصال</label><input type="text" id="d_contact"></div>
+          <div><label>البريد الإلكتروني</label><input type="email" id="d_email" dir="ltr"></div>
+          <div><label>الوجهة</label><input type="text" id="d_dest"></div>
+          <div><label>اسم المكان / الفندق</label><input type="text" id="d_venue"></div>
+          <div><label>تاريخ البداية</label><input type="date" id="d_from"></div>
+          <div><label>تاريخ النهاية</label><input type="date" id="d_to"></div>
+          <div><label>عدد المشاركين</label><input type="number" id="d_delegates" value="1" min="1"></div>
+          <div><label>أيام التجهيز</label><input type="number" id="d_setup" value="0" min="0"></div>
+          <div><label>الإيراد المتوقع (EGP)</label><input type="number" id="d_revenue" value="0" min="0"></div>
+          <div><label>الميزانية الإجمالية</label><input type="number" id="d_budget" value="0" min="0"></div>
+          <div class="col-span-2">
+            <label class="font-bold text-gray-700 mb-2 block">الخدمات المطلوبة</label>
+            <div class="flex flex-wrap gap-3">
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="s_accom"> إقامة</label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="s_trans"> مواصلات</label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="s_cater"> ضيافة/كاترينج</label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="s_av"> AV/تقنية</label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="s_act"> أنشطة</label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="s_staff"> طاقم</label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="s_trans2"> ترجمة</label>
+            </div>
+          </div>
+          <div class="col-span-2"><label>ملاحظات داخلية</label><textarea id="d_notes" rows="3"></textarea></div>
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button onclick="saveEvent()" class="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-lightGreen transition flex-1">
+            <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ
+          </button>
+        </div>
+      </div>
+
+      <!-- BUDGET TAB -->
+      <div class="tab-panel" id="tab-budget">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="font-bold text-gray-700 text-sm">بنود الميزانية</h4>
+          <button onclick="openBudgetModal()" class="bg-primary text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-lightGreen transition">
+            <i class="fa-solid fa-plus ml-1"></i>بند جديد
+          </button>
+        </div>
+        <!-- Budget summary -->
+        <div class="grid grid-cols-3 gap-3 mb-4" id="budgetSummary">
+          <div class="bg-blue-50 rounded-xl p-3 text-center">
+            <p class="text-xs text-gray-400 font-bold">الميزانية</p>
+            <p class="text-lg font-black text-blue-600" id="bBudget">—</p>
+          </div>
+          <div class="bg-orange-50 rounded-xl p-3 text-center">
+            <p class="text-xs text-gray-400 font-bold">الملتزم</p>
+            <p class="text-lg font-black text-orange-600" id="bCommitted">—</p>
+          </div>
+          <div class="bg-green-50 rounded-xl p-3 text-center">
+            <p class="text-xs text-gray-400 font-bold">الفعلي</p>
+            <p class="text-lg font-black text-green-600" id="bActual">—</p>
+          </div>
+        </div>
+        <table class="w-full text-sm">
+          <thead><tr class="border-b bg-gray-50">
+            <th class="text-right p-2 text-xs font-bold text-gray-500">الفئة</th>
+            <th class="text-right p-2 text-xs font-bold text-gray-500">البند</th>
+            <th class="text-right p-2 text-xs font-bold text-gray-500">الملتزم</th>
+            <th class="text-right p-2 text-xs font-bold text-gray-500">الفعلي</th>
+            <th class="text-right p-2 text-xs font-bold text-gray-500">المورد</th>
+            <th class="p-2"></th>
+          </tr></thead>
+          <tbody id="budgetTbody"><tr><td colspan="6" class="text-center py-6 text-gray-400">لا توجد بنود</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- SERVICES TAB -->
+      <div class="tab-panel" id="tab-services">
+        <p class="text-sm text-gray-500 mb-4">الخدمات المطلوبة لهذه الفعالية:</p>
+        <div id="servicesFlags" class="flex flex-wrap gap-2"></div>
+        <div class="mt-6 p-4 bg-gray-50 rounded-xl">
+          <p class="text-xs text-gray-400 font-bold mb-1">الوجهة</p>
+          <p class="font-bold text-gray-700" id="svcDest">—</p>
+        </div>
+        <div class="mt-3 p-4 bg-gray-50 rounded-xl">
+          <p class="text-xs text-gray-400 font-bold mb-1">المكان</p>
+          <p class="font-bold text-gray-700" id="svcVenue">—</p>
+        </div>
+        <div class="mt-3 p-4 bg-blue-50 rounded-xl text-sm text-blue-700">
+          <i class="fa-solid fa-circle-info ml-2"></i>
+          لإضافة تفاصيل الخدمات (تأكيد الموردين، الفاوتشر، المهام)، افتح ملف الرحلة المرتبط بهذه الفعالية.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Budget Item Modal -->
+<div id="budgetModal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-800">بند ميزانية</h3>
+      <button onclick="closeBudgetModal()" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label>الفئة *</label>
+        <select id="bi_cat">
+          <option value="accommodation">إقامة</option><option value="transport">مواصلات</option>
+          <option value="catering">كاترينج</option><option value="av_tech">AV / تقنية</option>
+          <option value="activities">أنشطة</option><option value="staffing">طاقم</option>
+          <option value="translation">ترجمة</option><option value="marketing">تسويق</option>
+          <option value="venue">قاعة / مكان</option><option value="other">أخرى</option>
+        </select>
+      </div>
+      <div><label>اسم البند *</label><input type="text" id="bi_desc" placeholder="مثال: فندق — 30 غرفة × 3 ليالي"></div>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label>المبلغ الملتزم (EGP)</label><input type="number" id="bi_committed" value="0" min="0"></div>
+        <div><label>المبلغ الفعلي (EGP)</label><input type="number" id="bi_actual" value="0" min="0"></div>
+      </div>
+      <div><label>اسم المورد</label><input type="text" id="bi_vendor"></div>
+      <div><label>ملاحظات</label><textarea id="bi_notes" rows="2"></textarea></div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button onclick="saveBudgetItem()" class="flex-1 bg-primary text-white font-bold py-2.5 rounded-lg text-sm hover:bg-lightGreen transition">حفظ</button>
+      <button onclick="closeBudgetModal()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-2.5 rounded-lg text-sm hover:bg-gray-200 transition">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let _all=[], _filter='all', _editId=null;
+
+const STATUS_MAP = {
+  inquiry:      ['bg-gray-100 text-gray-600','استفسار'],
+  proposal:     ['bg-blue-100 text-blue-700','عرض أسعار'],
+  confirmed:    ['bg-green-100 text-green-700','مؤكدة'],
+  in_execution: ['bg-purple-100 text-purple-700','قيد التنفيذ'],
+  completed:    ['bg-gray-100 text-gray-500','مكتملة'],
+  cancelled:    ['bg-red-100 text-red-600','ملغاة'],
+};
+const TYPE_AR = {
+  conference:'مؤتمر',meeting:'اجتماع',incentive:'تحفيزية',
+  exhibition:'معرض',team_building:'بناء الفريق',gala:'حفل گالا',
+  workshop:'ورشة عمل',product_launch:'إطلاق منتج',other:'أخرى'
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await load();
+});
+
+async function load() {
+  const {data} = await db.from('mice_events')
+    .select('*')
+    .order('created_at',{ascending:false});
+  _all = data||[];
+  const total = _all.length;
+  const conf  = _all.filter(e=>e.status==='confirmed'||e.status==='in_execution').length;
+  const rev   = _all.reduce((s,e)=>s+(e.revenue||0),0);
+  const gp    = _all.reduce((s,e)=>s+(e.gross_profit||0),0);
+  document.getElementById('kTotal').textContent     = total;
+  document.getElementById('kConfirmed').textContent = conf;
+  document.getElementById('kRevenue').textContent   = fmt(rev)+' ج.م';
+  document.getElementById('kProfit').textContent    = fmt(gp)+' ج.م';
+  render();
+}
+
+function setF(f,btn){
+  _filter=f;
+  document.querySelectorAll('[onclick^="setF"]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');render();
+}
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let rows = _filter==='all' ? _all : _all.filter(e=>e.status===_filter);
+  if(q) rows = rows.filter(e=>(e.event_name||'').toLowerCase().includes(q)||(e.client_name||'').toLowerCase().includes(q));
+  const tbody = document.getElementById('tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="10" class="text-center py-10 text-gray-400">لا توجد فعاليات</td></tr>';return;}
+  tbody.innerHTML = rows.map(e=>{
+    const [sc,sl] = STATUS_MAP[e.status]||['bg-gray-100 text-gray-600','—'];
+    const gp = e.gross_profit||0;
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onclick="openDetail('${e.id}')">
+      <td class="p-3 text-xs font-mono text-gray-400">${e.event_number||'—'}</td>
+      <td class="p-3"><div class="font-semibold text-gray-800">${esc(e.event_name)}</div><div class="text-xs text-gray-400">${TYPE_AR[e.event_type]||e.event_type}</div></td>
+      <td class="p-3 text-xs text-gray-500">${TYPE_AR[e.event_type]||e.event_type}</td>
+      <td class="p-3 text-xs text-gray-500">${esc(e.client_name||'—')}</td>
+      <td class="p-3 text-xs text-gray-500">${e.start_date||'—'}</td>
+      <td class="p-3 text-center font-bold">${e.delegates_count||0}</td>
+      <td class="p-3 text-sm font-bold text-gray-700">${fmt(e.revenue)}</td>
+      <td class="p-3 text-sm font-bold ${gp>=0?'text-green-600':'text-red-600'}">${fmt(gp)}</td>
+      <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full font-bold ${sc}">${sl}</span></td>
+      <td class="p-3 text-xs"><button class="text-primary hover:underline font-bold" onclick="event.stopPropagation();openDetail('${e.id}')">فتح</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── DRAWER ────────────────────────────────────────────────────
+
+function openNew() {
+  _editId = null;
+  clearForm();
+  document.getElementById('drawerTitle').textContent = 'فعالية جديدة';
+  document.getElementById('drawerSubtitle').textContent = '';
+  document.getElementById('dStatus').classList.add('hidden');
+  document.getElementById('budgetTbody').innerHTML='<tr><td colspan="6" class="text-center py-6 text-gray-400">احفظ الفعالية أولاً لإضافة بنود الميزانية</td></tr>';
+  switchTab('info', document.querySelector('.tab-btn'));
+  document.getElementById('drawer').classList.remove('hidden');
+}
+
+async function openDetail(id) {
+  _editId = id;
+  const ev = _all.find(e=>e.id===id);
+  if(!ev) return;
+  // Populate form
+  document.getElementById('d_name').value       = ev.event_name||'';
+  document.getElementById('d_type').value       = ev.event_type||'conference';
+  document.getElementById('d_client').value     = ev.client_name||'';
+  document.getElementById('d_contact').value    = ev.client_contact||'';
+  document.getElementById('d_email').value      = ev.client_email||'';
+  document.getElementById('d_dest').value       = ev.destination||'';
+  document.getElementById('d_venue').value      = ev.venue_name||'';
+  document.getElementById('d_from').value       = ev.start_date||'';
+  document.getElementById('d_to').value         = ev.end_date||'';
+  document.getElementById('d_delegates').value  = ev.delegates_count||1;
+  document.getElementById('d_setup').value      = ev.setup_days||0;
+  document.getElementById('d_revenue').value    = ev.revenue||0;
+  document.getElementById('d_budget').value     = ev.budget_total||0;
+  document.getElementById('d_notes').value      = ev.internal_notes||'';
+  document.getElementById('s_accom').checked    = ev.needs_accommodation;
+  document.getElementById('s_trans').checked    = ev.needs_transport;
+  document.getElementById('s_cater').checked    = ev.needs_catering;
+  document.getElementById('s_av').checked       = ev.needs_av;
+  document.getElementById('s_act').checked      = ev.needs_activities;
+  document.getElementById('s_staff').checked    = ev.needs_staffing;
+  document.getElementById('s_trans2').checked   = ev.needs_translation;
+  document.getElementById('dStatus').value      = ev.status;
+  document.getElementById('dStatus').classList.remove('hidden');
+
+  document.getElementById('drawerTitle').textContent    = ev.event_number||'فعالية';
+  document.getElementById('drawerSubtitle').textContent = ev.event_name;
+
+  // Services tab
+  document.getElementById('svcDest').textContent  = ev.destination||'—';
+  document.getElementById('svcVenue').textContent = ev.venue_name||'—';
+  renderServiceFlags(ev);
+
+  // Budget
+  document.getElementById('bBudget').textContent    = fmt(ev.budget_total)  + ' ج.م';
+  document.getElementById('bCommitted').textContent = fmt(ev.committed_cost) + ' ج.م';
+  document.getElementById('bActual').textContent    = fmt(ev.actual_cost)    + ' ج.م';
+  await loadBudget(id);
+
+  switchTab('info', document.querySelectorAll('.tab-btn')[0]);
+  document.getElementById('drawer').classList.remove('hidden');
+}
+
+function renderServiceFlags(ev) {
+  const svcMap = [
+    ['needs_accommodation','إقامة','fa-bed'],
+    ['needs_transport','مواصلات','fa-van-shuttle'],
+    ['needs_catering','ضيافة','fa-utensils'],
+    ['needs_av','AV/تقنية','fa-display'],
+    ['needs_activities','أنشطة','fa-person-hiking'],
+    ['needs_staffing','طاقم','fa-users'],
+    ['needs_translation','ترجمة','fa-language'],
+  ];
+  document.getElementById('servicesFlags').innerHTML = svcMap
+    .filter(([k])=>ev[k])
+    .map(([,label,icon])=>`<span class="svc-chip"><i class="fa-solid ${icon}"></i>${label}</span>`)
+    .join('') || '<span class="text-gray-400 text-sm">لا توجد خدمات محددة</span>';
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.add('hidden');
+  _editId = null;
+}
+
+function clearForm() {
+  ['d_name','d_client','d_contact','d_email','d_dest','d_venue','d_from','d_to','d_notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('d_type').value='conference';
+  document.getElementById('d_delegates').value=1;
+  document.getElementById('d_setup').value=0;
+  document.getElementById('d_revenue').value=0;
+  document.getElementById('d_budget').value=0;
+  ['s_accom','s_trans','s_cater','s_av','s_act','s_staff','s_trans2'].forEach(id=>{document.getElementById(id).checked=false;});
+  document.getElementById('s_accom').checked=true;
+  document.getElementById('s_trans').checked=true;
+  document.getElementById('s_cater').checked=true;
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+async function saveEvent() {
+  const name = document.getElementById('d_name').value.trim();
+  if(!name){toast('اسم الفعالية مطلوب',true);return;}
+  const payload = {
+    event_name:           name,
+    event_type:           document.getElementById('d_type').value,
+    client_name:          document.getElementById('d_client').value.trim()||null,
+    client_contact:       document.getElementById('d_contact').value.trim()||null,
+    client_email:         document.getElementById('d_email').value.trim()||null,
+    destination:          document.getElementById('d_dest').value.trim()||null,
+    venue_name:           document.getElementById('d_venue').value.trim()||null,
+    start_date:           document.getElementById('d_from').value||null,
+    end_date:             document.getElementById('d_to').value||null,
+    delegates_count:      parseInt(document.getElementById('d_delegates').value)||1,
+    setup_days:           parseInt(document.getElementById('d_setup').value)||0,
+    revenue:              parseFloat(document.getElementById('d_revenue').value)||0,
+    budget_total:         parseFloat(document.getElementById('d_budget').value)||0,
+    internal_notes:       document.getElementById('d_notes').value.trim()||null,
+    needs_accommodation:  document.getElementById('s_accom').checked,
+    needs_transport:      document.getElementById('s_trans').checked,
+    needs_catering:       document.getElementById('s_cater').checked,
+    needs_av:             document.getElementById('s_av').checked,
+    needs_activities:     document.getElementById('s_act').checked,
+    needs_staffing:       document.getElementById('s_staff').checked,
+    needs_translation:    document.getElementById('s_trans2').checked,
+  };
+
+  let error;
+  if(_editId) {
+    ({error} = await db.from('mice_events').update(payload).eq('id',_editId));
+  } else {
+    const {data:{session}} = await db.auth.getSession();
+    payload.created_by = session.user.id;
+    payload.status = 'inquiry';
+    ({error} = await db.from('mice_events').insert(payload));
+  }
+  if(error){toast('خطأ: '+error.message,true);return;}
+  toast(_editId ? 'تم تحديث الفعالية ✓' : 'تم إنشاء الفعالية ✓');
+  closeDrawer();
+  await load();
+}
+
+async function updateStatus(newStatus) {
+  if(!_editId) return;
+  const {error} = await db.from('mice_events').update({status:newStatus}).eq('id',_editId);
+  if(error){toast('خطأ في التحديث',true);return;}
+  toast('تم تحديث الحالة ✓');
+  await load();
+  const ev = _all.find(e=>e.id===_editId);
+  if(ev) { ev.status = newStatus; }
+}
+
+// ── BUDGET ────────────────────────────────────────────────────
+
+async function loadBudget(eventId) {
+  const {data} = await db.from('mice_budget_items')
+    .select('*')
+    .eq('mice_event_id', eventId)
+    .order('created_at');
+  const tbody = document.getElementById('budgetTbody');
+  const CAT_AR = {
+    accommodation:'إقامة',transport:'مواصلات',catering:'كاترينج',
+    av_tech:'AV/تقنية',activities:'أنشطة',staffing:'طاقم',
+    translation:'ترجمة',marketing:'تسويق',venue:'قاعة',other:'أخرى'
+  };
+  if(!data||!data.length){tbody.innerHTML='<tr><td colspan="6" class="text-center py-6 text-gray-400">لا توجد بنود. أضف بنود الميزانية.</td></tr>';return;}
+  tbody.innerHTML = data.map(b=>`
+    <tr class="border-b border-gray-50 budget-row">
+      <td class="p-2 text-xs text-gray-500">${CAT_AR[b.category]||b.category}</td>
+      <td class="p-2 text-sm font-medium text-gray-800">${esc(b.description)}</td>
+      <td class="p-2 text-sm font-bold text-orange-600">${fmt(b.committed_amount)}</td>
+      <td class="p-2 text-sm font-bold text-green-600">${fmt(b.actual_amount)}</td>
+      <td class="p-2 text-xs text-gray-400">${esc(b.vendor_name||'—')}</td>
+      <td class="p-2"><button onclick="deleteBudgetItem('${b.id}')" class="text-red-400 hover:text-red-600 text-xs"><i class="fa-solid fa-trash"></i></button></td>
+    </tr>`).join('');
+}
+
+let _editBudgetId = null;
+function openBudgetModal() {
+  if(!_editId){toast('احفظ الفعالية أولاً',true);return;}
+  _editBudgetId = null;
+  ['bi_desc','bi_notes','bi_vendor'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bi_committed').value=0;
+  document.getElementById('bi_actual').value=0;
+  document.getElementById('budgetModal').classList.remove('hidden');
+}
+function closeBudgetModal(){document.getElementById('budgetModal').classList.add('hidden');}
+
+async function saveBudgetItem() {
+  const desc = document.getElementById('bi_desc').value.trim();
+  if(!desc){toast('اسم البند مطلوب',true);return;}
+  const {error} = await db.from('mice_budget_items').insert({
+    mice_event_id:     _editId,
+    category:          document.getElementById('bi_cat').value,
+    description:       desc,
+    committed_amount:  parseFloat(document.getElementById('bi_committed').value)||0,
+    actual_amount:     parseFloat(document.getElementById('bi_actual').value)||0,
+    vendor_name:       document.getElementById('bi_vendor').value.trim()||null,
+    notes:             document.getElementById('bi_notes').value.trim()||null,
+  });
+  if(error){toast('خطأ: '+error.message,true);return;}
+  closeBudgetModal();
+  toast('تم إضافة البند ✓');
+  await loadBudget(_editId);
+  await load(); // refresh totals
+  const ev = _all.find(e=>e.id===_editId);
+  if(ev) {
+    document.getElementById('bCommitted').textContent = fmt(ev.committed_cost||0)+' ج.م';
+    document.getElementById('bActual').textContent    = fmt(ev.actual_cost||0)+' ج.م';
+  }
+}
+
+async function deleteBudgetItem(id) {
+  if(!confirm('حذف هذا البند؟')) return;
+  const {error} = await db.from('mice_budget_items').delete().eq('id',id);
+  if(error){toast('خطأ',true);return;}
+  toast('تم الحذف');
+  await loadBudget(_editId);
+  await load();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function fmt(n){return (n||0).toLocaleString('ar-EG',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

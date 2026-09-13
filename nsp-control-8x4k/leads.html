@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>العملاء المحتملون | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+
+    .tab-btn { padding:6px 14px; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:.2s; border:2px solid transparent; }
+    .tab-btn.active { background:#1B5E20; color:#fff; }
+    .tab-btn:not(.active) { color:#6b7280; hover:background:#f3f4f6; }
+    .lead-row { cursor:pointer; transition:.15s; }
+    .lead-row:hover { background:#f0fdf4; }
+    .status-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; }
+    .priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+    /* Modal */
+    #leadModal { display:none; }
+    #leadModal.open { display:flex; }
+  </style>
+  <script src="/js/admin-nav.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Page Header -->
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-user-plus ml-2 text-primary"></i>العملاء المحتملون</h1>
+      <p class="erp-page-subtitle" id="leadCount">جارٍ التحميل…</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick="openNewLeadModal()"
+        class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-lightGreen transition flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> عميل محتمل جديد
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="erp-card mb-4">
+    <div class="flex flex-wrap gap-3 items-center">
+      <!-- Status Tabs -->
+      <div class="flex gap-1 flex-wrap" id="statusTabs">
+        <button class="tab-btn active" data-status="">الكل</button>
+        <button class="tab-btn" data-status="new">جديد</button>
+        <button class="tab-btn" data-status="contacted">تواصل</button>
+        <button class="tab-btn" data-status="qualified">مؤهل</button>
+        <button class="tab-btn" data-status="opportunity">فرصة</button>
+        <button class="tab-btn" data-status="won">رابح</button>
+        <button class="tab-btn" data-status="lost">خسارة</button>
+      </div>
+      <!-- Search -->
+      <div class="mr-auto">
+        <input id="searchInput" type="text" placeholder="ابحث بالاسم، الهاتف، الوجهة…"
+          class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none"
+          style="font-family:'Cairo',sans-serif;" oninput="filterLeads()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Leads Table -->
+  <div class="erp-card overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100">
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500">العميل</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500 hidden md:table-cell">الوجهة / المصدر</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500">الحالة</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500 hidden lg:table-cell">أولوية</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500 hidden lg:table-cell">متابعة</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500 hidden md:table-cell">تاريخ</th>
+          <th class="py-3 px-3 text-xs font-bold text-gray-500"></th>
+        </tr>
+      </thead>
+      <tbody id="leadsBody">
+        <tr><td colspan="7" class="py-10 text-center text-gray-400 text-sm animate-pulse">جارٍ التحميل…</td></tr>
+      </tbody>
+    </table>
+    <!-- Pagination -->
+    <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-2 px-2">
+      <span id="paginationInfo" class="text-xs text-gray-400"></span>
+      <div class="flex gap-2">
+        <button id="prevBtn" onclick="changePage(-1)"
+          class="text-xs px-3 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40" disabled>السابق</button>
+        <button id="nextBtn" onclick="changePage(1)"
+          class="text-xs px-3 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40" disabled>التالي</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- New Lead Modal -->
+<div id="leadModal" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h2 class="font-bold text-gray-800 text-lg">عميل محتمل جديد</h2>
+      <button onclick="closeLeadModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2">
+          <label class="block text-xs font-bold text-gray-600 mb-1">الاسم الكامل *</label>
+          <input id="nf_name" type="text" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الهاتف</label>
+          <input id="nf_phone" type="tel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">واتساب</label>
+          <input id="nf_whatsapp" type="tel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">البريد الإلكتروني</label>
+          <input id="nf_email" type="email" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الجنسية</label>
+          <input id="nf_nationality" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الوجهة</label>
+          <input id="nf_destination" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">المصدر</label>
+          <select id="nf_source" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+            <option value="manual">إدخال يدوي</option>
+            <option value="website">الموقع</option>
+            <option value="whatsapp">واتساب</option>
+            <option value="phone">هاتف</option>
+            <option value="email">بريد إلكتروني</option>
+            <option value="social">سوشيال ميديا</option>
+            <option value="referral">إحالة</option>
+            <option value="b2b">شريك B2B</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الأولوية</label>
+          <select id="nf_priority" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+            <option value="medium">متوسطة</option>
+            <option value="high">عالية</option>
+            <option value="urgent">عاجل</option>
+            <option value="low">منخفضة</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">عدد الكبار</label>
+          <input id="nf_adults" type="number" min="1" value="1" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">ميزانية تقديرية (EGP)</label>
+          <input id="nf_budget" type="number" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ السفر (من)</label>
+          <input id="nf_date_from" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ السفر (إلى)</label>
+          <input id="nf_date_to" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
+          <textarea id="nf_notes" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none resize-none" style="font-family:'Cairo',sans-serif;"></textarea>
+        </div>
+      </div>
+      <div id="modalError" class="text-red-600 text-xs font-bold hidden"></div>
+    </div>
+    <div class="flex gap-3 p-5 border-t border-gray-100">
+      <button onclick="saveLead()"
+        class="flex-1 bg-primary text-white font-bold py-2 rounded-lg hover:bg-lightGreen transition text-sm">
+        <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ العميل
+      </button>
+      <button onclick="closeLeadModal()"
+        class="px-5 border border-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-50 transition text-sm">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATUS_LABELS = { new:'جديد', contacted:'تواصل', qualified:'مؤهل', unqualified:'غير مؤهل', opportunity:'فرصة', won:'رابح', lost:'خسارة', nurture:'تربية' };
+const STATUS_COLORS = { new:'#3b82f6', contacted:'#f59e0b', qualified:'#10b981', unqualified:'#6b7280', opportunity:'#8b5cf6', won:'#16a34a', lost:'#ef4444', nurture:'#f97316' };
+const PRIORITY_COLORS = { urgent:'#ef4444', high:'#f97316', medium:'#f59e0b', low:'#6b7280' };
+const PRIORITY_LABELS = { urgent:'عاجل', high:'عالية', medium:'متوسطة', low:'منخفضة' };
+const SOURCE_LABELS = { manual:'يدوي', website:'موقع', whatsapp:'واتساب', phone:'هاتف', email:'بريد', social:'سوشيال', referral:'إحالة', b2b:'B2B' };
+
+let allLeads = [];
+let filtered = [];
+let currentStatus = '';
+let page = 0;
+const PAGE_SIZE = 20;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+
+  // Tab click
+  document.getElementById('statusTabs').addEventListener('click', e => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.status;
+    page = 0;
+    filterLeads();
+  });
+
+  await loadLeads();
+});
+
+async function loadLeads() {
+  let q = db.from('leads')
+    .select('id,lead_number,full_name,phone,email,status,priority,source,destination,next_follow_up,created_at,adults_count')
+    .order('created_at', { ascending: false });
+
+  const { data, error } = await q;
+  if (error) { console.error(error); return; }
+  allLeads = data || [];
+  filterLeads();
+}
+
+function filterLeads() {
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  filtered = allLeads.filter(l => {
+    const matchStatus = !currentStatus || l.status === currentStatus;
+    const matchSearch = !search || [l.full_name, l.phone, l.email, l.destination, l.source]
+      .some(v => v && v.toLowerCase().includes(search));
+    return matchStatus && matchSearch;
+  });
+  renderTable();
+}
+
+function renderTable() {
+  const total = filtered.length;
+  const start = page * PAGE_SIZE;
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+
+  document.getElementById('leadCount').textContent = `${total} عميل محتمل`;
+  document.getElementById('paginationInfo').textContent = total ? `${start + 1}–${Math.min(start + PAGE_SIZE, total)} من ${total}` : '';
+  document.getElementById('prevBtn').disabled = page === 0;
+  document.getElementById('nextBtn').disabled = start + PAGE_SIZE >= total;
+
+  if (!slice.length) {
+    document.getElementById('leadsBody').innerHTML =
+      '<tr><td colspan="7" class="py-10 text-center text-gray-400 text-sm">لا توجد نتائج</td></tr>';
+    return;
+  }
+
+  document.getElementById('leadsBody').innerHTML = slice.map(l => {
+    const followup = l.next_follow_up ? new Date(l.next_follow_up) : null;
+    const overdue = followup && followup < new Date();
+    return `
+    <tr class="lead-row border-b border-gray-50" onclick="window.location='/nsp-control-8x4k/lead-detail.html?id=${l.id}'">
+      <td class="py-3 px-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+            ${(l.full_name||'؟')[0]}
+          </div>
+          <div>
+            <p class="font-bold text-gray-800 text-sm">${l.full_name}</p>
+            <p class="text-xs text-gray-400">${l.phone || l.email || '—'}</p>
+          </div>
+        </div>
+      </td>
+      <td class="py-3 px-3 text-xs text-gray-500 hidden md:table-cell">
+        <p>${l.destination || '—'}</p>
+        <p class="text-gray-400">${SOURCE_LABELS[l.source] || l.source || '—'}</p>
+      </td>
+      <td class="py-3 px-3">
+        <span class="status-badge" style="background:${STATUS_COLORS[l.status]}22;color:${STATUS_COLORS[l.status]}">
+          ${STATUS_LABELS[l.status]||l.status}
+        </span>
+      </td>
+      <td class="py-3 px-3 hidden lg:table-cell">
+        <span class="flex items-center gap-1 text-xs font-bold" style="color:${PRIORITY_COLORS[l.priority]||'#6b7280'}">
+          <span class="priority-dot" style="background:${PRIORITY_COLORS[l.priority]||'#6b7280'}"></span>
+          ${PRIORITY_LABELS[l.priority]||l.priority}
+        </span>
+      </td>
+      <td class="py-3 px-3 text-xs hidden lg:table-cell ${overdue ? 'text-red-500 font-bold' : 'text-gray-500'}">
+        ${followup ? followup.toLocaleDateString('ar-EG') : '—'}
+        ${overdue ? '<i class="fa-solid fa-triangle-exclamation mr-1 text-red-400"></i>' : ''}
+      </td>
+      <td class="py-3 px-3 text-xs text-gray-400 hidden md:table-cell">
+        ${new Date(l.created_at).toLocaleDateString('ar-EG')}
+      </td>
+      <td class="py-3 px-3 text-left">
+        <a href="/nsp-control-8x4k/lead-detail.html?id=${l.id}"
+           class="text-primary hover:underline text-xs font-bold" onclick="event.stopPropagation()">
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function changePage(dir) {
+  page += dir;
+  renderTable();
+  window.scrollTo(0, 0);
+}
+
+function openNewLeadModal() {
+  document.getElementById('leadModal').classList.add('open');
+  document.getElementById('modalError').classList.add('hidden');
+  // Clear fields
+  ['nf_name','nf_phone','nf_whatsapp','nf_email','nf_nationality','nf_destination','nf_notes','nf_budget','nf_date_from','nf_date_to'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = id === 'nf_adults' ? '1' : '';
+  });
+}
+
+function closeLeadModal() {
+  document.getElementById('leadModal').classList.remove('open');
+}
+
+async function saveLead() {
+  const name = document.getElementById('nf_name').value.trim();
+  if (!name) {
+    document.getElementById('modalError').textContent = 'الاسم الكامل مطلوب';
+    document.getElementById('modalError').classList.remove('hidden');
+    return;
+  }
+
+  const { data: { session } } = await db.auth.getSession();
+
+  const payload = {
+    full_name:       name,
+    phone:           document.getElementById('nf_phone').value.trim() || null,
+    whatsapp:        document.getElementById('nf_whatsapp').value.trim() || null,
+    email:           document.getElementById('nf_email').value.trim() || null,
+    nationality:     document.getElementById('nf_nationality').value.trim() || null,
+    destination:     document.getElementById('nf_destination').value.trim() || null,
+    source:          document.getElementById('nf_source').value,
+    priority:        document.getElementById('nf_priority').value,
+    adults_count:    parseInt(document.getElementById('nf_adults').value) || 1,
+    budget_estimate: parseFloat(document.getElementById('nf_budget').value) || null,
+    travel_date_from: document.getElementById('nf_date_from').value || null,
+    travel_date_to:   document.getElementById('nf_date_to').value || null,
+    notes:           document.getElementById('nf_notes').value.trim() || null,
+    assigned_to:     session?.user?.id,
+    created_by:      session?.user?.id,
+    status:          'new',
+  };
+
+  const { data, error } = await db.from('leads').insert(payload).select().single();
+  if (error) {
+    document.getElementById('modalError').textContent = 'خطأ: ' + error.message;
+    document.getElementById('modalError').classList.remove('hidden');
+    return;
+  }
+
+  closeLeadModal();
+  window.location.href = `/nsp-control-8x4k/lead-detail.html?id=${data.id}`;
+}
+</script>
+</body>
+</html>

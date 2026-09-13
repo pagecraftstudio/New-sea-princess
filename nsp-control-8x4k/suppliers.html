@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الموردون | نيو سي برنسيس فرع الزقازيق</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/accounting-engine.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.75rem;font-weight:700;}
+    .badge-green{background:#dcfce7;color:#166534;}
+    .badge-red{background:#fee2e2;color:#991b1b;}
+    .badge-yellow{background:#fef9c3;color:#854d0e;}
+    .badge-gray{background:#f3f4f6;color:#374151;}
+    .badge-blue{background:#dbeafe;color:#1e40af;}
+    .badge-purple{background:#ede9fe;color:#5b21b6;}
+    .badge-orange{background:#ffedd5;color:#9a3412;}
+    .stat-card{background:#fff;border-radius:1rem;padding:1.25rem 1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid #e5e7eb;}
+    .row-hover:hover{background:#f0fdf4;}
+    input:focus,select:focus,textarea:focus{outline:none;ring:2px;box-shadow:0 0 0 2px #1B5E2033;}
+    @media print{aside,.no-print{display:none!important;}main{padding:0!important;}body{background:#fff!important;}}
+  </style>
+  <script src="/js/admin-nav.js"></script>
+  <script>
+</script>
+</head>
+<body class="bg-gray-100 min-h-screen" style="font-family:'Cairo',sans-serif;">
+
+<div id="adminNavMount"></div>
+
+  <!-- MAIN -->
+<main class="flex-1 flex flex-col p-4 md:p-6 overflow-x-hidden" aria-label="المحتوى الرئيسي">
+
+  <!-- Header -->
+  <div class="flex flex-wrap justify-between items-center mb-6 gap-4 no-print">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800" aria-label="إدارة الموردين">إدارة الموردين</h2>
+      <p class="text-sm text-gray-500 mt-1">فنادق • شركات طيران • تأشيرات • نقل</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="openAddModal()" class="bg-primary hover:bg-green-700 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 transition shadow">
+        <i class="fa-solid fa-plus"></i> مورد جديد
+      </button>
+      <button onclick="window.print()" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition text-sm">
+        <i class="fa-solid fa-print"></i> طباعة
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 no-print">
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">إجمالي الموردين</div>
+      <div class="text-2xl font-bold text-primary" id="statTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">فنادق</div>
+      <div class="text-2xl font-bold text-blue-600" id="statHotels">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">شركات طيران</div>
+      <div class="text-2xl font-bold text-purple-600" id="statAirlines">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-xs text-gray-500 mb-1">إجمالي المدفوع للموردين</div>
+      <div class="text-2xl font-bold text-red-700" id="statPaid">—</div>
+    </div>
+  </div>
+
+  <!-- Search + filter -->
+  <div class="bg-white rounded-xl shadow border border-gray-200 p-4 mb-4 no-print">
+    <div class="flex flex-wrap gap-3">
+      <div class="flex-1 min-w-[200px] relative">
+        <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <input id="searchInput" type="text" placeholder="بحث بالاسم أو الرمز أو النوع..."
+          class="w-full border border-gray-300 rounded-lg py-2 pr-9 pl-3 text-sm focus:ring-2 focus:ring-primary outline-none"
+          oninput="renderSuppliers()">
+      </div>
+      <select id="filterType" onchange="renderSuppliers()"
+        class="border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none">
+        <option value="">جميع الأنواع</option>
+        <option value="hotel">فنادق</option>
+        <option value="airline">شركات طيران</option>
+        <option value="visa">تأشيرات</option>
+        <option value="transport">نقل</option>
+        <option value="other">أخرى</option>
+      </select>
+      <select id="filterStatus" onchange="renderSuppliers()"
+        class="border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none">
+        <option value="">الكل</option>
+        <option value="active">نشط</option>
+        <option value="inactive">غير نشط</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+    <div id="loadingState" class="flex items-center justify-center py-16 text-gray-400 gap-3">
+      <i class="fa-solid fa-spinner fa-spin text-2xl text-primary"></i>
+      <span>جارٍ تحميل الموردين...</span>
+    </div>
+    <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
+      <i class="fa-solid fa-truck text-4xl text-gray-300"></i>
+      <p>لا يوجد موردون</p>
+      <button onclick="openAddModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition mt-2">
+        <i class="fa-solid fa-plus ml-1"></i> أضف مورداً
+      </button>
+    </div>
+    <div id="tableWrap" class="hidden overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-gray-50 text-gray-600 text-xs border-b">
+            <th class="px-4 py-3 text-right font-bold">المورد</th>
+            <th class="px-4 py-3 text-center font-bold">النوع</th>
+            <th class="px-4 py-3 text-right font-bold">التواصل</th>
+            <th class="px-4 py-3 text-right font-bold">الرقم الضريبي</th>
+            <th class="px-4 py-3 text-center font-bold">العملة</th>
+            <th class="px-4 py-3 text-center font-bold">شروط الدفع</th>
+            <th class="px-4 py-3 text-left font-bold">المدفوع</th>
+            <th class="px-4 py-3 text-center font-bold">الحالة</th>
+            <th class="px-4 py-3 text-center font-bold no-print">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="suppliersBody"></tbody>
+      </table>
+    </div>
+    <div class="border-t px-4 py-3 flex items-center justify-between bg-gray-50 no-print">
+      <span id="paginationInfo" class="text-xs text-gray-500"></span>
+      <div class="flex gap-2">
+        <button id="prevBtn" onclick="prevPage()" class="px-3 py-1.5 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">السابق</button>
+        <button id="nextBtn" onclick="nextPage()" class="px-3 py-1.5 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">التالي</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div id="supplierModal" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-black/60" onclick="closeModal()"></div>
+  <div class="absolute inset-y-0 left-0 w-full md:w-[600px] bg-white shadow-2xl flex flex-col overflow-hidden">
+    <div class="bg-primary text-white px-6 py-4 flex items-center justify-between">
+      <h3 class="text-lg font-bold" id="modalTitle">مورد جديد</h3>
+      <button onclick="closeModal()" class="text-white/70 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-6 space-y-4">
+      <input type="hidden" id="supplierId">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الاسم بالعربية <span class="text-red-500">*</span></label>
+          <input id="fNameAr" type="text" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary" placeholder="اسم المورد">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الاسم بالإنجليزية</label>
+          <input id="fNameEn" type="text" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary" placeholder="Supplier Name">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الرمز</label>
+          <input id="fCode" type="text" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary" placeholder="SUP-001">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">النوع</label>
+          <select id="fType" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary">
+            <option value="hotel">فندق</option>
+            <option value="airline">شركة طيران</option>
+            <option value="visa">تأشيرات</option>
+            <option value="transport">نقل</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الهاتف</label>
+          <input id="fPhone" type="text" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary" placeholder="01234567890">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الإيميل</label>
+          <input id="fEmail" type="email" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary" placeholder="supplier@example.com">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">العنوان</label>
+        <input id="fAddress" type="text" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary" placeholder="المدينة، البلد">
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الرقم الضريبي</label>
+          <input id="fTaxId" type="text" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary" placeholder="123456789">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">العملة</label>
+          <select id="fCurrency" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary">
+            <option value="EGP">جنيه مصري (EGP)</option>
+            <option value="SAR">ريال سعودي (SAR)</option>
+            <option value="USD">دولار (USD)</option>
+            <option value="EUR">يورو (EUR)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">شروط الدفع (يوم)</label>
+          <input id="fPaymentTerms" type="number" min="0" value="30" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
+        <textarea id="fNotes" rows="3" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary" placeholder="أي معلومات إضافية..."></textarea>
+      </div>
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="fActive" checked class="rounded border-gray-300 text-primary">
+        <label for="fActive" class="text-sm text-gray-700">مورد نشط</label>
+      </div>
+      <div id="formError" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm"></div>
+    </div>
+    <div class="p-4 border-t bg-gray-50 flex justify-between items-center no-print">
+      <button onclick="closeModal()" class="px-5 py-2 text-gray-600 hover:bg-gray-200 rounded-lg transition text-sm">إلغاء</button>
+      <button onclick="saveSupplier()" id="saveBtn" class="bg-primary hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold transition text-sm flex items-center gap-2">
+        <i class="fa-solid fa-floppy-disk"></i> حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- STATEMENT MODAL -->
+<div id="statementModal" class="fixed inset-0 z-[80] hidden">
+  <div class="absolute inset-0 bg-black/60" onclick="closeStatement()"></div>
+  <div class="absolute inset-y-0 left-0 w-full md:w-[720px] bg-white shadow-2xl flex flex-col overflow-hidden">
+    <div class="bg-gold text-white px-6 py-4 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-bold" id="stmtName">كشف حساب المورد</h3>
+        <div class="text-yellow-100 text-xs mt-0.5" id="stmtSub"></div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="printStatement()" class="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-print"></i> طباعة
+        </button>
+        <button onclick="closeStatement()" class="text-white/70 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4" id="statementBody">
+      <div class="flex items-center justify-center py-16 text-gray-400">
+        <i class="fa-solid fa-spinner fa-spin text-2xl text-gold ml-2"></i> جارٍ التحميل...
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let allSuppliers = [];
+let filteredSuppliers = [];
+let expensesBySupplier = {};
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let currentStatement = null;
+
+document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+  document.getElementById('mobileDrawer').classList.remove('hidden');
+});
+function fmtMoney(v, currency='EGP') {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toLocaleString('ar-EG', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ' + currency;
+}
+
+const typeMap = {hotel:'فندق',airline:'شركة طيران',visa:'تأشيرات',transport:'نقل',other:'أخرى'};
+const typeColors = {hotel:'badge-blue',airline:'badge-purple',visa:'badge-orange',transport:'badge-yellow',other:'badge-gray'};
+
+async function loadSuppliers() {
+  const sb = window.db;
+  try {
+    const [{ data: suppliers, error }, { data: expenses }] = await Promise.all([
+      sb.from('suppliers').select('*').order('name_ar'),
+      sb.from('nsp_expenses').select('supplier_id,total_amount,status').eq('status','posted')
+    ]);
+
+    if (error) throw error;
+
+    // Sum expenses per supplier
+    expensesBySupplier = {};
+    if (expenses) {
+      for (const e of expenses) {
+        if (!e.supplier_id) continue;
+        expensesBySupplier[e.supplier_id] = (expensesBySupplier[e.supplier_id] || 0) + Number(e.total_amount || 0);
+      }
+    }
+
+    // Also check booking_costs
+    const { data: costs } = await sb.from('booking_costs').select('supplier_id,cost_amount');
+    if (costs) {
+      for (const c of costs) {
+        if (!c.supplier_id) continue;
+        expensesBySupplier[c.supplier_id] = (expensesBySupplier[c.supplier_id] || 0) + Number(c.cost_amount || 0);
+      }
+    }
+
+    allSuppliers = (suppliers || []).map(s => ({
+      ...s,
+      totalPaid: expensesBySupplier[s.id] || 0
+    }));
+
+    const totalPaid = allSuppliers.reduce((sum,s)=>sum+s.totalPaid,0);
+    document.getElementById('statTotal').textContent = allSuppliers.length;
+    document.getElementById('statHotels').textContent = allSuppliers.filter(s=>s.type==='hotel').length;
+    document.getElementById('statAirlines').textContent = allSuppliers.filter(s=>s.type==='airline').length;
+    document.getElementById('statPaid').textContent = fmtMoney(totalPaid);
+
+    renderSuppliers();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loadingState').innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-500 text-2xl"></i><span class="text-red-500 mr-2">خطأ: ${e.message}</span>`;
+  }
+}
+
+function renderSuppliers() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const filterType = document.getElementById('filterType').value;
+  const filterStatus = document.getElementById('filterStatus').value;
+
+  filteredSuppliers = allSuppliers.filter(s => {
+    if (search && !s.name_ar?.toLowerCase().includes(search) && !s.name_en?.toLowerCase().includes(search) && !s.code?.toLowerCase().includes(search)) return false;
+    if (filterType && s.type !== filterType) return false;
+    if (filterStatus === 'active' && !s.is_active) return false;
+    if (filterStatus === 'inactive' && s.is_active) return false;
+    return true;
+  });
+
+  currentPage = 1;
+  renderPage();
+}
+
+function renderPage() {
+  const total = filteredSuppliers.length;
+  const start = (currentPage-1)*PAGE_SIZE;
+  const end = Math.min(start+PAGE_SIZE, total);
+  const pageData = filteredSuppliers.slice(start, end);
+
+  document.getElementById('loadingState').classList.add('hidden');
+
+  if (total === 0) {
+    document.getElementById('emptyState').classList.remove('hidden');
+    document.getElementById('tableWrap').classList.add('hidden');
+  } else {
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('tableWrap').classList.remove('hidden');
+  }
+
+  document.getElementById('paginationInfo').textContent = `عرض ${start+1}–${end} من ${total} مورد`;
+  document.getElementById('prevBtn').disabled = currentPage === 1;
+  document.getElementById('nextBtn').disabled = end >= total;
+
+  const tbody = document.getElementById('suppliersBody');
+  tbody.innerHTML = pageData.map(s => `<tr class="border-b row-hover">
+    <td class="px-4 py-3">
+      <div class="font-bold text-gray-800">${s.name_ar}</div>
+      ${s.name_en ? `<div class="text-xs text-gray-400">${s.name_en}</div>` : ''}
+      ${s.code ? `<div class="text-xs text-gray-400 font-mono">${s.code}</div>` : ''}
+    </td>
+    <td class="px-4 py-3 text-center"><span class="badge ${typeColors[s.type]||'badge-gray'}">${typeMap[s.type]||s.type}</span></td>
+    <td class="px-4 py-3">
+      <div class="text-xs text-gray-600">${s.phone||'—'}</div>
+      <div class="text-xs text-gray-400">${s.email||''}</div>
+    </td>
+    <td class="px-4 py-3 text-xs text-gray-500 font-mono">${s.tax_id||'—'}</td>
+    <td class="px-4 py-3 text-center text-xs font-bold text-gray-700">${s.currency||'EGP'}</td>
+    <td class="px-4 py-3 text-center text-xs text-gray-500">${s.payment_terms||30} يوم</td>
+    <td class="px-4 py-3 text-left font-mono text-sm text-red-700 font-bold">${fmtMoney(s.totalPaid, s.currency||'EGP')}</td>
+    <td class="px-4 py-3 text-center">
+      ${s.is_active ? '<span class="badge badge-green">نشط</span>' : '<span class="badge badge-gray">غير نشط</span>'}
+    </td>
+    <td class="px-4 py-3 text-center no-print">
+      <div class="flex justify-center gap-1">
+        <button onclick="openBillsModal('${s.id}')" title="فواتير ومدفوعات" class="text-blue-600 hover:text-blue-800 text-xs border border-blue-300 rounded px-2 py-1 hover:bg-blue-50 transition">
+          <i class="fa-solid fa-file-invoice-dollar"></i> فواتير
+        </button>
+        <button onclick="openStatement('${s.id}')" title="كشف حساب" class="text-gold hover:text-yellow-700 text-xs border border-gold rounded px-2 py-1 hover:bg-yellow-50 transition">
+          <i class="fa-solid fa-file-invoice"></i>
+        </button>
+        <button onclick="openEditModal(${JSON.stringify(s).replace(/"/g,'&quot;')})" title="تعديل" class="text-primary hover:text-green-800 text-xs border border-primary rounded px-2 py-1 hover:bg-green-50 transition">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button onclick="toggleActive('${s.id}', ${s.is_active})" title="${s.is_active?'إيقاف':'تفعيل'}" class="text-gray-500 hover:text-gray-700 text-xs border border-gray-300 rounded px-2 py-1 hover:bg-gray-100 transition">
+          <i class="fa-solid fa-${s.is_active?'eye-slash':'eye'}"></i>
+        </button>
+      </div>
+    </td>
+  </tr>`).join('');
+}
+
+function prevPage() { if (currentPage > 1) { currentPage--; renderPage(); } }
+function nextPage() {
+  if (currentPage * PAGE_SIZE < filteredSuppliers.length) { currentPage++; renderPage(); }
+}
+
+// ── CRUD ──────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('modalTitle').textContent = 'مورد جديد';
+  document.getElementById('supplierId').value = '';
+  document.getElementById('fNameAr').value = '';
+  document.getElementById('fNameEn').value = '';
+  document.getElementById('fCode').value = '';
+  document.getElementById('fType').value = 'hotel';
+  document.getElementById('fPhone').value = '';
+  document.getElementById('fEmail').value = '';
+  document.getElementById('fAddress').value = '';
+  document.getElementById('fTaxId').value = '';
+  document.getElementById('fCurrency').value = 'EGP';
+  document.getElementById('fPaymentTerms').value = '30';
+  document.getElementById('fNotes').value = '';
+  document.getElementById('fActive').checked = true;
+  document.getElementById('formError').classList.add('hidden');
+  document.getElementById('supplierModal').classList.remove('hidden');
+}
+
+function openEditModal(s) {
+  document.getElementById('modalTitle').textContent = 'تعديل المورد';
+  document.getElementById('supplierId').value = s.id;
+  document.getElementById('fNameAr').value = s.name_ar || '';
+  document.getElementById('fNameEn').value = s.name_en || '';
+  document.getElementById('fCode').value = s.code || '';
+  document.getElementById('fType').value = s.type || 'hotel';
+  document.getElementById('fPhone').value = s.phone || '';
+  document.getElementById('fEmail').value = s.email || '';
+  document.getElementById('fAddress').value = s.address || '';
+  document.getElementById('fTaxId').value = s.tax_id || '';
+  document.getElementById('fCurrency').value = s.currency || 'EGP';
+  document.getElementById('fPaymentTerms').value = s.payment_terms || 30;
+  document.getElementById('fNotes').value = s.notes || '';
+  document.getElementById('fActive').checked = s.is_active !== false;
+  document.getElementById('formError').classList.add('hidden');
+  document.getElementById('supplierModal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('supplierModal').classList.add('hidden'); }
+
+async function saveSupplier() {
+  const id = document.getElementById('supplierId').value;
+  const name_ar = document.getElementById('fNameAr').value.trim();
+  if (!name_ar) {
+    showFormError('الاسم بالعربية مطلوب');
+    return;
+  }
+
+  const payload = {
+    name_ar,
+    name_en: document.getElementById('fNameEn').value.trim() || null,
+    code: document.getElementById('fCode').value.trim() || null,
+    type: document.getElementById('fType').value,
+    phone: document.getElementById('fPhone').value.trim() || null,
+    email: document.getElementById('fEmail').value.trim() || null,
+    address: document.getElementById('fAddress').value.trim() || null,
+    tax_id: document.getElementById('fTaxId').value.trim() || null,
+    currency: document.getElementById('fCurrency').value,
+    payment_terms: parseInt(document.getElementById('fPaymentTerms').value) || 30,
+    notes: document.getElementById('fNotes').value.trim() || null,
+    is_active: document.getElementById('fActive').checked,
+  };
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i> جارٍ الحفظ...';
+
+  try {
+    const sb = window.db;
+    let error;
+    if (id) {
+      ({ error } = await sb.from('suppliers').update(payload).eq('id', id));
+    } else {
+      ({ error } = await sb.from('suppliers').insert(payload));
+    }
+    if (error) throw error;
+    closeModal();
+    loadSuppliers();
+  } catch(e) {
+    showFormError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ';
+  }
+}
+
+function showFormError(msg) {
+  const el = document.getElementById('formError');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function toggleActive(id, current) {
+  const sb = window.db;
+  const { error } = await sb.from('suppliers').update({ is_active: !current }).eq('id', id);
+  if (!error) loadSuppliers();
+}
+
+// ── STATEMENT ─────────────────────────────────────────
+async function openStatement(supplierId) {
+  const supplier = allSuppliers.find(s => s.id === supplierId);
+  if (!supplier) return;
+  currentStatement = supplier;
+
+  document.getElementById('stmtName').textContent = `كشف حساب: ${supplier.name_ar}`;
+  document.getElementById('stmtSub').textContent = supplier.type ? typeMap[supplier.type] : '';
+  document.getElementById('statementModal').classList.remove('hidden');
+
+  const body = document.getElementById('statementBody');
+  body.innerHTML = `<div class="flex items-center justify-center py-16 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl text-gold ml-2"></i> جارٍ التحميل...</div>`;
+
+  try {
+    const sb = window.db;
+    const [{ data: expenses }, { data: costs }, { data: bookings }] = await Promise.all([
+      sb.from('nsp_expenses').select('*').eq('supplier_id', supplierId).order('expense_date', { ascending: false }),
+      sb.from('booking_costs').select('*, bookings(booking_number,package_title,status)').eq('supplier_id', supplierId).order('created_at', { ascending: false }),
+      sb.from('booking_costs').select('cost_amount').eq('supplier_id', supplierId)
+    ]);
+
+    const totalExpenses = (expenses||[]).reduce((s,e)=>s+Number(e.total_amount||0),0);
+    const totalCosts = (bookings||[]).reduce((s,c)=>s+Number(c.cost_amount||0),0);
+    const grandTotal = totalExpenses + totalCosts;
+
+    let html = `
+      <div class="mb-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+        <div class="bg-gray-50 rounded-lg p-3 border">
+          <div class="text-xs text-gray-500 mb-1">النوع</div>
+          <div class="font-bold"><span class="badge ${typeColors[supplier.type]||'badge-gray'}">${typeMap[supplier.type]||'—'}</span></div>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-3 border">
+          <div class="text-xs text-gray-500 mb-1">العملة</div>
+          <div class="font-bold text-gray-800">${supplier.currency||'EGP'}</div>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-3 border">
+          <div class="text-xs text-gray-500 mb-1">شروط الدفع</div>
+          <div class="font-bold text-gray-800">${supplier.payment_terms||30} يوم</div>
+        </div>
+        <div class="bg-red-50 rounded-lg p-3 border border-red-100">
+          <div class="text-xs text-gray-500 mb-1">إجمالي المدفوع</div>
+          <div class="font-bold text-red-700">${fmtMoney(grandTotal, supplier.currency||'EGP')}</div>
+        </div>
+      </div>`;
+
+    // Booking costs
+    if (costs?.length) {
+      html += `<div class="mb-5">
+        <h4 class="font-bold text-gray-700 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-suitcase text-gold"></i> تكاليف الحجوزات (${costs.length})
+        </h4>
+        <div class="overflow-x-auto">
+        <table class="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-right">رقم الحجز</th>
+              <th class="px-3 py-2 text-right">البرنامج</th>
+              <th class="px-3 py-2 text-right">النوع</th>
+              <th class="px-3 py-2 text-right">الوصف</th>
+              <th class="px-3 py-2 text-left">التكلفة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${costs.map(c=>`<tr class="border-t hover:bg-gray-50">
+              <td class="px-3 py-2 font-mono text-primary">${c.bookings?.booking_number||'—'}</td>
+              <td class="px-3 py-2">${c.bookings?.package_title||'—'}</td>
+              <td class="px-3 py-2"><span class="badge badge-gray">${c.type||'—'}</span></td>
+              <td class="px-3 py-2 text-gray-500">${c.description||'—'}</td>
+              <td class="px-3 py-2 font-mono font-bold text-red-700">${fmtMoney(c.cost_amount, supplier.currency||'EGP')}</td>
+            </tr>`).join('')}
+          </tbody>
+          <tfoot class="bg-red-50">
+            <tr>
+              <td colspan="4" class="px-3 py-2 font-bold text-right">المجموع</td>
+              <td class="px-3 py-2 font-mono font-bold text-red-700">${fmtMoney(totalCosts, supplier.currency||'EGP')}</td>
+            </tr>
+          </tfoot>
+        </table>
+        </div>
+      </div>`;
+    }
+
+    // Expenses
+    if (expenses?.length) {
+      const statusMap = {draft:'مسودة',submitted:'مقدم',approved:'معتمد',posted:'مرحّل',rejected:'مرفوض'};
+      const statusColor = {draft:'badge-gray',submitted:'badge-yellow',approved:'badge-blue',posted:'badge-green',rejected:'badge-red'};
+      html += `<div class="mb-5">
+        <h4 class="font-bold text-gray-700 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-receipt text-red-500"></i> المصروفات (${expenses.length})
+        </h4>
+        <div class="overflow-x-auto">
+        <table class="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-right">رقم المصروف</th>
+              <th class="px-3 py-2 text-right">التاريخ</th>
+              <th class="px-3 py-2 text-right">الوصف</th>
+              <th class="px-3 py-2 text-left">المبلغ</th>
+              <th class="px-3 py-2 text-center">الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${expenses.map(e=>`<tr class="border-t hover:bg-gray-50">
+              <td class="px-3 py-2 font-mono text-red-600">${e.expense_number||'—'}</td>
+              <td class="px-3 py-2 text-gray-600">${e.expense_date||'—'}</td>
+              <td class="px-3 py-2 text-gray-600">${e.description||'—'}</td>
+              <td class="px-3 py-2 font-mono font-bold text-red-700">${fmtMoney(e.total_amount, e.currency||'EGP')}</td>
+              <td class="px-3 py-2 text-center"><span class="badge ${statusColor[e.status]||'badge-gray'}">${statusMap[e.status]||e.status}</span></td>
+            </tr>`).join('')}
+          </tbody>
+          <tfoot class="bg-red-50">
+            <tr>
+              <td colspan="3" class="px-3 py-2 font-bold text-right">المجموع</td>
+              <td class="px-3 py-2 font-mono font-bold text-red-700">${fmtMoney(totalExpenses, supplier.currency||'EGP')}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+        </div>
+      </div>`;
+    }
+
+    if (!costs?.length && !expenses?.length) {
+      html += `<div class="flex flex-col items-center justify-center py-16 text-gray-400">
+        <i class="fa-solid fa-folder-open text-4xl mb-3"></i>
+        <p>لا توجد معاملات لهذا المورد بعد</p>
+      </div>`;
+    }
+
+    html += `<div class="mt-4 p-4 bg-gray-50 rounded-lg border text-xs text-gray-500">
+      ${supplier.address ? `<div class="mb-1"><i class="fa-solid fa-location-dot ml-1 text-gold"></i>${supplier.address}</div>` : ''}
+      ${supplier.tax_id ? `<div class="mb-1"><i class="fa-solid fa-id-card ml-1 text-gold"></i>الرقم الضريبي: ${supplier.tax_id}</div>` : ''}
+      ${supplier.notes ? `<div><i class="fa-solid fa-note-sticky ml-1 text-gold"></i>${supplier.notes}</div>` : ''}
+    </div>`;
+
+    body.innerHTML = html;
+  } catch(e) {
+    body.innerHTML = `<div class="text-red-500 p-4"><i class="fa-solid fa-circle-exclamation ml-2"></i>خطأ: ${e.message}</div>`;
+  }
+}
+
+function closeStatement() {
+  document.getElementById('statementModal').classList.add('hidden');
+  currentStatement = null;
+}
+
+function printStatement() {
+  const content = document.getElementById('statementBody').innerHTML;
+  const name = currentStatement?.name_ar || '';
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+    <meta charset="UTF-8"><title>كشف حساب المورد: ${name}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      body{font-family:'Cairo',sans-serif;padding:24px;color:#111;}
+      table{width:100%;border-collapse:collapse;font-size:12px;}
+      th,td{border:1px solid #ddd;padding:6px 10px;text-align:right;}
+      th{background:#f5f5f5;font-weight:700;} .text-left{text-align:left;}
+      .badge{display:inline;padding:2px 8px;border-radius:4px;font-size:10px;}
+      .badge-green{background:#dcfce7;color:#166534;} .badge-red{background:#fee2e2;color:#991b1b;}
+      .badge-yellow{background:#fef9c3;color:#854d0e;} .badge-blue{background:#dbeafe;color:#1e40af;}
+      .badge-gray{background:#f3f4f6;color:#374151;} .badge-purple{background:#ede9fe;color:#5b21b6;}
+      .badge-orange{background:#ffedd5;color:#9a3412;}
+      h4{border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:8px;}
+    </style>
+  </head><body>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+      <div><h2 style="margin:0;color:#B8860B;">كشف حساب المورد</h2><div style="font-size:14px;font-weight:700;">${name}</div></div>
+      <div style="font-size:12px;color:#888;">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
+    </div>
+    ${content}
+</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),600);
+}
+
+// Init — auth guard
+(async () => { if (!await adminCheckAuth()) return; await loadSuppliers(); })();
+</script>
+
+<!-- ══════════════════════════════════════════
+     SUPPLIER BILLS & PAYMENTS MODAL
+═══════════════════════════════════════════ -->
+<div id="billsModal" class="fixed inset-0 z-[90] hidden">
+  <div class="absolute inset-0 bg-black/60" onclick="closeBillsModal()"></div>
+  <div class="absolute inset-y-0 left-0 w-full md:w-[780px] bg-white shadow-2xl flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <div class="bg-primary text-white px-6 py-4 flex items-center justify-between shrink-0">
+      <div>
+        <h3 class="text-lg font-bold" id="billsSupplierName">فواتير المورد</h3>
+        <div class="text-green-100 text-xs mt-0.5" id="billsSupplierSub"></div>
+      </div>
+      <button onclick="closeBillsModal()" class="text-white/70 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex border-b bg-gray-50 shrink-0">
+      <button id="tabBills" onclick="switchBillTab('bills')"
+        class="px-6 py-3 text-sm font-bold border-b-2 border-primary text-primary">
+        <i class="fa-solid fa-file-invoice ml-1"></i> الفواتير
+      </button>
+      <button id="tabPayments" onclick="switchBillTab('payments')"
+        class="px-6 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        <i class="fa-solid fa-money-bill-wave ml-1"></i> المدفوعات
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto p-5">
+
+      <!-- ── BILLS TAB ── -->
+      <div id="panelBills">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex gap-3 items-center">
+            <div class="text-sm text-gray-500">الرصيد المستحق:</div>
+            <div class="text-xl font-bold text-red-600" id="billsBalance">—</div>
+          </div>
+          <button onclick="openAddBillForm()"
+            class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> فاتورة جديدة
+          </button>
+        </div>
+
+        <!-- Add bill inline form -->
+        <div id="addBillForm" class="hidden bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+          <div class="text-sm font-bold text-gray-700 mb-3"><i class="fa-solid fa-file-invoice-dollar ml-1 text-primary"></i>إضافة فاتورة مورد</div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">تاريخ الفاتورة *</label>
+              <input type="date" id="bfDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">تاريخ الاستحقاق</label>
+              <input type="date" id="bfDue" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">المبلغ *</label>
+              <input type="number" id="bfAmount" min="0" step="0.01" placeholder="0.00"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">العملة</label>
+              <select id="bfCurrency" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="EGP">جنيه مصري (EGP)</option>
+                <option value="SAR">ريال سعودي (SAR)</option>
+                <option value="USD">دولار أمريكي (USD)</option>
+                <option value="EUR">يورو (EUR)</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">رقم الفاتورة / المرجع</label>
+            <input type="text" id="bfRef" placeholder="INV-2026-001"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">البيان / الوصف</label>
+            <textarea id="bfDesc" rows="2" placeholder="وصف الخدمة أو البضاعة..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">حساب التكلفة (دليل الحسابات)</label>
+            <select id="bfCostAccount" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+              <option value="">— حساب المشتريات / التكلفة الافتراضي —</option>
+            </select>
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button onclick="cancelAddBill()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg text-sm hover:bg-gray-100">إلغاء</button>
+            <button onclick="saveBill()" class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-green-700">حفظ الفاتورة</button>
+          </div>
+        </div>
+
+        <!-- Bills table -->
+        <div class="overflow-x-auto rounded-xl border border-gray-200">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600 text-xs border-b">
+              <tr>
+                <th class="px-3 py-2 text-right">تاريخ</th>
+                <th class="px-3 py-2 text-right">رقم الفاتورة</th>
+                <th class="px-3 py-2 text-right">البيان</th>
+                <th class="px-3 py-2 text-left">المبلغ</th>
+                <th class="px-3 py-2 text-left">المدفوع</th>
+                <th class="px-3 py-2 text-left">المتبقي</th>
+                <th class="px-3 py-2 text-center">الاستحقاق</th>
+                <th class="px-3 py-2 text-center">الحالة</th>
+                <th class="px-3 py-2 text-center">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="billsBody">
+              <tr><td colspan="9" class="text-center py-8 text-gray-400">لا توجد فواتير</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── PAYMENTS TAB ── -->
+      <div id="panelPayments" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-sm text-gray-600">سجل المدفوعات للمورد</div>
+          <button onclick="openAddPaymentForm()"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> دفعة جديدة
+          </button>
+        </div>
+
+        <!-- Add payment form -->
+        <div id="addPaymentForm" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <div class="text-sm font-bold text-blue-700 mb-3"><i class="fa-solid fa-money-bill-wave ml-1"></i>تسجيل دفعة للمورد</div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">تاريخ الدفع *</label>
+              <input type="date" id="spDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">المبلغ *</label>
+              <input type="number" id="spAmount" min="0" step="0.01" placeholder="0.00"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">العملة</label>
+              <select id="spCurrency" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="EGP">جنيه مصري (EGP)</option>
+                <option value="SAR">ريال سعودي (SAR)</option>
+                <option value="USD">دولار أمريكي (USD)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">طريقة الدفع</label>
+              <select id="spMethod" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="cash">نقدي</option>
+                <option value="bank">تحويل بنكي</option>
+                <option value="cheque">شيك</option>
+                <option value="wallet">محفظة إلكترونية</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">توزيع على الفاتورة</label>
+            <select id="spBillAlloc" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="">— دفعة عامة (بدون تخصيص) —</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">حساب الدفع (من دليل الحسابات)</label>
+            <select id="spGlAccount" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="">— الصندوق / البنك الافتراضي —</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">مرجع / رقم الشيك</label>
+            <input type="text" id="spRef" placeholder="CHK-001 / TRF-001"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button onclick="cancelAddPayment()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 bg-white">إلغاء</button>
+            <button onclick="saveSupplierPayment()" class="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-blue-700">تسجيل الدفعة</button>
+          </div>
+        </div>
+
+        <!-- Payments table -->
+        <div class="overflow-x-auto rounded-xl border border-gray-200">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600 text-xs border-b">
+              <tr>
+                <th class="px-3 py-2 text-right">تاريخ</th>
+                <th class="px-3 py-2 text-right">المرجع</th>
+                <th class="px-3 py-2 text-right">طريقة الدفع</th>
+                <th class="px-3 py-2 text-left">المبلغ</th>
+                <th class="px-3 py-2 text-right">مخصص لفاتورة</th>
+                <th class="px-3 py-2 text-center">قيد محاسبي</th>
+              </tr>
+            </thead>
+            <tbody id="supplierPaymentsBody">
+              <tr><td colspan="6" class="text-center py-8 text-gray-400">لا توجد مدفوعات</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// SUPPLIER BILLS & PAYMENTS
+// ═══════════════════════════════════════════════
+let activeBillSupplierId = null;
+let supplierBills = [];
+let supplierPayments = [];
+let glAccounts = [];
+
+async function openBillsModal(supplierId) {
+  activeBillSupplierId = supplierId;
+  const s = allSuppliers.find(x => x.id === supplierId);
+  document.getElementById('billsSupplierName').textContent = s?.name_ar || 'المورد';
+  document.getElementById('billsSupplierSub').textContent  = s?.supplier_type || '';
+  document.getElementById('billsModal').classList.remove('hidden');
+  switchBillTab('bills');
+  await Promise.all([loadGlAccounts(), loadBills(), loadSupplierPayments()]);
+}
+
+function closeBillsModal() {
+  document.getElementById('billsModal').classList.add('hidden');
+  activeBillSupplierId = null;
+}
+
+function switchBillTab(tab) {
+  document.getElementById('panelBills').classList.toggle('hidden',    tab !== 'bills');
+  document.getElementById('panelPayments').classList.toggle('hidden', tab !== 'payments');
+  document.getElementById('tabBills').className    = tab === 'bills'    ? 'px-6 py-3 text-sm font-bold border-b-2 border-primary text-primary'    : 'px-6 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+  document.getElementById('tabPayments').className = tab === 'payments' ? 'px-6 py-3 text-sm font-bold border-b-2 border-primary text-primary' : 'px-6 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+}
+
+async function loadGlAccounts() {
+  if (glAccounts.length) return;
+  const { data } = await sb.from('accounts').select('id,code,name_ar,type').eq('is_active',true).order('code');
+  glAccounts = data || [];
+  // populate cost account picker
+  const bfCA = document.getElementById('bfCostAccount');
+  bfCA.innerHTML = '<option value="">— حساب التكلفة الافتراضي —</option>';
+  glAccounts.filter(a => ['direct_cost','expense'].includes(a.type))
+    .forEach(a => bfCA.insertAdjacentHTML('beforeend', `<option value="${a.id}">${a.code} — ${a.name_ar}</option>`));
+  // populate payment GL picker
+  const spGL = document.getElementById('spGlAccount');
+  spGL.innerHTML = '<option value="">— الصندوق / البنك الافتراضي —</option>';
+  glAccounts.filter(a => a.type === 'asset')
+    .forEach(a => spGL.insertAdjacentHTML('beforeend', `<option value="${a.id}">${a.code} — ${a.name_ar}</option>`));
+}
+
+async function loadBills() {
+  const { data, error } = await sb.from('supplier_bills')
+    .select('*').eq('supplier_id', activeBillSupplierId)
+    .order('bill_date', { ascending: false });
+  supplierBills = data || [];
+  renderBills();
+}
+
+function renderBills() {
+  const tbody = document.getElementById('billsBody');
+  if (!supplierBills.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400">لا توجد فواتير بعد — أضف أول فاتورة</td></tr>';
+    document.getElementById('billsBalance').textContent = '0.00 ج.م';
+    return;
+  }
+  const totalDue = supplierBills.reduce((s,b) => s + (parseFloat(b.remaining_amount)||0), 0);
+  document.getElementById('billsBalance').textContent = fmtMoney(totalDue);
+
+  const today = new Date().toISOString().slice(0,10);
+  tbody.innerHTML = supplierBills.map(b => {
+    const overdue = b.due_date && b.due_date < today && b.status !== 'paid';
+    const statusBadge = {
+      draft:    '<span class="badge-gray px-2 py-0.5 rounded text-xs">مسودة</span>',
+      issued:   '<span class="badge-blue px-2 py-0.5 rounded text-xs">صادرة</span>',
+      partial:  '<span class="badge-yellow px-2 py-0.5 rounded text-xs">جزئي</span>',
+      paid:     '<span class="badge-green px-2 py-0.5 rounded text-xs">مدفوعة</span>',
+      overdue:  '<span class="badge-red px-2 py-0.5 rounded text-xs">متأخرة</span>',
+    }[b.status] || b.status;
+    return `<tr class="${overdue?'bg-red-50':''}">
+      <td class="px-3 py-2 text-xs text-gray-500">${b.bill_date||'—'}</td>
+      <td class="px-3 py-2 text-xs font-mono text-gray-700">${b.reference||'—'}</td>
+      <td class="px-3 py-2 text-xs text-gray-600 max-w-[150px] truncate">${b.description||'—'}</td>
+      <td class="px-3 py-2 text-xs text-left font-bold">${fmtMoney(b.total_amount, b.currency)}</td>
+      <td class="px-3 py-2 text-xs text-left text-green-700">${fmtMoney(b.paid_amount||0, b.currency)}</td>
+      <td class="px-3 py-2 text-xs text-left font-bold ${overdue?'text-red-600':''}">${fmtMoney(b.remaining_amount||b.total_amount, b.currency)}</td>
+      <td class="px-3 py-2 text-xs text-center ${overdue?'text-red-500':''}">${b.due_date||'—'}</td>
+      <td class="px-3 py-2 text-center">${statusBadge}</td>
+      <td class="px-3 py-2 text-center">
+        ${b.status !== 'paid' ? `<button onclick="payBillQuick('${b.id}','${b.remaining_amount||b.total_amount}','${b.currency}')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">دفع</button>` : ''}
+        ${b.journal_entry_id ? `<span class="text-xs text-green-600 ml-1"><i class="fa-solid fa-check"></i> قيد</span>` : `<span class="text-xs text-orange-500 ml-1"><i class="fa-solid fa-triangle-exclamation"></i></span>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadSupplierPayments() {
+  const { data } = await sb.from('supplier_payments')
+    .select('*, supplier_bills(reference)')
+    .eq('supplier_id', activeBillSupplierId)
+    .order('payment_date', { ascending: false });
+  supplierPayments = data || [];
+  renderSupplierPayments();
+  // populate bill allocation dropdown
+  const spBA = document.getElementById('spBillAlloc');
+  spBA.innerHTML = '<option value="">— دفعة عامة (بدون تخصيص) —</option>';
+  supplierBills.filter(b => b.status !== 'paid')
+    .forEach(b => spBA.insertAdjacentHTML('beforeend', `<option value="${b.id}">${b.reference||b.bill_date} — متبقي: ${fmtMoney(b.remaining_amount||b.total_amount)}</option>`));
+}
+
+function renderSupplierPayments() {
+  const tbody = document.getElementById('supplierPaymentsBody');
+  if (!supplierPayments.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">لا توجد مدفوعات</td></tr>';
+    return;
+  }
+  const methodLabels = { cash:'نقدي', bank:'تحويل', cheque:'شيك', wallet:'محفظة' };
+  tbody.innerHTML = supplierPayments.map(p => `<tr>
+    <td class="px-3 py-2 text-xs text-gray-500">${p.payment_date}</td>
+    <td class="px-3 py-2 text-xs font-mono">${p.reference||'—'}</td>
+    <td class="px-3 py-2 text-xs">${methodLabels[p.payment_method]||p.payment_method||'—'}</td>
+    <td class="px-3 py-2 text-xs text-left font-bold text-blue-700">${fmtMoney(p.amount, p.currency)}</td>
+    <td class="px-3 py-2 text-xs">${p.supplier_bills?.reference||'—'}</td>
+    <td class="px-3 py-2 text-center text-xs">
+      ${p.journal_entry_id
+        ? '<span class="text-green-600"><i class="fa-solid fa-check-circle"></i> مرحّل</span>'
+        : '<span class="text-orange-500"><i class="fa-solid fa-clock"></i> لم يُرحَّل</span>'}
+    </td>
+  </tr>`).join('');
+}
+
+function openAddBillForm() {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('bfDate').value = today;
+  document.getElementById('bfDue').value  = '';
+  document.getElementById('bfAmount').value = '';
+  document.getElementById('bfRef').value  = '';
+  document.getElementById('bfDesc').value = '';
+  document.getElementById('addBillForm').classList.remove('hidden');
+}
+function cancelAddBill() { document.getElementById('addBillForm').classList.add('hidden'); }
+
+async function saveBill() {
+  const amount = parseFloat(document.getElementById('bfAmount').value);
+  const date   = document.getElementById('bfDate').value;
+  const desc   = document.getElementById('bfDesc').value.trim();
+  if (!amount || amount <= 0) { alert('أدخل مبلغاً صحيحاً'); return; }
+  if (!date) { alert('أدخل تاريخ الفاتورة'); return; }
+
+  const costAccountId = document.getElementById('bfCostAccount').value || null;
+
+  const payload = {
+    supplier_id:       activeBillSupplierId,
+    bill_date:         date,
+    due_date:          document.getElementById('bfDue').value || null,
+    total_amount:      amount,
+    paid_amount:       0,
+    remaining_amount:  amount,
+    currency:          document.getElementById('bfCurrency').value,
+    reference:         document.getElementById('bfRef').value.trim() || null,
+    description:       desc || null,
+    cost_account_id:   costAccountId,
+    status:            'issued',
+  };
+
+  const { data: bill, error } = await sb.from('supplier_bills').insert(payload).select('id').single();
+  if (error) { alert('خطأ: ' + error.message); return; }
+
+  // Auto journal: DR Cost / CR AP
+  if (window.NSPAccounting && bill?.id) {
+    try {
+      const s = allSuppliers.find(x => x.id === activeBillSupplierId);
+      await window.NSPAccounting.onBookingCostAdded({
+        bookingCostId:       bill.id,
+        amount,
+        date,
+        costType:            'other',
+        supplierApAccountId: null,
+        description:         `فاتورة مورد — ${s?.name_ar||''}`,
+      });
+    } catch(e) { console.warn('Bill JE failed:', e.message); }
+  }
+
+  cancelAddBill();
+  await loadBills();
+}
+
+function openAddPaymentForm() {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('spDate').value   = today;
+  document.getElementById('spAmount').value = '';
+  document.getElementById('spRef').value    = '';
+  document.getElementById('addPaymentForm').classList.remove('hidden');
+}
+function cancelAddPayment() { document.getElementById('addPaymentForm').classList.add('hidden'); }
+
+async function saveSupplierPayment() {
+  const amount = parseFloat(document.getElementById('spAmount').value);
+  const date   = document.getElementById('spDate').value;
+  if (!amount || amount <= 0) { alert('أدخل مبلغاً صحيحاً'); return; }
+  if (!date) { alert('أدخل تاريخ الدفع'); return; }
+
+  const billId    = document.getElementById('spBillAlloc').value || null;
+  const glAcctId  = document.getElementById('spGlAccount').value || null;
+  const currency  = document.getElementById('spCurrency').value;
+  const method    = document.getElementById('spMethod').value;
+  const ref       = document.getElementById('spRef').value.trim() || null;
+
+  const payload = {
+    supplier_id:     activeBillSupplierId,
+    supplier_bill_id: billId,
+    payment_date:    date,
+    amount,
+    currency,
+    payment_method:  method,
+    cash_gl_account_id: glAcctId,
+    reference:       ref,
+    status:          'posted',
+  };
+
+  const { data: pmt, error } = await sb.from('supplier_payments').insert(payload).select('id').single();
+  if (error) { alert('خطأ: ' + error.message); return; }
+
+  // Update bill paid/remaining amounts
+  if (billId) {
+    const bill = supplierBills.find(b => b.id === billId);
+    if (bill) {
+      const newPaid      = (parseFloat(bill.paid_amount)||0) + amount;
+      const newRemaining = Math.max(0, (parseFloat(bill.total_amount)||0) - newPaid);
+      const newStatus    = newRemaining <= 0 ? 'paid' : newPaid > 0 ? 'partial' : 'issued';
+      await sb.from('supplier_bills').update({ paid_amount: newPaid, remaining_amount: newRemaining, status: newStatus }).eq('id', billId);
+    }
+  }
+
+  // Auto journal: DR AP / CR Cash
+  if (window.NSPAccounting && pmt?.id) {
+    try {
+      const apAcct   = await window.NSPAccounting.getAccount('ap_account');
+      const cashAcct = glAcctId || (await window.NSPAccounting.getAccount('cash_account'));
+      await window.NSPAccounting.createJournalEntry({
+        date,
+        description: `دفعة لمورد — ${allSuppliers.find(x=>x.id===activeBillSupplierId)?.name_ar||''}`,
+        reference_type: 'supplier_payment',
+        reference_id:   pmt.id,
+        lines: [
+          { account_id: apAcct,   debit: amount, credit: 0      },
+          { account_id: cashAcct, debit: 0,       credit: amount },
+        ],
+      });
+    } catch(e) { console.warn('Supplier payment JE failed:', e.message); }
+  }
+
+  cancelAddPayment();
+  await Promise.all([loadBills(), loadSupplierPayments()]);
+}
+
+function payBillQuick(billId, remaining, currency) {
+  switchBillTab('payments');
+  openAddPaymentForm();
+  document.getElementById('spAmount').value = parseFloat(remaining).toFixed(2);
+  document.getElementById('spBillAlloc').value = billId;
+  document.getElementById('spCurrency').value  = currency;
+}
+</script>
+</div><!-- /flex wrapper -->
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>قواعد الأتمتة | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 3px rgba(27,94,32,.1);}
+    .rule-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.04);}
+    .rule-card.active{border-right:4px solid #1B5E20;}
+    .rule-card.inactive{border-right:4px solid #d1d5db;opacity:.65;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-robot ml-2"></i>قواعد الأتمتة</h1>
+      <p class="erp-page-subtitle">محرّك الأتمتة — حدث → شرط → إجراء</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/nsp-control-8x4k/automation-log.html" class="erp-page-btn">
+        <i class="fa-solid fa-list-check ml-1"></i>سجل التنفيذ
+      </a>
+      <button onclick="openModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-plus ml-1"></i>قاعدة جديدة
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-green-600" id="kActive">—</div><div class="text-xs text-gray-400 mt-1">نشطة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-gray-400" id="kInactive">—</div><div class="text-xs text-gray-400 mt-1">معطلة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-blue-600" id="kToday">—</div><div class="text-xs text-gray-400 mt-1">تنفيذ اليوم</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-amber-600" id="kPending">—</div><div class="text-xs text-gray-400 mt-1">معلقة</div></div>
+  </div>
+
+  <!-- Rules list -->
+  <div id="rulesList">
+    <div class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>
+  </div>
+
+</main>
+
+<!-- Rule Modal -->
+<div id="ruleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b">
+      <h3 class="font-bold text-lg text-primary" id="ruleModalTitle"><i class="fa-solid fa-robot ml-2"></i>قاعدة جديدة</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="overflow-y-auto flex-1 p-5 grid gap-4">
+      <input type="hidden" id="rId">
+      <div>
+        <label>اسم القاعدة *</label>
+        <input type="text" id="rName" placeholder="مثال: متابعة عرض السعر بعد 24 ساعة">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label>الحدث المُشغِّل *</label>
+          <select id="rTrigger">
+            <option value="quote_sent">إرسال عرض سعر</option>
+            <option value="quote_no_response">عرض سعر بلا رد</option>
+            <option value="quote_accepted">قبول عرض سعر</option>
+            <option value="quote_rejected">رفض عرض سعر</option>
+            <option value="lead_created">إنشاء عميل محتمل</option>
+            <option value="lead_no_contact">عميل محتمل بلا تواصل</option>
+            <option value="booking_abandoned">حجز مهجور</option>
+            <option value="booking_confirmed">تأكيد حجز</option>
+            <option value="booking_completed">إتمام رحلة</option>
+            <option value="payment_overdue">دفعة متأخرة</option>
+            <option value="trip_upcoming">رحلة قادمة</option>
+            <option value="post_trip">ما بعد الرحلة</option>
+            <option value="customer_dormant">عميل غير نشط</option>
+          </select>
+        </div>
+        <div>
+          <label>التأخير (ساعات)</label>
+          <input type="number" id="rDelay" value="0" min="0">
+        </div>
+        <div>
+          <label>الإجراء *</label>
+          <select id="rAction">
+            <option value="create_task">إنشاء مهمة</option>
+            <option value="send_email">إرسال بريد إلكتروني</option>
+            <option value="send_whatsapp">إرسال واتساب</option>
+            <option value="update_lead_status">تحديث حالة العميل المحتمل</option>
+            <option value="add_to_campaign">إضافة لحملة</option>
+            <option value="notify_admin">إشعار للإدارة</option>
+          </select>
+        </div>
+        <div>
+          <label>الحد الأقصى للتنفيذ/عنصر</label>
+          <input type="number" id="rMaxExec" value="1" min="1">
+        </div>
+        <div>
+          <label>فترة التهدئة (ساعات)</label>
+          <input type="number" id="rCooldown" value="24" min="0">
+        </div>
+        <div>
+          <label>الحالة</label>
+          <select id="rActive">
+            <option value="true">نشطة</option>
+            <option value="false">معطلة</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>إعداد الإجراء (JSON)</label>
+        <textarea id="rActionConfig" rows="3" placeholder='{"title":"المهمة","priority":"high"}'></textarea>
+        <p class="text-xs text-gray-400 mt-1">للمهام: title, priority (urgent/high/normal), assign_to, notes | للبريد: subject, template</p>
+      </div>
+      <div>
+        <label>وصف القاعدة</label>
+        <textarea id="rDesc" rows="2" placeholder="وصف اختياري..."></textarea>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end p-5 border-t">
+      <button onclick="closeModal()" class="erp-page-btn">إلغاء</button>
+      <button onclick="saveRule()" class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let _rules = [];
+const TRIGGER_LABELS = {
+  quote_sent:'إرسال عرض سعر',quote_no_response:'عرض سعر بلا رد',quote_accepted:'قبول عرض',
+  quote_rejected:'رفض عرض',lead_created:'إنشاء عميل محتمل',lead_no_contact:'عميل بلا تواصل',
+  booking_abandoned:'حجز مهجور',booking_confirmed:'تأكيد حجز',booking_completed:'إتمام رحلة',
+  payment_overdue:'دفعة متأخرة',trip_upcoming:'رحلة قادمة',post_trip:'ما بعد الرحلة',
+  customer_dormant:'عميل غير نشط'
+};
+const ACTION_LABELS = {
+  create_task:'إنشاء مهمة',send_email:'بريد إلكتروني',send_whatsapp:'واتساب',
+  update_lead_status:'تحديث حالة',add_to_campaign:'إضافة لحملة',notify_admin:'إشعار إدارة'
+};
+const ACTION_ICONS = {
+  create_task:'fa-list-check text-blue-500',send_email:'fa-envelope text-green-500',
+  send_whatsapp:'fa-brands fa-whatsapp text-green-600',update_lead_status:'fa-arrow-trend-up text-purple-500',
+  add_to_campaign:'fa-paper-plane text-amber-500',notify_admin:'fa-bell text-red-500'
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await load();
+});
+
+async function load() {
+  const { data } = await db.from('automation_rules').select('*').order('is_active',{ascending:false}).order('created_at');
+  _rules = data || [];
+
+  document.getElementById('kActive').textContent   = _rules.filter(r=>r.is_active).length;
+  document.getElementById('kInactive').textContent = _rules.filter(r=>!r.is_active).length;
+
+  // Today's executions
+  const today = new Date(); today.setHours(0,0,0,0);
+  const { count: todayCnt } = await db.from('automation_executions')
+    .select('*',{count:'exact',head:true})
+    .gte('executed_at', today.toISOString()).eq('status','completed');
+  const { count: pendCnt } = await db.from('automation_executions')
+    .select('*',{count:'exact',head:true}).eq('status','pending');
+  document.getElementById('kToday').textContent   = todayCnt || 0;
+  document.getElementById('kPending').textContent = pendCnt  || 0;
+
+  render();
+}
+
+function render() {
+  const el = document.getElementById('rulesList');
+  if (!_rules.length) { el.innerHTML='<p class="text-center text-gray-400 py-10">لا توجد قواعد. أضف قاعدة جديدة.</p>'; return; }
+  el.innerHTML = _rules.map(r => `
+    <div class="rule-card ${r.is_active?'active':'inactive'}">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center shrink-0">
+          <i class="fa-solid ${ACTION_ICONS[r.action_type]||'fa-bolt text-gray-400'} text-sm"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap mb-1">
+            <span class="font-bold text-sm text-gray-800">${esc(r.name)}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold ${r.is_active?'bg-green-100 text-green-700':'bg-gray-100 text-gray-500'}">${r.is_active?'نشطة':'معطلة'}</span>
+          </div>
+          <div class="flex gap-3 flex-wrap text-xs text-gray-500">
+            <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold">
+              <i class="fa-solid fa-bolt ml-0.5"></i>${TRIGGER_LABELS[r.trigger_event]||r.trigger_event}
+            </span>
+            ${r.trigger_delay_hours > 0 ? `<span>بعد ${r.trigger_delay_hours}h</span>` : ''}
+            <span class="text-gray-300">→</span>
+            <span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-semibold">
+              ${ACTION_LABELS[r.action_type]||r.action_type}
+            </span>
+            <span class="text-gray-400">تهدئة: ${r.cooldown_hours}h</span>
+          </div>
+          ${r.description ? `<p class="text-xs text-gray-400 mt-1">${esc(r.description)}</p>` : ''}
+        </div>
+        <div class="flex gap-1 shrink-0">
+          <button onclick="toggleRule('${r.id}',${r.is_active})"
+            class="text-xs px-2 py-1 rounded-lg border font-bold transition ${r.is_active?'border-red-200 text-red-500 hover:bg-red-50':'border-green-200 text-green-600 hover:bg-green-50'}">
+            ${r.is_active ? 'تعطيل' : 'تفعيل'}
+          </button>
+          <button onclick="editRule('${r.id}')" class="text-gray-400 hover:text-primary p-1.5 rounded text-xs">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openModal() {
+  document.getElementById('rId').value='';
+  document.getElementById('rName').value='';
+  document.getElementById('rTrigger').value='quote_no_response';
+  document.getElementById('rDelay').value='24';
+  document.getElementById('rAction').value='create_task';
+  document.getElementById('rMaxExec').value='1';
+  document.getElementById('rCooldown').value='24';
+  document.getElementById('rActive').value='true';
+  document.getElementById('rActionConfig').value='{"title":"متابعة العميل","priority":"high"}';
+  document.getElementById('rDesc').value='';
+  document.getElementById('ruleModalTitle').innerHTML='<i class="fa-solid fa-robot ml-2"></i>قاعدة جديدة';
+  document.getElementById('ruleModal').classList.remove('hidden');
+}
+
+async function editRule(id) {
+  const r = _rules.find(x=>x.id===id); if(!r) return;
+  document.getElementById('rId').value=r.id;
+  document.getElementById('rName').value=r.name||'';
+  document.getElementById('rTrigger').value=r.trigger_event||'';
+  document.getElementById('rDelay').value=r.trigger_delay_hours||0;
+  document.getElementById('rAction').value=r.action_type||'create_task';
+  document.getElementById('rMaxExec').value=r.max_executions_per_entity||1;
+  document.getElementById('rCooldown').value=r.cooldown_hours||24;
+  document.getElementById('rActive').value=String(r.is_active);
+  document.getElementById('rActionConfig').value=JSON.stringify(r.action_config||{},null,2);
+  document.getElementById('rDesc').value=r.description||'';
+  document.getElementById('ruleModalTitle').innerHTML='<i class="fa-solid fa-pen ml-2"></i>تعديل قاعدة';
+  document.getElementById('ruleModal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('ruleModal').classList.add('hidden'); }
+
+async function saveRule() {
+  const name = document.getElementById('rName').value.trim();
+  if (!name) { toast('أدخل اسم القاعدة',true); return; }
+  let actionConfig = {};
+  try { actionConfig = JSON.parse(document.getElementById('rActionConfig').value||'{}'); } catch(e) { toast('خطأ في صيغة JSON',true); return; }
+  const id = document.getElementById('rId').value;
+  const payload = {
+    name,
+    trigger_event: document.getElementById('rTrigger').value,
+    trigger_delay_hours: parseInt(document.getElementById('rDelay').value)||0,
+    action_type: document.getElementById('rAction').value,
+    action_config: actionConfig,
+    max_executions_per_entity: parseInt(document.getElementById('rMaxExec').value)||1,
+    cooldown_hours: parseInt(document.getElementById('rCooldown').value)||24,
+    is_active: document.getElementById('rActive').value === 'true',
+    description: document.getElementById('rDesc').value.trim()||null,
+    updated_at: new Date().toISOString(),
+  };
+  if (id) { await db.from('automation_rules').update(payload).eq('id',id); }
+  else { await db.from('automation_rules').insert(payload); }
+  closeModal();
+  toast('تم حفظ القاعدة ✓');
+  await load();
+}
+
+async function toggleRule(id, current) {
+  await db.from('automation_rules').update({is_active:!current,updated_at:new Date().toISOString()}).eq('id',id);
+  toast(current?'تم تعطيل القاعدة':'تم تفعيل القاعدة');
+  await load();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

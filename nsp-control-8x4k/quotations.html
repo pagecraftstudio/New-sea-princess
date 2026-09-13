@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>عروض الأسعار | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700;}
+    .tab-btn{padding:7px 18px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;transition:.15s;border:none;white-space:nowrap;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:not(.active){background:#f3f4f6;color:#374151;}
+    .tab-btn:not(.active):hover{background:#e5e7eb;}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;border-bottom:2px solid #e5e7eb;white-space:nowrap;}
+    .tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#fafafa;}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+    .modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:700px;margin:auto;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.12);}
+    select,input,textarea{font-family:'Cairo',sans-serif!important;}
+    .form-grid{display:grid;gap:12px;}
+    .form-grid.cols2{grid-template-columns:1fr 1fr;}
+    .form-grid.cols3{grid-template-columns:1fr 1fr 1fr;}
+    .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+    @media(max-width:640px){.kpi-strip{grid-template-columns:1fr 1fr;}.form-grid.cols2,.form-grid.cols3{grid-template-columns:1fr;}}
+  </style>
+  <script src="/js/admin-nav.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-file-contract ml-2 text-primary"></i>عروض الأسعار</h1>
+      <p class="erp-page-subtitle" id="pageSubtitle">جارٍ التحميل…</p>
+    </div>
+    <button onclick="openNewModal()"
+      class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-lightGreen transition flex items-center gap-2">
+      <i class="fa-solid fa-plus"></i> عرض سعر جديد
+    </button>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip" id="kpiStrip">
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-gray-300 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-1"></div><div class="h-6 bg-gray-100 rounded w-16"></div></div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-blue-300 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-1"></div><div class="h-6 bg-gray-100 rounded w-16"></div></div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-green-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-1"></div><div class="h-6 bg-gray-100 rounded w-16"></div></div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-yellow-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-1"></div><div class="h-6 bg-gray-100 rounded w-16"></div></div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="bg-white rounded-xl shadow-sm p-3 mb-4 flex flex-wrap gap-2 items-center">
+    <!-- Status Tabs -->
+    <div class="flex gap-1 flex-wrap" id="statusTabs">
+      <button class="tab-btn active" onclick="setStatusFilter('')">الكل</button>
+      <button class="tab-btn" onclick="setStatusFilter('draft')">مسودة</button>
+      <button class="tab-btn" onclick="setStatusFilter('sent,viewed')">مُرسل</button>
+      <button class="tab-btn" onclick="setStatusFilter('accepted,deposit_pending,confirmed')">مقبول</button>
+      <button class="tab-btn" onclick="setStatusFilter('revision_requested,negotiation')">تفاوض</button>
+      <button class="tab-btn" onclick="setStatusFilter('rejected,expired,cancelled')">مغلق</button>
+    </div>
+    <div class="flex-1"></div>
+    <input type="text" id="searchInput" placeholder="بحث بالعنوان أو رقم العرض…"
+      class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-52"
+      oninput="applyFilter()">
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+    <table class="w-full tbl">
+      <thead>
+        <tr>
+          <th>رقم العرض</th>
+          <th>العنوان</th>
+          <th>العميل / الفرصة</th>
+          <th>الحالة</th>
+          <th>الإجمالي</th>
+          <th class="hidden md:table-cell">الهامش</th>
+          <th class="hidden md:table-cell">الصلاحية</th>
+          <th class="hidden lg:table-cell">مسؤول المبيعات</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="9" class="py-10 text-center text-gray-400 text-sm animate-pulse">جارٍ التحميل…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p id="emptyState" class="hidden text-center text-gray-400 py-12 text-sm">لا توجد عروض أسعار مطابقة</p>
+</main>
+
+<!-- ═══════════════════════════════════════════════════════
+     NEW QUOTE MODAL
+════════════════════════════════════════════════════════ -->
+<div id="newModal" class="modal-bg hidden" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="flex justify-between items-center mb-5">
+      <h2 class="text-lg font-bold text-primary"><i class="fa-solid fa-file-contract ml-2"></i>عرض سعر جديد</h2>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="form-grid cols2 mb-3">
+      <div style="grid-column:span 2">
+        <label>عنوان العرض *</label>
+        <input type="text" id="f_title" placeholder="مثال: عرض عمرة رمضان 2025 — عائلة محمود">
+      </div>
+      <div>
+        <label>العميل</label>
+        <select id="f_customer_id">
+          <option value="">اختر عميلاً (اختياري)</option>
+        </select>
+      </div>
+      <div>
+        <label>الفرصة البيعية</label>
+        <select id="f_opportunity_id">
+          <option value="">اختر فرصة (اختياري)</option>
+        </select>
+      </div>
+      <div>
+        <label>الوجهة</label>
+        <input type="text" id="f_destination" placeholder="مكة المكرمة / القاهرة / إسطنبول">
+      </div>
+      <div>
+        <label>العملة</label>
+        <select id="f_currency">
+          <option value="EGP">جنيه مصري (EGP)</option>
+          <option value="SAR">ريال سعودي (SAR)</option>
+          <option value="USD">دولار (USD)</option>
+          <option value="EUR">يورو (EUR)</option>
+        </select>
+      </div>
+      <div>
+        <label>تاريخ السفر (من)</label>
+        <input type="date" id="f_travel_from">
+      </div>
+      <div>
+        <label>تاريخ السفر (إلى)</label>
+        <input type="date" id="f_travel_to">
+      </div>
+      <div>
+        <label>عدد البالغين</label>
+        <input type="number" id="f_adults" value="1" min="0">
+      </div>
+      <div>
+        <label>عدد الأطفال</label>
+        <input type="number" id="f_children" value="0" min="0">
+      </div>
+      <div>
+        <label>صلاحية العرض حتى</label>
+        <input type="date" id="f_validity">
+      </div>
+      <div>
+        <label>خصم %</label>
+        <input type="number" id="f_discount_pct" value="0" min="0" max="100" step="0.1">
+      </div>
+    </div>
+
+    <div class="form-grid mb-3">
+      <div>
+        <label>شروط الدفع</label>
+        <input type="text" id="f_payment_terms" placeholder="مثال: 50% عربون فور التأكيد، الباقي قبل 30 يوم من السفر">
+      </div>
+      <div>
+        <label>سياسة الإلغاء</label>
+        <textarea id="f_cancel_policy" rows="2" placeholder="شروط الإلغاء والاسترداد…"></textarea>
+      </div>
+    </div>
+
+    <div id="modalError" class="hidden text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2 mb-3"></div>
+
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">إلغاء</button>
+      <button onclick="saveNewQuote()" id="saveBtn"
+        class="px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg hover:bg-lightGreen transition flex items-center gap-2">
+        <i class="fa-solid fa-check"></i> إنشاء العرض
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  QUOTATIONS LIST PAGE
+// ═══════════════════════════════════════════════════════
+
+const STATUS_LABEL = {
+  draft:'مسودة', internal_review:'مراجعة داخلية', sent:'مُرسل', viewed:'تمت المشاهدة',
+  revision_requested:'طُلبت مراجعة', negotiation:'تفاوض', accepted:'مقبول',
+  deposit_pending:'انتظار عربون', confirmed:'مؤكد', expired:'منتهي الصلاحية',
+  rejected:'مرفوض', cancelled:'ملغي'
+};
+const STATUS_COLOR = {
+  draft:'badge-gray', internal_review:'badge-yellow', sent:'badge-blue', viewed:'badge-blue',
+  revision_requested:'badge-yellow', negotiation:'badge-yellow', accepted:'badge-green',
+  deposit_pending:'badge-green', confirmed:'badge-green', expired:'badge-red',
+  rejected:'badge-red', cancelled:'badge-red'
+};
+const BADGE_CSS = {
+  'badge-gray':'background:#f3f4f6;color:#374151',
+  'badge-blue':'background:#dbeafe;color:#1e40af',
+  'badge-yellow':'background:#fef9c3;color:#854d0e',
+  'badge-green':'background:#dcfce7;color:#166534',
+  'badge-red':'background:#fee2e2;color:#991b1b',
+};
+
+let allQuotes = [];
+let currentStatusFilter = '';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  await Promise.all([loadKPIs(), loadQuotes(), populateSelects()]);
+  setDefaultValidity();
+  // Pre-fill from URL params (e.g. from lead-detail or opportunities)
+  prefillFromURL();
+});
+
+function prefillFromURL() {
+  const p = new URLSearchParams(window.location.search);
+  const leadId = p.get('lead_id');
+  const oppId  = p.get('opportunity_id');
+  const custId = p.get('customer_id');
+  const status = p.get('status');
+
+  if (status) {
+    // Filter by status — find and activate the correct tab button
+    const statusGroups = {
+      accepted: 'accepted,deposit_pending,confirmed',
+      sent:     'sent,viewed',
+      expired:  'rejected,expired,cancelled',
+      draft:    'draft',
+    };
+    const groupVal = statusGroups[status];
+    if (groupVal) {
+      const btn = document.querySelector(`button[onclick="setStatusFilter('${groupVal}')"]`);
+      if (btn) btn.click();
+    }
+  }
+
+  if (leadId || oppId || custId) {
+    // Auto-open the new modal with pre-filled values
+    openNewModal();
+    if (custId) {
+      const sel = document.getElementById('f_customer_id');
+      if (sel) sel.value = custId;
+    }
+    if (oppId) {
+      const sel = document.getElementById('f_opportunity_id');
+      if (sel) sel.value = oppId;
+    }
+    if (leadId) {
+      // Store lead_id — will be sent in saveNewQuote
+      window._prefillLeadId = leadId;
+    }
+  }
+}
+
+// ── KPIs ─────────────────────────────────────────────
+async function loadKPIs() {
+  const { data, error } = await db.rpc('get_quotation_summary');
+  if (error || !data) return;
+  const d = data;
+  const fmt = n => Number(n||0).toLocaleString('ar-EG');
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-gray-400">
+      <div class="text-xs text-gray-500 mb-1">إجمالي العروض</div>
+      <div class="text-2xl font-black text-gray-700">${d.total}</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-blue-400">
+      <div class="text-xs text-gray-500 mb-1">في الانتظار</div>
+      <div class="text-2xl font-black text-blue-600">${d.sent}</div>
+      <div class="text-xs text-gray-400">${fmt(d.pipeline_value)} ${getCurrencySymbol()}</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-green-500">
+      <div class="text-xs text-gray-500 mb-1">مقبول</div>
+      <div class="text-2xl font-black text-green-600">${d.accepted}</div>
+      <div class="text-xs text-gray-400">${fmt(d.accepted_value)} ${getCurrencySymbol()}</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-yellow-400">
+      <div class="text-xs text-gray-500 mb-1">منتهي / مرفوض</div>
+      <div class="text-2xl font-black text-yellow-600">${(d.expired||0)+(d.rejected||0)}</div>
+    </div>`;
+}
+
+// ── Load Quotes ───────────────────────────────────────
+async function loadQuotes() {
+  const { data, error } = await db
+    .from('quotations')
+    .select(`id, quote_number, title, status, total_amount, margin_pct,
+             currency, validity_date, version, destination,
+             itinerary_id,
+             created_at, updated_at, sales_owner,
+             customers(full_name),
+             opportunities(title)`)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error(error); return; }
+  allQuotes = data || [];
+  document.getElementById('pageSubtitle').textContent = `${allQuotes.length} عرض سعر`;
+  applyFilter();
+}
+
+// ── Filter ────────────────────────────────────────────
+function setStatusFilter(val) {
+  currentStatusFilter = val;
+  document.querySelectorAll('#statusTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  applyFilter();
+}
+
+function applyFilter() {
+  const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+  let filtered = allQuotes;
+
+  if (currentStatusFilter) {
+    const statuses = currentStatusFilter.split(',');
+    filtered = filtered.filter(r => statuses.includes(r.status));
+  }
+  if (q) {
+    filtered = filtered.filter(r =>
+      (r.title||'').toLowerCase().includes(q) ||
+      (r.quote_number||'').toLowerCase().includes(q) ||
+      (r.customers?.full_name||'').toLowerCase().includes(q)
+    );
+  }
+
+  renderTable(filtered);
+}
+
+// ── Render Table ──────────────────────────────────────
+function renderTable(quotes) {
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (!quotes.length) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  const fmt = n => Number(n||0).toLocaleString('ar-EG');
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG') : '—';
+  const isExpired = r => r.validity_date && new Date(r.validity_date) < new Date() && ['sent','viewed','revision_requested','negotiation'].includes(r.status);
+
+  tbody.innerHTML = quotes.map(r => {
+    const sc = STATUS_COLOR[r.status] || 'badge-gray';
+    const badgeStyle = BADGE_CSS[sc] || '';
+    const statusLabel = STATUS_LABEL[r.status] || r.status;
+    const expired = isExpired(r);
+    const margin = Number(r.margin_pct||0);
+    const marginColor = margin >= 20 ? '#16a34a' : margin >= 10 ? '#ca8a04' : '#dc2626';
+    const currSym = r.currency || 'EGP';
+
+    return `<tr class="cursor-pointer hover:bg-gray-50" onclick="openQuote('${r.id}')">
+      <td>
+        <div class="font-mono text-xs font-bold text-primary">${r.quote_number||'—'}</div>
+        ${r.version > 1 ? `<div class="text-xs text-gray-400">v${r.version}</div>` : ''}
+      </td>
+      <td>
+        <div class="font-bold text-sm text-gray-800 truncate max-w-[200px]">${r.title}</div>
+        ${r.destination ? `<div class="text-xs text-gray-400">${r.destination}</div>` : ''}
+      </td>
+      <td class="text-sm">
+        ${r.customers?.full_name ? `<div class="font-bold text-gray-700">${r.customers.full_name}</div>` : ''}
+        ${r.opportunities?.title ? `<div class="text-xs text-gray-400"><i class="fa-solid fa-filter ml-1"></i>${r.opportunities.title}</div>` : ''}
+      </td>
+      <td>
+        <span class="badge" style="${badgeStyle}">${statusLabel}</span>
+        ${expired ? '<span class="badge" style="background:#fff7ed;color:#c2410c;margin-right:4px">منتهي</span>' : ''}
+      </td>
+      <td class="font-bold text-sm">${fmt(r.total_amount)} <span class="text-xs text-gray-400">${currSym}</span></td>
+      <td class="hidden md:table-cell">
+        <span style="color:${marginColor};font-weight:700;font-size:13px">${margin.toFixed(1)}%</span>
+      </td>
+      <td class="hidden md:table-cell text-xs text-gray-500">${fmtDate(r.validity_date)}</td>
+      <td class="hidden lg:table-cell text-xs text-gray-500">${r.sales_owner ? r.sales_owner.substring(0,8)+'…' : '—'}</td>
+      <td onclick="event.stopPropagation()">
+        <div class="flex gap-1">
+          <button onclick="openQuote('${r.id}')" class="text-primary hover:text-lightGreen p-1.5 rounded transition" title="عرض التفاصيل">
+            <i class="fa-solid fa-eye text-sm"></i>
+          </button>
+          ${r.itinerary_id ? `<a href="/nsp-control-8x4k/itinerary-builder.html?id=${r.itinerary_id}" class="text-purple-500 hover:text-purple-700 p-1.5 rounded transition" title="فتح الجدول السياحي">
+            <i class="fa-solid fa-map-location-dot text-sm"></i>
+          </a>` : ''}
+          ${r.status === 'draft' ? `<button onclick="deleteQuote('${r.id}','${r.quote_number}')" class="text-red-400 hover:text-red-600 p-1.5 rounded transition" title="حذف">
+            <i class="fa-solid fa-trash text-sm"></i>
+          </button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openQuote(id) {
+  window.location.href = `/nsp-control-8x4k/quote-detail.html?id=${id}`;
+}
+
+function getCurrencySymbol() { return 'ج.م'; }
+
+// ── Populate Selects ──────────────────────────────────
+async function populateSelects() {
+  const [custRes, oppRes] = await Promise.all([
+    db.from('customers').select('id,full_name').order('full_name'),
+    db.from('opportunities').select('id,title').in('stage',['new','qualification','discovery','itinerary','quote','follow_up','negotiation']).order('title')
+  ]);
+
+  const custSel = document.getElementById('f_customer_id');
+  (custRes.data||[]).forEach(c => {
+    const o = document.createElement('option'); o.value=c.id; o.textContent=c.full_name;
+    custSel.appendChild(o);
+  });
+
+  const oppSel = document.getElementById('f_opportunity_id');
+  (oppRes.data||[]).forEach(o => {
+    const el = document.createElement('option'); el.value=o.id; el.textContent=o.title;
+    oppSel.appendChild(el);
+  });
+}
+
+function setDefaultValidity() {
+  const d = new Date(); d.setDate(d.getDate()+14);
+  document.getElementById('f_validity').value = d.toISOString().split('T')[0];
+}
+
+// ── New Quote Modal ───────────────────────────────────
+function openNewModal() { document.getElementById('newModal').classList.remove('hidden'); }
+function closeModal()   { document.getElementById('newModal').classList.add('hidden'); }
+
+async function saveNewQuote() {
+  const title = document.getElementById('f_title').value.trim();
+  if (!title) { showError('عنوان العرض مطلوب'); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جارٍ الحفظ…';
+  hideError();
+
+  const payload = {
+    title,
+    lead_id:         window._prefillLeadId || null,
+    customer_id:     document.getElementById('f_customer_id').value     || null,
+    opportunity_id:  document.getElementById('f_opportunity_id').value  || null,
+    destination:     document.getElementById('f_destination').value.trim() || null,
+    currency:        document.getElementById('f_currency').value,
+    travel_date_from: document.getElementById('f_travel_from').value   || null,
+    travel_date_to:   document.getElementById('f_travel_to').value     || null,
+    adults_count:    parseInt(document.getElementById('f_adults').value)||1,
+    children_count:  parseInt(document.getElementById('f_children').value)||0,
+    validity_date:   document.getElementById('f_validity').value        || null,
+    discount_pct:    parseFloat(document.getElementById('f_discount_pct').value)||0,
+    payment_terms:   document.getElementById('f_payment_terms').value.trim() || null,
+    cancellation_policy: document.getElementById('f_cancel_policy').value.trim() || null,
+    status:          'draft',
+    sales_owner:     (await db.auth.getUser()).data?.user?.id || null,
+    created_by:      (await db.auth.getUser()).data?.user?.id || null,
+  };
+
+  const { data, error } = await db.from('quotations').insert(payload).select('id').single();
+
+  btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> إنشاء العرض';
+
+  if (error) { showError(error.message); return; }
+
+  // Redirect to detail page
+  window.location.href = `/nsp-control-8x4k/quote-detail.html?id=${data.id}`;
+}
+
+async function deleteQuote(id, num) {
+  if (!confirm(`هل أنت متأكد من حذف العرض ${num}؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+  const { error } = await db.from('quotations').delete().eq('id', id).eq('status','draft');
+  if (error) { alert('خطأ: ' + error.message); return; }
+  allQuotes = allQuotes.filter(q => q.id !== id);
+  applyFilter();
+}
+
+function showError(msg) {
+  const el = document.getElementById('modalError');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+function hideError() { document.getElementById('modalError').classList.add('hidden'); }
+</script>
+</body>
+</html>

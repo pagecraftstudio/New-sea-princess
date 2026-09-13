@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تفاصيل العميل | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+
+    .status-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 12px; border-radius:999px; font-size:0.78rem; font-weight:700; }
+    .timeline-item::before { content:''; position:absolute; top:0; bottom:0; right:19px; width:2px; background:#e5e7eb; }
+    .timeline-item:last-child::before { display:none; }
+    .activity-icon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; position:relative; z-index:1; }
+    select, input, textarea { font-family:'Cairo',sans-serif !important; }
+  </style>
+  <script src="/js/admin-nav.js"></script>
+  <script src="/js/ai-service.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Back + Header -->
+  <div class="flex items-center gap-3 mb-5">
+    <a href="/nsp-control-8x4k/leads.html" class="text-gray-400 hover:text-primary transition">
+      <i class="fa-solid fa-arrow-right text-lg"></i>
+    </a>
+    <div class="flex-1">
+      <h1 class="erp-page-title" id="pageTitle">جارٍ التحميل…</h1>
+      <p class="erp-page-subtitle" id="leadNumber"></p>
+    </div>
+    <!-- Status selector -->
+    <select id="statusSelect" onchange="updateStatus(this.value)"
+      class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold focus:ring-2 focus:ring-primary outline-none bg-white">
+      <option value="new">جديد</option>
+      <option value="contacted">تم التواصل</option>
+      <option value="qualified">مؤهل</option>
+      <option value="unqualified">غير مؤهل</option>
+      <option value="opportunity">فرصة</option>
+      <option value="won">رابح ✓</option>
+      <option value="lost">خسارة ✗</option>
+      <option value="nurture">تربية</option>
+    </select>
+    <!-- Convert to Customer — shown when lead has no customer yet -->
+    <button id="convertBtn" onclick="convertToCustomer()"
+      class="hidden bg-gold hover:bg-yellow-600 text-white text-sm font-bold px-4 py-1.5 rounded-lg flex items-center gap-2 transition whitespace-nowrap">
+      <i class="fa-solid fa-user-check"></i> تحويل إلى عميل
+    </button>
+    <!-- View Customer — shown when lead already has a customer -->
+    <a id="viewCustomerBtn" href="#"
+      class="hidden bg-green-700 hover:bg-green-800 text-white text-sm font-bold px-4 py-1.5 rounded-lg flex items-center gap-2 transition whitespace-nowrap">
+      <i class="fa-solid fa-address-card"></i> ملف العميل 360°
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- LEFT: Lead Info -->
+    <div class="space-y-4">
+
+      <!-- Contact Card -->
+      <div class="erp-card">
+        <div class="erp-card-header">
+          <span class="erp-card-title"><i class="fa-solid fa-user text-primary"></i>بيانات العميل</span>
+          <button onclick="openEditModal()" class="text-xs text-primary hover:underline font-bold">تعديل</button>
+        </div>
+        <div id="contactInfo" class="space-y-3 text-sm">
+          <p class="text-gray-400 animate-pulse">جارٍ التحميل…</p>
+        </div>
+      </div>
+
+      <!-- Trip Info Card -->
+      <div class="erp-card">
+        <div class="erp-card-header">
+          <span class="erp-card-title"><i class="fa-solid fa-plane text-primary"></i>تفاصيل الرحلة</span>
+        </div>
+        <div id="tripInfo" class="space-y-3 text-sm">
+          <p class="text-gray-400 animate-pulse">جارٍ التحميل…</p>
+        </div>
+      </div>
+
+      <!-- Tasks Card -->
+      <div class="erp-card">
+        <div class="erp-card-header">
+          <span class="erp-card-title"><i class="fa-solid fa-list-check text-primary"></i>المهام</span>
+          <button onclick="openTaskModal()" class="text-xs bg-primary text-white px-2 py-1 rounded font-bold hover:bg-lightGreen">+ مهمة</button>
+        </div>
+        <div id="tasksList" class="space-y-2">
+          <p class="text-gray-400 text-xs text-center py-4 animate-pulse">جارٍ التحميل…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Activity Timeline + Add Activity -->
+    <div class="lg:col-span-2 space-y-4">
+
+      <!-- Add Activity -->
+      <div class="erp-card">
+        <div class="erp-card-header mb-3">
+          <span class="erp-card-title"><i class="fa-solid fa-pen-to-square text-primary"></i>تسجيل نشاط</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3" id="activityTypeBtns">
+          <button onclick="setActivityType('call')"    class="act-type-btn active-type flex flex-col items-center gap-1 p-2 rounded-lg border-2 border-primary bg-primary/10 text-xs font-bold text-primary" data-type="call"><i class="fa-solid fa-phone"></i>مكالمة</button>
+          <button onclick="setActivityType('whatsapp')" class="act-type-btn flex flex-col items-center gap-1 p-2 rounded-lg border-2 border-gray-200 text-xs font-bold text-gray-500" data-type="whatsapp"><i class="fa-brands fa-whatsapp"></i>واتساب</button>
+          <button onclick="setActivityType('email')"   class="act-type-btn flex flex-col items-center gap-1 p-2 rounded-lg border-2 border-gray-200 text-xs font-bold text-gray-500" data-type="email"><i class="fa-solid fa-envelope"></i>بريد</button>
+          <button onclick="setActivityType('note')"    class="act-type-btn flex flex-col items-center gap-1 p-2 rounded-lg border-2 border-gray-200 text-xs font-bold text-gray-500" data-type="note"><i class="fa-solid fa-note-sticky"></i>ملاحظة</button>
+        </div>
+        <textarea id="activityBody" rows="2" placeholder="اكتب تفاصيل النشاط هنا…"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none resize-none mb-2"></textarea>
+        <div class="flex gap-2">
+          <input id="activityNextAction" type="text" placeholder="الإجراء التالي (اختياري)"
+            class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none">
+          <input id="activityDueAt" type="datetime-local"
+            class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none">
+          <button onclick="logActivity()"
+            class="bg-primary text-white text-sm font-bold px-4 py-1.5 rounded-lg hover:bg-lightGreen transition">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="erp-card">
+        <div class="erp-card-header mb-1">
+          <span class="erp-card-title"><i class="fa-solid fa-timeline text-primary"></i>سجل النشاط</span>
+        </div>
+        <div id="timeline" class="relative space-y-0 max-h-[600px] overflow-y-auto py-2">
+          <p class="text-gray-400 text-xs text-center py-8 animate-pulse">جارٍ التحميل…</p>
+        </div>
+      </div>
+
+      <!-- AI Sales Assistant Panel -->
+      <div class="erp-card">
+        <div class="erp-card-header mb-3">
+          <span class="erp-card-title"><i class="fa-solid fa-sparkles text-purple-600"></i>مساعد المبيعات الذكي</span>
+          <div class="flex gap-2">
+            <button onclick="runLeadAI('lead_analysis')"
+              class="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-magnifying-glass-chart"></i> تحليل العميل
+            </button>
+            <button onclick="runLeadAI('follow_up_draft', 'whatsapp')"
+              class="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition flex items-center gap-1.5">
+              <i class="fa-brands fa-whatsapp"></i> صياغة متابعة
+            </button>
+            <button onclick="runLeadAI('follow_up_draft', 'email')"
+              class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-envelope"></i> بريد إلكتروني
+            </button>
+          </div>
+        </div>
+        <div id="leadAiContainer">
+          <p class="text-xs text-gray-400 text-center py-4 italic">اختر تحليلاً ذكياً لهذا العميل</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Task Modal -->
+<div id="taskModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between p-5 border-b">
+      <h2 class="font-bold text-gray-800">مهمة جديدة</h2>
+      <button onclick="closeTaskModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-5 space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">عنوان المهمة *</label>
+        <input id="tf_title" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">النوع</label>
+          <select id="tf_type" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="follow_up">متابعة</option>
+            <option value="call">مكالمة</option>
+            <option value="email">بريد</option>
+            <option value="whatsapp">واتساب</option>
+            <option value="quote">عرض سعر</option>
+            <option value="document">مستند</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الأولوية</label>
+          <select id="tf_priority" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="medium">متوسطة</option>
+            <option value="high">عالية</option>
+            <option value="urgent">عاجل</option>
+            <option value="low">منخفضة</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">موعد الاستحقاق</label>
+        <input id="tf_due" type="datetime-local" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">وصف</label>
+        <textarea id="tf_desc" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none resize-none"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-3 p-5 border-t">
+      <button onclick="saveTask()" class="flex-1 bg-primary text-white font-bold py-2 rounded-lg hover:bg-lightGreen transition text-sm">حفظ المهمة</button>
+      <button onclick="closeTaskModal()" class="px-4 border border-gray-200 text-gray-600 font-bold py-2 rounded-lg text-sm">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATUS_LABELS = { new:'جديد', contacted:'تم التواصل', qualified:'مؤهل', unqualified:'غير مؤهل', opportunity:'فرصة', won:'رابح', lost:'خسارة', nurture:'تربية' };
+const STATUS_COLORS = { new:'#3b82f6', contacted:'#f59e0b', qualified:'#10b981', unqualified:'#6b7280', opportunity:'#8b5cf6', won:'#16a34a', lost:'#ef4444', nurture:'#f97316' };
+const ACT_ICONS = { call:'fa-phone', email:'fa-envelope', whatsapp:'fa-brands fa-whatsapp', meeting:'fa-handshake', note:'fa-note-sticky', follow_up:'fa-bell', status_change:'fa-arrow-right-arrow-left', assignment:'fa-user-tag', other:'fa-circle-info' };
+const ACT_COLORS = { call:'#3b82f6', email:'#8b5cf6', whatsapp:'#16a34a', meeting:'#f59e0b', note:'#6b7280', follow_up:'#f97316', status_change:'#ec4899', assignment:'#14b8a6', other:'#6b7280' };
+const PRI_COLORS = { urgent:'#ef4444', high:'#f97316', medium:'#f59e0b', low:'#6b7280' };
+const PRI_LABELS = { urgent:'عاجل', high:'عالية', medium:'متوسطة', low:'منخفضة' };
+
+let leadId = null;
+let lead = null;
+let currentActivityType = 'call';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  const params = new URLSearchParams(location.search);
+  leadId = params.get('id');
+  if (!leadId) { location.href = '/nsp-control-8x4k/leads.html'; return; }
+  await loadLead();
+  await loadActivities();
+  await loadTasks();
+});
+
+async function loadLead() {
+  const { data, error } = await db.from('leads').select('*').eq('id', leadId).single();
+  if (error || !data) { location.href = '/nsp-control-8x4k/leads.html'; return; }
+  lead = data;
+
+  document.getElementById('pageTitle').textContent = lead.full_name;
+  document.getElementById('leadNumber').textContent = lead.lead_number || '';
+  document.getElementById('statusSelect').value = lead.status;
+
+  renderContactInfo();
+  renderTripInfo();
+  updateConvertButtons();
+}
+
+function renderContactInfo() {
+  const L = lead;
+  document.getElementById('contactInfo').innerHTML = `
+    <div class="flex items-center gap-2">
+      <span class="status-badge" style="background:${STATUS_COLORS[L.status]}22;color:${STATUS_COLORS[L.status]}">${STATUS_LABELS[L.status]||L.status}</span>
+      <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:${PRI_COLORS[L.priority]||'#6b7280'}22;color:${PRI_COLORS[L.priority]||'#6b7280'}">${PRI_LABELS[L.priority]||L.priority}</span>
+    </div>
+    ${row('fa-user','الاسم', L.full_name)}
+    ${row('fa-phone','الهاتف', L.phone ? `<a href="tel:${L.phone}" class="text-primary hover:underline">${L.phone}</a>` : '—')}
+    ${row('fa-brands fa-whatsapp','واتساب', L.whatsapp ? `<a href="https://wa.me/${L.whatsapp}" target="_blank" class="text-green-600 hover:underline">${L.whatsapp}</a>` : '—')}
+    ${row('fa-envelope','البريد', L.email ? `<a href="mailto:${L.email}" class="text-primary hover:underline">${L.email}</a>` : '—')}
+    ${row('fa-flag','الجنسية', L.nationality || '—')}
+    ${row('fa-share-nodes','المصدر', L.source || '—')}
+    ${L.next_follow_up ? row('fa-bell','متابعة', new Date(L.next_follow_up).toLocaleString('ar-EG')) : ''}
+  `;
+}
+
+function renderTripInfo() {
+  const L = lead;
+  document.getElementById('tripInfo').innerHTML = `
+    ${row('fa-map-location-dot','الوجهة', L.destination || '—')}
+    ${row('fa-calendar-days','تاريخ السفر', L.travel_date_from ? `${L.travel_date_from}${L.travel_date_to ? ' → ' + L.travel_date_to : ''}` : '—')}
+    ${row('fa-users','المسافرون', `${L.adults_count||1} كبار، ${L.children_count||0} أطفال، ${L.infants_count||0} رضع`)}
+    ${L.budget_estimate ? row('fa-coins','الميزانية', `${Number(L.budget_estimate).toLocaleString()} ${L.budget_currency||'EGP'}`) : ''}
+    ${L.notes ? row('fa-note-sticky','ملاحظات', L.notes) : ''}
+  `;
+}
+
+function row(icon, label, val) {
+  return `<div class="flex items-start gap-2 text-sm">
+    <i class="fa-solid ${icon} w-4 mt-0.5 text-gray-400 shrink-0 text-xs"></i>
+    <span class="text-gray-500 text-xs shrink-0">${label}:</span>
+    <span class="text-gray-800 text-xs flex-1">${val}</span>
+  </div>`;
+}
+
+async function updateStatus(newStatus) {
+  const { error } = await db.from('leads').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', leadId);
+  if (error) { alert('فشل تحديث الحالة: ' + error.message); return; }
+
+  // Log status change activity
+  const { data: { session } } = await db.auth.getSession();
+  await db.from('lead_activities').insert({
+    lead_id: leadId,
+    activity_type: 'status_change',
+    subject: 'تغيير الحالة',
+    body: `تم تغيير الحالة من "${STATUS_LABELS[lead.status]}" إلى "${STATUS_LABELS[newStatus]}"`,
+    created_by: session?.user?.id,
+  });
+
+  lead.status = newStatus;
+  renderContactInfo();
+  updateConvertButtons();
+  await loadActivities();
+}
+
+// Activity logging
+function setActivityType(type) {
+  currentActivityType = type;
+  document.querySelectorAll('.act-type-btn').forEach(btn => {
+    const isActive = btn.dataset.type === type;
+    btn.classList.toggle('border-primary', isActive);
+    btn.classList.toggle('bg-primary/10', isActive);
+    btn.classList.toggle('text-primary', isActive);
+    btn.classList.toggle('border-gray-200', !isActive);
+    btn.classList.toggle('text-gray-500', !isActive);
+  });
+}
+
+async function logActivity() {
+  const body = document.getElementById('activityBody').value.trim();
+  if (!body) return;
+
+  const { data: { session } } = await db.auth.getSession();
+  const nextAction = document.getElementById('activityNextAction').value.trim();
+  const dueAt = document.getElementById('activityDueAt').value;
+
+  const payload = {
+    lead_id: leadId,
+    activity_type: currentActivityType,
+    body,
+    next_action: nextAction || null,
+    due_at: dueAt || null,
+    created_by: session?.user?.id,
+  };
+
+  const { error } = await db.from('lead_activities').insert(payload);
+  if (error) { alert('فشل التسجيل: ' + error.message); return; }
+
+  // Update lead next_follow_up if date set
+  if (dueAt) {
+    await db.from('leads').update({ next_follow_up: dueAt, updated_at: new Date().toISOString() }).eq('id', leadId);
+    lead.next_follow_up = dueAt;
+    renderContactInfo();
+  }
+
+  // Clear inputs
+  document.getElementById('activityBody').value = '';
+  document.getElementById('activityNextAction').value = '';
+  document.getElementById('activityDueAt').value = '';
+
+  await loadActivities();
+}
+
+async function loadActivities() {
+  const { data, error } = await db.from('lead_activities')
+    .select('*')
+    .eq('lead_id', leadId)
+    .order('created_at', { ascending: false });
+
+  if (error) return;
+
+  if (!data.length) {
+    document.getElementById('timeline').innerHTML = '<p class="text-gray-400 text-xs text-center py-8">لا يوجد نشاط بعد. سجّل أول تواصل!</p>';
+    return;
+  }
+
+  document.getElementById('timeline').innerHTML = data.map((a, i) => {
+    const color = ACT_COLORS[a.activity_type] || '#6b7280';
+    const icon  = ACT_ICONS[a.activity_type] || 'fa-circle-info';
+    const isLast = i === data.length - 1;
+    return `
+    <div class="timeline-item relative flex gap-3 pb-5 ${isLast ? '' : 'border-r-2 border-gray-100'} pr-4">
+      <div class="activity-icon shrink-0 -mr-6" style="background:${color}22;border:2px solid ${color}">
+        <i class="fa-solid ${icon} text-sm" style="color:${color}"></i>
+      </div>
+      <div class="flex-1 bg-gray-50 rounded-xl p-3 text-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-1">
+          <span class="font-bold text-gray-700 text-xs">${actTypeLabel(a.activity_type)}</span>
+          <span class="text-xs text-gray-400">${new Date(a.created_at).toLocaleString('ar-EG')}</span>
+        </div>
+        <p class="text-gray-700 text-sm leading-relaxed">${a.body || ''}</p>
+        ${a.next_action ? `<p class="text-xs text-primary mt-1 font-bold"><i class="fa-solid fa-arrow-left ml-1"></i>${a.next_action}</p>` : ''}
+        ${a.due_at ? `<p class="text-xs text-gray-400 mt-1"><i class="fa-regular fa-calendar ml-1"></i>${new Date(a.due_at).toLocaleString('ar-EG')}</p>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function actTypeLabel(type) {
+  const map = { call:'مكالمة', email:'بريد إلكتروني', whatsapp:'واتساب', meeting:'اجتماع', note:'ملاحظة', follow_up:'متابعة', status_change:'تغيير حالة', assignment:'تعيين', other:'أخرى' };
+  return map[type] || type;
+}
+
+// Tasks
+async function loadTasks() {
+  const { data, error } = await db.from('tasks')
+    .select('*').eq('lead_id', leadId).neq('status','done').order('due_at', { ascending: true });
+
+  if (error) return;
+  if (!data.length) {
+    document.getElementById('tasksList').innerHTML = '<p class="text-gray-400 text-xs text-center py-4">لا مهام مفتوحة</p>';
+    return;
+  }
+
+  document.getElementById('tasksList').innerHTML = data.map(t => {
+    const overdue = t.due_at && new Date(t.due_at) < new Date();
+    return `
+    <div class="flex items-start gap-2 p-2 rounded-lg border border-gray-100 hover:bg-gray-50">
+      <button onclick="completeTask('${t.id}')" class="mt-0.5 w-5 h-5 rounded border-2 border-gray-300 hover:border-primary flex items-center justify-center shrink-0 transition">
+        <i class="fa-solid fa-check text-primary text-xs hidden check-icon"></i>
+      </button>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-bold text-gray-800">${t.title}</p>
+        ${t.due_at ? `<p class="text-xs ${overdue ? 'text-red-500 font-bold' : 'text-gray-400'}">${new Date(t.due_at).toLocaleDateString('ar-EG')}</p>` : ''}
+      </div>
+      <span class="text-xs font-bold shrink-0" style="color:${PRI_COLORS[t.priority]||'#6b7280'}">${PRI_LABELS[t.priority]||t.priority}</span>
+    </div>`;
+  }).join('');
+}
+
+async function completeTask(taskId) {
+  await db.from('tasks').update({ status:'done', done_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', taskId);
+  await loadTasks();
+}
+
+function openTaskModal() { document.getElementById('taskModal').classList.remove('hidden'); }
+function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
+
+async function saveTask() {
+  const title = document.getElementById('tf_title').value.trim();
+  if (!title) { alert('عنوان المهمة مطلوب'); return; }
+
+  const { data: { session } } = await db.auth.getSession();
+  const { error } = await db.from('tasks').insert({
+    title,
+    task_type:  document.getElementById('tf_type').value,
+    priority:   document.getElementById('tf_priority').value,
+    due_at:     document.getElementById('tf_due').value || null,
+    description: document.getElementById('tf_desc').value.trim() || null,
+    lead_id:    leadId,
+    assigned_to: session?.user?.id,
+    created_by: session?.user?.id,
+  });
+
+  if (error) { alert('فشل الحفظ: ' + error.message); return; }
+  closeTaskModal();
+  document.getElementById('tf_title').value = '';
+  document.getElementById('tf_desc').value = '';
+  document.getElementById('tf_due').value = '';
+  await loadTasks();
+}
+
+function openEditModal() {
+  alert('وظيفة التعديل قادمة. الرجاء استخدام Supabase dashboard لتعديل البيانات مؤقتاً.');
+}
+
+// ── CUSTOMER CONVERSION ───────────────────────────────────────────────────
+
+function updateConvertButtons() {
+  const convertBtn     = document.getElementById('convertBtn');
+  const viewCustomerBtn = document.getElementById('viewCustomerBtn');
+  if (!lead) return;
+
+  if (lead.customer_id) {
+    // Already converted — show View Customer button
+    convertBtn.classList.add('hidden');
+    viewCustomerBtn.classList.remove('hidden');
+    viewCustomerBtn.href = `/nsp-control-8x4k/customer-detail.html?id=${lead.customer_id}`;
+  } else {
+    // Not yet converted — show Convert button (only for relevant statuses)
+    const showStatuses = ['qualified','opportunity','won'];
+    if (showStatuses.includes(lead.status)) {
+      convertBtn.classList.remove('hidden');
+    } else {
+      convertBtn.classList.add('hidden');
+    }
+    viewCustomerBtn.classList.add('hidden');
+  }
+}
+
+async function convertToCustomer() {
+  if (!lead) return;
+
+  if (lead.customer_id) {
+    window.location.href = `/nsp-control-8x4k/customer-detail.html?id=${lead.customer_id}`;
+    return;
+  }
+
+  const confirmed = confirm(
+    `تحويل "${lead.full_name}" إلى عميل في قاعدة العملاء 360°؟\n\nسيتم إنشاء ملف عميل كامل وربطه بهذا الـ Lead.`
+  );
+  if (!confirmed) return;
+
+  const btn = document.getElementById('convertBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جارٍ التحويل…';
+
+  try {
+    const { data: { session } } = await db.auth.getSession();
+
+    // 1. Create customer record from lead data
+    const { data: customer, error: custErr } = await db.from('customers').insert({
+      full_name:     lead.full_name,
+      email:         lead.email         || null,
+      phone:         lead.phone         || null,
+      whatsapp:      lead.whatsapp      || null,
+      nationality:   lead.nationality   || null,
+      language:      lead.language      || 'ar',
+      customer_type: lead.lead_type     || 'b2c',
+      source:        lead.source        || 'manual',
+      notes:         lead.notes         || null,
+      created_by:    session?.user?.id,
+    }).select().single();
+
+    if (custErr) throw custErr;
+
+    // 2. Link lead → customer
+    const { error: leadErr } = await db.from('leads').update({
+      customer_id:  customer.id,
+      converted_at: new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
+    }).eq('id', leadId);
+
+    if (leadErr) throw leadErr;
+
+    // 3. Log activity
+    await db.from('lead_activities').insert({
+      lead_id:       leadId,
+      activity_type: 'status_change',
+      subject:       'تحويل إلى عميل',
+      body:          `تم تحويل الـ Lead إلى عميل برقم ${customer.customer_number||customer.id.slice(-8)}`,
+      created_by:    session?.user?.id,
+    });
+
+    // 4. Update local state and navigate
+    lead.customer_id = customer.id;
+    updateConvertButtons();
+
+    window.location.href = `/nsp-control-8x4k/customer-detail.html?id=${customer.id}`;
+
+  } catch(e) {
+    alert('فشل التحويل: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-user-check"></i> تحويل إلى عميل';
+  }
+}
+
+// ── AI Sales Assistant ────────────────────────────────────────────────────
+async function runLeadAI(feature, channel) {
+  const container = document.getElementById('leadAiContainer');
+  if (!window.AI) {
+    container.innerHTML = '<p class="text-red-500 text-sm text-center py-4">خدمة الذكاء الاصطناعي غير متاحة</p>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="flex items-center justify-center gap-2 py-6 text-purple-600">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <span class="text-sm">جارٍ التحليل الذكي…</span>
+    </div>`;
+  try {
+    const extraData = { context_type: feature === 'follow_up_draft' ? 'lead' : 'lead' };
+    if (channel) extraData.channel = channel;
+    const result = await window.AI.analyze(feature, leadId, extraData);
+    container.innerHTML = `
+      <div class="border border-purple-100 rounded-xl bg-purple-50/50 p-4">
+        <div class="prose prose-sm max-w-none text-gray-800">
+          ${window.AIPanel.renderMarkdown(result)}
+        </div>
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-purple-100">
+          <span class="text-xs text-gray-400">هل كان التحليل مفيداً؟</span>
+          <div class="flex gap-3">
+            <button onclick="this.closest('div.flex').innerHTML='<span class=\\'text-xs text-green-600\\'>شكراً! ✓</span>'"
+              class="text-xs text-green-600 hover:text-green-800 flex items-center gap-1">
+              <i class="fa-solid fa-thumbs-up"></i> مفيد
+            </button>
+            <button onclick="this.closest('div.flex').innerHTML='<span class=\\'text-xs text-gray-400\\'>تم تسجيل رأيك</span>'"
+              class="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
+              <i class="fa-solid fa-thumbs-down"></i> غير مفيد
+            </button>
+          </div>
+        </div>
+      </div>`;
+  } catch(err) {
+    container.innerHTML = `<p class="text-red-500 text-sm text-center py-4">خطأ: ${err.message}</p>`;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سجل الأتمتة | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css"><link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .tab-btn{padding:6px 14px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;border:none;transition:.15s;white-space:nowrap;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:not(.active){background:#f3f4f6;color:#374151;}
+    .tab-btn:not(.active):hover{background:#e5e7eb;}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;white-space:nowrap;}
+    .tbl td{padding:8px 10px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#fafafa;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-list-check ml-2 text-purple-600"></i>سجل الأتمتة</h1>
+      <p class="erp-page-subtitle" id="pageSubtitle">تاريخ تنفيذ قواعد الأتمتة</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/nsp-control-8x4k/automation-rules.html" class="erp-page-btn text-sm">
+        <i class="fa-solid fa-robot ml-1"></i>القواعد
+      </a>
+      <button onclick="load()" class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-lightGreen transition flex items-center gap-1">
+        <i class="fa-solid fa-rotate"></i> تحديث
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5" id="kpiStrip">
+    <div class="erp-card p-4 text-center animate-pulse border-b-2 border-blue-400"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse border-b-2 border-green-400"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse border-b-2 border-red-400"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse border-b-2 border-primary"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-xl shadow-sm p-3 mb-4 flex flex-wrap gap-2 items-center">
+    <div class="flex gap-1 flex-wrap" id="statusTabs">
+      <button class="tab-btn active" onclick="setFilter('all',this)">الكل</button>
+      <button class="tab-btn" onclick="setFilter('completed',this)">مكتمل</button>
+      <button class="tab-btn" onclick="setFilter('pending',this)">معلق</button>
+      <button class="tab-btn" onclick="setFilter('failed',this)">فشل</button>
+      <button class="tab-btn" onclick="setFilter('skipped',this)">تخطي</button>
+    </div>
+    <div class="flex-1"></div>
+    <select id="ruleFilter" onchange="renderTable()"
+      class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm" style="font-family:'Cairo',sans-serif">
+      <option value="">كل القواعد</option>
+    </select>
+    <input type="date" id="dateFilter" onchange="renderTable()"
+      class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm">
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+    <table class="w-full tbl">
+      <thead><tr>
+        <th>القاعدة</th><th>الحدث</th><th>الإجراء</th><th>الكيان</th>
+        <th>الحالة</th><th class="hidden md:table-cell">النتيجة</th><th>التوقيت</th>
+      </tr></thead>
+      <tbody id="tableBody">
+        <tr><td colspan="7" class="text-center py-10 text-gray-400 animate-pulse">جارٍ التحميل…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="flex justify-between items-center mt-3 text-sm text-gray-500">
+    <span id="pageInfo"></span>
+    <div class="flex gap-2">
+      <button id="prevBtn" onclick="prevPage()" class="erp-page-btn" disabled><i class="fa-solid fa-chevron-right"></i></button>
+      <button id="nextBtn" onclick="nextPage()" class="erp-page-btn"><i class="fa-solid fa-chevron-left"></i></button>
+    </div>
+  </div>
+
+</main>
+<div id="toast"></div>
+
+<script>
+const PAGE_SIZE = 50;
+const TRG = {quote_sent:'إرسال عرض',quote_no_response:'عرض بلا رد',quote_accepted:'قبول عرض',quote_rejected:'رفض عرض',lead_created:'إنشاء عميل',lead_no_contact:'عميل بلا تواصل',booking_abandoned:'حجز مهجور',booking_confirmed:'تأكيد حجز',booking_completed:'إتمام رحلة',payment_overdue:'دفعة متأخرة',trip_upcoming:'رحلة قادمة',post_trip:'ما بعد الرحلة',customer_dormant:'عميل غير نشط'};
+const ACT = {create_task:'إنشاء مهمة',send_email:'بريد إلكتروني',send_whatsapp:'واتساب',update_lead_status:'تحديث حالة',add_to_campaign:'إضافة لحملة',notify_admin:'إشعار إدارة'};
+const ST = {
+  completed:{label:'مكتمل',bg:'#dcfce7',color:'#166534',icon:'fa-check'},
+  pending:  {label:'معلق',  bg:'#fef9c3',color:'#854d0e',icon:'fa-clock'},
+  failed:   {label:'فشل',   bg:'#fee2e2',color:'#991b1b',icon:'fa-xmark'},
+  skipped:  {label:'تخطي',  bg:'#f3f4f6',color:'#6b7280',icon:'fa-forward'},
+};
+let _all = [], _rules = {}, _filter = 'all', _page = 0;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await load();
+});
+
+async function load() {
+  const { data: rules } = await db.from('automation_rules').select('id,name,trigger_event,action_type');
+  _rules = {};
+  (rules||[]).forEach(r => { _rules[r.id] = r; });
+
+  const sel = document.getElementById('ruleFilter');
+  sel.innerHTML = '<option value="">كل القواعد</option>';
+  (rules||[]).forEach(r => sel.add(new Option(r.name, r.id)));
+
+  const { data } = await db.from('automation_executions')
+    .select('*').order('executed_at', { ascending: false }).limit(500);
+  _all = data || [];
+  _page = 0;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  document.getElementById('pageSubtitle').textContent = `${_all.length} تنفيذ مسجّل (آخر 500)`;
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="erp-card p-4 text-center border-b-2 border-blue-400"><div class="text-2xl font-black text-blue-600">${_all.length}</div><div class="text-xs text-gray-400 mt-1">إجمالي</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-green-400"><div class="text-2xl font-black text-green-600">${_all.filter(r=>r.status==='completed').length}</div><div class="text-xs text-gray-400 mt-1">مكتملة</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-red-400"><div class="text-2xl font-black text-red-600">${_all.filter(r=>r.status==='failed').length}</div><div class="text-xs text-gray-400 mt-1">فشل</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-primary"><div class="text-2xl font-black text-primary">${_all.filter(r=>new Date(r.executed_at)>=today).length}</div><div class="text-xs text-gray-400 mt-1">اليوم</div></div>`;
+
+  renderTable();
+}
+
+function setFilter(f, btn) {
+  _filter = f; _page = 0;
+  document.querySelectorAll('#statusTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function getFiltered() {
+  const ruleId = document.getElementById('ruleFilter').value;
+  const dateV  = document.getElementById('dateFilter').value;
+  let rows = _all;
+  if (_filter !== 'all') rows = rows.filter(r => r.status === _filter);
+  if (ruleId) rows = rows.filter(r => r.rule_id === ruleId);
+  if (dateV) {
+    const d = new Date(dateV), next = new Date(d); next.setDate(next.getDate()+1);
+    rows = rows.filter(r => { const ex = new Date(r.executed_at); return ex >= d && ex < next; });
+  }
+  return rows;
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  const start = _page * PAGE_SIZE;
+  const pageRows = filtered.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">لا توجد نتائج</td></tr>';
+    document.getElementById('pageInfo').textContent = '';
+    return;
+  }
+
+  const fmtDate = d => d ? new Date(d).toLocaleString('ar-EG',{dateStyle:'short',timeStyle:'short'}) : '—';
+
+  tbody.innerHTML = pageRows.map(r => {
+    const rule = _rules[r.rule_id] || {};
+    const st = ST[r.status] || ST.skipped;
+    return `<tr>
+      <td>
+        <div class="font-bold text-sm text-gray-800">${esc(rule.name||'قاعدة محذوفة')}</div>
+        <div class="text-xs text-gray-300 font-mono">${(r.rule_id||'').substring(0,12)}…</div>
+      </td>
+      <td><span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold">${TRG[rule.trigger_event]||rule.trigger_event||'—'}</span></td>
+      <td><span class="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-semibold">${ACT[rule.action_type]||rule.action_type||'—'}</span></td>
+      <td class="text-xs text-gray-500">${esc(r.entity_type||'—')}</td>
+      <td><span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:${st.bg};color:${st.color}"><i class="fa-solid ${st.icon} ml-1 text-xs"></i>${st.label}</span></td>
+      <td class="hidden md:table-cell text-xs text-gray-400 max-w-[200px] truncate" title="${esc(r.result_message||'')}">${esc(r.result_message||'—')}</td>
+      <td class="text-xs text-gray-400 whitespace-nowrap">${fmtDate(r.executed_at)}</td>
+    </tr>`;
+  }).join('');
+
+  const total = filtered.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  document.getElementById('pageInfo').textContent = `${start+1}–${Math.min(start+PAGE_SIZE,total)} من ${total}`;
+  document.getElementById('prevBtn').disabled = _page === 0;
+  document.getElementById('nextBtn').disabled = _page >= pages - 1;
+}
+
+function prevPage() { if (_page > 0) { _page--; renderTable(); } }
+function nextPage() { if (_page < Math.ceil(getFiltered().length/PAGE_SIZE)-1) { _page++; renderTable(); } }
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

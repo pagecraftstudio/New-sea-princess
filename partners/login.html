@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة الشركاء — Flow Travel</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;background:linear-gradient(135deg,#0D1B0E 0%,#1a3c1e 100%);min-height:100vh;}
+    .card{background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+    .inp{width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-size:.9rem;font-family:'Cairo',sans-serif;transition:.2s;outline:none;}
+    .inp:focus{border-color:#1B5E20;box-shadow:0 0 0 3px rgba(27,94,32,.12);}
+    .btn-primary{width:100%;background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;font-weight:700;padding:13px;border-radius:10px;border:none;cursor:pointer;font-size:.95rem;font-family:'Cairo',sans-serif;transition:.2s;}
+    .btn-primary:hover{filter:brightness(1.08);}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed;}
+    .logo-badge{width:64px;height:64px;background:linear-gradient(135deg,#B8860B,#9a7209);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;color:#fff;}
+  </style>
+</head>
+<body class="flex items-center justify-center p-4">
+  <div class="card w-full max-w-sm p-8">
+    <div class="text-center mb-8">
+      <div class="logo-badge"><i class="fa-solid fa-handshake-simple"></i></div>
+      <h1 class="text-xl font-black text-gray-800">بوابة شركاء Flow Travel</h1>
+      <p class="text-sm text-gray-400 mt-1">تسجيل الدخول للوصول إلى بوابتك</p>
+    </div>
+
+    <div id="errorBox" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 mb-4 text-center font-bold"></div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">البريد الإلكتروني</label>
+        <input id="email" type="email" class="inp" placeholder="partner@company.com"
+          onkeydown="if(event.key==='Enter')login()">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">كلمة المرور</label>
+        <div class="relative">
+          <input id="password" type="password" class="inp" placeholder="••••••••"
+            onkeydown="if(event.key==='Enter')login()">
+          <button type="button" onclick="togglePwd()"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <i id="eyeIcon" class="fa-solid fa-eye text-sm"></i>
+          </button>
+        </div>
+      </div>
+      <button id="loginBtn" onclick="login()" class="btn-primary">
+        <i class="fa-solid fa-right-to-bracket ml-2"></i>تسجيل الدخول
+      </button>
+    </div>
+
+    <div class="mt-5 text-center">
+      <a href="/reset-password.html" class="text-xs text-primary hover:underline font-bold">
+        نسيت كلمة المرور؟
+      </a>
+    </div>
+
+    <div class="mt-6 pt-5 border-t border-gray-100 text-center">
+      <p class="text-xs text-gray-400">
+        ليس لديك حساب؟ تواصل مع مدير حسابك في Flow Travel.
+      </p>
+    </div>
+  </div>
+
+<script>
+function togglePwd() {
+  const i = document.getElementById('password');
+  const eye = document.getElementById('eyeIcon');
+  if (i.type === 'password') { i.type = 'text'; eye.className = 'fa-solid fa-eye-slash text-sm'; }
+  else { i.type = 'password'; eye.className = 'fa-solid fa-eye text-sm'; }
+}
+
+function showError(msg) {
+  const b = document.getElementById('errorBox');
+  b.textContent = msg;
+  b.classList.remove('hidden');
+}
+
+async function login() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn      = document.getElementById('loginBtn');
+
+  if (!email || !password) { showError('أدخل البريد الإلكتروني وكلمة المرور'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-2"></i>جارٍ الدخول…';
+  document.getElementById('errorBox').classList.add('hidden');
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    showError('بريد إلكتروني أو كلمة مرور غير صحيحة');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket ml-2"></i>تسجيل الدخول';
+    return;
+  }
+
+  // Verify this user is a partner portal user
+  const { data: ppu, error: ppuErr } = await db
+    .from('partner_portal_users')
+    .select('partner_id, is_active')
+    .eq('user_id', data.user.id)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (ppuErr || !ppu) {
+    await db.auth.signOut();
+    showError('حسابك غير مرتبط ببوابة شركاء. تواصل مع Flow Travel.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket ml-2"></i>تسجيل الدخول';
+    return;
+  }
+
+  // Update last login
+  await db.from('partner_portal_users')
+    .update({ last_login_at: new Date().toISOString() })
+    .eq('user_id', data.user.id);
+
+  window.location.href = '/partners/dashboard.html';
+}
+</script>
+</body>
+</html>

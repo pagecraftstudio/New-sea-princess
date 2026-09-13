@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ملف العميل 360° | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .tab-btn{padding:8px 18px;border-radius:8px;font-size:.85rem;font-weight:700;color:#6b7280;transition:.2s;border:none;background:transparent;cursor:pointer;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:hover:not(.active){background:#f3f4f6;color:#1B5E20;}
+    .tab-panel{display:none;}
+    .tab-panel.active{display:block;}
+    .info-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:.875rem;}
+    .info-row:last-child{border-bottom:none;}
+    .info-label{color:#9ca3af;width:130px;flex-shrink:0;font-size:.8rem;}
+    .info-val{color:#1f2937;font-weight:600;flex:1;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700;}
+    .badge-green{background:#dcfce7;color:#166534;}
+    .badge-red{background:#fee2e2;color:#991b1b;}
+    .badge-yellow{background:#fef9c3;color:#854d0e;}
+    .badge-blue{background:#dbeafe;color:#1e40af;}
+    .badge-purple{background:#f3e8ff;color:#6b21a8;}
+    .badge-gray{background:#f3f4f6;color:#374151;}
+    .badge-gold{background:#fef3c7;color:#92400e;}
+    .timeline-item{position:relative;padding-right:52px;padding-bottom:20px;}
+    .timeline-item::before{content:'';position:absolute;top:0;bottom:0;right:19px;width:2px;background:#e5e7eb;}
+    .timeline-item:last-child::before{display:none;}
+    .act-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:absolute;right:0;top:0;z-index:1;}
+    .pref-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:999px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:.78rem;font-weight:700;margin:2px;}
+    select,input,textarea{font-family:'Cairo',sans-serif!important;}
+  </style>
+  <script src="/js/admin-nav.js"></script>
+  <script src="/js/ai-service.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Back + Header -->
+  <div class="flex items-center gap-3 mb-5">
+    <a href="/nsp-control-8x4k/customers.html" class="text-gray-400 hover:text-primary transition">
+      <i class="fa-solid fa-arrow-right text-lg"></i>
+    </a>
+    <div class="flex-1">
+      <div class="flex items-center gap-2 flex-wrap">
+        <h1 class="erp-page-title" id="pageTitle">جارٍ التحميل…</h1>
+        <span id="vipBadge" class="hidden badge badge-gold"><i class="fa-solid fa-star ml-1"></i>VIP</span>
+        <span id="typeBadge" class="badge badge-blue"></span>
+        <span id="segmentBadge" class="badge badge-purple"></span>
+      </div>
+      <p class="erp-page-subtitle" id="customerNumber"></p>
+    </div>
+    <button onclick="openEditModal()" class="bg-primary text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-lightGreen transition flex items-center gap-2">
+      <i class="fa-solid fa-pen"></i> تعديل
+    </button>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm text-center">
+      <p class="text-xs text-gray-500 mb-1">إجمالي الرحلات</p>
+      <p class="text-2xl font-bold text-primary" id="kpiTrips">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm text-center">
+      <p class="text-xs text-gray-500 mb-1">إجمالي الإنفاق</p>
+      <p class="text-2xl font-bold text-green-700" id="kpiSpent">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm text-center">
+      <p class="text-xs text-gray-500 mb-1">الرصيد المستحق</p>
+      <p class="text-2xl font-bold text-red-600" id="kpiOutstanding">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm text-center">
+      <p class="text-xs text-gray-500 mb-1">آخر رحلة</p>
+      <p class="text-lg font-bold text-gray-700" id="kpiLastTrip">—</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-5 px-4 py-2 flex gap-1 flex-wrap">
+    <button class="tab-btn active" onclick="switchTab('overview',this)"><i class="fa-solid fa-user ml-1"></i>نظرة عامة</button>
+    <button class="tab-btn" onclick="switchTab('trips',this)"><i class="fa-solid fa-plane ml-1"></i>الرحلات</button>
+    <button class="tab-btn" onclick="switchTab('sales',this)"><i class="fa-solid fa-chart-line ml-1"></i>المبيعات</button>
+    <button class="tab-btn" onclick="switchTab('quotes',this)"><i class="fa-solid fa-file-contract ml-1"></i>عروض الأسعار</button>
+    <button class="tab-btn" onclick="switchTab('finance',this)"><i class="fa-solid fa-file-invoice-dollar ml-1"></i>المالية</button>
+    <button class="tab-btn" onclick="switchTab('prefs',this)"><i class="fa-solid fa-sliders ml-1"></i>التفضيلات</button>
+    <button class="tab-btn" onclick="switchTab('timeline',this)"><i class="fa-solid fa-clock-rotate-left ml-1"></i>التواصل</button>
+    <button class="tab-btn" onclick="switchTab('ai',this)"><i class="fa-solid fa-sparkles ml-1 text-purple-600"></i>ذكاء اصطناعي</button>
+  </div>
+
+  <!-- ── TAB: Overview ── -->
+  <div id="tab-overview" class="tab-panel active space-y-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+      <!-- Contact info -->
+      <div class="erp-card">
+        <div class="erp-card-header">
+          <span class="erp-card-title"><i class="fa-solid fa-address-card text-primary"></i>بيانات التواصل</span>
+        </div>
+        <div id="contactInfo" class="space-y-1 pt-1">
+          <p class="text-gray-400 text-sm animate-pulse">جارٍ التحميل…</p>
+        </div>
+      </div>
+
+      <!-- Personal data -->
+      <div class="erp-card">
+        <div class="erp-card-header">
+          <span class="erp-card-title"><i class="fa-solid fa-passport text-primary"></i>البيانات الشخصية</span>
+        </div>
+        <div id="personalInfo" class="space-y-1 pt-1">
+          <p class="text-gray-400 text-sm animate-pulse">جارٍ التحميل…</p>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="erp-card md:col-span-2">
+        <div class="erp-card-header">
+          <span class="erp-card-title"><i class="fa-solid fa-note-sticky text-primary"></i>ملاحظات</span>
+          <button onclick="saveNotes()" class="text-xs bg-primary text-white px-2 py-1 rounded font-bold hover:bg-lightGreen">حفظ</button>
+        </div>
+        <textarea id="notesArea" rows="3"
+          class="w-full border border-gray-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary outline-none resize-none mt-2"
+          placeholder="ملاحظات داخلية عن العميل…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Trips ── -->
+  <div id="tab-trips" class="tab-panel">
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-suitcase-rolling text-primary"></i>الحجوزات</span>
+      </div>
+      <div id="tripsBody" class="divide-y divide-gray-100 mt-2">
+        <p class="text-gray-400 text-sm text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Sales ── -->
+  <div id="tab-sales" class="tab-panel space-y-5">
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-user-plus text-primary"></i>العملاء المحتملون</span>
+      </div>
+      <div id="leadsBody" class="divide-y divide-gray-100 mt-2">
+        <p class="text-gray-400 text-sm text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-filter text-primary"></i>الفرص البيعية</span>
+      </div>
+      <div id="oppsBody" class="divide-y divide-gray-100 mt-2">
+        <p class="text-gray-400 text-sm text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Quotes ── -->
+  <div id="tab-quotes" class="tab-panel space-y-5">
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-file-contract text-indigo-500"></i>عروض الأسعار</span>
+        <a id="custNewQuoteBtn" href="/nsp-control-8x4k/quotations.html" class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-700 transition">+ عرض جديد</a>
+      </div>
+      <div id="custQuotesBody" class="mt-2">
+        <p class="text-gray-400 text-sm text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Finance ── -->
+  <div id="tab-finance" class="tab-panel space-y-5">
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-file-invoice-dollar text-primary"></i>الفواتير</span>
+      </div>
+      <div id="invoicesBody" class="divide-y divide-gray-100 mt-2">
+        <p class="text-gray-400 text-sm text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-money-bill-wave text-primary"></i>المدفوعات</span>
+      </div>
+      <div id="paymentsBody" class="divide-y divide-gray-100 mt-2">
+        <p class="text-gray-400 text-sm text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Preferences ── -->
+  <div id="tab-prefs" class="tab-panel">
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-sliders text-primary"></i>تفضيلات السفر</span>
+        <button onclick="savePrefs()" class="text-xs bg-primary text-white px-2 py-1 rounded font-bold hover:bg-lightGreen">حفظ التفضيلات</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">نوع الفندق المفضل</label>
+          <select id="pref_hotel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="">غير محدد</option>
+            <option value="budget">اقتصادي</option>
+            <option value="standard">عادي ★★★</option>
+            <option value="superior">متميز ★★★★</option>
+            <option value="deluxe">فاخر ★★★★★</option>
+            <option value="luxury">فاخر جداً</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">نوع الغرفة المفضل</label>
+          <select id="pref_room" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="">غير محدد</option>
+            <option value="single">فردي</option>
+            <option value="double">مزدوج</option>
+            <option value="triple">ثلاثي</option>
+            <option value="quad">رباعي</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">لغة المرشد</label>
+          <select id="pref_guide_lang" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="">غير محدد</option>
+            <option value="ar">عربي</option>
+            <option value="en">إنجليزي</option>
+            <option value="fr">فرنسي</option>
+            <option value="it">إيطالي</option>
+            <option value="es">إسباني</option>
+            <option value="de">ألماني</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">تفضيل وسيلة النقل</label>
+          <select id="pref_transport" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="">غير محدد</option>
+            <option value="private">خاص</option>
+            <option value="shared">مشترك</option>
+            <option value="any">أي نوع</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs text-gray-500 mb-1 font-bold">احتياجات غذائية خاصة</label>
+          <input id="pref_dietary" type="text" placeholder="مثال: حلال، نباتي، خالٍ من الجلوتين…"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs text-gray-500 mb-2 font-bold">الاهتمامات</label>
+          <div class="flex flex-wrap gap-2" id="interestChips">
+            <!-- rendered by JS -->
+          </div>
+          <p class="text-xs text-gray-400 mt-2">اضغط للتبديل</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Timeline / Communications ── -->
+  <div id="tab-timeline" class="tab-panel">
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-clock-rotate-left text-primary"></i>سجل التواصل</span>
+        <button onclick="openActivityModal()" class="text-xs bg-primary text-white px-2 py-1 rounded font-bold hover:bg-lightGreen">+ تسجيل نشاط</button>
+      </div>
+      <div id="timelineBody" class="mt-4 space-y-0">
+        <p class="text-gray-400 text-sm text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AI Customer Intelligence Tab ──────────────────────────────── -->
+  <div id="tab-ai" class="tab-panel">
+    <div class="erp-card">
+      <div class="erp-card-header mb-4">
+        <span class="erp-card-title">
+          <i class="fa-solid fa-sparkles text-purple-600"></i>الذكاء الاصطناعي — تحليل العميل
+        </span>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex flex-wrap gap-2 mb-5">
+        <button onclick="runCustomerAI('lead_analysis')"
+          class="text-sm bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass-chart"></i> تحليل شامل
+        </button>
+        <button onclick="runCustomerAI('follow_up_draft', 'whatsapp')"
+          class="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+          <i class="fa-brands fa-whatsapp"></i> اقتراح واتساب
+        </button>
+        <button onclick="runCustomerAI('follow_up_draft', 'email')"
+          class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+          <i class="fa-solid fa-envelope"></i> اقتراح بريد
+        </button>
+      </div>
+
+      <div id="customerAiContainer">
+        <div class="border-2 border-dashed border-purple-200 rounded-xl p-8 text-center">
+          <i class="fa-solid fa-microchip-ai text-purple-300 text-4xl mb-3 block"></i>
+          <p class="text-gray-500 font-medium">اختر نوع التحليل الذكي للعميل</p>
+          <p class="text-xs text-gray-400 mt-1">سيحلل النظام بيانات الحجوزات والتفاعلات السابقة</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══════════════════════════════════════════
+     EDIT MODAL
+══════════════════════════════════════════ -->
+<div id="editModal" class="fixed inset-0 z-[80] hidden">
+  <div class="absolute inset-0 bg-black/60" onclick="closeEditModal()"></div>
+  <div class="absolute inset-y-0 left-0 w-full md:w-[560px] bg-white shadow-2xl flex flex-col overflow-hidden">
+    <div class="bg-primary text-white px-6 py-4 flex items-center justify-between">
+      <h3 class="text-lg font-bold">تعديل بيانات العميل</h3>
+      <button onclick="closeEditModal()" class="text-white/70 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-6 space-y-4">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label class="block text-xs text-gray-500 mb-1 font-bold">الاسم الكامل *</label>
+          <input id="ef_name" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">البريد الإلكتروني</label>
+          <input id="ef_email" type="email" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">الهاتف</label>
+          <input id="ef_phone" type="tel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">واتساب</label>
+          <input id="ef_whatsapp" type="tel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">الجنسية</label>
+          <input id="ef_nationality" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">الجنس</label>
+          <select id="ef_gender" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="">—</option>
+            <option value="male">ذكر</option>
+            <option value="female">أنثى</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">تاريخ الميلاد</label>
+          <input id="ef_dob" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">رقم جواز السفر</label>
+          <input id="ef_passport" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">انتهاء الجواز</label>
+          <input id="ef_passport_expiry" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">نوع العميل</label>
+          <select id="ef_type" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="b2c">B2C — أفراد</option>
+            <option value="b2b">B2B — شركات</option>
+            <option value="corporate">Corporate</option>
+            <option value="mice">MICE</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">الشريحة</label>
+          <select id="ef_segment" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="">—</option>
+            <option value="new">جديد</option>
+            <option value="returning">عائد</option>
+            <option value="vip">VIP</option>
+            <option value="high_ltv">قيمة عالية</option>
+            <option value="family">عائلة</option>
+            <option value="couple">زوجين</option>
+            <option value="honeymoon">شهر عسل</option>
+            <option value="adventure">مغامرة</option>
+            <option value="luxury">فاخر</option>
+            <option value="religious">ديني</option>
+            <option value="corporate">شركات</option>
+            <option value="dormant">غير نشط</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 font-bold">المصدر</label>
+          <select id="ef_source" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="">—</option>
+            <option value="website">الموقع</option>
+            <option value="whatsapp">واتساب</option>
+            <option value="phone">هاتف</option>
+            <option value="email">إيميل</option>
+            <option value="social">سوشيال ميديا</option>
+            <option value="referral">إحالة</option>
+            <option value="existing_customer">عميل حالي</option>
+            <option value="b2b">شريك B2B</option>
+            <option value="manual">إدخال يدوي</option>
+          </select>
+        </div>
+        <div class="md:col-span-2 flex items-center gap-3">
+          <input id="ef_vip" type="checkbox" class="w-4 h-4 accent-gold">
+          <label class="text-sm font-bold text-gray-700">عميل VIP مميز</label>
+        </div>
+      </div>
+
+      <div id="editError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3"></div>
+    </div>
+    <div class="border-t p-4 flex justify-end gap-3 bg-gray-50">
+      <button onclick="closeEditModal()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 font-bold">إلغاء</button>
+      <button onclick="saveEdit()" id="saveEditBtn" class="px-6 py-2 text-sm bg-primary text-white rounded-lg hover:bg-lightGreen font-bold transition">
+        <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ACTIVITY MODAL
+══════════════════════════════════════════ -->
+<div id="activityModal" class="fixed inset-0 z-[80] hidden">
+  <div class="absolute inset-0 bg-black/60" onclick="closeActivityModal()"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-800">تسجيل نشاط تواصل</h3>
+      <button onclick="closeActivityModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs text-gray-500 mb-1 font-bold">نوع النشاط</label>
+        <div class="flex flex-wrap gap-2" id="actTypeBtns">
+          <button class="act-type-btn active" data-type="call" onclick="setActType('call',this)"><i class="fa-solid fa-phone ml-1"></i>مكالمة</button>
+          <button class="act-type-btn" data-type="whatsapp" onclick="setActType('whatsapp',this)"><i class="fa-brands fa-whatsapp ml-1"></i>واتساب</button>
+          <button class="act-type-btn" data-type="email" onclick="setActType('email',this)"><i class="fa-solid fa-envelope ml-1"></i>إيميل</button>
+          <button class="act-type-btn" data-type="meeting" onclick="setActType('meeting',this)"><i class="fa-solid fa-handshake ml-1"></i>اجتماع</button>
+          <button class="act-type-btn" data-type="note" onclick="setActType('note',this)"><i class="fa-solid fa-note-sticky ml-1"></i>ملاحظة</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1 font-bold">الملاحظات</label>
+        <textarea id="act_notes" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" placeholder="تفاصيل النشاط…"></textarea>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1 font-bold">موعد المتابعة (اختياري)</label>
+        <input id="act_followup" type="datetime-local" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+      </div>
+      <div id="actError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3"></div>
+      <button onclick="saveActivity()" class="w-full bg-primary text-white py-2 rounded-lg font-bold hover:bg-lightGreen transition text-sm">
+        <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ النشاط
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.act-type-btn{padding:5px 12px;border-radius:8px;font-size:.8rem;font-weight:700;border:1px solid #d1d5db;background:#f9fafb;color:#374151;cursor:pointer;transition:.15s;}
+.act-type-btn.active{background:#1B5E20;color:#fff;border-color:#1B5E20;}
+</style>
+
+<script>
+const params   = new URLSearchParams(location.search);
+const customerId = params.get('id');
+let customer   = null;
+let selectedInterests = [];
+let currentActType = 'call';
+
+const INTEREST_OPTIONS = [
+  {key:'religious', label:'ديني', icon:'fa-mosque'},
+  {key:'cultural',  label:'ثقافي', icon:'fa-landmark'},
+  {key:'adventure', label:'مغامرة', icon:'fa-mountain'},
+  {key:'beach',     label:'شاطئ', icon:'fa-umbrella-beach'},
+  {key:'family',    label:'عائلي', icon:'fa-people-roof'},
+  {key:'luxury',    label:'فاخر', icon:'fa-gem'},
+  {key:'wildlife',  label:'طبيعة', icon:'fa-leaf'},
+  {key:'shopping',  label:'تسوق', icon:'fa-bag-shopping'},
+];
+
+const TYPE_LABELS = {b2c:'B2C',b2b:'B2B',corporate:'شركات',mice:'MICE'};
+const SEG_LABELS  = {new:'جديد',returning:'عائد',vip:'VIP',high_ltv:'قيمة عالية',family:'عائلة',couple:'زوجين',honeymoon:'شهر عسل',adventure:'مغامرة',luxury:'فاخر',religious:'ديني',corporate:'شركات',dormant:'غير نشط'};
+const STATUS_COLORS = {pending:'#f59e0b',confirmed:'#10b981',completed:'#6b7280',cancelled:'#ef4444'};
+const STATUS_LABELS = {pending:'انتظار',confirmed:'مؤكد',completed:'مكتمل',cancelled:'ملغي'};
+const INV_STATUS = {draft:'مسودة',issued:'صادرة',partial:'جزئي',paid:'مدفوعة',overdue:'متأخرة',cancelled:'ملغية',refunded:'مستردة'};
+const INV_COLORS = {draft:'#9ca3af',issued:'#3b82f6',partial:'#f59e0b',paid:'#10b981',overdue:'#ef4444',cancelled:'#6b7280',refunded:'#8b5cf6'};
+const LEAD_STATUS = {new:'جديد',contacted:'تواصل',qualified:'مؤهل',unqualified:'غير مؤهل',opportunity:'فرصة',won:'رابح',lost:'خسارة',nurture:'تربية'};
+const ACT_ICONS = {call:'fa-phone',whatsapp:'fa-brands fa-whatsapp',email:'fa-envelope',meeting:'fa-handshake',note:'fa-note-sticky',follow_up:'fa-calendar-check',status_change:'fa-rotate'};
+const ACT_COLORS = {call:'#3b82f6',whatsapp:'#22c55e',email:'#8b5cf6',meeting:'#f59e0b',note:'#6b7280',follow_up:'#ec4899',status_change:'#14b8a6'};
+
+function fmtMoney(v){if(v==null||isNaN(v))return'—';return Number(v).toLocaleString('ar-EG',{minimumFractionDigits:0,maximumFractionDigits:0})+' EGP';}
+function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('ar-EG');}
+function fmtDateTime(d){if(!d)return'—';const dt=new Date(d);return dt.toLocaleDateString('ar-EG')+' '+dt.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  if (!customerId) { location.href = '/nsp-control-8x4k/customers.html'; return; }
+  await loadCustomer();
+});
+
+async function loadCustomer() {
+  const { data, error } = await db.from('customers').select('*').eq('id', customerId).single();
+  if (error || !data) {
+    document.getElementById('pageTitle').textContent = 'العميل غير موجود';
+    return;
+  }
+  customer = data;
+  renderHeader();
+  renderOverview();
+  renderInterestChips();
+  renderPrefs();
+  await Promise.all([loadTrips(), loadSales(), loadFinance(), loadTimeline()]);
+}
+
+function renderHeader() {
+  document.getElementById('pageTitle').textContent = customer.full_name;
+  document.getElementById('customerNumber').textContent = customer.customer_number || '';
+  if (customer.vip) document.getElementById('vipBadge').classList.remove('hidden');
+  document.getElementById('typeBadge').textContent = TYPE_LABELS[customer.customer_type] || customer.customer_type || '';
+  if (customer.segment) document.getElementById('segmentBadge').textContent = SEG_LABELS[customer.segment] || customer.segment;
+  document.getElementById('kpiTrips').textContent = customer.total_bookings ?? '0';
+  document.getElementById('kpiSpent').textContent = fmtMoney(customer.total_spent);
+  document.getElementById('kpiOutstanding').textContent = fmtMoney(customer.total_outstanding);
+  document.getElementById('kpiLastTrip').textContent = customer.last_trip_date ? fmtDate(customer.last_trip_date) : '—';
+  if (customer.notes) document.getElementById('notesArea').value = customer.notes;
+}
+
+function infoRow(icon, label, val) {
+  if (!val) return '';
+  return `<div class="info-row"><span class="info-label"><i class="fa-solid ${icon} w-4 text-gray-400 ml-1"></i>${label}</span><span class="info-val">${val}</span></div>`;
+}
+
+function renderOverview() {
+  document.getElementById('contactInfo').innerHTML = [
+    infoRow('fa-envelope','البريد',customer.email ? `<a href="mailto:${customer.email}" class="text-primary hover:underline">${customer.email}</a>` : null),
+    infoRow('fa-phone','الهاتف', customer.phone ? `<a href="tel:${customer.phone}" class="text-primary hover:underline">${customer.phone}</a>` : null),
+    infoRow('fa-brands fa-whatsapp','واتساب', customer.whatsapp ? `<a href="https://wa.me/${customer.whatsapp.replace(/\D/g,'')}" target="_blank" class="text-green-600 hover:underline">${customer.whatsapp}</a>` : null),
+    infoRow('fa-globe','الجنسية', customer.nationality),
+    infoRow('fa-language','اللغة', customer.language),
+    infoRow('fa-tag','المصدر', customer.source),
+    infoRow('fa-calendar-plus','تاريخ التسجيل', fmtDate(customer.created_at)),
+  ].filter(Boolean).join('') || '<p class="text-gray-400 text-sm">لا توجد بيانات تواصل</p>';
+
+  document.getElementById('personalInfo').innerHTML = [
+    infoRow('fa-person','الجنس', customer.gender === 'male' ? 'ذكر' : customer.gender === 'female' ? 'أنثى' : null),
+    infoRow('fa-cake-candles','تاريخ الميلاد', fmtDate(customer.date_of_birth)),
+    infoRow('fa-passport','رقم الجواز', customer.passport_number),
+    infoRow('fa-calendar-xmark','انتهاء الجواز', customer.passport_expiry ? `<span class="${new Date(customer.passport_expiry) < new Date() ? 'text-red-600 font-bold' : ''}">${fmtDate(customer.passport_expiry)}</span>` : null),
+  ].filter(Boolean).join('') || '<p class="text-gray-400 text-sm">لا توجد بيانات شخصية</p>';
+}
+
+async function loadTrips() {
+  // Query bookings by customer_id FK first, then fallback to email/phone
+  let bookings = [];
+  const { data: byId } = await db.from('bookings')
+    .select('id,booking_number,status,departure_date,total_price,paid_amount,remaining_amount,adults_count,children_count,packages(title)')
+    .eq('customer_id', customerId)
+    .order('departure_date', { ascending: false });
+
+  if (byId && byId.length > 0) {
+    bookings = byId;
+  } else if (customer.email || customer.phone) {
+    // Legacy: match by email or phone
+    let q = db.from('bookings')
+      .select('id,booking_number,status,departure_date,total_price,paid_amount,remaining_amount,adults_count,children_count,packages(title)')
+      .order('departure_date', { ascending: false });
+    if (customer.email) q = q.eq('customer_email', customer.email);
+    else q = q.eq('customer_phone', customer.phone);
+    const { data: byContact } = await q;
+    bookings = byContact || [];
+  }
+
+  const el = document.getElementById('tripsBody');
+  if (!bookings.length) {
+    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">لا توجد حجوزات مرتبطة بهذا العميل</p>';
+    return;
+  }
+  el.innerHTML = bookings.map(b => `
+    <div class="py-3 px-1 flex items-center justify-between gap-3 hover:bg-gray-50 rounded transition">
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-gray-800 text-sm truncate">${b.packages?.title || 'حجز مباشر'}</p>
+        <p class="text-xs text-gray-500 mt-0.5">
+          <span class="font-mono">${b.booking_number}</span> •
+          ${fmtDate(b.departure_date)} •
+          ${b.adults_count || 0} بالغ${b.children_count ? ' + '+b.children_count+' طفل' : ''}
+        </p>
+      </div>
+      <div class="text-left shrink-0">
+        <p class="text-sm font-bold ${b.remaining_amount > 0 ? 'text-red-600' : 'text-green-700'}">${fmtMoney(b.total_price)}</p>
+        ${b.remaining_amount > 0 ? `<p class="text-xs text-red-500">متبقي ${fmtMoney(b.remaining_amount)}</p>` : ''}
+      </div>
+      <span class="status-badge text-xs px-2 py-1 rounded-full font-bold shrink-0" style="background:${STATUS_COLORS[b.status]}22;color:${STATUS_COLORS[b.status]}">${STATUS_LABELS[b.status]||b.status}</span>
+    </div>
+  `).join('');
+}
+
+async function loadSales() {
+  const [{ data: leads }, { data: opps }] = await Promise.all([
+    db.from('leads').select('id,lead_number,full_name,status,source,destination,created_at').eq('customer_id', customerId).order('created_at', { ascending: false }),
+    db.from('opportunities').select('id,opp_number,title,stage,estimated_value,created_at').eq('customer_id', customerId).order('created_at', { ascending: false }),
+  ]);
+
+  const leadsEl = document.getElementById('leadsBody');
+  if (!leads?.length) leadsEl.innerHTML = '<p class="text-gray-400 text-sm text-center py-6">لا توجد فرص مرتبطة</p>';
+  else leadsEl.innerHTML = leads.map(l => `
+    <div class="py-3 px-1 flex items-center justify-between hover:bg-gray-50 rounded transition">
+      <div>
+        <a href="/nsp-control-8x4k/lead-detail.html?id=${l.id}" class="font-bold text-sm text-primary hover:underline">${l.lead_number || l.full_name}</a>
+        <p class="text-xs text-gray-500">${l.destination||''} • ${fmtDate(l.created_at)}</p>
+      </div>
+      <span class="badge badge-blue text-xs">${LEAD_STATUS[l.status]||l.status}</span>
+    </div>
+  `).join('');
+
+  const oppsEl = document.getElementById('oppsBody');
+  if (!opps?.length) oppsEl.innerHTML = '<p class="text-gray-400 text-sm text-center py-6">لا توجد فرص بيعية</p>';
+  else oppsEl.innerHTML = opps.map(o => `
+    <div class="py-3 px-1 flex items-center justify-between hover:bg-gray-50 rounded transition">
+      <div>
+        <p class="font-bold text-sm text-gray-800">${o.title || o.opp_number || '—'}</p>
+        <p class="text-xs text-gray-500">${fmtDate(o.created_at)}</p>
+      </div>
+      <div class="text-left">
+        ${o.estimated_value ? `<p class="text-sm font-bold text-green-700">${fmtMoney(o.estimated_value)}</p>` : ''}
+        <span class="badge badge-purple text-xs">${o.stage||'—'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadFinance() {
+  const [{ data: invoices }, { data: payments }] = await Promise.all([
+    db.from('nsp_invoices').select('id,invoice_number,total_amount,paid_amount,remaining_amount,status,issue_date,due_date')
+      .or(`customer_rec_id.eq.${customerId}${customer.email ? `,customer_name.eq.${customer.full_name}` : ''}`)
+      .order('issue_date', { ascending: false }).limit(20),
+    db.from('nsp_payments').select('id,payment_number,amount,payment_method,status,created_at')
+      .eq('customer_rec_id', customerId)
+      .order('created_at', { ascending: false }).limit(20),
+  ]);
+
+  const invEl = document.getElementById('invoicesBody');
+  if (!invoices?.length) invEl.innerHTML = '<p class="text-gray-400 text-sm text-center py-6">لا توجد فواتير</p>';
+  else invEl.innerHTML = invoices.map(i => `
+    <div class="py-3 px-1 flex items-center justify-between hover:bg-gray-50 rounded transition">
+      <div>
+        <p class="font-mono text-sm font-bold text-gray-800">${i.invoice_number}</p>
+        <p class="text-xs text-gray-500">${fmtDate(i.issue_date)}${i.due_date?' • استحقاق '+fmtDate(i.due_date):''}</p>
+      </div>
+      <div class="text-left">
+        <p class="text-sm font-bold text-gray-800">${fmtMoney(i.total_amount)}</p>
+        ${i.remaining_amount > 0 ? `<p class="text-xs text-red-500">متبقي ${fmtMoney(i.remaining_amount)}</p>` : ''}
+        <span class="text-xs font-bold" style="color:${INV_COLORS[i.status]}">${INV_STATUS[i.status]||i.status}</span>
+      </div>
+    </div>
+  `).join('');
+
+  const payEl = document.getElementById('paymentsBody');
+  if (!payments?.length) payEl.innerHTML = '<p class="text-gray-400 text-sm text-center py-6">لا توجد مدفوعات مسجلة عبر الـ CRM</p>';
+  else payEl.innerHTML = payments.map(p => `
+    <div class="py-3 px-1 flex items-center justify-between hover:bg-gray-50 rounded transition">
+      <div>
+        <p class="font-mono text-sm font-bold text-gray-800">${p.payment_number}</p>
+        <p class="text-xs text-gray-500">${p.payment_method||''} • ${fmtDate(p.created_at)}</p>
+      </div>
+      <p class="text-sm font-bold text-green-700">${fmtMoney(p.amount)}</p>
+    </div>
+  `).join('');
+}
+
+async function loadTimeline() {
+  // Get lead_activities linked to leads that belong to this customer
+  const { data: leads } = await db.from('leads').select('id').eq('customer_id', customerId);
+  const leadIds = leads?.map(l => l.id) || [];
+
+  let activities = [];
+  if (leadIds.length) {
+    const { data } = await db.from('lead_activities')
+      .select('id,type,notes,done,created_at,due_at,leads(lead_number,full_name)')
+      .in('lead_id', leadIds)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    activities = data || [];
+  }
+
+  const el = document.getElementById('timelineBody');
+  if (!activities.length) {
+    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">لا يوجد سجل تواصل. سجّل أول نشاط.</p>';
+    return;
+  }
+
+  el.innerHTML = activities.map(a => `
+    <div class="timeline-item">
+      <div class="act-icon" style="background:${ACT_COLORS[a.type]}22;color:${ACT_COLORS[a.type]}">
+        <i class="fa-solid ${ACT_ICONS[a.type]||'fa-circle-dot'} text-sm"></i>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-bold text-gray-500">${fmtDateTime(a.created_at)}</span>
+          ${a.leads ? `<span class="text-xs text-primary font-bold">${a.leads.lead_number||a.leads.full_name}</span>` : ''}
+        </div>
+        <p class="text-sm text-gray-700">${a.notes || '—'}</p>
+        ${a.due_at ? `<p class="text-xs text-orange-500 mt-1"><i class="fa-solid fa-calendar-check ml-1"></i>متابعة: ${fmtDateTime(a.due_at)}</p>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Preferences ───────────────────────────────────────────────────────────
+function renderInterestChips() {
+  selectedInterests = customer.interests || [];
+  document.getElementById('interestChips').innerHTML = INTEREST_OPTIONS.map(opt => `
+    <button onclick="toggleInterest('${opt.key}',this)"
+      class="pref-chip ${selectedInterests.includes(opt.key) ? 'active-chip' : 'inactive-chip'}"
+      style="${selectedInterests.includes(opt.key) ? 'background:#1B5E20;color:#fff;border-color:#1B5E20;' : ''}">
+      <i class="fa-solid ${opt.icon}"></i>${opt.label}
+    </button>
+  `).join('');
+}
+
+function toggleInterest(key, btn) {
+  if (selectedInterests.includes(key)) {
+    selectedInterests = selectedInterests.filter(k => k !== key);
+    btn.style.cssText = '';
+  } else {
+    selectedInterests.push(key);
+    btn.style.cssText = 'background:#1B5E20;color:#fff;border-color:#1B5E20;';
+  }
+}
+
+function renderPrefs() {
+  if (customer.preferred_hotel_type) document.getElementById('pref_hotel').value = customer.preferred_hotel_type;
+  if (customer.preferred_room_type)  document.getElementById('pref_room').value  = customer.preferred_room_type;
+  if (customer.guide_language)       document.getElementById('pref_guide_lang').value = customer.guide_language;
+  if (customer.transport_preference) document.getElementById('pref_transport').value  = customer.transport_preference;
+  if (customer.dietary_requirements) document.getElementById('pref_dietary').value    = customer.dietary_requirements;
+}
+
+async function savePrefs() {
+  const { error } = await db.from('customers').update({
+    preferred_hotel_type:  document.getElementById('pref_hotel').value || null,
+    preferred_room_type:   document.getElementById('pref_room').value  || null,
+    guide_language:        document.getElementById('pref_guide_lang').value || null,
+    transport_preference:  document.getElementById('pref_transport').value  || null,
+    dietary_requirements:  document.getElementById('pref_dietary').value    || null,
+    interests:             selectedInterests.length ? selectedInterests : null,
+    updated_at:            new Date().toISOString(),
+  }).eq('id', customerId);
+  if (error) { alert('خطأ في الحفظ: ' + error.message); return; }
+  showToast('تم حفظ التفضيلات ✓');
+  customer.preferred_hotel_type = document.getElementById('pref_hotel').value;
+  customer.interests = selectedInterests;
+}
+
+async function saveNotes() {
+  const notes = document.getElementById('notesArea').value.trim();
+  const { error } = await db.from('customers').update({ notes, updated_at: new Date().toISOString() }).eq('id', customerId);
+  if (error) { alert('خطأ: ' + error.message); return; }
+  showToast('تم حفظ الملاحظات ✓');
+  customer.notes = notes;
+}
+
+// ── Edit Modal ────────────────────────────────────────────────────────────
+function openEditModal() {
+  document.getElementById('ef_name').value           = customer.full_name || '';
+  document.getElementById('ef_email').value          = customer.email || '';
+  document.getElementById('ef_phone').value          = customer.phone || '';
+  document.getElementById('ef_whatsapp').value       = customer.whatsapp || '';
+  document.getElementById('ef_nationality').value    = customer.nationality || '';
+  document.getElementById('ef_gender').value         = customer.gender || '';
+  document.getElementById('ef_dob').value            = customer.date_of_birth || '';
+  document.getElementById('ef_passport').value       = customer.passport_number || '';
+  document.getElementById('ef_passport_expiry').value= customer.passport_expiry || '';
+  document.getElementById('ef_type').value           = customer.customer_type || 'b2c';
+  document.getElementById('ef_segment').value        = customer.segment || '';
+  document.getElementById('ef_source').value         = customer.source || '';
+  document.getElementById('ef_vip').checked          = customer.vip || false;
+  document.getElementById('editError').classList.add('hidden');
+  document.getElementById('editModal').classList.remove('hidden');
+}
+
+function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+async function saveEdit() {
+  const name = document.getElementById('ef_name').value.trim();
+  if (!name) {
+    document.getElementById('editError').textContent = 'الاسم الكامل مطلوب';
+    document.getElementById('editError').classList.remove('hidden');
+    return;
+  }
+  const btn = document.getElementById('saveEditBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i>جارٍ الحفظ…';
+
+  const payload = {
+    full_name:       name,
+    email:           document.getElementById('ef_email').value.trim() || null,
+    phone:           document.getElementById('ef_phone').value.trim() || null,
+    whatsapp:        document.getElementById('ef_whatsapp').value.trim() || null,
+    nationality:     document.getElementById('ef_nationality').value.trim() || null,
+    gender:          document.getElementById('ef_gender').value || null,
+    date_of_birth:   document.getElementById('ef_dob').value || null,
+    passport_number: document.getElementById('ef_passport').value.trim() || null,
+    passport_expiry: document.getElementById('ef_passport_expiry').value || null,
+    customer_type:   document.getElementById('ef_type').value,
+    segment:         document.getElementById('ef_segment').value || null,
+    source:          document.getElementById('ef_source').value || null,
+    vip:             document.getElementById('ef_vip').checked,
+    updated_at:      new Date().toISOString(),
+  };
+
+  const { error } = await db.from('customers').update(payload).eq('id', customerId);
+  btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk ml-1"></i>حفظ';
+  if (error) {
+    document.getElementById('editError').textContent = 'خطأ: ' + error.message;
+    document.getElementById('editError').classList.remove('hidden');
+    return;
+  }
+  Object.assign(customer, payload);
+  closeEditModal();
+  renderHeader();
+  renderOverview();
+  showToast('تم تحديث بيانات العميل ✓');
+}
+
+// ── Activity Modal ────────────────────────────────────────────────────────
+function openActivityModal() {
+  document.getElementById('act_notes').value = '';
+  document.getElementById('act_followup').value = '';
+  document.getElementById('actError').classList.add('hidden');
+  document.getElementById('activityModal').classList.remove('hidden');
+}
+function closeActivityModal() { document.getElementById('activityModal').classList.add('hidden'); }
+function setActType(type, btn) {
+  currentActType = type;
+  document.querySelectorAll('.act-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function saveActivity() {
+  // Need a lead to attach to — find most recent lead for this customer
+  const { data: leads } = await db.from('leads').select('id').eq('customer_id', customerId).order('created_at', { ascending: false }).limit(1);
+  const leadId = leads?.[0]?.id;
+  if (!leadId) {
+    document.getElementById('actError').textContent = 'لا يوجد عميل محتمل مرتبط بهذا العميل. أنشئ lead أولاً.';
+    document.getElementById('actError').classList.remove('hidden');
+    return;
+  }
+  const notes = document.getElementById('act_notes').value.trim();
+  const dueAt  = document.getElementById('act_followup').value;
+  const { error } = await db.from('lead_activities').insert({
+    lead_id:    leadId,
+    type:       currentActType,
+    notes,
+    due_at:     dueAt || null,
+    done:       false,
+    created_at: new Date().toISOString(),
+  });
+  if (error) {
+    document.getElementById('actError').textContent = 'خطأ: ' + error.message;
+    document.getElementById('actError').classList.remove('hidden');
+    return;
+  }
+  closeActivityModal();
+  await loadTimeline();
+  showToast('تم تسجيل النشاط ✓');
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'quotes') loadCustomerQuotes();
+}
+
+// ── Customer Quotes ───────────────────────────────────────────────────────
+let _quotesLoaded = false;
+async function loadCustomerQuotes() {
+  if (_quotesLoaded) return;
+  _quotesLoaded = true;
+
+  const btn = document.getElementById('custNewQuoteBtn');
+  if (btn && customerId) btn.href = `/nsp-control-8x4k/quotations.html?customer_id=${customerId}`;
+
+  const { data, error } = await db.from('quotations')
+    .select('id,quote_number,title,status,total_amount,currency,validity_date,version,created_at,destination,travel_date_from,adults_count,children_count')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+
+  const el = document.getElementById('custQuotesBody');
+  if (error || !data || data.length === 0) {
+    el.innerHTML = `<div class="text-center py-12">
+      <i class="fa-solid fa-file-contract text-gray-200 text-5xl mb-3"></i>
+      <p class="text-gray-400 text-sm">لا توجد عروض أسعار لهذا العميل بعد</p>
+      <a href="/nsp-control-8x4k/quotations.html?customer_id=${customerId}"
+         class="mt-3 inline-block text-xs bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition">
+        إنشاء عرض سعر جديد
+      </a>
+    </div>`;
+    return;
+  }
+
+  const STATUS_STYLE = {
+    draft:'background:#f3f4f6;color:#6b7280',
+    internal_review:'background:#ede9fe;color:#7c3aed',
+    sent:'background:#dbeafe;color:#1d4ed8',
+    viewed:'background:#e0f2fe;color:#0369a1',
+    revision_requested:'background:#fef3c7;color:#92400e',
+    negotiation:'background:#ffedd5;color:#c2410c',
+    accepted:'background:#dcfce7;color:#15803d',
+    deposit_pending:'background:#fef9c3;color:#854d0e',
+    confirmed:'background:#d1fae5;color:#065f46',
+    expired:'background:#f3f4f6;color:#9ca3af',
+    rejected:'background:#fee2e2;color:#991b1b',
+    cancelled:'background:#fee2e2;color:#991b1b',
+  };
+  const STATUS_LBL = {
+    draft:'مسودة', internal_review:'مراجعة داخلية', sent:'مُرسَل',
+    viewed:'تمت المشاهدة', revision_requested:'طلب تعديل',
+    negotiation:'تفاوض', accepted:'مقبول', deposit_pending:'انتظار عربون',
+    confirmed:'مؤكد', expired:'منتهي', rejected:'مرفوض', cancelled:'ملغي',
+  };
+  const fmtMoney = n => Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+  const fmtDate  = d => d ? new Date(d).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'}) : '—';
+
+  // Summary strip
+  const total    = data.length;
+  const accepted = data.filter(q => ['accepted','deposit_pending','confirmed'].includes(q.status)).length;
+  const pending  = data.filter(q => ['sent','viewed','revision_requested','negotiation'].includes(q.status)).length;
+  const totalVal = data.filter(q => !['rejected','cancelled','expired'].includes(q.status))
+                       .reduce((s,q) => s + Number(q.total_amount||0), 0);
+
+  el.innerHTML = `
+    <div class="grid grid-cols-3 gap-3 mb-4 p-3 bg-gray-50 rounded-xl">
+      <div class="text-center">
+        <p class="text-lg font-bold text-gray-800">${total}</p>
+        <p class="text-xs text-gray-500">إجمالي العروض</p>
+      </div>
+      <div class="text-center">
+        <p class="text-lg font-bold text-green-600">${accepted}</p>
+        <p class="text-xs text-gray-500">مقبول</p>
+      </div>
+      <div class="text-center">
+        <p class="text-base font-bold text-indigo-600">${fmtMoney(totalVal)}</p>
+        <p class="text-xs text-gray-500">إجمالي القيمة</p>
+      </div>
+    </div>
+    <div class="divide-y divide-gray-100">
+      ${data.map(q => `
+        <a href="/nsp-control-8x4k/quote-detail.html?id=${q.id}"
+           class="flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition block">
+          <div class="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-file-contract text-indigo-400 text-sm"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <p class="text-sm font-bold text-gray-800 truncate">${q.title||q.quote_number}</p>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                    style="${STATUS_STYLE[q.status]||'background:#f3f4f6;color:#6b7280'}">
+                ${STATUS_LBL[q.status]||q.status}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500">
+              ${q.quote_number} · v${q.version||1}
+              ${q.destination ? ` · ${q.destination}` : ''}
+              ${q.travel_date_from ? ` · ${fmtDate(q.travel_date_from)}` : ''}
+            </p>
+          </div>
+          <div class="text-left shrink-0">
+            <p class="text-sm font-bold text-indigo-600">${fmtMoney(q.total_amount)} ${q.currency||'EGP'}</p>
+            <p class="text-xs text-gray-400">${fmtDate(q.created_at)}</p>
+          </div>
+          <i class="fa-solid fa-chevron-left text-gray-300 text-xs shrink-0"></i>
+        </a>`).join('')}
+    </div>`;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-primary text-white text-sm px-5 py-2.5 rounded-full shadow-lg z-[999] font-bold';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ── AI Customer Intelligence ──────────────────────────────────────────────
+async function runCustomerAI(feature, channel) {
+  const container = document.getElementById('customerAiContainer');
+  if (!window.AI) {
+    container.innerHTML = '<p class="text-red-500 text-center py-6">خدمة الذكاء الاصطناعي غير متاحة</p>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="flex items-center justify-center gap-3 py-10 text-purple-600">
+      <i class="fa-solid fa-spinner fa-spin text-2xl"></i>
+      <span class="text-sm font-medium">جارٍ تحليل بيانات العميل…</span>
+    </div>`;
+  try {
+    // Use the lead linked to this customer, or pass customer id as context
+    const params = new URLSearchParams(window.location.search);
+    const customerId = params.get('id');
+    // For follow_up_draft we look up the lead linked to this customer
+    let contextId = customerId;
+    const extraData = { context_type: 'lead', customer_context: true };
+    if (channel) extraData.channel = channel;
+
+    // Try to find associated lead
+    const { data: linkedLead } = await window.db
+      .from('leads')
+      .select('id')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    if (linkedLead?.id) contextId = linkedLead.id;
+
+    const result = await window.AI.analyze(feature, contextId, extraData);
+    container.innerHTML = `
+      <div class="border border-purple-100 rounded-xl bg-purple-50/40 p-5">
+        <div class="flex items-center gap-2 text-purple-700 font-bold text-sm mb-3">
+          <i class="fa-solid fa-sparkles"></i>
+          ${feature === 'follow_up_draft'
+            ? (channel === 'whatsapp' ? 'مقترح رسالة واتساب' : 'مقترح بريد إلكتروني')
+            : 'تحليل ذكي للعميل'}
+        </div>
+        <div class="prose prose-sm max-w-none text-gray-800 leading-relaxed">
+          ${window.AIPanel.renderMarkdown(result)}
+        </div>
+        <div class="flex items-center justify-between mt-4 pt-3 border-t border-purple-100">
+          <p class="text-xs text-gray-400">
+            <i class="fa-solid fa-shield-halved ml-1 text-purple-400"></i>
+            مبني على بيانات النظام فقط — راجع قبل الإرسال
+          </p>
+          <div class="flex gap-3">
+            <button onclick="runCustomerAI('${feature}'${channel ? `,'${channel}'` : ''})"
+              class="text-xs text-purple-600 hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-rotate-right"></i> تحديث
+            </button>
+          </div>
+        </div>
+      </div>`;
+  } catch(err) {
+    container.innerHTML = `
+      <div class="text-center py-8">
+        <i class="fa-solid fa-circle-exclamation text-red-400 text-2xl mb-2 block"></i>
+        <p class="text-red-500 text-sm">${err.message}</p>
+      </div>`;
+  }
+}
+</script>
+</body>
+</html>

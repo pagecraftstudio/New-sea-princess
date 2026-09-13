@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة الشركاء — تسجيل الدخول</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B"}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <style>
+    body { font-family:'Cairo',sans-serif; background:linear-gradient(135deg,#0D1B0E 0%,#1a3a1c 100%); min-height:100vh; }
+  </style>
+</head>
+<body class="flex items-center justify-center p-4 min-h-screen">
+  <div class="w-full max-w-md">
+    <!-- Brand -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style="background:linear-gradient(135deg,#1B5E20,#B8860B)">
+        <i class="fa-solid fa-plane text-white text-2xl" style="font-family:'Font Awesome 6 Free';font-weight:900"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-white">بوابة شركاء Flow Travel</h1>
+      <p class="text-green-300 text-sm mt-1">Partner Portal</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      <h2 class="text-lg font-bold text-gray-800 mb-6 text-center">تسجيل الدخول</h2>
+
+      <div id="errorMsg" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني</label>
+          <input id="email" type="email" placeholder="partner@company.com"
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">كلمة المرور</label>
+          <div class="relative">
+            <input id="password" type="password" placeholder="••••••••"
+              class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <button type="button" onclick="togglePass()" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <i id="eyeIcon" class="fa-solid fa-eye text-sm" style="font-family:'Font Awesome 6 Free';font-weight:900"></i>
+            </button>
+          </div>
+        </div>
+
+        <button id="loginBtn" onclick="handleLogin()"
+          class="w-full bg-primary text-white rounded-xl py-3 font-bold text-sm hover:bg-green-800 transition-colors flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket" style="font-family:'Font Awesome 6 Free';font-weight:900"></i>
+          دخول
+        </button>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-gray-100 text-center">
+        <a href="/partner-portal/forgot-password.html" class="text-sm text-primary hover:underline">نسيت كلمة المرور؟</a>
+      </div>
+    </div>
+
+    <p class="text-center text-green-400 text-xs mt-6">
+      هذه البوابة مخصصة للشركاء المعتمدين فقط. للاشتراك تواصل معنا.
+    </p>
+  </div>
+
+  <script>
+    function togglePass() {
+      const p = document.getElementById('password');
+      const i = document.getElementById('eyeIcon');
+      if (p.type === 'password') { p.type = 'text'; i.className = 'fa-solid fa-eye-slash text-sm'; }
+      else { p.type = 'password'; i.className = 'fa-solid fa-eye text-sm'; }
+    }
+
+    async function handleLogin() {
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn      = document.getElementById('loginBtn');
+      const err      = document.getElementById('errorMsg');
+
+      if (!email || !password) { showErr('يرجى إدخال البريد الإلكتروني وكلمة المرور'); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-family:\'Font Awesome 6 Free\';font-weight:900"></i> جاري الدخول…';
+
+      try {
+        const { data, error } = await window.db.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        // Verify this user is a partner user (not an admin)
+        const { data: pu, error: puErr } = await window.db
+          .from('partner_users')
+          .select('partner_id, role, is_active')
+          .eq('user_id', data.user.id)
+          .single();
+
+        if (puErr || !pu || !pu.is_active) {
+          await window.db.auth.signOut();
+          throw new Error('هذا الحساب غير مرتبط بأي شريك. تواصل مع مسؤول النظام.');
+        }
+
+        window.location.href = '/partner-portal/dashboard.html';
+      } catch (e) {
+        showErr(e.message === 'Invalid login credentials'
+          ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+          : e.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket" style="font-family:\'Font Awesome 6 Free\';font-weight:900"></i> دخول';
+      }
+    }
+
+    function showErr(msg) {
+      const e = document.getElementById('errorMsg');
+      e.textContent = msg;
+      e.classList.remove('hidden');
+    }
+
+    // If already logged in as partner → redirect
+    document.addEventListener('DOMContentLoaded', async () => {
+      const { data: { session } } = await window.db.auth.getSession();
+      if (session) {
+        const { data: pu } = await window.db.from('partner_users').select('id').eq('user_id', session.user.id).single();
+        if (pu) window.location.href = '/partner-portal/dashboard.html';
+      }
+    });
+
+    document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+  </script>
+</body>
+</html>

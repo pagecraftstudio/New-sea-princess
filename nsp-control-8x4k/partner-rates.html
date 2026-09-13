@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>أسعار الشركاء | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .badge { display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700; }
+    .badge-active   { background:#dcfce7;color:#166534; }
+    .badge-inactive { background:#fee2e2;color:#991b1b; }
+    .badge-discount { background:#eff6ff;color:#1d4ed8; }
+    .badge-net      { background:#fefce8;color:#854d0e; }
+    .badge-markup   { background:#f0fdf4;color:#166534; }
+    .badge-comm     { background:#fdf4ff;color:#7e22ce; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-tags ml-2 text-primary"></i>أسعار الشركاء</h1>
+      <p class="text-sm text-gray-500 mt-0.5">تجاوزات التسعير المخصصة لكل شريك B2B</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="openModal()" class="erp-page-btn bg-primary text-white hover:bg-lightGreen border-transparent">
+        <i class="fa-solid fa-plus ml-1"></i>تجاوز جديد
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="erp-card p-4 mb-4 flex flex-wrap gap-3 items-center">
+    <select id="filterPartner" onchange="filterRates()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1 min-w-[200px]">
+      <option value="">كل الشركاء</option>
+    </select>
+    <select id="filterCategory" onchange="filterRates()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      <option value="">كل الخدمات</option>
+      <option value="all">الكل</option>
+      <option value="hotel">فندق</option>
+      <option value="transfer">نقل</option>
+      <option value="guide">مرشد</option>
+      <option value="activity">نشاط</option>
+      <option value="flight">طيران</option>
+      <option value="visa">تأشيرة</option>
+      <option value="other">أخرى</option>
+    </select>
+    <select id="filterType" onchange="filterRates()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      <option value="">كل الأنواع</option>
+      <option value="discount_pct">خصم %</option>
+      <option value="net_rate">سعر صافي</option>
+      <option value="markup_pct">إضافة %</option>
+      <option value="commission_pct">عمولة %</option>
+    </select>
+    <select id="filterActive" onchange="filterRates()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      <option value="">الكل</option>
+      <option value="true">نشط</option>
+      <option value="false">غير نشط</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="erp-card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b">
+        <tr>
+          <th class="px-4 py-3 text-right font-bold text-gray-600 text-xs">الشريك</th>
+          <th class="px-4 py-3 text-right font-bold text-gray-600 text-xs">الخدمة</th>
+          <th class="px-4 py-3 text-right font-bold text-gray-600 text-xs">نوع التجاوز</th>
+          <th class="px-4 py-3 text-center font-bold text-gray-600 text-xs">القيمة</th>
+          <th class="px-4 py-3 text-right font-bold text-gray-600 text-xs">الصلاحية</th>
+          <th class="px-4 py-3 text-center font-bold text-gray-600 text-xs">الحالة</th>
+          <th class="px-4 py-3 text-center font-bold text-gray-600 text-xs w-20">إجراء</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody" class="divide-y divide-gray-100"></tbody>
+    </table>
+    <p id="emptyState" class="hidden text-center text-gray-400 py-12 text-sm">لا توجد تجاوزات أسعار مطابقة</p>
+  </div>
+
+</main>
+
+<!-- ═══════════════════════ RATE MODAL ═══════════════════════ -->
+<div id="rateModal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <h2 class="font-black text-gray-800 text-lg" id="modalTitle">تجاوز سعر جديد</h2>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="p-6 grid grid-cols-1 gap-4">
+
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">الشريك <span class="text-red-500">*</span></label>
+        <select id="fPartner" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+          <option value="">— اختر شريكاً —</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">خطة التسعير المرتبطة</label>
+        <select id="fRatePlan" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+          <option value="">— من خطة الشريك الافتراضية —</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">فئة الخدمة</label>
+          <select id="fCategory" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="all">الكل</option>
+            <option value="hotel">فندق</option>
+            <option value="transfer">نقل</option>
+            <option value="guide">مرشد</option>
+            <option value="activity">نشاط</option>
+            <option value="ticket">تذاكر</option>
+            <option value="meal">وجبات</option>
+            <option value="flight">طيران</option>
+            <option value="visa">تأشيرة</option>
+            <option value="insurance">تأمين</option>
+            <option value="transport">مركبات</option>
+            <option value="camp">مخيم</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الوجهة (اختياري)</label>
+          <input id="fDest" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="القاهرة">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">نوع التجاوز <span class="text-red-500">*</span></label>
+          <select id="fOverrideType" onchange="updateValueLabel()" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="discount_pct">خصم % من سعر البيع</option>
+            <option value="net_rate">سعر صافي ثابت</option>
+            <option value="markup_pct">إضافة % على التكلفة</option>
+            <option value="commission_pct">عمولة % للشريك</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1" id="valueLabel">القيمة (%)</label>
+          <input id="fValue" type="number" min="0" step="0.01"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">صالح من</label>
+          <input id="fFrom" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">صالح حتى</label>
+          <input id="fTo" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">الحالة</label>
+        <select id="fActive" class="w-full border rounded-lg px-3 py-2 text-sm">
+          <option value="true">نشط</option>
+          <option value="false">غير نشط</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
+        <textarea id="fNotes" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"></textarea>
+      </div>
+
+      <p id="formErr" class="hidden text-red-500 text-xs font-bold"></p>
+    </div>
+
+    <div class="flex items-center justify-between px-6 py-4 border-t bg-gray-50 rounded-b-2xl">
+      <button onclick="deleteRate()" id="btnDelete" class="hidden text-red-500 hover:text-red-700 text-sm font-bold">
+        <i class="fa-solid fa-trash ml-1"></i>حذف
+      </button>
+      <div class="flex gap-2 mr-auto">
+        <button onclick="closeModal()" class="erp-page-btn">إلغاء</button>
+        <button onclick="save()" id="btnSave"
+          class="erp-page-btn bg-primary text-white hover:bg-lightGreen border-transparent">
+          <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 hidden z-50 px-5 py-3 rounded-xl shadow-xl text-sm font-bold text-white"></div>
+
+<script src="/js/admin-nav.js"></script>
+<script>
+const db = window.db;
+let allRates = [], allPartners = [], ratePlans = [], editId = null;
+
+const CAT_LABEL = { hotel:'فندق',transfer:'نقل',guide:'مرشد',activity:'نشاط',ticket:'تذاكر',
+  meal:'وجبات',flight:'طيران',visa:'تأشيرة',insurance:'تأمين',transport:'مركبات',camp:'مخيم',other:'أخرى',all:'الكل' };
+const OT_LABEL  = { discount_pct:'خصم %', net_rate:'سعر صافي', fixed_net:'سعر صافي', markup_pct:'إضافة %', commission_pct:'عمولة %' };
+const OT_BADGE  = { discount_pct:'discount', net_rate:'net', fixed_net:'net', markup_pct:'markup', commission_pct:'comm' };
+
+function toast(msg, ok = true) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-xl text-sm font-bold text-white ${ok ? 'bg-green-600' : 'bg-red-500'}`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await loadAll();
+});
+
+async function loadAll() {
+  const [{ data: rates }, { data: partners }, { data: plans }] = await Promise.all([
+    db.from('partner_rates')
+      .select('*, b2b_partners(legal_name,trading_name), rate_plans(name_ar,code)')
+      .order('created_at', { ascending: false }),
+    db.from('b2b_partners').select('id,legal_name,trading_name').eq('is_active', true).order('legal_name'),
+    db.from('rate_plans').select('id,name_ar,code').eq('is_active', true).order('name_ar'),
+  ]);
+
+  allRates    = rates    || [];
+  allPartners = partners || [];
+  ratePlans   = plans    || [];
+
+  // Populate partner filter + modal dropdown
+  const partnerOpts = allPartners.map(p =>
+    `<option value="${p.id}">${p.legal_name}${p.trading_name ? ' (' + p.trading_name + ')' : ''}</option>`
+  ).join('');
+  document.getElementById('filterPartner').innerHTML = '<option value="">كل الشركاء</option>' + partnerOpts;
+  document.getElementById('fPartner').innerHTML      = '<option value="">— اختر شريكاً —</option>' + partnerOpts;
+
+  // Populate rate plan dropdown
+  document.getElementById('fRatePlan').innerHTML =
+    '<option value="">— من خطة الشريك الافتراضية —</option>' +
+    ratePlans.map(p => `<option value="${p.id}">${p.name_ar} (${p.code})</option>`).join('');
+
+  filterRates();
+}
+
+function filterRates() {
+  const pid  = document.getElementById('filterPartner').value;
+  const cat  = document.getElementById('filterCategory').value;
+  const type = document.getElementById('filterType').value;
+  const act  = document.getElementById('filterActive').value;
+
+  const filtered = allRates.filter(r =>
+    (!pid  || r.partner_id === pid) &&
+    (!cat  || r.service_category === cat) &&
+    (!type || r.override_type === type) &&
+    (act === '' || String(r.is_active) === act)
+  );
+
+  renderTable(filtered);
+}
+
+function renderTable(list) {
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (!list.length) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG') : '—';
+  const fmtVal  = r => (r.override_type === 'net_rate' || r.override_type === 'fixed_net')
+    ? r.override_value?.toLocaleString('ar-EG') + ' EGP'
+    : r.override_value + '%';
+
+  tbody.innerHTML = list.map(r => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-4 py-3">
+        <p class="font-bold text-gray-800 text-sm">${r.b2b_partners?.legal_name || '—'}</p>
+        ${r.b2b_partners?.trading_name ? `<p class="text-xs text-gray-400">${r.b2b_partners.trading_name}</p>` : ''}
+      </td>
+      <td class="px-4 py-3 text-sm text-gray-700">
+        ${CAT_LABEL[r.service_category] || r.service_category}
+        ${r.destination ? `<span class="text-xs text-gray-400 block">${r.destination}</span>` : ''}
+      </td>
+      <td class="px-4 py-3">
+        <span class="badge badge-${OT_BADGE[r.override_type]}">${OT_LABEL[r.override_type]}</span>
+        ${r.rate_plans ? `<span class="text-xs text-gray-400 block mt-0.5">${r.rate_plans.name_ar}</span>` : ''}
+      </td>
+      <td class="px-4 py-3 text-center font-black text-gray-800">${fmtVal(r)}</td>
+      <td class="px-4 py-3 text-xs text-gray-500">
+        ${fmtDate(r.valid_from)} — ${fmtDate(r.valid_to)}
+      </td>
+      <td class="px-4 py-3 text-center">
+        <span class="badge badge-${r.is_active ? 'active' : 'inactive'}">${r.is_active ? 'نشط' : 'غير نشط'}</span>
+      </td>
+      <td class="px-4 py-3 text-center">
+        <button onclick="openEdit('${r.id}')" class="text-primary hover:text-lightGreen p-1.5 rounded">
+          <i class="fa-solid fa-pen text-xs"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function updateValueLabel() {
+  const type = document.getElementById('fOverrideType').value;
+  document.getElementById('valueLabel').textContent = (type === 'net_rate' || type === 'fixed_net') ? 'السعر الصافي' : 'القيمة (%)';
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+function openModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = 'تجاوز سعر جديد';
+  document.getElementById('btnDelete').classList.add('hidden');
+  clearForm();
+  document.getElementById('rateModal').classList.remove('hidden');
+}
+
+async function openEdit(id) {
+  editId = id;
+  const r = allRates.find(x => x.id === id);
+  if (!r) return;
+
+  document.getElementById('modalTitle').textContent = 'تعديل تجاوز السعر';
+  document.getElementById('btnDelete').classList.remove('hidden');
+
+  document.getElementById('fPartner').value      = r.partner_id || '';
+  document.getElementById('fRatePlan').value     = r.rate_plan_id || '';
+  document.getElementById('fCategory').value     = r.service_category || 'all';
+  document.getElementById('fDest').value         = r.destination || '';
+  document.getElementById('fOverrideType').value = r.override_type || 'discount_pct';
+  document.getElementById('fValue').value        = r.override_value || 0;
+  document.getElementById('fFrom').value         = r.valid_from || '';
+  document.getElementById('fTo').value           = r.valid_to || '';
+  document.getElementById('fActive').value       = String(r.is_active);
+  document.getElementById('fNotes').value        = r.notes || '';
+  updateValueLabel();
+
+  document.getElementById('rateModal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('rateModal').classList.add('hidden');
+  editId = null;
+}
+
+function clearForm() {
+  document.getElementById('fPartner').value      = '';
+  document.getElementById('fRatePlan').value     = '';
+  document.getElementById('fCategory').value     = 'all';
+  document.getElementById('fDest').value         = '';
+  document.getElementById('fOverrideType').value = 'discount_pct';
+  document.getElementById('fValue').value        = 0;
+  document.getElementById('fFrom').value         = '';
+  document.getElementById('fTo').value           = '';
+  document.getElementById('fActive').value       = 'true';
+  document.getElementById('fNotes').value        = '';
+  document.getElementById('formErr').classList.add('hidden');
+  updateValueLabel();
+}
+
+function showErr(msg) {
+  const el = document.getElementById('formErr');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function save() {
+  const partnerId = document.getElementById('fPartner').value;
+  const value     = parseFloat(document.getElementById('fValue').value);
+  if (!partnerId)   { showErr('اختر الشريك'); return; }
+  if (isNaN(value)) { showErr('القيمة مطلوبة'); return; }
+
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i>';
+
+  const { data: session } = await db.auth.getSession();
+  const payload = {
+    partner_id:        partnerId,
+    rate_plan_id:      document.getElementById('fRatePlan').value || null,
+    service_category:  document.getElementById('fCategory').value,
+    destination:       document.getElementById('fDest').value.trim() || null,
+    override_type:     document.getElementById('fOverrideType').value,
+    override_value:    value,
+    valid_from:        document.getElementById('fFrom').value || null,
+    valid_to:          document.getElementById('fTo').value   || null,
+    is_active:         document.getElementById('fActive').value === 'true',
+    notes:             document.getElementById('fNotes').value.trim() || null,
+  };
+
+  try {
+    if (editId) {
+      const { error } = await db.from('partner_rates').update(payload).eq('id', editId);
+      if (error) throw error;
+    } else {
+      payload.created_by = session?.session?.user?.id;
+      const { error } = await db.from('partner_rates').insert(payload);
+      if (error) throw error;
+    }
+    toast(editId ? 'تم تحديث التجاوز' : 'تم إضافة تجاوز السعر');
+    closeModal();
+    await loadAll();
+  } catch (e) {
+    showErr('خطأ: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk ml-1"></i>حفظ';
+  }
+}
+
+async function deleteRate() {
+  if (!editId) return;
+  if (!confirm('حذف تجاوز السعر هذا؟')) return;
+  const { error } = await db.from('partner_rates').delete().eq('id', editId);
+  if (error) { showErr('خطأ: ' + error.message); return; }
+  toast('تم الحذف');
+  closeModal();
+  await loadAll();
+}
+</script>
+</body>
+</html>

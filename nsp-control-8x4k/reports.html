@@ -1,0 +1,1743 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التقارير المالية | نيو سي برنسيس فرع الزقازيق</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ─── Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Cairo', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+    /* ─── Sidebar ───────────────────────────────────────── */
+
+    .nav-link.active i { color: #DAA520; }
+
+    /* ─── Page header ───────────────────────────────────── */
+    .page-header {
+      background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 60%, #1a4d1e 100%);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(27,94,32,.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .page-header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .page-header h1 { color: #fff; font-size: 20px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px; }
+    .page-header h1 i { color: #DAA520; font-size: 18px; }
+    .page-header p { color: rgba(255,255,255,.65); font-size: 12px; margin: 4px 0 0; }
+
+    /* ─── Tabs ──────────────────────────────────────────── */
+    .tabs-wrapper {
+      background: #fff;
+      border-radius: 14px;
+      padding: 6px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #d1d5db transparent;
+    }
+    .tabs-wrapper::-webkit-scrollbar { height: 4px; }
+    .tabs-wrapper::-webkit-scrollbar-track { background: transparent; }
+    .tabs-wrapper::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    .tabs-inner { display: flex; gap: 4px; min-width: max-content; }
+    .report-tab {
+      padding: 7px 14px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #6b7280;
+      transition: all .15s;
+      white-space: nowrap;
+      border: 1.5px solid transparent;
+      background: transparent;
+    }
+    .report-tab:hover { background: #f3f4f6; color: #111827; }
+    .report-tab.active {
+      background: #1B5E20;
+      color: #fff;
+      border-color: #1B5E20;
+      box-shadow: 0 2px 8px rgba(27,94,32,.3);
+    }
+
+    /* ─── Filters ───────────────────────────────────────── */
+    .filter-panel {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .filter-label { font-size: 12px; font-weight: 600; color: #6b7280; white-space: nowrap; }
+    .filter-input {
+      border: 1.5px solid #e5e7eb;
+      border-radius: 9px;
+      padding: 7px 11px;
+      font-size: 13px;
+      background: #f9fafb;
+      font-family: 'Cairo', sans-serif;
+      color: #111827;
+      transition: border-color .15s;
+      outline: none;
+    }
+    .filter-input:focus { border-color: #1B5E20; background: #fff; }
+    .preset-group { display: flex; gap: 5px; }
+    .btn-preset {
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid #e5e7eb;
+      background: #f9fafb;
+      color: #4b5563;
+      transition: all .15s;
+      font-family: 'Cairo', sans-serif;
+    }
+    .btn-preset:hover { border-color: #1B5E20; color: #1B5E20; background: #f0fdf4; }
+    .btn-primary {
+      background: linear-gradient(135deg, #1B5E20, #2E7D32);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+      font-family: 'Cairo', sans-serif;
+      box-shadow: 0 2px 6px rgba(27,94,32,.25);
+    }
+    .btn-primary:hover { box-shadow: 0 4px 12px rgba(27,94,32,.35); transform: translateY(-1px); }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      padding: 8px 14px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid #e5e7eb;
+      font-family: 'Cairo', sans-serif;
+      transition: all .15s;
+    }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .btn-gold {
+      background: linear-gradient(135deg, #B8860B, #DAA520);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      font-family: 'Cairo', sans-serif;
+      box-shadow: 0 2px 6px rgba(184,134,11,.25);
+      transition: all .15s;
+    }
+    .btn-gold:hover { box-shadow: 0 4px 12px rgba(184,134,11,.35); transform: translateY(-1px); }
+
+    /* ─── Integrity banner ──────────────────────────────── */
+    .integrity-ok {
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border: 1px solid #86efac;
+      color: #15803d;
+      border-radius: 12px;
+    }
+    .integrity-err {
+      background: linear-gradient(135deg, #fef2f2, #fee2e2);
+      border: 1px solid #fca5a5;
+      color: #b91c1c;
+      border-radius: 12px;
+    }
+
+    /* ─── Summary cards ─────────────────────────────────── */
+    .stat-mini {
+      background: #fff;
+      border-radius: 13px;
+      padding: 16px 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      border: 1px solid #f0f0f0;
+      transition: box-shadow .15s;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stat-mini:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+    .stat-icon {
+      width: 42px; height: 42px;
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .stat-icon.green { background: #dcfce7; color: #16a34a; }
+    .stat-icon.red   { background: #fee2e2; color: #dc2626; }
+    .stat-icon.blue  { background: #dbeafe; color: #1d4ed8; }
+    .stat-icon.gold  { background: #fef9c3; color: #92400e; }
+    .stat-icon.gray  { background: #f3f4f6; color: #4b5563; }
+    .stat-label { font-size: 11px; color: #9ca3af; font-weight: 500; margin-bottom: 3px; }
+    .stat-value { font-size: 15px; font-weight: 700; color: #111827; }
+
+    /* ─── Report container ──────────────────────────────── */
+    .report-container {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      overflow: hidden;
+    }
+    .report-title-bar {
+      padding: 16px 20px;
+      border-bottom: 2px solid #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .report-title-bar h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1B5E20;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .report-title-bar h2::before {
+      content: '';
+      display: inline-block;
+      width: 4px; height: 18px;
+      background: linear-gradient(180deg, #1B5E20, #B8860B);
+      border-radius: 2px;
+    }
+
+    /* ─── Tables ────────────────────────────────────────── */
+    .rpt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .rpt-table thead { position: sticky; top: 0; z-index: 1; }
+    .rpt-table th {
+      background: #f8fafc;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: #64748b;
+      padding: 11px 14px;
+      border-bottom: 2px solid #e2e8f0;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .rpt-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+      transition: background .1s;
+    }
+    .rpt-table tbody tr:hover td { background: #f8fafc; }
+    .rpt-table .section-header td {
+      background: linear-gradient(90deg, #e8f5e9, #f0fdf4);
+      font-weight: 700;
+      color: #1B5E20;
+      font-size: 12px;
+      padding: 9px 14px;
+    }
+    .rpt-table .total-row td {
+      background: #f0fdf4;
+      font-weight: 700;
+      border-top: 2px solid #bbf7d0;
+      color: #15803d;
+    }
+    .rpt-table .grand-total td {
+      background: linear-gradient(90deg, #1B5E20, #2E7D32);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13.5px;
+      padding: 13px 14px;
+    }
+
+    /* ─── Numbers & colors ──────────────────────────────── */
+    .num { font-variant-numeric: tabular-nums; font-family: 'Cairo', monospace; text-align: left; direction: ltr; }
+    .pos { color: #16a34a; font-weight: 600; }
+    .neg { color: #dc2626; font-weight: 600; }
+    .debit-col  { color: #1e40af; font-weight: 600; }
+    .credit-col { color: #15803d; font-weight: 600; }
+
+    /* ─── Aging buckets ─────────────────────────────────── */
+    .bucket-current { color: #16a34a; font-weight: 600; }
+    .bucket-30      { color: #d97706; font-weight: 600; }
+    .bucket-60      { color: #ea580c; font-weight: 600; }
+    .bucket-90      { color: #dc2626; font-weight: 600; }
+
+    /* ─── Badges ────────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 9px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-red   { background: #fee2e2; color: #b91c1c; }
+    .badge-blue  { background: #dbeafe; color: #1e40af; }
+    .badge-gold  { background: #fef3c7; color: #92400e; }
+    .badge-gray  { background: #f3f4f6; color: #374151; }
+
+    /* ─── Loading & empty ───────────────────────────────── */
+    .spinner {
+      display: inline-block; width: 22px; height: 22px;
+      border: 3px solid #e2e8f0; border-top-color: #1B5E20;
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #reportEmpty i { color: #cbd5e1; }
+    #reportEmpty p { color: #94a3b8; }
+
+    /* ─── Scrollbar on report body ──────────────────────── */
+    #reportContent { overflow-x: auto; }
+    #reportContent::-webkit-scrollbar { height: 5px; }
+    #reportContent::-webkit-scrollbar-track { background: #f1f5f9; }
+    #reportContent::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    /* ─── Print ─────────────────────────────────────────── */
+    @media print {
+      aside, header, .no-print { display: none !important; }
+      main { padding: 0 !important; }
+      .rpt-table th, .rpt-table td { font-size: 11px; padding: 6px 8px; }
+    }
+  </style>
+  <script src="/js/admin-nav.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<div id="adminNavMount"></div>
+
+  <!-- MAIN -->
+  <main class="flex-1 p-4 md:p-6 overflow-x-hidden" aria-label="المحتوى الرئيسي">
+
+    <!-- Header -->
+    <div class="page-header no-print">
+      <div>
+        <h1><i class="fa-solid fa-file-chart-column"></i> التقارير المالية</h1>
+        <p>جميع التقارير مشتقة من دفتر الأستاذ — القيود المحاسبية المرحّلة فقط</p>
+      </div>
+      <div class="flex gap-2" style="position:relative;z-index:1;">
+        <button onclick="printReport()" class="btn-gold flex items-center gap-2">
+          <i class="fa-solid fa-print"></i> طباعة
+        </button>
+        <button onclick="exportCSV()" class="btn-secondary flex items-center gap-2" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.25);">
+          <i class="fa-solid fa-file-csv"></i> CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Integrity Banner -->
+    <div id="integrityBanner" class="integrity-ok rounded-xl p-3 mb-5 flex items-center gap-3 text-sm font-600 no-print hidden">
+      <i class="fa-solid fa-shield-check text-lg"></i>
+      <span id="integrityMsg">جاري فحص سلامة الميزانية…</span>
+    </div>
+
+    <!-- Report Tabs -->
+    <div class="tabs-wrapper no-print">
+      <div class="tabs-inner">
+        <button class="report-tab active" onclick="switchReport('trial_balance', this)"><i class="fa-solid fa-scale-balanced fa-xs ml-1"></i> ميزان المراجعة</button>
+        <button class="report-tab" onclick="switchReport('general_ledger', this)"><i class="fa-solid fa-book fa-xs ml-1"></i> دفتر الأستاذ</button>
+        <button class="report-tab" onclick="switchReport('journal_report', this)"><i class="fa-solid fa-journal-whills fa-xs ml-1"></i> القيود اليومية</button>
+        <button class="report-tab" onclick="switchReport('pnl', this)"><i class="fa-solid fa-chart-line fa-xs ml-1"></i> الأرباح والخسائر</button>
+        <button class="report-tab" onclick="switchReport('balance_sheet', this)"><i class="fa-solid fa-landmark fa-xs ml-1"></i> الميزانية العمومية</button>
+        <button class="report-tab" onclick="switchReport('cash_flow', this)"><i class="fa-solid fa-water fa-xs ml-1"></i> التدفق النقدي</button>
+        <button class="report-tab" onclick="switchReport('ar_aging', this)"><i class="fa-solid fa-hourglass-half fa-xs ml-1"></i> ذمم مدينة</button>
+        <button class="report-tab" onclick="switchReport('ap_aging', this)"><i class="fa-solid fa-hourglass fa-xs ml-1"></i> ذمم دائنة</button>
+        <button class="report-tab" onclick="switchReport('customer_statement', this)"><i class="fa-solid fa-user fa-xs ml-1"></i> كشف العميل</button>
+        <button class="report-tab" onclick="switchReport('supplier_statement', this)"><i class="fa-solid fa-truck fa-xs ml-1"></i> كشف المورد</button>
+        <button class="report-tab" onclick="switchReport('revenue_report', this)"><i class="fa-solid fa-arrow-trend-up fa-xs ml-1"></i> الإيرادات</button>
+        <button class="report-tab" onclick="switchReport('expense_report', this)"><i class="fa-solid fa-arrow-trend-down fa-xs ml-1"></i> المصاريف</button>
+        <button class="report-tab" onclick="switchReport('tax_report', this)"><i class="fa-solid fa-percent fa-xs ml-1"></i> الضرائب</button>
+        <button class="report-tab" onclick="switchReport('package_profit', this)"><i class="fa-solid fa-suitcase fa-xs ml-1"></i> ربحية الباقات</button>
+        <button class="report-tab" onclick="switchReport('booking_profit', this)"><i class="fa-solid fa-calendar-check fa-xs ml-1"></i> ربحية الحجوزات</button>
+        <button class="report-tab" onclick="switchReport('costcenter_profit', this)"><i class="fa-solid fa-building fa-xs ml-1"></i> مراكز التكلفة</button>
+        <button class="report-tab" onclick="switchReport('payment_collection', this)"><i class="fa-solid fa-hand-holding-dollar fa-xs ml-1"></i> التحصيل</button>
+        <button class="report-tab" onclick="switchReport('cash_bank_report', this)"><i class="fa-solid fa-vault fa-xs ml-1"></i> الخزينة</button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div id="filtersBar" class="filter-panel no-print">
+      <i class="fa-solid fa-filter text-gray-400 text-sm"></i>
+      <span class="filter-label">من:</span>
+      <input type="date" id="dateFrom" class="filter-input" onchange="loadReport()">
+      <span class="filter-label">إلى:</span>
+      <input type="date" id="dateTo" class="filter-input" onchange="loadReport()">
+      <div id="extraFilters" class="flex gap-2 flex-wrap"></div>
+      <div class="preset-group">
+        <button onclick="setDatePreset('month')" class="btn-preset">الشهر</button>
+        <button onclick="setDatePreset('quarter')" class="btn-preset">الربع</button>
+        <button onclick="setDatePreset('year')" class="btn-preset">السنة</button>
+        <button onclick="setDatePreset('all')" class="btn-preset">الكل</button>
+      </div>
+      <button onclick="loadReport()" class="btn-primary" style="margin-right: auto;"><i class="fa-solid fa-rotate-right ml-1"></i>تحديث</button>
+    </div>
+
+    <!-- Summary Cards (above report) -->
+    <div id="reportMeta" class="mb-4 hidden">
+      <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+    </div>
+
+    <!-- Report Body -->
+    <div class="report-container">
+      <div class="report-title-bar no-print" id="reportTitleBar" style="display:none;">
+        <h2 id="reportTitle"></h2>
+      </div>
+      <div id="reportLoading" class="flex justify-center items-center py-20 hidden">
+        <div class="spinner"></div>
+        <span class="mr-3 text-gray-400 text-sm">جاري تحميل التقرير…</span>
+      </div>
+      <div id="reportEmpty" class="flex flex-col items-center justify-center py-20 hidden">
+        <i class="fa-solid fa-folder-open text-5xl mb-4" style="color:#cbd5e1;"></i>
+        <p style="color:#94a3b8;font-size:15px;">لا توجد بيانات للفترة المحددة</p>
+      </div>
+      <div id="reportContent"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let currentReport = 'trial_balance';
+let reportData    = [];
+let extraFilter1  = null; // customer_id / supplier_id etc.
+
+// ── Init ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+
+  // Default date range: current year
+  setDatePreset('year', false);
+
+  await runIntegrityCheck();
+  await loadReport();
+});
+
+// ═══════════════════════════════════════════════════════
+//  DATE PRESETS
+// ═══════════════════════════════════════════════════════
+function setDatePreset(preset, reload = true) {
+  const today = new Date();
+  let from, to = today.toISOString().slice(0,10);
+
+  if (preset === 'month') {
+    from = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
+  } else if (preset === 'quarter') {
+    const qStart = Math.floor(today.getMonth() / 3) * 3;
+    from = new Date(today.getFullYear(), qStart, 1).toISOString().slice(0,10);
+  } else if (preset === 'year') {
+    from = new Date(today.getFullYear(), 0, 1).toISOString().slice(0,10);
+  } else {
+    from = '2020-01-01';
+    to   = '2099-12-31';
+  }
+
+  document.getElementById('dateFrom').value = from;
+  document.getElementById('dateTo').value   = to;
+  if (reload) loadReport();
+}
+
+// ═══════════════════════════════════════════════════════
+//  TAB SWITCH
+// ═══════════════════════════════════════════════════════
+function switchReport(name, btn) {
+  currentReport = name;
+  document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Reset extra filters
+  document.getElementById('extraFilters').innerHTML = '';
+  extraFilter1 = null;
+
+  // Add entity selector for statement reports
+  if (name === 'customer_statement') {
+    injectCustomerFilter();
+  } else if (name === 'supplier_statement') {
+    injectSupplierFilter();
+  }
+
+  loadReport();
+}
+
+async function injectCustomerFilter() {
+  const { data } = await db.from('nsp_invoices')
+    .select('customer_id, customer_name').not('customer_id','is',null)
+    .order('customer_name');
+  const unique = [...new Map((data||[]).map(r => [r.customer_id, r])).values()];
+
+  const sel = document.createElement('select');
+  sel.className = 'filter-input';
+  sel.id = 'filterCustomer';
+  sel.innerHTML = '<option value="">— اختر العميل —</option>' +
+    unique.map(r => `<option value="${r.customer_id}">${r.customer_name||r.customer_id}</option>`).join('');
+  sel.onchange = () => { extraFilter1 = sel.value; loadReport(); };
+  document.getElementById('extraFilters').appendChild(sel);
+}
+
+async function injectSupplierFilter() {
+  const { data } = await db.from('suppliers').select('id, name_ar, name_en').order('name_ar');
+  const sel = document.createElement('select');
+  sel.className = 'filter-input';
+  sel.id = 'filterSupplier';
+  sel.innerHTML = '<option value="">— اختر المورد —</option>' +
+    (data||[]).map(r => `<option value="${r.id}">${r.name_ar||r.name_en}</option>`).join('');
+  sel.onchange = () => { extraFilter1 = sel.value; loadReport(); };
+  document.getElementById('extraFilters').appendChild(sel);
+}
+
+// ═══════════════════════════════════════════════════════
+//  INTEGRITY CHECK
+// ═══════════════════════════════════════════════════════
+async function runIntegrityCheck() {
+  const banner = document.getElementById('integrityBanner');
+  const msg    = document.getElementById('integrityMsg');
+  banner.classList.remove('hidden');
+  try {
+    const { data, error } = await db.rpc('check_balance_sheet_integrity');
+    if (error) throw error;
+    const row = data?.[0];
+    if (!row) { banner.classList.add('hidden'); return; }
+
+    if (row.is_balanced) {
+      banner.className = 'integrity-ok rounded-xl p-3 mb-5 flex items-center gap-3 text-sm font-600 no-print';
+      msg.innerHTML = `<i class="fa-solid fa-shield-check text-lg ml-1"></i> الميزانية متوازنة ✓ — الأصول <b>${fmt(row.total_assets)} ج.م</b> = الخصوم <b>${fmt(row.total_liabilities)} ج.م</b> + حقوق الملكية <b>${fmt(row.total_equity)} ج.م</b>`;
+    } else {
+      banner.className = 'integrity-err rounded-xl p-3 mb-5 flex items-center gap-3 text-sm font-600 no-print';
+      msg.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-lg ml-1"></i> تحذير: الميزانية غير متوازنة! الفرق = <b>${fmt(row.difference)} ج.م</b> — يرجى مراجعة القيود المحاسبية`;
+    }
+  } catch(e) {
+    banner.classList.add('hidden');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  LOAD + DISPATCH
+// ═══════════════════════════════════════════════════════
+async function loadReport() {
+  const from = document.getElementById('dateFrom').value || '2020-01-01';
+  const to   = document.getElementById('dateTo').value   || '2099-12-31';
+
+  showLoading(true);
+  clearReport();
+
+  try {
+    const handlers = {
+      trial_balance:       () => loadTrialBalance(from, to),
+      general_ledger:      () => loadGeneralLedger(from, to),
+      journal_report:      () => loadJournalReport(from, to),
+      pnl:                 () => loadPnL(from, to),
+      balance_sheet:       () => loadBalanceSheet(to),
+      cash_flow:           () => loadCashFlow(from, to),
+      ar_aging:            () => loadArAging(),
+      ap_aging:            () => loadApAging(),
+      customer_statement:  () => loadCustomerStatement(from, to),
+      supplier_statement:  () => loadSupplierStatement(from, to),
+      revenue_report:      () => loadRevenueReport(from, to),
+      expense_report:      () => loadExpenseReport(from, to),
+      tax_report:          () => loadTaxReport(from, to),
+      package_profit:      () => loadPackageProfitability(),
+      booking_profit:      () => loadBookingProfitability(),
+      costcenter_profit:   () => loadCostCenterProfitability(from, to),
+      payment_collection:  () => loadPaymentCollection(from, to),
+      cash_bank_report:    () => loadCashBankReport(),
+    };
+    await (handlers[currentReport] || (() => {}))();
+  } catch(e) {
+    showError(e.message || 'خطأ في تحميل التقرير');
+  }
+
+  showLoading(false);
+}
+
+// ═══════════════════════════════════════════════════════
+//  REPORT IMPLEMENTATIONS
+// ═══════════════════════════════════════════════════════
+
+// 1. TRIAL BALANCE
+async function loadTrialBalance(from, to) {
+  const { data, error } = await db.from('trial_balance').select('*');
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('ميزان المراجعة');
+
+  // Filter by date: trial balance is cumulative — we use all data up to 'to'
+  // but the view is static. Show summary cards
+  const totalDebit  = reportData.reduce((s,r) => s + parseFloat(r.total_debit||0), 0);
+  const totalCredit = reportData.reduce((s,r) => s + parseFloat(r.total_credit||0), 0);
+  const diff = Math.abs(totalDebit - totalCredit);
+
+  setSummaryCards([
+    { label:'إجمالي المدين', value: fmt(totalDebit) + ' ج.م', icon:'fa-arrow-up', color:'text-blue-600' },
+    { label:'إجمالي الدائن', value: fmt(totalCredit) + ' ج.م', icon:'fa-arrow-down', color:'text-green-600' },
+    { label:'الفرق', value: fmt(diff) + ' ج.م', icon:'fa-balance-scale', color: diff < 0.01 ? 'text-green-600' : 'text-red-600' },
+    { label:'عدد الحسابات', value: reportData.length, icon:'fa-list', color:'text-gray-600' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  // Group by type
+  const types = {
+    asset:       { label:'الأصول',             rows:[] },
+    liability:   { label:'الخصوم',             rows:[] },
+    equity:      { label:'حقوق الملكية',       rows:[] },
+    revenue:     { label:'الإيرادات',          rows:[] },
+    direct_cost: { label:'التكاليف المباشرة',  rows:[] },
+    expense:     { label:'المصاريف التشغيلية', rows:[] },
+  };
+  reportData.forEach(r => (types[r.type]?.rows || (types.expense.rows)).push(r));
+
+  let html = `<table class="rpt-table w-full">
+    <thead><tr>
+      <th>كود</th><th>اسم الحساب</th><th>النوع</th>
+      <th class="text-left">مدين</th><th class="text-left">دائن</th><th class="text-left">الرصيد</th>
+    </tr></thead><tbody>`;
+
+  Object.values(types).forEach(group => {
+    if (!group.rows.length) return;
+    const gDebit  = group.rows.reduce((s,r) => s + parseFloat(r.total_debit||0),  0);
+    const gCredit = group.rows.reduce((s,r) => s + parseFloat(r.total_credit||0), 0);
+    html += `<tr class="section-header"><td colspan="6">▸ ${group.label}</td></tr>`;
+    group.rows.forEach(r => {
+      const nb = parseFloat(r.net_balance||0);
+      html += `<tr>
+        <td class="text-gray-400 text-xs">${r.code||''}</td>
+        <td class="font-medium">${r.name_ar||r.name_en||''}</td>
+        <td>${typeBadge(r.type)}</td>
+        <td class="num debit-col">${r.total_debit > 0 ? fmt(r.total_debit) : ''}</td>
+        <td class="num credit-col">${r.total_credit > 0 ? fmt(r.total_credit) : ''}</td>
+        <td class="num font-bold ${nb >= 0 ? 'pos' : 'neg'}">${fmt(Math.abs(nb))} ${nb < 0 ? 'د' : ''}</td>
+      </tr>`;
+    });
+    html += `<tr class="total-row"><td colspan="3" class="font-bold">مجموع ${group.label}</td>
+      <td class="num debit-col">${fmt(gDebit)}</td>
+      <td class="num credit-col">${fmt(gCredit)}</td>
+      <td class="num">${fmt(Math.abs(gDebit - gCredit))}</td></tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td colspan="3">الإجمالي الكلي</td>
+    <td class="num">${fmt(totalDebit)}</td>
+    <td class="num">${fmt(totalCredit)}</td>
+    <td class="num ${diff < 0.01 ? '' : 'text-yellow-300'}">${diff < 0.01 ? '✓ متوازن' : fmt(diff)}</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 2. GENERAL LEDGER
+async function loadGeneralLedger(from, to) {
+  let q = db.from('general_ledger').select('*')
+    .gte('txn_date', from).lte('txn_date', to)
+    .order('txn_date').order('entry_number').limit(500);
+  const { data, error } = await q;
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('دفتر الأستاذ العام');
+  const totalDebit  = reportData.reduce((s,r) => s + parseFloat(r.debit||0),  0);
+  const totalCredit = reportData.reduce((s,r) => s + parseFloat(r.credit||0), 0);
+  setSummaryCards([
+    { label:'عدد القيود', value: new Set(reportData.map(r=>r.journal_entry_id)).size, icon:'fa-book', color:'text-primary' },
+    { label:'إجمالي المدين', value: fmt(totalDebit) + ' ج.م', icon:'fa-arrow-up', color:'text-blue-600' },
+    { label:'إجمالي الدائن', value: fmt(totalCredit) + ' ج.م', icon:'fa-arrow-down', color:'text-green-600' },
+    { label:'عدد السطور', value: reportData.length, icon:'fa-list-ol', color:'text-gray-500' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>التاريخ</th><th>رقم القيد</th><th>كود الحساب</th><th>اسم الحساب</th>
+      <th>الوصف</th><th class="text-left">مدين</th><th class="text-left">دائن</th>
+      <th>العملة</th><th>مركز التكلفة</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="text-xs text-gray-500">${r.txn_date||''}</td>
+      <td class="font-mono text-xs">${r.entry_number||''}</td>
+      <td class="text-xs text-gray-400">${r.account_code||''}</td>
+      <td class="font-medium">${r.account_name_ar||r.account_name_en||''}</td>
+      <td class="text-xs text-gray-500">${r.line_description||r.entry_description||''}</td>
+      <td class="num debit-col">${r.debit > 0 ? fmt(r.debit) : ''}</td>
+      <td class="num credit-col">${r.credit > 0 ? fmt(r.credit) : ''}</td>
+      <td class="text-xs">${r.currency||'EGP'}</td>
+      <td class="text-xs text-gray-400">${r.cost_center_ar||''}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="total-row">
+    <td colspan="5" class="font-bold">الإجمالي</td>
+    <td class="num debit-col">${fmt(totalDebit)}</td>
+    <td class="num credit-col">${fmt(totalCredit)}</td>
+    <td colspan="2"></td>
+  </tr></tbody></table>`;
+
+  if (reportData.length === 500) {
+    html += `<div class="p-3 text-center text-sm text-amber-600 bg-amber-50">⚠ يُعرض أول 500 سطر. قلّص نطاق التاريخ للاطلاع على تفاصيل أكثر.</div>`;
+  }
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 3. JOURNAL REPORT
+async function loadJournalReport(from, to) {
+  const { data, error } = await db.from('journal_report').select('*')
+    .gte('entry_date', from).lte('entry_date', to)
+    .order('entry_date', { ascending: false }).limit(300);
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('تقرير القيود اليومية');
+  const posted  = reportData.filter(r => r.status === 'posted').length;
+  const pending = reportData.filter(r => r.status !== 'posted').length;
+  setSummaryCards([
+    { label:'إجمالي القيود', value: reportData.length, icon:'fa-book-open', color:'text-primary' },
+    { label:'مرحّلة', value: posted, icon:'fa-check-circle', color:'text-green-600' },
+    { label:'معلقة', value: pending, icon:'fa-clock', color:'text-amber-600' },
+    { label:'إجمالي المدين', value: fmt(reportData.reduce((s,r)=>s+parseFloat(r.total_debit||0),0)) + ' ج.م', icon:'fa-sigma', color:'text-blue-600' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>التاريخ</th><th>رقم القيد</th><th>الوصف</th><th>المرجع</th>
+      <th class="text-left">إجمالي مدين</th><th class="text-left">إجمالي دائن</th>
+      <th>الفترة المالية</th><th>الحالة</th><th>بواسطة</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    const balanced = Math.abs((r.total_debit||0) - (r.total_credit||0)) < 0.01;
+    html += `<tr>
+      <td class="text-xs">${r.entry_date||''}</td>
+      <td class="font-mono text-xs font-bold">${r.entry_number||''}</td>
+      <td class="text-sm">${r.description||''}</td>
+      <td class="text-xs text-gray-400">${r.reference_type ? r.reference_type + ':' + (r.reference_id||'').slice(0,8) : ''}</td>
+      <td class="num debit-col">${fmt(r.total_debit||0)}</td>
+      <td class="num credit-col">${fmt(r.total_credit||0)}</td>
+      <td class="text-xs text-gray-400">${r.period_name||''}</td>
+      <td>${statusBadge(r.status)} ${!balanced ? '<span class="badge badge-red">غير متوازن!</span>' : ''}</td>
+      <td class="text-xs text-gray-400">${r.created_by_email||''}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 4. P&L
+async function loadPnL(from, to) {
+  const { data, error } = await db.from('profit_and_loss').select('*');
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('قائمة الأرباح والخسائر');
+
+  const revenue     = reportData.filter(r => r.type==='revenue').reduce((s,r) => s+parseFloat(r.net_amount||0),0);
+  const directCost  = reportData.filter(r => r.type==='direct_cost').reduce((s,r) => s+parseFloat(r.net_amount||0),0);
+  const opex        = reportData.filter(r => r.type==='expense').reduce((s,r) => s+parseFloat(r.net_amount||0),0);
+  const grossProfit = revenue - directCost;
+  const netProfit   = grossProfit - opex;
+  const grossMargin = revenue > 0 ? (grossProfit/revenue*100).toFixed(1) : 0;
+
+  setSummaryCards([
+    { label:'الإيرادات', value: fmt(revenue) + ' ج.م', icon:'fa-arrow-trend-up', color:'text-green-600' },
+    { label:'مجمل الربح', value: fmt(grossProfit) + ' ج.م', icon:'fa-chart-bar', color: grossProfit>=0?'text-green-600':'text-red-600' },
+    { label:'صافي الربح', value: fmt(netProfit) + ' ج.م', icon:'fa-coins', color: netProfit>=0?'text-green-600':'text-red-600' },
+    { label:'هامش الربح الإجمالي', value: grossMargin + '%', icon:'fa-percent', color:'text-primary' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>البند</th><th>الحساب</th><th class="text-left">المبلغ (ج.م)</th>
+    </tr></thead><tbody>`;
+
+  // Revenue
+  html += `<tr class="section-header"><td colspan="3">الإيرادات</td></tr>`;
+  reportData.filter(r=>r.type==='revenue').forEach(r => {
+    html += `<tr><td>${r.name_ar||r.name_en}</td><td class="text-xs text-gray-400">${r.code}</td>
+      <td class="num pos">${fmt(r.net_amount)}</td></tr>`;
+  });
+  html += `<tr class="total-row"><td colspan="2" class="font-bold">إجمالي الإيرادات</td><td class="num pos font-bold">${fmt(revenue)}</td></tr>`;
+
+  // Direct Cost
+  html += `<tr class="section-header"><td colspan="3">التكاليف المباشرة</td></tr>`;
+  reportData.filter(r=>r.type==='direct_cost').forEach(r => {
+    html += `<tr><td>${r.name_ar||r.name_en}</td><td class="text-xs text-gray-400">${r.code}</td>
+      <td class="num neg">(${fmt(r.net_amount)})</td></tr>`;
+  });
+  html += `<tr class="total-row"><td colspan="2" class="font-bold">إجمالي التكاليف المباشرة</td><td class="num neg font-bold">(${fmt(directCost)})</td></tr>`;
+
+  // Gross Profit
+  html += `<tr class="grand-total"><td colspan="2">مجمل الربح</td><td class="num">${fmt(grossProfit)} (${grossMargin}%)</td></tr>`;
+
+  // OPEX
+  html += `<tr class="section-header"><td colspan="3">المصاريف التشغيلية</td></tr>`;
+  reportData.filter(r=>r.type==='expense').forEach(r => {
+    html += `<tr><td>${r.name_ar||r.name_en}</td><td class="text-xs text-gray-400">${r.code}</td>
+      <td class="num neg">(${fmt(r.net_amount)})</td></tr>`;
+  });
+  html += `<tr class="total-row"><td colspan="2" class="font-bold">إجمالي المصاريف التشغيلية</td><td class="num neg font-bold">(${fmt(opex)})</td></tr>`;
+
+  // Net Profit
+  html += `<tr class="grand-total"><td colspan="2">صافي الربح / (الخسارة)</td>
+    <td class="num ${netProfit >= 0 ? 'text-green-300' : 'text-red-300'}">${netProfit < 0 ? '(' : ''}${fmt(Math.abs(netProfit))}${netProfit < 0 ? ')' : ''}</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 5. BALANCE SHEET
+async function loadBalanceSheet(to) {
+  const { data, error } = await db.from('balance_sheet').select('*');
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('الميزانية العمومية');
+
+  const totalAssets      = reportData.filter(r=>r.type==='asset').reduce((s,r)=>s+parseFloat(r.balance||0),0);
+  const totalLiabilities = reportData.filter(r=>r.type==='liability').reduce((s,r)=>s+parseFloat(r.balance||0),0);
+  const totalEquity      = reportData.filter(r=>r.type==='equity').reduce((s,r)=>s+parseFloat(r.balance||0),0);
+  const diff = totalAssets - (totalLiabilities + totalEquity);
+
+  setSummaryCards([
+    { label:'إجمالي الأصول', value: fmt(totalAssets) + ' ج.م', icon:'fa-building', color:'text-blue-600' },
+    { label:'إجمالي الخصوم', value: fmt(totalLiabilities) + ' ج.م', icon:'fa-hand-holding-dollar', color:'text-red-600' },
+    { label:'حقوق الملكية', value: fmt(totalEquity) + ' ج.م', icon:'fa-landmark', color:'text-green-600' },
+    { label:'الفرق', value: fmt(Math.abs(diff)) + ' ج.م', icon:'fa-balance-scale', color: Math.abs(diff)<0.01?'text-green-600':'text-red-600' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  const renderGroup = (type, title) => {
+    const rows  = reportData.filter(r => r.type === type);
+    const total = rows.reduce((s,r) => s+parseFloat(r.balance||0), 0);
+    let out = `<tr class="section-header"><td colspan="3">${title}</td></tr>`;
+    rows.forEach(r => {
+      out += `<tr><td>${r.name_ar||r.name_en}</td><td class="text-xs text-gray-400">${r.code}</td>
+        <td class="num">${fmt(r.balance)}</td></tr>`;
+    });
+    out += `<tr class="total-row"><td colspan="2" class="font-bold">إجمالي ${title}</td><td class="num font-bold">${fmt(total)}</td></tr>`;
+    return out;
+  };
+
+  let html = `<table class="rpt-table">
+    <thead><tr><th>البند</th><th>الكود</th><th class="text-left">الرصيد (ج.م)</th></tr></thead><tbody>`;
+  html += renderGroup('asset','الأصول');
+  html += renderGroup('liability','الخصوم');
+  html += renderGroup('equity','حقوق الملكية');
+  html += `<tr class="grand-total"><td colspan="2">الخصوم + حقوق الملكية</td><td class="num">${fmt(totalLiabilities+totalEquity)}</td></tr>`;
+  html += `<tr style="background:${Math.abs(diff)<0.01?'#f0fdf4':'#fef2f2'}"><td colspan="2" class="font-bold">الفرق (يجب أن يكون صفر)</td>
+    <td class="num font-bold ${Math.abs(diff)<0.01?'pos':'neg'}">${fmt(diff)}</td></tr>`;
+  html += `</tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 6. CASH FLOW
+async function loadCashFlow(from, to) {
+  const { data, error } = await db.from('cash_flow').select('*')
+    .gte('entry_date', from).lte('entry_date', to)
+    .order('entry_date').limit(300);
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('تقرير التدفق النقدي');
+
+  const totalIn  = reportData.reduce((s,r)=>s+parseFloat(r.cash_in||0),0);
+  const totalOut = reportData.reduce((s,r)=>s+parseFloat(r.cash_out||0),0);
+  const net      = totalIn - totalOut;
+
+  setSummaryCards([
+    { label:'إجمالي الدخول', value: fmt(totalIn) + ' ج.م', icon:'fa-arrow-circle-down', color:'text-green-600' },
+    { label:'إجمالي الخروج', value: fmt(totalOut) + ' ج.م', icon:'fa-arrow-circle-up', color:'text-red-600' },
+    { label:'صافي التدفق', value: fmt(net) + ' ج.م', icon:'fa-water', color: net>=0?'text-green-600':'text-red-600' },
+    { label:'عدد الحركات', value: reportData.length, icon:'fa-list', color:'text-gray-500' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>التاريخ</th><th>رقم القيد</th><th>الوصف</th><th>الحساب النقدي</th>
+      <th class="text-left">داخل</th><th class="text-left">خارج</th><th>النوع</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="text-xs">${r.entry_date||''}</td>
+      <td class="font-mono text-xs">${r.entry_number||''}</td>
+      <td class="text-sm">${r.description||''}</td>
+      <td class="text-xs text-gray-400">${r.account_name_ar||''}</td>
+      <td class="num pos">${r.cash_in > 0 ? fmt(r.cash_in) : ''}</td>
+      <td class="num neg">${r.cash_out > 0 ? '(' + fmt(r.cash_out) + ')' : ''}</td>
+      <td class="text-xs">${r.flow_type||''}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td colspan="4">الإجمالي</td>
+    <td class="num">${fmt(totalIn)}</td>
+    <td class="num">${fmt(totalOut)}</td>
+    <td class="num ${net>=0?'text-green-300':'text-red-300'}">${fmt(net)}</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 7. AR AGING
+async function loadArAging() {
+  const { data, error } = await db.from('ar_aging').select('*').order('total_outstanding', { ascending: false });
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('تقادم الذمم المدينة (AR Aging)');
+
+  const total    = reportData.reduce((s,r)=>s+parseFloat(r.total_outstanding||0),0);
+  const current  = reportData.reduce((s,r)=>s+parseFloat(r.bucket_current||0),0);
+  const over30   = reportData.reduce((s,r)=>s+parseFloat(r.bucket_30||0),0);
+  const over60   = reportData.reduce((s,r)=>s+parseFloat(r.bucket_60||0),0);
+  const over90   = reportData.reduce((s,r)=>s+parseFloat(r.bucket_90plus||0),0);
+
+  setSummaryCards([
+    { label:'إجمالي المستحق', value: fmt(total) + ' ج.م', icon:'fa-money-bill-trend-up', color:'text-primary' },
+    { label:'جاري', value: fmt(current) + ' ج.م', icon:'fa-clock', color:'text-green-600' },
+    { label:'متأخر 30+ يوم', value: fmt(over30 + over60 + over90) + ' ج.م', icon:'fa-triangle-exclamation', color:'text-amber-600' },
+    { label:'متأخر 90+ يوم', value: fmt(over90) + ' ج.م', icon:'fa-circle-exclamation', color:'text-red-600' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>العميل</th><th>عدد الفواتير</th>
+      <th class="text-left bucket-current">جاري</th>
+      <th class="text-left bucket-30">31–60 يوم</th>
+      <th class="text-left bucket-60">61–90 يوم</th>
+      <th class="text-left bucket-90">+90 يوم</th>
+      <th class="text-left">الإجمالي (ج.م)</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="font-medium">${r.customer_name||r.customer_id||''}</td>
+      <td class="text-center">${r.invoice_count||0}</td>
+      <td class="num bucket-current">${fmt(r.bucket_current||0)}</td>
+      <td class="num bucket-30">${fmt(r.bucket_30||0)}</td>
+      <td class="num bucket-60">${fmt(r.bucket_60||0)}</td>
+      <td class="num bucket-90">${fmt(r.bucket_90plus||0)}</td>
+      <td class="num font-bold">${fmt(r.total_outstanding||0)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td>الإجمالي</td><td class="text-center">${reportData.reduce((s,r)=>s+(r.invoice_count||0),0)}</td>
+    <td class="num">${fmt(current)}</td>
+    <td class="num">${fmt(over30)}</td>
+    <td class="num">${fmt(over60)}</td>
+    <td class="num">${fmt(over90)}</td>
+    <td class="num">${fmt(total)}</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 8. AP AGING
+async function loadApAging() {
+  const { data, error } = await db.from('ap_aging').select('*').order('total_outstanding', { ascending: false });
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('تقادم الذمم الدائنة (AP Aging)');
+
+  const total   = reportData.reduce((s,r)=>s+parseFloat(r.total_outstanding||0),0);
+  const current = reportData.reduce((s,r)=>s+parseFloat(r.bucket_current||0),0);
+  const over90  = reportData.reduce((s,r)=>s+parseFloat(r.bucket_90plus||0),0);
+
+  setSummaryCards([
+    { label:'إجمالي المستحق للموردين', value: fmt(total) + ' ج.م', icon:'fa-truck', color:'text-primary' },
+    { label:'جاري', value: fmt(current) + ' ج.م', icon:'fa-clock', color:'text-green-600' },
+    { label:'متأخر 90+ يوم', value: fmt(over90) + ' ج.م', icon:'fa-circle-exclamation', color:'text-red-600' },
+    { label:'عدد الموردين', value: reportData.length, icon:'fa-building', color:'text-gray-500' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>المورد</th><th>عدد المصاريف</th>
+      <th class="text-left bucket-current">جاري</th>
+      <th class="text-left bucket-30">31–60 يوم</th>
+      <th class="text-left bucket-60">61–90 يوم</th>
+      <th class="text-left bucket-90">+90 يوم</th>
+      <th class="text-left">الإجمالي (ج.م)</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="font-medium">${r.supplier_name||''}</td>
+      <td class="text-center">${r.expense_count||0}</td>
+      <td class="num bucket-current">${fmt(r.bucket_current||0)}</td>
+      <td class="num bucket-30">${fmt(r.bucket_30||0)}</td>
+      <td class="num bucket-60">${fmt(r.bucket_60||0)}</td>
+      <td class="num bucket-90">${fmt(r.bucket_90plus||0)}</td>
+      <td class="num font-bold">${fmt(r.total_outstanding||0)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td>الإجمالي</td><td class="text-center">${reportData.reduce((s,r)=>s+(r.expense_count||0),0)}</td>
+    <td class="num">${fmt(current)}</td>
+    <td class="num">${fmt(reportData.reduce((s,r)=>s+parseFloat(r.bucket_30||0),0))}</td>
+    <td class="num">${fmt(reportData.reduce((s,r)=>s+parseFloat(r.bucket_60||0),0))}</td>
+    <td class="num">${fmt(over90)}</td>
+    <td class="num">${fmt(total)}</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 9. CUSTOMER STATEMENT
+async function loadCustomerStatement(from, to) {
+  let q = db.from('customer_statement').select('*')
+    .gte('txn_date', from).lte('txn_date', to)
+    .order('customer_id').order('txn_date');
+
+  if (extraFilter1) q = q.eq('customer_id', extraFilter1);
+
+  const { data, error } = await q;
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('كشف حساب العميل');
+
+  const totalDebit  = reportData.reduce((s,r)=>s+parseFloat(r.debit||0),0);
+  const totalCredit = reportData.reduce((s,r)=>s+parseFloat(r.credit||0),0);
+
+  setSummaryCards([
+    { label:'إجمالي المديونية', value: fmt(totalDebit) + ' ج.م', icon:'fa-file-invoice', color:'text-blue-600' },
+    { label:'إجمالي المدفوعات', value: fmt(totalCredit) + ' ج.م', icon:'fa-money-bill', color:'text-green-600' },
+    { label:'الرصيد المتبقي', value: fmt(totalDebit - totalCredit) + ' ج.م', icon:'fa-balance-scale', color:'text-primary' },
+    { label:'عدد العمليات', value: reportData.length, icon:'fa-list', color:'text-gray-500' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>العميل</th><th>النوع</th><th>المرجع</th><th>التاريخ</th><th>تاريخ الاستحقاق</th>
+      <th class="text-left">مدين</th><th class="text-left">دائن</th><th>العملة</th><th>الحالة</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="font-medium text-sm">${r.customer_name||r.customer_id||''}</td>
+      <td>${txnTypeBadge(r.txn_type)}</td>
+      <td class="font-mono text-xs">${r.reference||''}</td>
+      <td class="text-xs">${r.txn_date||''}</td>
+      <td class="text-xs text-gray-400">${r.due_date||''}</td>
+      <td class="num debit-col">${r.debit > 0 ? fmt(r.debit) : ''}</td>
+      <td class="num credit-col">${r.credit > 0 ? fmt(r.credit) : ''}</td>
+      <td class="text-xs">${r.currency||''}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td colspan="5">الإجمالي</td>
+    <td class="num">${fmt(totalDebit)}</td>
+    <td class="num">${fmt(totalCredit)}</td>
+    <td colspan="2"></td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 10. SUPPLIER STATEMENT
+async function loadSupplierStatement(from, to) {
+  let q = db.from('supplier_statement').select('*')
+    .gte('txn_date', from).lte('txn_date', to)
+    .order('supplier_id').order('txn_date');
+
+  if (extraFilter1) q = q.eq('supplier_id', extraFilter1);
+
+  const { data, error } = await q;
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('كشف حساب المورد');
+
+  const totalCredit = reportData.reduce((s,r)=>s+parseFloat(r.credit||0),0);
+  const totalDebit  = reportData.reduce((s,r)=>s+parseFloat(r.debit||0),0);
+
+  setSummaryCards([
+    { label:'إجمالي الفواتير', value: fmt(totalCredit) + ' ج.م', icon:'fa-file-invoice', color:'text-red-600' },
+    { label:'إجمالي المدفوعات', value: fmt(totalDebit) + ' ج.م', icon:'fa-money-bill', color:'text-green-600' },
+    { label:'الرصيد المتبقي', value: fmt(totalCredit - totalDebit) + ' ج.م', icon:'fa-balance-scale', color:'text-primary' },
+    { label:'عدد العمليات', value: reportData.length, icon:'fa-list', color:'text-gray-500' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>المورد</th><th>النوع</th><th>المرجع</th><th>التاريخ</th>
+      <th class="text-left">دائن (نستحق)</th><th class="text-left">مدين (دفعنا)</th>
+      <th>الرصيد</th><th>العملة</th><th>الحالة</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="font-medium text-sm">${r.supplier_name||r.supplier_id||''}</td>
+      <td>${txnTypeBadge(r.txn_type)}</td>
+      <td class="font-mono text-xs">${r.reference||''}</td>
+      <td class="text-xs">${r.txn_date||''}</td>
+      <td class="num credit-col">${r.credit > 0 ? fmt(r.credit) : ''}</td>
+      <td class="num debit-col">${r.debit > 0 ? fmt(r.debit) : ''}</td>
+      <td class="num">${fmt(r.balance||0)}</td>
+      <td class="text-xs">${r.currency||''}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 11. REVENUE REPORT
+async function loadRevenueReport(from, to) {
+  const { data, error } = await db.from('revenue_report').select('*')
+    .gte('entry_date', from).lte('entry_date', to)
+    .order('entry_date');
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('تقرير الإيرادات');
+
+  const total = reportData.reduce((s,r)=>s+parseFloat(r.amount||0),0);
+
+  // Group by account
+  const byAccount = {};
+  reportData.forEach(r => {
+    const k = r.account_code;
+    if (!byAccount[k]) byAccount[k] = { name: r.name_ar||r.name_en, code: k, total: 0 };
+    byAccount[k].total += parseFloat(r.amount||0);
+  });
+
+  setSummaryCards([
+    { label:'إجمالي الإيرادات', value: fmt(total) + ' ج.م', icon:'fa-arrow-trend-up', color:'text-green-600' },
+    { label:'عدد الحسابات', value: Object.keys(byAccount).length, icon:'fa-list', color:'text-primary' },
+    { label:'عدد السجلات', value: reportData.length, icon:'fa-table', color:'text-gray-500' },
+    { label:'متوسط يومي', value: fmt(total / Math.max(1, daysBetween(from, to))) + ' ج.م', icon:'fa-calendar-day', color:'text-amber-600' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>التاريخ</th><th>كود الحساب</th><th>اسم الحساب</th>
+      <th>مركز التكلفة</th><th class="text-left">المبلغ (ج.م)</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="text-xs">${r.entry_date||''}</td>
+      <td class="text-xs text-gray-400">${r.account_code||''}</td>
+      <td class="font-medium">${r.name_ar||r.name_en||''}</td>
+      <td class="text-xs text-gray-400">${r.cost_center_ar||''}</td>
+      <td class="num pos">${fmt(r.amount||0)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total"><td colspan="4">الإجمالي</td><td class="num">${fmt(total)}</td></tr>`;
+  html += `</tbody></table>`;
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 12. EXPENSE REPORT
+async function loadExpenseReport(from, to) {
+  const { data, error } = await db.from('expense_report').select('*')
+    .gte('expense_date', from).lte('expense_date', to)
+    .order('expense_date', { ascending: false });
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('تقرير المصاريف');
+
+  const total    = reportData.reduce((s,r)=>s+parseFloat(r.total_amount||0),0);
+  const totalTax = reportData.reduce((s,r)=>s+parseFloat(r.tax_amount||0),0);
+
+  setSummaryCards([
+    { label:'إجمالي المصاريف', value: fmt(total) + ' ج.م', icon:'fa-receipt', color:'text-red-600' },
+    { label:'إجمالي الضرائب', value: fmt(totalTax) + ' ج.م', icon:'fa-percent', color:'text-amber-600' },
+    { label:'عدد المصاريف', value: reportData.length, icon:'fa-list', color:'text-gray-500' },
+    { label:'المتوسط اليومي', value: fmt(total / Math.max(1, daysBetween(from, to))) + ' ج.م', icon:'fa-calendar', color:'text-primary' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>رقم المصروف</th><th>التاريخ</th><th>الفئة</th><th>الحساب</th>
+      <th>المورد</th><th>مركز التكلفة</th>
+      <th class="text-left">المبلغ</th><th class="text-left">ضريبة</th>
+      <th class="text-left">الإجمالي</th><th>العملة</th><th>الحالة</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="font-mono text-xs">${r.expense_number||''}</td>
+      <td class="text-xs">${r.expense_date||''}</td>
+      <td class="text-sm">${r.category_ar||r.category_en||''}</td>
+      <td class="text-xs text-gray-400">${r.account_name_ar||''}</td>
+      <td class="text-xs">${r.supplier_name||''}</td>
+      <td class="text-xs text-gray-400">${r.cost_center_ar||''}</td>
+      <td class="num">${fmt(r.amount||0)}</td>
+      <td class="num text-amber-600">${fmt(r.tax_amount||0)}</td>
+      <td class="num font-bold neg">${fmt(r.total_amount||0)}</td>
+      <td class="text-xs">${r.currency||'EGP'}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td colspan="6">الإجمالي</td>
+    <td class="num">${fmt(reportData.reduce((s,r)=>s+parseFloat(r.amount||0),0))}</td>
+    <td class="num">${fmt(totalTax)}</td>
+    <td class="num">${fmt(total)}</td>
+    <td colspan="2"></td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 13. TAX REPORT
+async function loadTaxReport(from, to) {
+  // Query tax transactions linked to posted journal entries
+  const { data, error } = await db.from('tax_transactions').select(`
+    *,
+    taxes(name, rate, type, is_inclusive)
+  `).gte('created_at', from).lte('created_at', to + 'T23:59:59')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    // Fallback: derive from expense tax_amount
+    const { data: expData, error: expErr } = await db.from('nsp_expenses').select('*')
+      .gte('expense_date', from).lte('expense_date', to)
+      .gt('tax_amount', 0).not('status', 'in', '("draft","rejected")');
+    if (expErr) throw expErr;
+    reportData = expData || [];
+    setReportTitle('تقرير الضرائب');
+    const totalTax = reportData.reduce((s,r)=>s+parseFloat(r.tax_amount||0),0);
+    setSummaryCards([
+      { label:'إجمالي الضريبة المحتسبة', value: fmt(totalTax) + ' ج.م', icon:'fa-percent', color:'text-amber-600' },
+      { label:'عدد العمليات', value: reportData.length, icon:'fa-list', color:'text-gray-500' },
+    ]);
+    if (!reportData.length) { showEmpty(); return; }
+    let html = `<table class="rpt-table">
+      <thead><tr><th>رقم المصروف</th><th>التاريخ</th><th>الوصف</th>
+        <th class="text-left">المبلغ</th><th class="text-left">الضريبة</th><th>العملة</th></tr></thead><tbody>`;
+    reportData.forEach(r => {
+      html += `<tr>
+        <td class="font-mono text-xs">${r.expense_number||''}</td>
+        <td class="text-xs">${r.expense_date||''}</td>
+        <td class="text-sm">${r.description||''}</td>
+        <td class="num">${fmt(r.amount||0)}</td>
+        <td class="num text-amber-600 font-bold">${fmt(r.tax_amount||0)}</td>
+        <td class="text-xs">${r.currency||'EGP'}</td>
+      </tr>`;
+    });
+    html += `<tr class="grand-total"><td colspan="4">إجمالي الضريبة</td>
+      <td class="num">${fmt(totalTax)}</td><td></td></tr></tbody></table>`;
+    document.getElementById('reportContent').innerHTML = html;
+    return;
+  }
+
+  reportData = data || [];
+  setReportTitle('تقرير الضرائب');
+  const totalTax = reportData.reduce((s,r)=>s+parseFloat(r.tax_amount||0),0);
+  const salesTax = reportData.filter(r=>r.taxes?.type==='sales').reduce((s,r)=>s+parseFloat(r.tax_amount||0),0);
+  const purchTax = reportData.filter(r=>r.taxes?.type==='purchase').reduce((s,r)=>s+parseFloat(r.tax_amount||0),0);
+
+  setSummaryCards([
+    { label:'إجمالي الضريبة', value: fmt(totalTax) + ' ج.م', icon:'fa-percent', color:'text-amber-600' },
+    { label:'ضريبة مبيعات', value: fmt(salesTax) + ' ج.م', icon:'fa-arrow-up', color:'text-green-600' },
+    { label:'ضريبة مشتريات', value: fmt(purchTax) + ' ج.م', icon:'fa-arrow-down', color:'text-red-600' },
+    { label:'صافي الضريبة المستحقة', value: fmt(salesTax - purchTax) + ' ج.م', icon:'fa-balance-scale', color:'text-primary' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>التاريخ</th><th>نوع الضريبة</th><th>المعدل</th><th>المرجع</th>
+      <th class="text-left">الوعاء</th><th class="text-left">الضريبة</th><th>شامل/مضاف</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="text-xs">${(r.created_at||'').slice(0,10)}</td>
+      <td>${r.taxes?.name||''}</td>
+      <td class="text-center">${r.taxes?.rate||0}%</td>
+      <td class="font-mono text-xs">${r.reference_type||''}:${(r.reference_id||'').slice(0,8)}</td>
+      <td class="num">${fmt(r.taxable_amount||0)}</td>
+      <td class="num text-amber-600 font-bold">${fmt(r.tax_amount||0)}</td>
+      <td class="text-xs text-center">${r.taxes?.is_inclusive ? 'شامل' : 'مضاف'}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total"><td colspan="5">الإجمالي</td><td class="num">${fmt(totalTax)}</td><td></td></tr>`;
+  html += `</tbody></table>`;
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 14. PACKAGE PROFITABILITY
+async function loadPackageProfitability() {
+  const { data, error } = await db.from('package_profitability').select('*');
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('ربحية الباقات');
+
+  const totalRev  = reportData.reduce((s,r)=>s+parseFloat(r.total_revenue||0),0);
+  const totalCost = reportData.reduce((s,r)=>s+parseFloat(r.total_direct_cost||0),0);
+  const totalProfit = totalRev - totalCost;
+
+  setSummaryCards([
+    { label:'إجمالي الإيرادات', value: fmt(totalRev) + ' ج.م', icon:'fa-suitcase', color:'text-green-600' },
+    { label:'إجمالي التكاليف', value: fmt(totalCost) + ' ج.م', icon:'fa-file-invoice', color:'text-red-600' },
+    { label:'إجمالي الربح', value: fmt(totalProfit) + ' ج.م', icon:'fa-coins', color: totalProfit>=0?'text-green-600':'text-red-600' },
+    { label:'عدد الباقات', value: reportData.length, icon:'fa-list', color:'text-primary' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>الباقة</th><th>الفئة</th><th class="text-center">الحجوزات</th>
+      <th class="text-left">الإيرادات</th><th class="text-left">التكاليف</th>
+      <th class="text-left">الربح الإجمالي</th><th class="text-center">الهامش %</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    const margin = parseFloat(r.gross_margin_pct||0);
+    const profit = parseFloat(r.gross_profit||0);
+    html += `<tr>
+      <td class="font-semibold">${r.title||''}</td>
+      <td class="text-xs">${r.category||''}</td>
+      <td class="text-center font-bold">${r.booking_count||0}</td>
+      <td class="num pos">${fmt(r.total_revenue||0)}</td>
+      <td class="num neg">${fmt(r.total_direct_cost||0)}</td>
+      <td class="num font-bold ${profit>=0?'pos':'neg'}">${fmt(profit)}</td>
+      <td class="text-center"><span class="badge ${margin>=20?'badge-green':margin>=10?'badge-gold':'badge-red'}">${margin}%</span></td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td colspan="3">الإجمالي</td>
+    <td class="num">${fmt(totalRev)}</td>
+    <td class="num">${fmt(totalCost)}</td>
+    <td class="num">${fmt(totalProfit)}</td>
+    <td class="text-center">${totalRev > 0 ? ((totalProfit/totalRev)*100).toFixed(1) : 0}%</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 15. BOOKING PROFITABILITY
+async function loadBookingProfitability() {
+  const { data, error } = await db.from('booking_profitability').select('*').limit(200);
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('ربحية الحجوزات');
+
+  const totalRevenue = reportData.reduce((s,r)=>s+parseFloat(r.selling_price||0),0);
+  const totalCost    = reportData.reduce((s,r)=>s+parseFloat(r.total_direct_cost||0),0);
+  const totalProfit  = reportData.reduce((s,r)=>s+parseFloat(r.gross_profit||0),0);
+
+  setSummaryCards([
+    { label:'إجمالي المبيعات', value: fmt(totalRevenue) + ' ج.م', icon:'fa-hand-holding-dollar', color:'text-green-600' },
+    { label:'إجمالي التكاليف', value: fmt(totalCost) + ' ج.م', icon:'fa-building', color:'text-red-600' },
+    { label:'إجمالي الربح', value: fmt(totalProfit) + ' ج.م', icon:'fa-coins', color: totalProfit>=0?'text-green-600':'text-red-600' },
+    { label:'عدد الحجوزات', value: reportData.length, icon:'fa-address-book', color:'text-primary' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>رقم الحجز</th><th>العميل</th><th>الباقة</th><th>الحالة</th>
+      <th class="text-left">سعر البيع</th><th class="text-left">فندق</th><th class="text-left">طيران</th>
+      <th class="text-left">تأشيرة</th><th class="text-left">نقل</th><th class="text-left">إجمالي التكاليف</th>
+      <th class="text-left">الربح</th><th class="text-center">الهامش %</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    const profit = parseFloat(r.gross_profit||0);
+    const margin = parseFloat(r.gross_margin_pct||0);
+    html += `<tr>
+      <td class="font-mono text-xs">${r.booking_number||''}</td>
+      <td class="text-sm font-medium">${r.customer_name||''}</td>
+      <td class="text-xs">${r.package_title||''}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td class="num">${fmt(r.selling_price||0)}</td>
+      <td class="num text-xs">${fmt(r.hotel_cost||0)}</td>
+      <td class="num text-xs">${fmt(r.flight_cost||0)}</td>
+      <td class="num text-xs">${fmt(r.visa_cost||0)}</td>
+      <td class="num text-xs">${fmt(r.transport_cost||0)}</td>
+      <td class="num neg">${fmt(r.total_direct_cost||0)}</td>
+      <td class="num font-bold ${profit>=0?'pos':'neg'}">${fmt(profit)}</td>
+      <td class="text-center"><span class="badge ${margin>=20?'badge-green':margin>=10?'badge-gold':'badge-red'}">${margin}%</span></td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td colspan="4">الإجمالي</td>
+    <td class="num">${fmt(totalRevenue)}</td>
+    <td colspan="5" class="num">${fmt(totalCost)}</td>
+    <td class="num">${fmt(totalProfit)}</td>
+    <td class="text-center">${totalRevenue>0?((totalProfit/totalRevenue)*100).toFixed(1):0}%</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 16. COST CENTER PROFITABILITY
+async function loadCostCenterProfitability(from, to) {
+  const { data, error } = await db.from('cost_center_profitability').select('*');
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('ربحية مراكز التكلفة');
+
+  const totalNet = reportData.reduce((s,r)=>s+parseFloat(r.net_profit||0),0);
+
+  setSummaryCards([
+    { label:'إجمالي الإيرادات', value: fmt(reportData.reduce((s,r)=>s+parseFloat(r.revenue||0),0)) + ' ج.م', icon:'fa-arrow-trend-up', color:'text-green-600' },
+    { label:'إجمالي التكاليف المباشرة', value: fmt(reportData.reduce((s,r)=>s+parseFloat(r.direct_cost||0),0)) + ' ج.م', icon:'fa-box', color:'text-orange-600' },
+    { label:'إجمالي المصاريف التشغيلية', value: fmt(reportData.reduce((s,r)=>s+parseFloat(r.operating_expense||0),0)) + ' ج.م', icon:'fa-receipt', color:'text-red-600' },
+    { label:'صافي الربح الكلي', value: fmt(totalNet) + ' ج.م', icon:'fa-coins', color: totalNet>=0?'text-green-600':'text-red-600' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>مركز التكلفة</th><th>الكود</th>
+      <th class="text-left">الإيرادات</th><th class="text-left">التكاليف المباشرة</th>
+      <th class="text-left">المصاريف التشغيلية</th><th class="text-left">صافي الربح</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    const net = parseFloat(r.net_profit||0);
+    html += `<tr>
+      <td class="font-semibold">${r.name_ar||r.name_en||''}</td>
+      <td class="text-xs text-gray-400">${r.code||''}</td>
+      <td class="num pos">${fmt(r.revenue||0)}</td>
+      <td class="num text-orange-600">${fmt(r.direct_cost||0)}</td>
+      <td class="num neg">${fmt(r.operating_expense||0)}</td>
+      <td class="num font-bold ${net>=0?'pos':'neg'}">${fmt(net)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td colspan="2">الإجمالي</td>
+    <td class="num">${fmt(reportData.reduce((s,r)=>s+parseFloat(r.revenue||0),0))}</td>
+    <td class="num">${fmt(reportData.reduce((s,r)=>s+parseFloat(r.direct_cost||0),0))}</td>
+    <td class="num">${fmt(reportData.reduce((s,r)=>s+parseFloat(r.operating_expense||0),0))}</td>
+    <td class="num">${fmt(totalNet)}</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 17. PAYMENT COLLECTION
+async function loadPaymentCollection(from, to) {
+  const { data, error } = await db.from('payment_collection_report').select('*')
+    .gte('payment_date', from).lte('payment_date', to)
+    .order('payment_date', { ascending: false });
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('تقرير تحصيل المدفوعات');
+
+  const total    = reportData.reduce((s,r)=>s+parseFloat(r.amount||0),0);
+  const totalEGP = reportData.reduce((s,r)=>s+parseFloat(r.base_amount_egp||0),0);
+
+  // Group by method
+  const byMethod = {};
+  reportData.forEach(r => {
+    byMethod[r.payment_method] = (byMethod[r.payment_method]||0) + parseFloat(r.amount||0);
+  });
+
+  setSummaryCards([
+    { label:'إجمالي التحصيل', value: fmt(totalEGP) + ' ج.م', icon:'fa-money-bill-wave', color:'text-green-600' },
+    { label:'عدد المدفوعات', value: reportData.length, icon:'fa-list', color:'text-primary' },
+    { label:'نقداً', value: fmt(byMethod['cash']||0) + ' ج.م', icon:'fa-coins', color:'text-amber-600' },
+    { label:'تحويل بنكي', value: fmt(byMethod['bank_transfer']||0) + ' ج.م', icon:'fa-building-columns', color:'text-blue-600' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>رقم المدفوعة</th><th>التاريخ</th><th>العميل</th>
+      <th>طريقة الدفع</th><th>حساب</th>
+      <th class="text-left">المبلغ</th><th>العملة</th>
+      <th class="text-left">المكافئ ج.م</th><th>الحالة</th>
+    </tr></thead><tbody>`;
+
+  reportData.forEach(r => {
+    html += `<tr>
+      <td class="font-mono text-xs">${r.payment_number||''}</td>
+      <td class="text-xs">${r.payment_date||''}</td>
+      <td class="font-medium text-sm">${r.customer_name||''}</td>
+      <td>${payMethodBadge(r.payment_method)}</td>
+      <td class="text-xs">${r.cash_account_ar||r.cash_account_en||''}</td>
+      <td class="num pos font-bold">${fmt(r.amount||0)}</td>
+      <td class="text-xs">${r.currency||'EGP'}</td>
+      <td class="num">${fmt(r.base_amount_egp||0)}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td colspan="5">الإجمالي</td>
+    <td class="num">${fmt(total)}</td>
+    <td></td>
+    <td class="num">${fmt(totalEGP)}</td>
+    <td></td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// 18. CASH BANK REPORT
+async function loadCashBankReport() {
+  const { data, error } = await db.from('cash_bank_report').select('*');
+  if (error) throw error;
+  reportData = data || [];
+
+  setReportTitle('تقرير الخزينة والبنوك');
+
+  const totalBalance = reportData.reduce((s,r)=>s+parseFloat(r.current_balance||0),0);
+  const totalIn      = reportData.reduce((s,r)=>s+parseFloat(r.total_inflows||0),0);
+  const totalOut     = reportData.reduce((s,r)=>s+parseFloat(r.total_outflows||0),0);
+
+  setSummaryCards([
+    { label:'إجمالي الأرصدة', value: fmt(totalBalance) + ' ج.م', icon:'fa-vault', color:'text-primary' },
+    { label:'إجمالي الدخول', value: fmt(totalIn) + ' ج.م', icon:'fa-arrow-circle-down', color:'text-green-600' },
+    { label:'إجمالي الخروج', value: fmt(totalOut) + ' ج.م', icon:'fa-arrow-circle-up', color:'text-red-600' },
+    { label:'عدد الحسابات', value: reportData.length, icon:'fa-building-columns', color:'text-gray-500' },
+  ]);
+
+  if (!reportData.length) { showEmpty(); return; }
+
+  let html = `<table class="rpt-table">
+    <thead><tr>
+      <th>اسم الحساب</th><th>النوع</th><th>العملة</th>
+      <th class="text-left">الرصيد الحالي</th>
+      <th class="text-left">إجمالي الدخول</th>
+      <th class="text-left">إجمالي الخروج</th>
+      <th class="text-left">صافي الحركة</th>
+    </tr></thead><tbody>`;
+
+  const types = { cash:'نقد', bank:'بنك', wallet:'محفظة إلكترونية' };
+  const typeColors = { cash:'text-amber-600', bank:'text-blue-600', wallet:'text-purple-600' };
+
+  reportData.forEach(r => {
+    const net = parseFloat(r.total_inflows||0) - parseFloat(r.total_outflows||0);
+    html += `<tr>
+      <td class="font-semibold">${r.name_ar||r.name_en||''}</td>
+      <td><span class="badge badge-blue text-xs">${types[r.type]||r.type}</span></td>
+      <td class="text-xs">${r.currency||'EGP'}</td>
+      <td class="num font-bold ${typeColors[r.type]||''}">${fmt(r.current_balance||0)}</td>
+      <td class="num pos">${fmt(r.total_inflows||0)}</td>
+      <td class="num neg">${fmt(r.total_outflows||0)}</td>
+      <td class="num ${net>=0?'pos':'neg'}">${fmt(net)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="grand-total">
+    <td colspan="3">الإجمالي</td>
+    <td class="num">${fmt(totalBalance)}</td>
+    <td class="num">${fmt(totalIn)}</td>
+    <td class="num">${fmt(totalOut)}</td>
+    <td class="num">${fmt(totalIn - totalOut)}</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════
+function setReportTitle(title) {
+  document.getElementById('reportTitle').textContent = title;
+  document.getElementById('reportMeta').classList.remove('hidden');
+  const bar = document.getElementById('reportTitleBar');
+  if (bar) bar.style.display = 'flex';
+}
+
+function setSummaryCards(cards) {
+  const colorMap = {
+    'text-green-600':'green','text-red-600':'red','text-blue-600':'blue',
+    'text-amber-600':'gold','text-yellow-600':'gold','text-purple-600':'blue',
+    'text-emerald-600':'green','text-rose-600':'red','text-indigo-600':'blue',
+  };
+  document.getElementById('summaryCards').innerHTML = cards.map(c => {
+    const iconClass = colorMap[c.color] || 'gray';
+    return `<div class="stat-mini">
+      <div class="stat-icon ${iconClass}"><i class="fa-solid ${c.icon}"></i></div>
+      <div>
+        <div class="stat-label">${c.label}</div>
+        <div class="stat-value">${c.value}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showLoading(show) {
+  document.getElementById('reportLoading').classList.toggle('hidden', !show);
+  document.getElementById('reportContent').classList.toggle('hidden', show);
+}
+
+function showEmpty() {
+  document.getElementById('reportEmpty').classList.remove('hidden');
+  document.getElementById('reportContent').classList.add('hidden');
+}
+
+function clearReport() {
+  document.getElementById('reportEmpty').classList.add('hidden');
+  document.getElementById('reportContent').innerHTML = '';
+  document.getElementById('reportContent').classList.remove('hidden');
+  document.getElementById('reportMeta').classList.add('hidden');
+  const bar = document.getElementById('reportTitleBar');
+  if (bar) bar.style.display = 'none';
+}
+
+function showError(msg) {
+  document.getElementById('reportContent').innerHTML =
+    `<div class="p-8 text-center text-red-500"><i class="fa-solid fa-circle-exclamation text-3xl mb-2"></i><br>${msg}</div>`;
+}
+
+// ── Formatting ──────────────────────────────────────────
+function fmt(n) {
+  return new Intl.NumberFormat('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n||0);
+}
+
+function daysBetween(from, to) {
+  return Math.max(1, (new Date(to) - new Date(from)) / 86400000);
+}
+
+// ── Badges ──────────────────────────────────────────────
+function typeBadge(type) {
+  const map = {
+    asset:       ['badge-blue','أصل'],
+    liability:   ['badge-red','خصم'],
+    equity:      ['badge-green','ملكية'],
+    revenue:     ['badge-green','إيراد'],
+    direct_cost: ['badge-gold','تكلفة مباشرة'],
+    expense:     ['badge-red','مصروف'],
+  };
+  const [cls, lbl] = map[type] || ['badge-gray', type];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+function statusBadge(status) {
+  const map = {
+    posted: ['badge-green','مرحّل'],
+    draft:  ['badge-gray','مسودة'],
+    issued: ['badge-blue','مُصدر'],
+    partial:['badge-gold','جزئي'],
+    paid:   ['badge-green','مدفوع'],
+    overdue:['badge-red','متأخر'],
+    cancelled:['badge-gray','ملغي'],
+    approved:['badge-green','معتمد'],
+    submitted:['badge-blue','مُقدّم'],
+    received:['badge-green','مُستلم'],
+  };
+  const [cls, lbl] = map[status] || ['badge-gray', status||''];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+function txnTypeBadge(type) {
+  const map = {
+    invoice:     ['badge-blue','فاتورة'],
+    payment:     ['badge-green','دفعة'],
+    credit_note: ['badge-gold','إشعار دائن'],
+    debit_note:  ['badge-red','إشعار مدين'],
+    expense:     ['badge-red','مصروف'],
+  };
+  const [cls, lbl] = map[type] || ['badge-gray', type||''];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+function payMethodBadge(method) {
+  const map = {
+    cash:         ['badge-gold','نقد'],
+    bank_transfer:['badge-blue','تحويل بنكي'],
+    card:         ['badge-blue','بطاقة'],
+    check:        ['badge-gray','شيك'],
+    wallet:       ['badge-green','محفظة'],
+    online:       ['badge-blue','أونلاين'],
+  };
+  const [cls, lbl] = map[method] || ['badge-gray', method||''];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+// ── Export ──────────────────────────────────────────────
+function exportCSV() {
+  if (!reportData.length) return alert('لا توجد بيانات للتصدير');
+  const keys = Object.keys(reportData[0]);
+  const csv  = [keys.join(','), ...reportData.map(r =>
+    keys.map(k => JSON.stringify(r[k]??'')).join(',')
+  )].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = `report_${currentReport}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function printReport() {
+  window.print();
+}
+</script>
+</div><!-- /flex wrapper -->
+</body>
+</html>

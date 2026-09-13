@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ملفات المجموعات | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css"><link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script><script src="/js/admin.js"></script><script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus{border-color:#1B5E20;box-shadow:0 0 0 3px rgba(27,94,32,.1);}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-people-group ml-2"></i>ملفات المجموعات</h1>
+      <p class="erp-page-subtitle">إدارة رحلات المجموعات — قوائم الغرف والركاب</p>
+    </div>
+    <button onclick="openModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+      <i class="fa-solid fa-plus ml-1"></i>مجموعة جديدة
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid mb-5">
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-primary" id="kTotal">—</div><div class="text-xs text-gray-400 mt-1">إجمالي</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-blue-600" id="kConfirmed">—</div><div class="text-xs text-gray-400 mt-1">مؤكدة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-amber-600" id="kPending">—</div><div class="text-xs text-gray-400 mt-1">معلقة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-green-700" id="kPax">—</div><div class="text-xs text-gray-400 mt-1">إجمالي الركاب</div></div>
+  </div>
+
+  <!-- Filter -->
+  <div class="flex gap-2 mb-4 flex-wrap">
+    <button onclick="setF('all',this)" class="erp-page-btn">الكل</button>
+    <button onclick="setF('inquiry',this)" class="erp-page-btn">استفسار</button>
+    <button onclick="setF('confirmed',this)" class="erp-page-btn">مؤكدة</button>
+    <button onclick="setF('in_operation',this)" class="erp-page-btn">في التشغيل</button>
+    <button onclick="setF('completed',this)" class="erp-page-btn">مكتملة</button>
+  </div>
+
+  <div class="erp-card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-100">
+          <th class="text-right p-3 text-xs font-bold text-gray-500">رقم</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">اسم المجموعة</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">النوع</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">الركاب</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">تاريخ السفر</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">الوجهة</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">الإجمالي</th>
+          <th class="text-right p-3 text-xs font-bold text-gray-500">الحالة</th>
+          <th class="p-3"></th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="9" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- New Group Modal -->
+<div id="gModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b">
+      <h3 class="font-bold text-lg text-primary"><i class="fa-solid fa-people-group ml-2"></i>مجموعة جديدة</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="overflow-y-auto flex-1 p-5 grid gap-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2"><label>اسم المجموعة *</label><input type="text" id="gName" placeholder="مثال: مجموعة كلية الطب — الأقصر"></div>
+        <div><label>نوع المجموعة</label>
+          <select id="gType">
+            <option value="leisure">ترفيهية</option><option value="educational">تعليمية</option>
+            <option value="corporate">شركات</option><option value="religious">دينية</option>
+            <option value="incentive">تحفيزية</option><option value="mice">MICE</option>
+            <option value="sports">رياضية</option><option value="other">أخرى</option>
+          </select>
+        </div>
+        <div><label>الحالة</label>
+          <select id="gStatus">
+            <option value="inquiry">استفسار</option><option value="quoted">صدر عرض</option>
+            <option value="deposit_pending">إيداع معلق</option><option value="confirmed">مؤكدة</option>
+          </select>
+        </div>
+        <div><label>تاريخ السفر</label><input type="date" id="gFrom"></div>
+        <div><label>تاريخ العودة</label><input type="date" id="gTo"></div>
+        <div><label>الوجهة</label><input type="text" id="gDest" placeholder="مثال: الأقصر وأسوان"></div>
+        <div><label>إجمالي الركاب</label><input type="number" id="gPax" value="20" min="1"></div>
+        <div><label>عدد البالغين</label><input type="number" id="gAdults" value="20" min="0"></div>
+        <div><label>عدد الغرف</label><input type="number" id="gRooms" value="10" min="0"></div>
+        <div><label>اسم قائد المجموعة</label><input type="text" id="gLeader" placeholder="الاسم الكامل"></div>
+        <div><label>هاتف القائد</label><input type="tel" id="gLeaderPhone" placeholder="+201xxxxxxxxx"></div>
+        <div><label>بريد القائد</label><input type="email" id="gLeaderEmail"></div>
+        <div><label>السعر الإجمالي (EGP)</label><input type="number" id="gPrice" value="0" min="0"></div>
+        <div><label>العملة</label>
+          <select id="gCurr"><option value="EGP">EGP</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
+        </div>
+        <div class="col-span-2"><label>ملاحظات</label><input type="text" id="gNotes"></div>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end p-5 border-t">
+      <button onclick="closeModal()" class="erp-page-btn">إلغاء</button>
+      <button onclick="saveGroup()" class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ
+      </button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+let _all=[], _filter='all';
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await load();
+});
+
+async function load() {
+  const {data} = await db.from('group_files')
+    .select('id,group_number,name,group_type,status,pax_total,travel_date_from,travel_date_to,destination,total_price,currency,leader_name')
+    .order('created_at',{ascending:false});
+  _all = data||[];
+  document.getElementById('kTotal').textContent     = _all.length;
+  document.getElementById('kConfirmed').textContent = _all.filter(g=>g.status==='confirmed').length;
+  document.getElementById('kPending').textContent   = _all.filter(g=>['inquiry','quoted','deposit_pending'].includes(g.status)).length;
+  document.getElementById('kPax').textContent       = _all.reduce((s,g)=>s+(g.pax_total||0),0);
+  render();
+}
+
+function setF(f,btn){_filter=f;document.querySelectorAll('[onclick^="setF"]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');render();}
+
+function render() {
+  const rows = _filter==='all'?_all:_all.filter(g=>g.status===_filter);
+  const tbody = document.getElementById('tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="text-center py-10 text-gray-400">لا توجد مجموعات</td></tr>';return;}
+  const sMap={inquiry:'bg-gray-100 text-gray-600 استفسار',quoted:'bg-blue-100 text-blue-700 عرض سعر',deposit_pending:'bg-amber-100 text-amber-700 إيداع معلق',confirmed:'bg-green-100 text-green-700 مؤكدة',in_operation:'bg-purple-100 text-purple-700 في التشغيل',completed:'bg-gray-100 text-gray-500 مكتملة',cancelled:'bg-red-100 text-red-600 ملغاة'};
+  const typeMap={leisure:'ترفيهية',educational:'تعليمية',corporate:'شركات',religious:'دينية',incentive:'تحفيزية',mice:'MICE',sports:'رياضية',other:'أخرى'};
+  tbody.innerHTML=rows.map(g=>{
+    const sm=sMap[g.status]||'bg-gray-100 text-gray-600 —';const p=sm.split(' ');const sl=p.slice(2).join(' ');const sc=p.slice(0,2).join(' ');
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer" onclick="openDetail('${g.id}')">
+      <td class="p-3 text-xs font-mono text-gray-400">${g.group_number||'—'}</td>
+      <td class="p-3"><div class="font-semibold text-gray-800">${esc(g.name)}</div><div class="text-xs text-gray-400">${esc(g.leader_name||'')}</div></td>
+      <td class="p-3 text-xs text-gray-500">${typeMap[g.group_type]||g.group_type}</td>
+      <td class="p-3 font-bold text-center">${g.pax_total||0}</td>
+      <td class="p-3 text-xs text-gray-500">${g.travel_date_from||'—'}</td>
+      <td class="p-3 text-xs text-gray-500">${esc(g.destination||'—')}</td>
+      <td class="p-3 font-bold text-sm text-gray-800">${fmt(g.total_price)} ${g.currency}</td>
+      <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full font-bold ${sc}">${sl}</span></td>
+      <td class="p-3"><a href="/nsp-control-8x4k/group-detail.html?id=${g.id}" class="text-primary hover:underline text-xs font-bold" onclick="event.stopPropagation()">تفاصيل</a></td>
+    </tr>`;
+  }).join('');
+}
+
+function openDetail(id){window.location.href='/nsp-control-8x4k/group-detail.html?id='+id;}
+function openModal(){document.getElementById('gModal').classList.remove('hidden');}
+function closeModal(){document.getElementById('gModal').classList.add('hidden');}
+
+async function saveGroup() {
+  const name=document.getElementById('gName').value.trim();
+  if(!name){toast('أدخل اسم المجموعة',true);return;}
+  const {data:{session}}=await db.auth.getSession();
+  const {error}=await db.from('group_files').insert({
+    name, group_type:document.getElementById('gType').value,
+    status:document.getElementById('gStatus').value,
+    travel_date_from:document.getElementById('gFrom').value||null,
+    travel_date_to:document.getElementById('gTo').value||null,
+    destination:document.getElementById('gDest').value.trim()||null,
+    pax_total:parseInt(document.getElementById('gPax').value)||1,
+    adults_count:parseInt(document.getElementById('gAdults').value)||0,
+    rooms_count:parseInt(document.getElementById('gRooms').value)||0,
+    leader_name:document.getElementById('gLeader').value.trim()||null,
+    leader_phone:document.getElementById('gLeaderPhone').value.trim()||null,
+    leader_email:document.getElementById('gLeaderEmail').value.trim()||null,
+    total_price:parseFloat(document.getElementById('gPrice').value)||0,
+    currency:document.getElementById('gCurr').value,
+    notes:document.getElementById('gNotes').value.trim()||null,
+    created_by:session.user.id,
+  });
+  if(error){toast('خطأ: '+error.message,true);return;}
+  closeModal();toast('تم إنشاء ملف المجموعة ✓');await load();
+}
+
+function fmt(n){return (n||0).toLocaleString('ar-EG',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

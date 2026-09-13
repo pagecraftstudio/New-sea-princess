@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل دخول الإدارة | نيو سي برنسيس فرع الزقازيق</title>
+
+  <meta name="description" content="نيو سي برنسيس فرع الزقازيق - أفضل برامج العمرة والحج بأسعار تنافسية وخدمة ممتازة">
+  <meta name="keywords" content="عمرة, حج, برامج عمرة, رحلات مكة, نيو سي برنسيس فرع الزقازيق">
+  <meta property="og:title" content="تسجيل دخول الإدارة | نيو سي برنسيس فرع الزقازيق">
+  <meta property="og:description" content="نيو سي برنسيس فرع الزقازيق - أفضل برامج العمرة والحج بأسعار تنافسية وخدمة ممتازة">
+  <link rel="canonical" href="https://newseaprincess.com/login.html">
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen">
+<!-- Header -->
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur shadow-sm border-b border-gold/20">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <a href="/index.html" class="flex items-center gap-2 text-primary font-bold text-2xl">
+        <img src="/assets/logo-white.png" alt="نيو سي برنسيس فرع الزقازيق" class="h-10 w-auto object-contain">
+      </a>
+      
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center gap-6 text-darkBg font-semibold">
+        <a href="/nsp-control-8x4k/dashboard.html"  class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-chart-pie w-5"></i>نظرة عامة</a>
+        <a href="/nsp-control-8x4k/bookings.html"   class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-address-book w-5"></i>الحجوزات</a>
+        <a href="/nsp-control-8x4k/packages.html"   class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-suitcase-rolling w-5"></i>برامج الرحلات</a>
+        <a href="/nsp-control-8x4k/reviews.html"    class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-comments w-5"></i>الآراء والتقييمات</a>
+        <a href="/nsp-control-8x4k/newsletter.html" class="nav-link"><i class="fa-solid fa-bell w-5"></i>النشرة البريدية</a>
+        <a href="/nsp-control-8x4k/users.html"      class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-users w-5"></i>المستخدمون</a>
+        <a href="/nsp-control-8x4k/audit-log.html"  class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-clipboard-list w-5"></i>سجل العمليات</a>
+        <a href="/nsp-control-8x4k/admins.html"     class="nav-link" onclick="closeDrawer()"><i class="fa-solid fa-user-shield w-5"></i>إدارة الأدمن</a>
+      </nav>
+
+      <a href="https://wa.me/201555154996" target="_blank" class="hidden md:flex btn-primary items-center gap-2 text-sm">
+        <i class="fa-brands fa-whatsapp text-lg"></i>
+        تحدث معنا
+      </a>
+
+      <!-- Mobile Menu Button -->
+      <button class="md:hidden text-primary text-2xl" id="mobileMenuBtn">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </header>
+  <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border-t-4 border-gold text-center">
+    
+    <div class="flex justify-center mb-6">
+      <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-gold text-3xl shadow-lg border-2 border-gold">
+        <i class="fa-solid fa-moon"></i>
+      </div>
+    </div>
+    
+    <h1 class="text-2xl font-bold text-darkBg mb-2">لوحة الإدارة</h1>
+    <p class="text-gray-500 mb-8 text-sm">أدخل بيانات الدخول للوصول إلى لوحة التحكم</p>
+
+    <div class="space-y-4 mb-6">
+      <input type="email" id="emailInput" placeholder="البريد الإلكتروني للإدارة" class="w-full border-2 border-gray-200 p-3 rounded focus:outline-none focus:border-gold text-left dir-ltr">
+      <input type="password" id="passInput" placeholder="كلمة المرور" class="w-full border-2 border-gray-200 p-3 rounded focus:outline-none focus:border-gold text-left dir-ltr">
+    </div>
+
+    <!-- reCAPTCHA (H8 fix — Phase P) -->
+    <!-- Site key matches the one used on the public booking form -->
+    <!-- Falls back gracefully if grecaptcha not loaded (e.g. ad-blocker in dev) -->
+    <div class="flex justify-center mb-4" id="recaptchaWidget">
+      <div class="g-recaptcha" data-sitekey="6LdZszEtAAAAABEvHLs1lX-5aVr7-lMONeSOSE_y"></div>
+    </div>
+
+    <button id="loginBtn" onclick="handleLogin()" class="w-full btn-gold py-3 text-lg relative font-bold mb-4">
+      تسجيل الدخول
+    </button>
+    <p id="errorMsg" class="text-error text-sm font-bold hidden bg-red-50 p-2 rounded border border-red-200"></p>
+
+    <a href="/index.html" class="block mt-6 text-sm text-gray-400 hover:text-white transition">العودة للموقع</a>
+  </div>
+
+  <script src="/js/admin.js"></script>
+  <script>
+    async function handleLogin() {
+      const email = document.getElementById('emailInput').value.trim();
+      const pass  = document.getElementById('passInput').value;
+      const btn   = document.getElementById('loginBtn');
+      const err   = document.getElementById('errorMsg');
+
+      err.classList.add('hidden');
+      if (!email || !pass) return;
+
+      // ── reCAPTCHA verification (H8 — Phase P) ─────────────────────────────
+      // If grecaptcha is loaded (production), verify token server-side.
+      // If not loaded (ad-blocker, local dev without API key), fall through.
+      const recaptchaLoaded = typeof grecaptcha !== 'undefined';
+      if (recaptchaLoaded) {
+        const token = grecaptcha.getResponse();
+        if (!token) {
+          err.innerText = 'يرجى التحقق من أنك لست روبوتاً';
+          err.classList.remove('hidden');
+          return;
+        }
+        // Verify server-side via existing edge function
+        try {
+          const captchaRes = await window.db.functions.invoke('verify-recaptcha', { body: { token } });
+          if (!captchaRes.data?.success) {
+            err.innerText = 'فشل التحقق من reCAPTCHA. حاول مرة أخرى.';
+            err.classList.remove('hidden');
+            grecaptcha.reset();
+            return;
+          }
+        } catch (captchaErr) {
+          // If verify-recaptcha edge function is unreachable, block login in production.
+          // In local dev without RECAPTCHA_SECRET_KEY set, the edge fn returns misconfigured
+          // — which we treat as non-blocking (dev only).
+          console.warn('reCAPTCHA verify failed:', captchaErr);
+          err.innerText = 'تعذر التحقق من reCAPTCHA. تأكد من الاتصال بالإنترنت.';
+          err.classList.remove('hidden');
+          return;
+        }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="loader mx-auto" style="width:24px;height:24px;border-width:3px;border-top-color:white;"></div>';
+
+      try {
+        const { data, error } = await window.db.auth.signInWithPassword({ email, password: pass });
+        if (error) throw error;
+        window.location.href = '/nsp-control-8x4k/dashboard.html';
+      } catch(e) {
+        console.error(e);
+        err.innerText = 'بيانات الدخول غير صحيحة.';
+        err.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = 'تسجيل الدخول';
+        if (recaptchaLoaded) grecaptcha.reset();
+      }
+    }
+
+    // Auto-redirect if already logged in
+    window.db.auth.getSession().then(({data}) => {
+       if(data.session) window.location.href = '/nsp-control-8x4k/dashboard.html';
+    });
+  </script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('mobileMenuBtn');
+      if (btn) {
+          btn.addEventListener('click', () => {
+             const nav = document.querySelector('header nav');
+             nav.classList.toggle('hidden');
+             nav.classList.toggle('flex');
+             nav.classList.toggle('flex-col');
+             nav.classList.toggle('absolute');
+             nav.classList.toggle('top-full');
+             nav.classList.toggle('left-0');
+             nav.classList.toggle('w-full');
+             nav.classList.toggle('bg-white');
+             nav.classList.toggle('p-4');
+             nav.classList.toggle('shadow-lg');
+          });
+      }
+    });
+  </script>
+</div><!-- /flex wrapper -->
+</body>
+</html>

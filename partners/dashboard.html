@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم — بوابة الشركاء</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/partner/partner-auth.js"></script>
+  <script src="/partner/partner-layout.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;background:#f3f4f6;}
+    .kpi{background:#fff;border-radius:14px;padding:20px;box-shadow:0 1px 8px rgba(0,0,0,.06);border:1px solid #e5e7eb;}
+    .card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 1px 8px rgba(0,0,0,.06);border:1px solid #e5e7eb;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700;}
+  </style>
+</head>
+<body class="min-h-screen">
+<div class="flex min-h-screen">
+  <div id="partnerNavMount" class="flex"></div>
+
+  <main class="flex-1 overflow-auto p-4 md:p-6">
+
+    <!-- Header -->
+    <div class="mb-6">
+      <h1 class="text-xl font-black text-gray-800">مرحباً، <span id="greetName">…</span> 👋</h1>
+      <p class="text-sm text-gray-400" id="partnerLabel">جارٍ التحميل…</p>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6" id="kpiGrid">
+      <!-- skeleton -->
+      <div class="kpi animate-pulse col-span-2 md:col-span-1"><div class="h-3 bg-gray-100 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+      <div class="kpi animate-pulse col-span-2 md:col-span-1"><div class="h-3 bg-gray-100 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+      <div class="kpi animate-pulse col-span-2 md:col-span-1"><div class="h-3 bg-gray-100 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+    </div>
+
+    <!-- Row: Recent Quotes + Recent Inquiries -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+
+      <!-- Recent quotes -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-black text-gray-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-file-contract text-primary"></i>أحدث عروض الأسعار
+          </h2>
+          <a href="quotes.html" class="text-xs text-primary font-bold hover:underline">عرض الكل ←</a>
+        </div>
+        <div id="recentQuotes">
+          <p class="text-gray-400 text-xs text-center py-6 animate-pulse">جارٍ التحميل…</p>
+        </div>
+      </div>
+
+      <!-- Recent inquiries -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-black text-gray-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-paper-plane text-primary"></i>طلباتي الأخيرة
+          </h2>
+          <div class="flex gap-2">
+            <a href="inquiries.html" class="text-xs text-primary font-bold hover:underline">عرض الكل ←</a>
+            <button onclick="openInquiryModal()"
+              class="text-xs bg-primary text-white px-2 py-1 rounded font-bold hover:bg-green-700">+ طلب جديد</button>
+          </div>
+        </div>
+        <div id="recentInquiries">
+          <p class="text-gray-400 text-xs text-center py-6 animate-pulse">جارٍ التحميل…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Partner Info Card -->
+    <div class="card">
+      <h2 class="font-black text-gray-800 text-sm flex items-center gap-2 mb-4">
+        <i class="fa-solid fa-building text-primary"></i>معلومات الشركة
+      </h2>
+      <div id="partnerInfo" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <p class="text-gray-400 animate-pulse col-span-4">جارٍ التحميل…</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- New Inquiry Modal -->
+<div id="inquiryModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-5 border-b">
+      <h2 class="font-bold text-gray-800">طلب جديد</h2>
+      <button onclick="closeInquiryModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-5 space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">عنوان الطلب *</label>
+        <input id="iq_title" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الوجهة</label>
+          <input id="iq_destination" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ السفر (من)</label>
+          <input id="iq_date_from" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ العودة</label>
+          <input id="iq_date_to" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">عدد الكبار</label>
+          <input id="iq_adults" type="number" min="1" value="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">عدد الأطفال</label>
+          <input id="iq_children" type="number" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">درجة الفندق</label>
+          <select id="iq_hotel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" style="font-family:'Cairo',sans-serif;">
+            <option value="">أي درجة</option>
+            <option value="3*">3 نجوم</option>
+            <option value="4*">4 نجوم</option>
+            <option value="5*">5 نجوم</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الميزانية للفرد</label>
+          <input id="iq_budget" type="number" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+      </div>
+      <div class="flex gap-4">
+        <label class="flex items-center gap-2 text-sm cursor-pointer">
+          <input id="iq_transport" type="checkbox" checked class="accent-primary">
+          <span>نقل مطلوب</span>
+        </label>
+        <label class="flex items-center gap-2 text-sm cursor-pointer">
+          <input id="iq_guide" type="checkbox" class="accent-primary">
+          <span>مرشد سياحي</span>
+        </label>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">طلبات خاصة</label>
+        <textarea id="iq_notes" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none resize-none" style="font-family:'Cairo',sans-serif;"></textarea>
+      </div>
+      <div id="iqError" class="hidden text-red-600 text-xs font-bold"></div>
+    </div>
+    <div class="flex gap-3 p-5 border-t">
+      <button onclick="submitInquiry()" class="flex-1 bg-primary text-white font-bold py-2 rounded-lg hover:bg-green-700 transition text-sm">
+        <i class="fa-solid fa-paper-plane ml-1"></i>إرسال الطلب
+      </button>
+      <button onclick="closeInquiryModal()" class="px-4 border border-gray-200 text-gray-600 font-bold py-2 rounded-lg text-sm">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const Q_STATUS = { draft:'مسودة', internal_review:'مراجعة', sent:'مُرسَل', viewed:'تم المشاهدة', revision_requested:'تعديل', negotiation:'تفاوض', accepted:'مقبول', deposit_pending:'إيداع', confirmed:'مؤكد', expired:'منتهي', rejected:'مرفوض' };
+const Q_COLOR  = { sent:'#3b82f6', viewed:'#8b5cf6', accepted:'#16a34a', confirmed:'#16a34a', rejected:'#ef4444', expired:'#6b7280', revision_requested:'#f97316', negotiation:'#f59e0b', deposit_pending:'#f59e0b' };
+const INQ_STATUS = { new:'جديد', acknowledged:'تم الاستلام', in_progress:'جارٍ', quoted:'عُرض سعر', won:'تم', lost:'ملغي', cancelled:'ملغي' };
+const INQ_COLOR  = { new:'#3b82f6', acknowledged:'#8b5cf6', in_progress:'#f97316', quoted:'#f59e0b', won:'#16a34a', lost:'#ef4444', cancelled:'#6b7280' };
+
+const TIER_AR = { strategic:'استراتيجي', platinum:'بلاتيني', gold:'ذهبي', silver:'فضي', standard:'عادي', new:'جديد' };
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const ppu = await PartnerAuth.requirePartnerAuth();
+  if (!ppu) return;
+  PartnerLayout.init();
+
+  const partner = PartnerAuth.getPartner();
+  const userName = (await db.auth.getSession()).data.session?.user?.user_metadata?.full_name || '';
+  document.getElementById('greetName').textContent = userName.split(' ')[0] || 'شريكنا';
+  document.getElementById('partnerLabel').textContent = partner?.legal_name || '';
+
+  await Promise.all([loadKPIs(partner), loadRecentQuotes(), loadRecentInquiries()]);
+  renderPartnerInfo(partner);
+});
+
+async function loadKPIs(partner) {
+  const { data, error } = await db.rpc('get_partner_dashboard');
+  if (error || !data) { document.getElementById('kpiGrid').innerHTML = '<p class="text-red-400 text-xs col-span-6">فشل تحميل البيانات</p>'; return; }
+
+  const fmt = n => Number(n || 0).toLocaleString('ar-EG');
+  const soon = partner?.contract_expiry ? Math.ceil((new Date(partner.contract_expiry) - new Date()) / 86400000) : null;
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi border-b-2 border-blue-400 col-span-1">
+      <p class="text-xs text-gray-500 font-bold mb-1">الطلبات المفتوحة</p>
+      <p class="text-2xl font-black text-blue-600">${data.open_inquiries}</p>
+    </div>
+    <div class="kpi border-b-2 border-purple-400 col-span-1">
+      <p class="text-xs text-gray-500 font-bold mb-1">عروض معلقة</p>
+      <p class="text-2xl font-black text-purple-600">${data.pending_quotes}</p>
+    </div>
+    <div class="kpi border-b-2 border-green-500 col-span-1">
+      <p class="text-xs text-gray-500 font-bold mb-1">حجوزات نشطة</p>
+      <p class="text-2xl font-black text-green-700">${data.active_bookings}</p>
+    </div>
+    <div class="kpi border-b-2 border-teal-400 col-span-1">
+      <p class="text-xs text-gray-500 font-bold mb-1">رحلات مكتملة</p>
+      <p class="text-2xl font-black text-teal-600">${data.completed_bookings}</p>
+    </div>
+    <div class="kpi border-b-2 border-red-400 col-span-1">
+      <p class="text-xs text-gray-500 font-bold mb-1">رصيد مستحق</p>
+      <p class="text-lg font-black text-red-600">${fmt(data.outstanding_amount)}</p>
+      <p class="text-xs text-gray-400">${partner?.currency || 'EGP'}</p>
+    </div>
+    <div class="kpi border-b-2 border-amber-400 col-span-1">
+      <p class="text-xs text-gray-500 font-bold mb-1">العقد</p>
+      ${soon !== null
+        ? `<p class="text-sm font-black ${soon < 30 ? 'text-red-600' : soon < 60 ? 'text-amber-600' : 'text-green-600'}">${soon > 0 ? `${soon} يوم` : 'منتهي'}</p>`
+        : `<p class="text-sm font-black text-gray-400">—</p>`}
+      <p class="text-xs text-gray-400">ينتهي العقد</p>
+    </div>`;
+}
+
+async function loadRecentQuotes() {
+  const { data } = await db.rpc('get_partner_quotes');
+  const list = (data || []).slice(0, 5);
+
+  if (!list.length) {
+    document.getElementById('recentQuotes').innerHTML = '<p class="text-gray-400 text-xs text-center py-6">لا توجد عروض أسعار بعد</p>';
+    return;
+  }
+
+  document.getElementById('recentQuotes').innerHTML = list.map(q => `
+    <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-gray-800 truncate">${q.title}</p>
+        <p class="text-xs text-gray-400">${q.quote_number} · ${q.destination || '—'}</p>
+      </div>
+      <div class="flex items-center gap-2 shrink-0 mr-2">
+        <span class="text-xs font-bold text-green-700">${Number(q.total_amount||0).toLocaleString()} ${q.currency}</span>
+        <span class="badge text-xs" style="background:${Q_COLOR[q.status]||'#6b7280'}22;color:${Q_COLOR[q.status]||'#6b7280'}">
+          ${Q_STATUS[q.status]||q.status}
+        </span>
+      </div>
+    </div>`).join('');
+}
+
+async function loadRecentInquiries() {
+  const { data } = await db.from('partner_inquiries')
+    .select('id,inquiry_number,title,destination,status,created_at')
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  const list = data || [];
+  if (!list.length) {
+    document.getElementById('recentInquiries').innerHTML = '<p class="text-gray-400 text-xs text-center py-6">لا توجد طلبات. ابدأ بإرسال طلبك الأول!</p>';
+    return;
+  }
+
+  document.getElementById('recentInquiries').innerHTML = list.map(i => `
+    <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-gray-800 truncate">${i.title}</p>
+        <p class="text-xs text-gray-400">${i.inquiry_number} · ${i.destination || '—'}</p>
+      </div>
+      <span class="badge shrink-0 mr-2 text-xs" style="background:${INQ_COLOR[i.status]||'#6b7280'}22;color:${INQ_COLOR[i.status]||'#6b7280'}">
+        ${INQ_STATUS[i.status]||i.status}
+      </span>
+    </div>`).join('');
+}
+
+function renderPartnerInfo(p) {
+  if (!p) return;
+  const TIER_COLORS = { strategic:'#7c3aed', platinum:'#64748b', gold:'#B8860B', silver:'#6b7280', standard:'#1B5E20', new:'#3b82f6' };
+  document.getElementById('partnerInfo').innerHTML = `
+    <div><p class="text-xs text-gray-400 mb-0.5">الاسم القانوني</p><p class="font-bold text-gray-800 text-sm">${p.legal_name}</p></div>
+    <div><p class="text-xs text-gray-400 mb-0.5">الدرجة</p>
+      <span class="badge text-xs" style="background:${TIER_COLORS[p.tier]||'#6b7280'}22;color:${TIER_COLORS[p.tier]||'#6b7280'}">${TIER_AR[p.tier]||p.tier}</span>
+    </div>
+    <div><p class="text-xs text-gray-400 mb-0.5">العملة</p><p class="font-bold text-gray-800 text-sm">${p.currency||'EGP'}</p></div>
+    <div><p class="text-xs text-gray-400 mb-0.5">حد الائتمان</p><p class="font-bold text-gray-800 text-sm">${Number(p.credit_limit||0).toLocaleString()}</p></div>
+    <div><p class="text-xs text-gray-400 mb-0.5">شروط الدفع</p><p class="font-bold text-gray-800 text-sm">${p.payment_terms_days||30} يوم</p></div>
+    <div><p class="text-xs text-gray-400 mb-0.5">البلد</p><p class="font-bold text-gray-800 text-sm">${p.country||'—'}${p.city?(' · '+p.city):''}</p></div>
+    <div><p class="text-xs text-gray-400 mb-0.5">البريد</p><p class="font-bold text-gray-800 text-sm truncate">${p.email||'—'}</p></div>
+    <div><p class="text-xs text-gray-400 mb-0.5">هاتف</p><p class="font-bold text-gray-800 text-sm">${p.phone||'—'}</p></div>`;
+}
+
+function openInquiryModal()  { document.getElementById('inquiryModal').classList.remove('hidden'); }
+function closeInquiryModal() { document.getElementById('inquiryModal').classList.add('hidden'); }
+
+async function submitInquiry() {
+  const title = document.getElementById('iq_title').value.trim();
+  if (!title) { document.getElementById('iqError').textContent='العنوان مطلوب'; document.getElementById('iqError').classList.remove('hidden'); return; }
+  document.getElementById('iqError').classList.add('hidden');
+
+  const { data: { session } } = await db.auth.getSession();
+  const partnerId = PartnerAuth.getPartnerId();
+
+  const { error } = await db.from('partner_inquiries').insert({
+    partner_id:      partnerId,
+    submitted_by:    session.user.id,
+    title,
+    destination:     document.getElementById('iq_destination').value.trim() || null,
+    travel_date_from: document.getElementById('iq_date_from').value || null,
+    travel_date_to:   document.getElementById('iq_date_to').value   || null,
+    adults_count:    parseInt(document.getElementById('iq_adults').value)   || 2,
+    children_count:  parseInt(document.getElementById('iq_children').value) || 0,
+    hotel_class:     document.getElementById('iq_hotel').value || null,
+    budget_per_pax:  parseFloat(document.getElementById('iq_budget').value) || null,
+    transport_needed: document.getElementById('iq_transport').checked,
+    guide_needed:    document.getElementById('iq_guide').checked,
+    special_requests: document.getElementById('iq_notes').value.trim() || null,
+  });
+
+  if (error) { document.getElementById('iqError').textContent='خطأ: '+error.message; document.getElementById('iqError').classList.remove('hidden'); return; }
+
+  closeInquiryModal();
+  await loadRecentInquiries();
+  await loadKPIs(PartnerAuth.getPartner());
+}
+</script>
+</body>
+</html>

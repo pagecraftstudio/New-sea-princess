@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الحجوزات — بوابة الشركاء</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/partner-auth.js"></script>
+  <script src="/js/partner-layout.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;background:#f3f4f6;}
+    .card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 1px 8px rgba(0,0,0,.06);border:1px solid #e5e7eb;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700;}
+    .s-confirmed{background:#d1fae5;color:#065f46;}
+    .s-pending{background:#fef3c7;color:#b45309;}
+    .s-cancelled{background:#fee2e2;color:#991b1b;}
+    .s-completed{background:#ede9fe;color:#5b21b6;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="min-h-screen">
+<div class="flex min-h-screen">
+  <div id="partnerNavMount" class="flex"></div>
+
+  <main class="flex-1 overflow-auto p-4 md:p-6">
+    <div class="mb-6">
+      <h1 class="text-xl font-black text-gray-800"><i class="fa-solid fa-calendar-check text-primary ml-2"></i>الحجوزات</h1>
+      <p class="text-sm text-gray-400">حجوزاتك النشطة والمكتملة</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-4 flex-wrap">
+      <button onclick="setFilter('all',this)" class="px-4 py-1.5 rounded-lg text-xs font-bold border-2 border-primary text-primary bg-primary/5">الكل</button>
+      <button onclick="setFilter('upcoming',this)" class="px-4 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-primary">قادمة</button>
+      <button onclick="setFilter('confirmed',this)" class="px-4 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-primary">مؤكدة</button>
+      <button onclick="setFilter('completed',this)" class="px-4 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-primary">مكتملة</button>
+      <button onclick="setFilter('cancelled',this)" class="px-4 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-primary">ملغاة</button>
+    </div>
+
+    <div class="card">
+      <div id="bookingList" class="space-y-3">
+        <div class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Booking Detail Drawer -->
+<div id="detailDrawer" class="hidden fixed inset-y-0 left-0 w-full md:w-[480px] bg-white shadow-2xl z-50 overflow-y-auto">
+  <div class="sticky top-0 bg-white border-b p-5 flex items-center justify-between">
+    <h3 class="font-black text-gray-800" id="drawerTitle">تفاصيل الحجز</h3>
+    <button onclick="closeDrawer()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+  </div>
+  <div id="drawerContent" class="p-5"></div>
+</div>
+<div id="drawerOverlay" class="hidden fixed inset-0 bg-black/30 z-40" onclick="closeDrawer()"></div>
+
+<div id="toast"></div>
+
+<script>
+let _filter = 'all';
+let _all = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const ppu = await PartnerAuth.requirePartnerAuth();
+  if (!ppu) return;
+  PartnerLayout.init();
+  await load();
+});
+
+async function load() {
+  const pid = PartnerAuth.getPartnerId();
+  const { data } = await db.from('bookings')
+    .select('id,booking_number,customer_name,status,total_price,paid_amount,remaining_amount,created_at,package_id,packages(title)')
+    .eq('b2b_partner_id', pid)
+    .order('created_at',{ascending:false});
+  _all = data || [];
+  render();
+}
+
+function setFilter(f, btn) {
+  _filter = f;
+  document.querySelectorAll('[onclick^="setFilter"]').forEach(b=>b.className='px-4 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-primary');
+  btn.className='px-4 py-1.5 rounded-lg text-xs font-bold border-2 border-primary text-primary bg-primary/5';
+  render();
+}
+
+function render() {
+  const today = new Date().toISOString().split('T')[0];
+  let rows = _all;
+  if (_filter === 'upcoming')  rows = _all.filter(b => b.status === 'confirmed');
+  else if (_filter !== 'all')  rows = _all.filter(b => b.status === _filter);
+
+  const el = document.getElementById('bookingList');
+  if (!rows.length) { el.innerHTML='<p class="text-center text-gray-400 py-10">لا توجد حجوزات</p>'; return; }
+
+  const sMap = {confirmed:'s-confirmed مؤكد',pending:'s-pending معلق',cancelled:'s-cancelled ملغي',completed:'s-completed مكتمل'};
+  el.innerHTML = rows.map(b => {
+    const [sc,sl] = (sMap[b.status]||'s-pending معلق').split(' ');
+    const prog = b.total_price > 0 ? Math.round((b.paid_amount||0)/b.total_price*100) : 0;
+    return `<div class="p-4 border border-gray-100 rounded-xl hover:border-primary/30 transition cursor-pointer" onclick="openDrawer('${b.id}')">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap mb-1">
+            <span class="font-bold text-sm text-gray-800">${esc(b.customer_name||'—')}</span>
+            <span class="badge ${sc}">${sl}</span>
+          </div>
+          <div class="text-xs text-gray-400 flex gap-3 flex-wrap">
+            <span class="font-mono text-gray-500">${b.booking_number}</span>
+            ${b.packages?.title ? `<span>${esc(b.packages.title)}</span>` : ''}
+            <span>${new Date(b.created_at).toLocaleDateString('ar-EG')}</span>
+          </div>
+          ${b.total_price ? `
+          <div class="mt-2">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-gray-500">مدفوع: ${fmt(b.paid_amount||0)} من ${fmt(b.total_price)}</span>
+              <span class="font-bold ${prog>=100?'text-green-600':'text-amber-600'}">${prog}%</span>
+            </div>
+            <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full ${prog>=100?'bg-green-500':'bg-amber-400'} rounded-full" style="width:${Math.min(prog,100)}%"></div>
+            </div>
+          </div>` : ''}
+        </div>
+        <i class="fa-solid fa-chevron-left text-gray-300 text-xs mt-1 shrink-0"></i>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openDrawer(id) {
+  const { data: b } = await db.from('bookings')
+    .select('*,packages(title,category)')
+    .eq('id', id).single();
+  if (!b) return;
+  document.getElementById('drawerTitle').textContent = b.booking_number;
+  const sMap = {confirmed:'text-green-700 bg-green-50',pending:'text-amber-700 bg-amber-50',cancelled:'text-red-700 bg-red-50',completed:'text-purple-700 bg-purple-50'};
+  const sc = sMap[b.status]||'text-gray-600 bg-gray-50';
+  document.getElementById('drawerContent').innerHTML = `
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <span class="font-black text-gray-800 text-lg">${esc(b.customer_name||'—')}</span>
+        <span class="px-3 py-1 rounded-full text-xs font-bold ${sc}">${b.status}</span>
+      </div>
+      ${b.packages?.title ? `<p class="text-sm text-gray-500"><i class="fa-solid fa-box ml-1 text-primary"></i>${esc(b.packages.title)}</p>` : ''}
+      <hr>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><p class="text-xs text-gray-400">البريد الإلكتروني</p><p class="font-semibold">${esc(b.customer_email||'—')}</p></div>
+        <div><p class="text-xs text-gray-400">الهاتف</p><p class="font-semibold">${esc(b.customer_phone||'—')}</p></div>
+        <div><p class="text-xs text-gray-400">البالغون</p><p class="font-semibold">${b.adults_count||0}</p></div>
+        <div><p class="text-xs text-gray-400">الأطفال</p><p class="font-semibold">${b.children_count||0}</p></div>
+      </div>
+      <hr>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-gray-500">إجمالي السعر</span><span class="font-bold">${fmt(b.total_price||0)} EGP</span></div>
+        <div class="flex justify-between"><span class="text-gray-500">المدفوع</span><span class="font-bold text-green-600">${fmt(b.paid_amount||0)} EGP</span></div>
+        <div class="flex justify-between"><span class="text-gray-500">المتبقي</span><span class="font-bold text-red-600">${fmt(b.remaining_amount||0)} EGP</span></div>
+      </div>
+      ${b.notes ? `<hr><div><p class="text-xs text-gray-400 mb-1">ملاحظات</p><p class="text-sm text-gray-600">${esc(b.notes)}</p></div>` : ''}
+    </div>`;
+  document.getElementById('detailDrawer').classList.remove('hidden');
+  document.getElementById('drawerOverlay').classList.remove('hidden');
+}
+function closeDrawer() {
+  document.getElementById('detailDrawer').classList.add('hidden');
+  document.getElementById('drawerOverlay').classList.add('hidden');
+}
+
+function fmt(n){return (n||0).toLocaleString('ar-EG',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

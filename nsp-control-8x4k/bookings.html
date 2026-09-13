@@ -1,0 +1,2909 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة الحجوزات | نيو سي برنسيس فرع الزقازيق</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/print-utils.js"></script>
+  <script src="/js/regulatory-export.js"></script>
+  <style>
+
+    /* bottom-sheet slide-up animation on mobile */
+    @keyframes slideUp { from { transform:translateY(100%); opacity:.5; } to { transform:translateY(0); opacity:1; } }
+    @media (max-width:767px) {
+      #bookingModal .flex.min-h-full > div { animation: slideUp .28s cubic-bezier(.32,.72,0,1); }
+    }
+  </style>
+  <script src="/js/admin-nav.js"></script>
+  <script src="/js/ai-service.js"></script>
+  <script>
+</script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<div id="adminNavMount"></div>
+
+  <main class="flex-1 flex flex-col p-6" aria-label="المحتوى الرئيسي">
+    <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+      <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-primary pb-2" aria-label="جميع الحجوزات">جميع الحجوزات</h2>
+      <div class="flex items-center gap-3">
+        <div class="text-xs text-gray-400 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 hidden md:block">
+          <i class="fa-solid fa-info-circle text-yellow-500 ml-1"></i>
+          لطباعة الفاتورة: افتح الحجز ← اضغط "طباعة فاتورة"
+        </div>
+        <button onclick="openNewBookingModal()"
+                data-role="admin"
+                class="bg-gold hover:bg-yellow-600 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 transition shadow">
+          <i class="fa-solid fa-plus text-lg"></i> حجز جديد
+        </button>
+        <button onclick="exportGroupedReport()"
+                class="bg-primary hover:bg-green-700 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 transition shadow">
+          <i class="fa-solid fa-file-pdf text-lg"></i> تصدير تقرير PDF
+        </button>
+        <button onclick="exportExcel()"
+                title="تصدير البيانات المفلترة إلى Excel"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition shadow text-sm">
+          <i class="fa-solid fa-file-excel text-base"></i> Excel
+        </button>
+        <button onclick="openOpsBrief()"
+                title="موجز العمليات الذكي — الحجوزات القادمة والمخاطر"
+                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition shadow text-sm">
+          <i class="fa-solid fa-sparkles text-base"></i> موجز ذكي
+        </button>
+        <button onclick="openRegulatoryExportModal('bulk')"
+                title="تصدير كشف رسمي لوزارة السياحة أو منصة نسك"
+                class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition shadow text-sm relative">
+          <i class="fa-solid fa-file-shield text-base"></i>
+          <span>تصدير تنظيمي</span>
+          <span class="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none shadow">جديد</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Smart Search -->
+    <div class="bg-white rounded-xl shadow border border-gray-200 p-4 mb-4">
+      <label for="smartSearch" class="block text-xs text-gray-500 font-bold mb-1.5">
+        <i class="fa-solid fa-magnifying-glass text-primary ml-1" aria-hidden="true"></i>
+        بحث ذكي — رقم الجواز، الرقم القومي، رقم الحجز، أو اسم أي مرافق
+      </label>
+      <div class="relative">
+        <input type="text" id="smartSearch" autocomplete="off" oninput="onSmartSearchInput()"
+               onkeydown="onSmartSearchKeydown(event)"
+               onblur="setTimeout(hideSuggestions, 150)"
+               role="combobox" aria-expanded="false" aria-autocomplete="list"
+               aria-controls="smartSearchSuggestions" aria-describedby="smartSearchCorrection"
+               placeholder="مثال: NSP-2026-00005 — أو رقم الجواز — أو الرقم القومي — أو اسم أحد المسافرين..."
+               class="w-full border border-gray-300 rounded-lg p-3 pr-10 text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary transition">
+        <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-300" aria-hidden="true"></i>
+        <button id="smartSearchClear" aria-label="مسح البحث" onclick="document.getElementById('smartSearch').value='';applyFilters();hideSuggestions();"
+                class="hidden absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 focus:ring-2 focus:ring-red-400 rounded transition">
+          <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
+        </button>
+        <!-- Instant suggestions dropdown -->
+        <div id="smartSearchSuggestions" role="listbox" aria-label="اقتراحات البحث"
+             class="hidden absolute z-20 top-full mt-1 right-0 left-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto text-sm"></div>
+      </div>
+      <p id="smartSearchCorrection" role="status" aria-live="polite" class="hidden text-xs text-amber-700 mt-1.5"></p>
+      <p id="smartSearchResultCount" class="sr-only" role="status" aria-live="polite"></p>
+
+      <!-- Quick Filter Pills -->
+      <div class="flex flex-wrap gap-2 mt-3">
+        <button onclick="toggleQuickFilter('paid_full', this)" data-quickfilter="paid_full"
+                class="quick-filter-btn text-xs font-bold px-3 py-1.5 rounded-full border-2 border-green-200 text-green-700 bg-green-50 hover:bg-green-100 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-check"></i> مدفوع بالكامل
+        </button>
+        <button onclick="toggleQuickFilter('has_remaining', this)" data-quickfilter="has_remaining"
+                class="quick-filter-btn text-xs font-bold px-3 py-1.5 rounded-full border-2 border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-coins"></i> متبقي عليه مبالغ
+        </button>
+        <button onclick="toggleQuickFilter('pending_review', this)" data-quickfilter="pending_review"
+                class="quick-filter-btn text-xs font-bold px-3 py-1.5 rounded-full border-2 border-yellow-200 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-clock"></i> معلّق بانتظار المراجعة
+        </button>
+        <button id="quickFilterReset" onclick="clearQuickFilters()"
+                class="hidden text-xs font-bold px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-500 bg-gray-50 hover:bg-gray-100 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-xmark"></i> إلغاء الفلتر السريع
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white rounded-xl shadow border border-gray-200 p-4 mb-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-xs text-gray-500 font-bold mb-1">بحث باسم العميل</label>
+        <input type="text" id="filterName" placeholder="اسم العميل..." oninput="applyFilters()" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 font-bold mb-1">الحالة</label>
+        <select id="filterStatus" onchange="applyFilters()" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none bg-white">
+          <option value="">كل الحالات</option>
+          <option value="awaiting_payment">في انتظار الدفع</option>
+          <option value="pending">قيد التلقي</option>
+          <option value="confirmed">مؤكد</option>
+          <option value="visa_processing">جاري التأشيرة</option>
+          <option value="tickets_issued">تذاكر صادرة</option>
+          <option value="completed">مكتمل</option>
+          <option value="cancelled">ملغي</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 font-bold mb-1">من تاريخ</label>
+        <input type="date" id="filterDateFrom" onchange="applyFilters()" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 font-bold mb-1">إلى تاريخ</label>
+        <input type="date" id="filterDateTo" onchange="applyFilters()" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 font-bold mb-1">بحث باسم البرنامج</label>
+        <input type="text" id="filterPackage" placeholder="اسم البرنامج..." oninput="applyFilters()" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 font-bold mb-1">رقم الحجز</label>
+        <input type="text" id="filterBookingNum" placeholder="NSP-2026-..." oninput="applyFilters()" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none font-mono" dir="ltr">
+      </div>
+      <div class="col-span-2 flex items-end gap-3">
+        <button onclick="resetFilters()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm transition">
+          <i class="fa-solid fa-rotate-right ml-1"></i> إعادة تعيين
+        </button>
+        <div class="text-sm font-bold flex items-center gap-1 bg-primary/10 text-primary px-4 py-2 rounded-lg">
+          <i class="fa-solid fa-list-check"></i>&nbsp;<span id="filterCount">0</span> نتيجة
+        </div>
+      </div>
+    </div>
+
+    <!-- Bookings Table -->
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto">
+      <table class="w-full text-right text-sm">
+        <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
+          <tr>
+            <th class="p-4">رقم الحجز</th>
+            <th class="p-4">تاريخ الطلب</th>
+            <th class="p-4">اسم العميل ورقم الهاتف</th>
+            <th class="p-4">منشئ الطلب</th>
+            <th class="p-4">البرنامج وتاريخ مغادرته</th>
+            <th class="p-4">الأفراد (ب/ط/ر)</th>
+            <th class="p-4">الحالة</th>
+            <th class="p-4 text-center">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="booksBody" class="divide-y divide-gray-100">
+          <tr><td colspan="8" class="p-6 text-center text-gray-400">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Booking Details Modal — bottom-sheet on mobile, centered on desktop -->
+  <!-- ══ NEW BOOKING MODAL — ADVANCED WIZARD ══════════════════════════════ -->
+  <style>
+    /* Wizard step progress */
+    .wb-step-dot { width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;border:2px solid #e5e7eb;background:#f9fafb;color:#9ca3af;transition:.3s; }
+    .wb-step-dot.active { background:#1B5E20;border-color:#1B5E20;color:#fff;box-shadow:0 0 0 4px rgba(27,94,32,.18); }
+    .wb-step-dot.done   { background:#2E7D32;border-color:#2E7D32;color:#fff; }
+    .wb-step-line { flex:1;height:3px;background:#e5e7eb;transition:.3s; }
+    .wb-step-line.done { background:#2E7D32; }
+    /* Traveler card */
+    .traveler-card { background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:14px;padding:14px;position:relative;transition:.2s; }
+    .traveler-card:hover { border-color:#b5c9b7; }
+    /* Payment bar */
+    .payment-bar-fill { height:8px;border-radius:4px;background:linear-gradient(90deg,#2E7D32,#B8860B);transition:width .5s cubic-bezier(.4,0,.2,1); }
+    /* Field validation */
+    .nb-field-valid   { border-color:#22c55e !important; }
+    .nb-field-invalid { border-color:#ef4444 !important;background:#fff5f5; }
+    /* Summary card */
+    .summary-row { display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed #e5e7eb;font-size:13px; }
+    .summary-row:last-child { border-bottom:none; }
+    /* Document upload zone */
+    .doc-upload-zone { border:2px dashed #b5c9b7;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:.2s;background:#f0fdf4; }
+    .doc-upload-zone:hover,.doc-upload-zone.drag-over { border-color:#1B5E20;background:#dcfce7; }
+    .doc-chip { display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;color:#065f46;margin:3px; }
+    /* Coupon badge */
+    .coupon-applied { background:#fef9c3;border:1.5px solid #fde047;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#713f12; }
+    /* Step panels */
+    .wb-panel { display:none; }
+    .wb-panel.active { display:block; }
+    /* Smooth slide */
+    @keyframes wbSlideIn { from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:none} }
+    .wb-panel.active { animation:wbSlideIn .22s ease; }
+  </style>
+
+  <div id="newBookingModal"
+       class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm"
+       style="display:none;"
+       onclick="if(event.target===this)closeNewBookingModal()">
+    <div class="flex min-h-full items-end justify-center md:items-center md:p-4">
+      <div class="bg-white w-full md:max-w-3xl md:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col"
+           style="max-height:96vh;">
+
+        <!-- Drag handle — mobile -->
+        <div class="md:hidden flex justify-center pt-3 pb-1 shrink-0">
+          <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
+        </div>
+
+        <!-- ── Header ───────────────────────────────────── -->
+        <div class="shrink-0 px-5 pt-4 pb-0 border-b border-gray-100">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-lg font-bold text-primary flex items-center gap-2">
+                <i class="fa-solid fa-plus-circle text-gold"></i> إضافة حجز جديد
+              </h3>
+              <p id="wbStepLabel" class="text-xs text-gray-400 mt-0.5">الخطوة 1 من 4 — اختيار البرنامج</p>
+            </div>
+            <button onclick="closeNewBookingModal()"
+                    class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition">
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+
+          <!-- Step indicator -->
+          <div class="flex items-center gap-0 pb-4">
+            <div class="wb-step-dot active" id="wbDot1" title="البرنامج"><i class="fa-solid fa-suitcase-rolling text-xs"></i></div>
+            <div class="wb-step-line" id="wbLine1"></div>
+            <div class="wb-step-dot" id="wbDot2" title="العميل والمسافرون"><i class="fa-solid fa-users text-xs"></i></div>
+            <div class="wb-step-line" id="wbLine2"></div>
+            <div class="wb-step-dot" id="wbDot3" title="الدفع"><i class="fa-solid fa-coins text-xs"></i></div>
+            <div class="wb-step-line" id="wbLine3"></div>
+            <div class="wb-step-dot" id="wbDot4" title="مراجعة وتأكيد"><i class="fa-solid fa-circle-check text-xs"></i></div>
+          </div>
+        </div>
+
+        <!-- ── Scrollable body ──────────────────────────── -->
+        <div class="flex-1 overflow-y-auto px-5 py-4" style="-webkit-overflow-scrolling:touch;">
+
+          <!-- Global error banner -->
+          <div id="nbError" class="hidden rounded-xl p-3 text-sm font-bold flex items-center gap-2 mb-3"></div>
+
+          <!-- ════════════════════════════════════════════
+               STEP 1 — Package
+          ════════════════════════════════════════════ -->
+          <div id="wbPanel1" class="wb-panel active space-y-4">
+            <!-- Package selector with search -->
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-4">
+              <label class="block text-xs font-bold text-primary mb-2">
+                <i class="fa-solid fa-magnifying-glass ml-1"></i>اختر البرنامج <span class="text-red-500">*</span>
+              </label>
+              <div class="relative mb-3">
+                <input id="nb_pkg_search" type="text" placeholder="ابحث باسم البرنامج أو الفئة…"
+                       oninput="filterNbPackages()"
+                       class="w-full border border-green-300 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-white pr-10">
+                <i class="fa-solid fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+              </div>
+              <div id="nb_pkg_list" class="space-y-2 max-h-52 overflow-y-auto pr-1">
+                <p class="text-xs text-gray-400 text-center py-4"><i class="fa-solid fa-spinner animate-spin ml-2"></i>جاري تحميل البرامج…</p>
+              </div>
+            </div>
+
+            <!-- Selected package card -->
+            <div id="nb_package_card" class="hidden">
+              <div class="bg-white border-2 border-primary rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex-1">
+                    <p class="font-bold text-primary text-base" id="nb_pkg_card_title">—</p>
+                    <p class="text-xs text-gray-500 mt-1" id="nb_pkg_card_meta">—</p>
+                  </div>
+                  <span class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-full shrink-0" id="nb_pkg_card_cat">—</span>
+                </div>
+                <div class="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-100">
+                  <div class="text-center">
+                    <p class="text-xs text-gray-400">سعر البالغ</p>
+                    <p class="font-bold text-green-700 text-sm" id="nb_pkg_price_adult">—</p>
+                  </div>
+                  <div class="text-center">
+                    <p class="text-xs text-gray-400">سعر الطفل</p>
+                    <p class="font-bold text-blue-600 text-sm" id="nb_pkg_price_child">—</p>
+                  </div>
+                  <div class="text-center">
+                    <p class="text-xs text-gray-400">مقاعد متاحة</p>
+                    <p class="font-bold text-amber-600 text-sm" id="nb_pkg_seats">—</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Booking type & departure note -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">نوع الحجز</label>
+                <select id="nb_booking_type" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
+                  <option value="standard">حجز عادي</option>
+                  <option value="preorder">حجز مسبق (Pre-order)</option>
+                  <option value="group">حجز جماعي</option>
+                  <option value="vip">VIP</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">حالة الحجز الابتدائية</label>
+                <select id="nb_status" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
+                  <option value="pending">قيد المراجعة</option>
+                  <option value="confirmed">مؤكد فورًا</option>
+                  <option value="awaiting_payment">في انتظار الدفع</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════
+               STEP 2 — Customer + Travelers
+          ════════════════════════════════════════════ -->
+          <div id="wbPanel2" class="wb-panel space-y-4">
+
+            <!-- Primary customer -->
+            <fieldset class="border border-gray-200 rounded-2xl p-4">
+              <legend class="text-xs font-bold text-primary px-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-user-tie"></i> بيانات العميل الرئيسي
+              </legend>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-bold text-gray-500 mb-1">الاسم الكامل <span class="text-red-500">*</span></label>
+                  <input id="nb_customer_name" type="text" placeholder="الاسم كما في الجواز" maxlength="100"
+                         oninput="nbValidateField(this,'name')"
+                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none transition">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">رقم الهاتف <span class="text-red-500">*</span></label>
+                  <div class="flex gap-1">
+                    <span class="bg-gray-50 border border-gray-300 rounded-xl px-2.5 py-2.5 text-xs font-bold text-gray-500 shrink-0">🇪🇬 +20</span>
+                    <input id="nb_customer_phone" type="tel" placeholder="1XXXXXXXXX" maxlength="20"
+                           oninput="nbValidateField(this,'phone')"
+                           class="flex-1 border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none transition" dir="ltr">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">رقم هاتف ثانٍ</label>
+                  <input id="nb_customer_phone2" type="tel" placeholder="اختياري" maxlength="20"
+                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">البريد الإلكتروني</label>
+                  <input id="nb_customer_email" type="email" placeholder="example@email.com"
+                         oninput="nbValidateField(this,'email')"
+                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">الرقم القومي</label>
+                  <input id="nb_national_id" type="text" placeholder="14 رقم" maxlength="14"
+                         oninput="nbValidateField(this,'nid')"
+                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
+                  <p id="nb_nid_age" class="text-xs text-blue-600 font-bold mt-0.5 hidden"></p>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">رقم الجواز</label>
+                  <input id="nb_passport" type="text" placeholder="A00000000" maxlength="20"
+                         class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none" dir="ltr">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">المحافظة</label>
+                  <select id="nb_governorate" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white">
+                    <option value="">-- اختر المحافظة --</option>
+                    <option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option>
+                    <option>الشرقية</option><option>القليوبية</option><option>المنوفية</option>
+                    <option>الغربية</option><option>كفر الشيخ</option><option>الدقهلية</option>
+                    <option>دمياط</option><option>بورسعيد</option><option>الإسماعيلية</option>
+                    <option>السويس</option><option>شمال سيناء</option><option>جنوب سيناء</option>
+                    <option>البحيرة</option><option>المنيا</option><option>أسيوط</option>
+                    <option>سوهاج</option><option>قنا</option><option>الأقصر</option>
+                    <option>أسوان</option><option>البحر الأحمر</option><option>الوادي الجديد</option>
+                    <option>مطروح</option><option>بني سويف</option><option>الفيوم</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">مصدر العميل</label>
+                  <select id="nb_lead_source" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white">
+                    <option value="">-- اختر --</option>
+                    <option value="walk_in">زيارة مباشرة</option>
+                    <option value="phone">اتصال هاتفي</option>
+                    <option value="whatsapp">واتساب</option>
+                    <option value="facebook">فيسبوك</option>
+                    <option value="instagram">إنستغرام</option>
+                    <option value="website">الموقع الإلكتروني</option>
+                    <option value="referral">توصية عميل آخر</option>
+                    <option value="other">أخرى</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Traveler count + detail cards -->
+            <fieldset class="border border-gray-200 rounded-2xl p-4">
+              <legend class="text-xs font-bold text-primary px-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-users"></i> المسافرون
+              </legend>
+
+              <!-- Count row -->
+              <div class="grid grid-cols-3 gap-3 mt-1 mb-4">
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">بالغون <span class="text-red-500">*</span></label>
+                  <div class="flex items-center gap-1">
+                    <button type="button" onclick="changeCount('nb_adults',-1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-red-100 font-bold text-gray-600 text-lg flex items-center justify-center transition">−</button>
+                    <input id="nb_adults" type="number" value="1" min="1" max="20" readonly
+                           class="flex-1 border border-gray-200 rounded-lg text-center py-1.5 text-sm font-bold bg-white">
+                    <button type="button" onclick="changeCount('nb_adults',1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-green-100 font-bold text-gray-600 text-lg flex items-center justify-center transition">+</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">أطفال (2–11)</label>
+                  <div class="flex items-center gap-1">
+                    <button type="button" onclick="changeCount('nb_children',-1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-red-100 font-bold text-gray-600 text-lg flex items-center justify-center transition">−</button>
+                    <input id="nb_children" type="number" value="0" min="0" max="20" readonly
+                           class="flex-1 border border-gray-200 rounded-lg text-center py-1.5 text-sm font-bold bg-white">
+                    <button type="button" onclick="changeCount('nb_children',1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-green-100 font-bold text-gray-600 text-lg flex items-center justify-center transition">+</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">رضّع (0–2)</label>
+                  <div class="flex items-center gap-1">
+                    <button type="button" onclick="changeCount('nb_infants',-1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-red-100 font-bold text-gray-600 text-lg flex items-center justify-center transition">−</button>
+                    <input id="nb_infants" type="number" value="0" min="0" max="10" readonly
+                           class="flex-1 border border-gray-200 rounded-lg text-center py-1.5 text-sm font-bold bg-white">
+                    <button type="button" onclick="changeCount('nb_infants',1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-green-100 font-bold text-gray-600 text-lg flex items-center justify-center transition">+</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Traveler detail cards (required — one per passenger) -->
+              <div class="flex justify-between items-center mb-2">
+                <p class="text-xs font-bold text-gray-600"><i class="fa-solid fa-id-card ml-1 text-primary"></i>بيانات المسافرين <span class="text-red-500">*</span></p>
+                <!-- Cards auto-generated from passenger counts above -->
+              </div>
+              <p class="text-xs text-amber-600 mb-2"><i class="fa-solid fa-triangle-exclamation ml-1"></i>يرجى إضافة بيانات كل مسافر حسب متطلبات البرنامج</p>
+              <div id="nb_travelers_list" class="space-y-3"></div>
+            </fieldset>
+
+            <!-- Hotel selection (shown when package has hotels) -->
+            <fieldset id="nb_hotel_section" class="hidden border border-blue-200 rounded-2xl p-4 bg-blue-50/30">
+              <legend class="text-xs font-bold text-primary px-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-hotel text-blue-500"></i> اختيار الفندق والغرف
+              </legend>
+              <!-- Mecca hotel -->
+              <div id="nb_mecca_hotel_wrapper" class="hidden mt-3">
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">
+                  <i class="fa-solid fa-kaaba ml-1 text-primary"></i>فندق مكة المكرمة <span class="text-red-500">*</span>
+                </label>
+                <select id="nb_mecca_hotel_select" onchange="nbOnHotelChange('mecca')"
+                        class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white mb-2">
+                  <option value="">-- اختر فندق مكة --</option>
+                </select>
+                <div id="nb_mecca_rooms_grid" class="space-y-2"></div>
+              </div>
+              <!-- Madina hotel -->
+              <div id="nb_madina_hotel_wrapper" class="hidden mt-3">
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">
+                  <i class="fa-solid fa-mosque ml-1 text-green-600"></i>فندق المدينة المنورة <span class="text-red-500">*</span>
+                </label>
+                <select id="nb_madina_hotel_select" onchange="nbOnHotelChange('madina')"
+                        class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none bg-white mb-2">
+                  <option value="">-- اختر فندق المدينة --</option>
+                </select>
+                <div id="nb_madina_rooms_grid" class="space-y-2"></div>
+              </div>
+            </fieldset>
+
+            <!-- Special requests -->
+            <div>
+              <label class="block text-xs font-bold text-gray-600 mb-1.5"><i class="fa-solid fa-comment-dots ml-1 text-amber-500"></i>ملاحظات وطلبات خاصة</label>
+              <textarea id="nb_special_requests" rows="3" maxlength="500"
+                        placeholder="أي طلبات خاصة، ظروف صحية، أو احتياجات خاصة يجب مراعاتها…"
+                        class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none resize-none transition"></textarea>
+              <p class="text-xs text-gray-400 text-left mt-0.5"><span id="nb_notes_count">0</span>/500</p>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════
+               STEP 3 — Payment
+          ════════════════════════════════════════════ -->
+          <div id="wbPanel3" class="wb-panel space-y-4">
+
+            <!-- Price summary -->
+            <div class="bg-gradient-to-br from-green-50 to-teal-50 border border-green-200 rounded-2xl p-4">
+              <p class="text-xs font-bold text-primary mb-3"><i class="fa-solid fa-calculator ml-1"></i>تفاصيل السعر</p>
+              <div id="nb_price_breakdown" class="space-y-1.5 mb-3"></div>
+              <!-- Progress bar -->
+              <div class="bg-gray-200 rounded-full h-2 mt-2 overflow-hidden">
+                <div id="nb_pay_bar" class="payment-bar-fill" style="width:0%"></div>
+              </div>
+              <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>المدفوع</span>
+                <span id="nb_pay_pct">0%</span>
+              </div>
+            </div>
+
+            <!-- Manual price override -->
+            <div>
+              <label class="block text-xs font-bold text-gray-600 mb-1.5">
+                الإجمالي الكلي <span class="text-red-500">*</span>
+                <span class="text-gray-400 font-normal mr-1">(يُحسب تلقائياً — يمكن تعديله)</span>
+              </label>
+              <div class="relative">
+                <input id="nb_total_price" type="number" min="0" step="50" placeholder="0"
+                       oninput="recalcNbRemaining();updatePayBar()"
+                       class="w-full border-2 border-primary rounded-xl px-4 py-3 text-lg font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold text-sm">ج.م</span>
+              </div>
+            </div>
+
+            <!-- Coupon -->
+            <div class="border border-dashed border-amber-300 rounded-xl p-3 bg-amber-50">
+              <p class="text-xs font-bold text-amber-700 mb-2"><i class="fa-solid fa-ticket ml-1"></i>كود خصم (اختياري)</p>
+              <div class="flex gap-2">
+                <input id="nb_coupon_code" type="text" placeholder="أدخل الكود…" maxlength="30"
+                       class="flex-1 border border-amber-300 rounded-lg px-3 py-2 text-sm uppercase tracking-widest outline-none focus:border-amber-500 bg-white" dir="ltr">
+                <button type="button" onclick="applyNbCoupon()"
+                        class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition">تطبيق</button>
+              </div>
+              <div id="nb_coupon_result" class="mt-2 hidden"></div>
+            </div>
+
+            <!-- Paid & remaining -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">
+                  <i class="fa-solid fa-hand-holding-dollar ml-1 text-green-600"></i>المدفوع الآن
+                </label>
+                <input id="nb_paid_amount" type="number" min="0" step="50" value="0" placeholder="0"
+                       oninput="recalcNbRemaining();updatePayBar()"
+                       class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none font-bold text-green-700">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">
+                  <i class="fa-solid fa-clock ml-1 text-red-500"></i>المتبقي
+                </label>
+                <input id="nb_remaining" type="number" readonly
+                       class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-red-50 text-red-600 font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Payment method -->
+            <div>
+              <label class="block text-xs font-bold text-gray-600 mb-2">طريقة الدفع المستخدمة</label>
+              <div class="grid grid-cols-3 gap-2" id="nb_pay_method_btns">
+                <button type="button" onclick="selectPayMethod(this,'cash')"
+                        class="pay-method-btn border-2 border-gray-200 rounded-xl py-2 px-3 text-xs font-bold text-gray-600 hover:border-primary hover:text-primary transition flex flex-col items-center gap-1">
+                  <i class="fa-solid fa-money-bill-wave text-green-600 text-base"></i>كاش
+                </button>
+                <button type="button" onclick="selectPayMethod(this,'bank_transfer')"
+                        class="pay-method-btn border-2 border-gray-200 rounded-xl py-2 px-3 text-xs font-bold text-gray-600 hover:border-primary hover:text-primary transition flex flex-col items-center gap-1">
+                  <i class="fa-solid fa-building-columns text-blue-600 text-base"></i>تحويل بنكي
+                </button>
+                <button type="button" onclick="selectPayMethod(this,'instapay')"
+                        class="pay-method-btn border-2 border-gray-200 rounded-xl py-2 px-3 text-xs font-bold text-gray-600 hover:border-primary hover:text-primary transition flex flex-col items-center gap-1">
+                  <i class="fa-solid fa-mobile-screen text-purple-600 text-base"></i>إنستا باي
+                </button>
+                <button type="button" onclick="selectPayMethod(this,'vodafone_cash')"
+                        class="pay-method-btn border-2 border-gray-200 rounded-xl py-2 px-3 text-xs font-bold text-gray-600 hover:border-primary hover:text-primary transition flex flex-col items-center gap-1">
+                  <i class="fa-solid fa-sim-card text-red-600 text-base"></i>فودافون كاش
+                </button>
+                <button type="button" onclick="selectPayMethod(this,'card')"
+                        class="pay-method-btn border-2 border-gray-200 rounded-xl py-2 px-3 text-xs font-bold text-gray-600 hover:border-primary hover:text-primary transition flex flex-col items-center gap-1">
+                  <i class="fa-solid fa-credit-card text-indigo-600 text-base"></i>بطاقة ائتمان
+                </button>
+                <button type="button" onclick="selectPayMethod(this,'deferred')"
+                        class="pay-method-btn border-2 border-gray-200 rounded-xl py-2 px-3 text-xs font-bold text-gray-600 hover:border-primary hover:text-primary transition flex flex-col items-center gap-1">
+                  <i class="fa-solid fa-calendar-check text-amber-600 text-base"></i>آجل
+                </button>
+              </div>
+              <input type="hidden" id="nb_payment_method" value="">
+            </div>
+
+            <!-- Payment receipt note -->
+            <div>
+              <label class="block text-xs font-bold text-gray-600 mb-1.5"><i class="fa-solid fa-receipt ml-1 text-gray-400"></i>ملاحظة الدفعة</label>
+              <input id="nb_payment_note" type="text" placeholder="رقم إيصال أو مرجع التحويل…" maxlength="100"
+                     class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none">
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════
+               STEP 4 — Review & Submit
+          ════════════════════════════════════════════ -->
+          <div id="wbPanel4" class="wb-panel space-y-4">
+
+            <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
+              <p class="text-sm font-bold text-primary mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-green-500"></i> مراجعة بيانات الحجز
+              </p>
+              <p class="text-xs text-gray-500">يرجى مراجعة جميع البيانات قبل التأكيد النهائي</p>
+            </div>
+
+            <!-- Summary -->
+            <div class="bg-white border border-gray-200 rounded-2xl p-4 space-y-0" id="nb_summary">
+              <!-- Filled by JS -->
+            </div>
+
+            <!-- Travelers quick list -->
+            <div id="nb_travelers_summary" class="hidden bg-gray-50 border border-gray-200 rounded-2xl p-3">
+              <p class="text-xs font-bold text-gray-600 mb-2"><i class="fa-solid fa-users ml-1 text-primary"></i>المرافقون</p>
+              <div id="nb_travelers_summary_list" class="space-y-1"></div>
+            </div>
+
+            <!-- Send WhatsApp confirmation toggle -->
+            <div class="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-3">
+              <input type="checkbox" id="nb_send_wa" class="w-4 h-4 accent-green-600" checked>
+              <label for="nb_send_wa" class="text-sm font-bold text-green-700 cursor-pointer">
+                <i class="fa-brands fa-whatsapp ml-1 text-base"></i>إرسال رسالة تأكيد عبر واتساب فور الحفظ
+              </label>
+            </div>
+
+            <!-- Print invoice after save -->
+            <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl p-3">
+              <input type="checkbox" id="nb_print_after" class="w-4 h-4 accent-blue-600">
+              <label for="nb_print_after" class="text-sm font-bold text-blue-700 cursor-pointer">
+                <i class="fa-solid fa-print ml-1 text-base"></i>طباعة الفاتورة مباشرةً بعد الحفظ
+              </label>
+            </div>
+          </div>
+
+        </div><!-- /scrollable body -->
+
+        <!-- ── Footer ────────────────────────────────────── -->
+        <div class="shrink-0 border-t border-gray-100 px-4 pt-3 pb-5 bg-white md:rounded-b-2xl">
+          <div class="flex gap-3">
+            <button id="wbBackBtn" onclick="wbGoStep(-1)"
+                    class="hidden bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-5 rounded-xl font-bold transition text-sm flex items-center gap-2">
+              <i class="fa-solid fa-arrow-right"></i> السابق
+            </button>
+            <button onclick="closeNewBookingModal()"
+                    id="wbCancelBtn"
+                    class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold transition text-sm">
+              إلغاء
+            </button>
+            <button id="wbNextBtn" onclick="wbGoStep(1)"
+                    class="flex-1 bg-primary hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition text-sm shadow">
+              <span id="wbNextLabel">التالي</span>
+              <i class="fa-solid fa-arrow-left" id="wbNextIcon"></i>
+            </button>
+            <button id="nbSubmitBtn" onclick="submitNewBooking()"
+                    class="hidden flex-1 bg-gold hover:bg-yellow-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition text-sm shadow">
+              <i class="fa-solid fa-check-circle text-lg"></i>
+              <span id="nbSubmitLabel">تأكيد الحجز</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- ══ END NEW BOOKING MODAL ══════════════════════════════════════════════ -->
+
+  <div id="bookingModal"
+       class="fixed inset-0 z-50 hidden bg-black/60"
+       style="display:none;"
+       onclick="if(event.target===this)closeModal()">
+    <div class="flex min-h-full items-end justify-center md:items-center md:p-4">
+      <div class="bg-white w-full md:max-w-2xl md:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col"
+           style="max-height:92vh;">
+
+        <!-- Drag handle mobile only -->
+        <div class="md:hidden flex justify-center pt-3 pb-1 shrink-0">
+          <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
+        </div>
+
+        <!-- Header -->
+        <div class="flex justify-between items-center px-5 py-3 border-b border-gray-100 shrink-0">
+          <h3 class="text-lg font-bold text-primary flex items-center gap-2">
+            <i class="fa-solid fa-receipt text-gold text-base"></i> تفاصيل الحجز
+          </h3>
+          <button onclick="closeModal()"
+                  class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Scrollable body -->
+        <div id="modalBody"
+             class="flex-1 overflow-y-auto px-5 py-4 space-y-5 text-sm text-gray-700"
+             style="-webkit-overflow-scrolling:touch;"></div>
+
+        <!-- Sticky footer actions -->
+        <div class="shrink-0 border-t border-gray-100 px-4 pt-3 pb-5 bg-white md:rounded-b-2xl">
+          <!-- Row 1 -->
+          <div class="grid grid-cols-3 gap-2 mb-2">
+            <a id="modalWhatsApp" href="#" target="_blank"
+               class="bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition text-sm">
+              <i class="fa-brands fa-whatsapp text-lg"></i> واتساب
+            </a>
+            <button id="modalReminderBtn"
+                    class="bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition text-sm">
+              <i class="fa-solid fa-bell"></i> تذكير بالسداد
+            </button>
+            <button id="modalInvoiceBtn"
+                    class="bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition text-sm">
+              <i class="fa-solid fa-file-invoice"></i> فاتورة
+            </button>
+          </div>
+          <!-- Row 2 -->
+          <div class="grid grid-cols-3 gap-2">
+            <button id="modalTripSheetBtn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold flex items-center justify-center gap-1 transition text-xs">
+              <i class="fa-solid fa-clipboard-list"></i> ملخص
+            </button>
+            <button id="modalNotifyProblemBtn"
+                    class="bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl font-bold flex items-center justify-center gap-1 transition text-xs"
+                    title="إرسال إشعار للعميل بوجود مشكلة في ملفه">
+              <i class="fa-solid fa-circle-exclamation"></i> إشعار مشكلة
+            </button>
+            <button id="modalDeleteBtn"
+                    class="bg-red-50 hover:bg-red-600 hover:text-white text-red-600 py-2.5 rounded-xl font-bold flex items-center justify-center gap-1 transition text-xs border border-red-200">
+              <i class="fa-solid fa-trash"></i> حذف
+            </button>
+          </div>
+          <!-- Row 3 — Regulatory Export -->
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <button id="modalRegulatoryBtn"
+                    class="bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-bold flex items-center justify-center gap-1.5 transition text-xs col-span-1"
+                    title="تصدير كشف هذا الحجز لوزارة السياحة أو منصة نسك">
+              <i class="fa-solid fa-file-shield"></i> تصدير تنظيمي
+            </button>
+            <button onclick="closeModal()"
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-600 py-2.5 rounded-xl font-bold transition text-xs">
+              إغلاق
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Update Paid Amount Modal -->
+  <div id="paidModal" class="fixed inset-0 z-[80] hidden bg-black/70 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fa-solid fa-money-bill-wave text-green-600 ml-2"></i>تحديث المبلغ المدفوع</h3>
+      <div class="mb-3">
+        <label class="block text-sm text-gray-500 font-bold mb-1">إجمالي الفاتورة</label>
+        <p id="paidModalTotal" class="text-xl font-bold text-gray-800"></p>
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm text-gray-500 font-bold mb-1">المبلغ المدفوع (ج.م)</label>
+        <input type="number" id="paidAmountInput" min="0" step="1"
+               class="w-full border-2 border-primary rounded-lg p-3 text-lg font-bold text-green-700 outline-none focus:border-green-500"
+               placeholder="0">
+      </div>
+      <div class="bg-gray-50 rounded-lg p-3 mb-4">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">المتبقي:</span>
+          <span id="paidModalRemaining" class="font-bold text-red-600"></span>
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="savePaidAmount()" class="flex-1 bg-primary hover:bg-green-700 text-white py-2 rounded-lg font-bold transition">حفظ</button>
+        <button onclick="document.getElementById('paidModal').classList.add('hidden'); document.getElementById('paidModal').classList.remove('flex')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg font-bold transition">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel Reason Modal -->
+  <div id="cancelModal" class="fixed inset-0 z-[65] hidden bg-black/70 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-ban text-red-500 text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">تأكيد إلغاء الحجز</h3>
+          <p class="text-xs text-gray-500">سيتم تغيير حالة الحجز إلى ملغي</p>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-bold text-gray-700 mb-2">سبب الإلغاء <span class="text-red-400">*</span></label>
+        <div class="grid grid-cols-2 gap-2 mb-3" id="cancelReasonBtns">
+          <button type="button" onclick="selectCancelReason(this)" data-reason="طلب العميل إلغاء الحجز"
+            class="cancel-reason-btn text-right text-xs border-2 border-gray-200 rounded-lg p-2 hover:border-red-400 hover:bg-red-50 transition font-bold text-gray-600">
+            طلب العميل إلغاء الحجز
+          </button>
+          <button type="button" onclick="selectCancelReason(this)" data-reason="عدم اكتمال الأوراق المطلوبة"
+            class="cancel-reason-btn text-right text-xs border-2 border-gray-200 rounded-lg p-2 hover:border-red-400 hover:bg-red-50 transition font-bold text-gray-600">
+            عدم اكتمال الأوراق
+          </button>
+          <button type="button" onclick="selectCancelReason(this)" data-reason="عدم سداد المبلغ المطلوب في الموعد"
+            class="cancel-reason-btn text-right text-xs border-2 border-gray-200 rounded-lg p-2 hover:border-red-400 hover:bg-red-50 transition font-bold text-gray-600">
+            عدم سداد المبلغ
+          </button>
+          <button type="button" onclick="selectCancelReason(this)" data-reason="رفض طلب التأشيرة"
+            class="cancel-reason-btn text-right text-xs border-2 border-gray-200 rounded-lg p-2 hover:border-red-400 hover:bg-red-50 transition font-bold text-gray-600">
+            رفض التأشيرة
+          </button>
+          <button type="button" onclick="selectCancelReason(this)" data-reason="ظروف صحية طارئة"
+            class="cancel-reason-btn text-right text-xs border-2 border-gray-200 rounded-lg p-2 hover:border-red-400 hover:bg-red-50 transition font-bold text-gray-600">
+            ظروف صحية طارئة
+          </button>
+          <button type="button" onclick="selectCancelReason(this)" data-reason="سبب آخر"
+            class="cancel-reason-btn text-right text-xs border-2 border-gray-200 rounded-lg p-2 hover:border-red-400 hover:bg-red-50 transition font-bold text-gray-600">
+            سبب آخر
+          </button>
+        </div>
+        <textarea id="cancelReasonText" rows="3" placeholder="اكتب سبب الإلغاء بالتفصيل (اختياري)"
+          class="w-full border-2 border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-red-400 resize-none transition"
+        ></textarea>
+      </div>
+
+      <div class="flex gap-3">
+        <button id="confirmCancelBtn" onclick="confirmCancelBooking()"
+          class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-bold transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-ban"></i> تأكيد الإلغاء
+        </button>
+        <button onclick="closeCancelModal()"
+          class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg font-bold transition">
+          رجوع
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="deleteModal" class="fixed inset-0 z-[60] hidden bg-black/70 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+      <div class="text-red-500 text-5xl mb-4"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">تأكيد الحذف</h3>
+      <p class="text-gray-500 text-sm mb-6">هل أنت متأكد من حذف هذا الحجز؟ لا يمكن التراجع عن هذه العملية.</p>
+      <div class="flex gap-3 justify-center">
+        <button id="confirmDeleteBtn" data-role="super_admin" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition">نعم، احذف</button>
+        <button onclick="document.getElementById('deleteModal').classList.add('hidden'); document.getElementById('deleteModal').classList.remove('flex')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold transition">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let allBookings = [];
+  let filteredBookings = [];
+  // expose for print-utils.js
+  // window refs updated on every assignment below
+  let currentBookingId = null;
+  let currentBookingData = null;
+
+  const statusLabels = {
+    awaiting_payment: 'في انتظار الدفع',
+    pending:          'قيد التلقي',
+    confirmed:        'مؤكد',
+    visa_processing:  'جاري التأشيرة',
+    tickets_issued:   'تذاكر صادرة',
+    travelling:       'في السفر',
+    completed:        'مكتمل',
+    cancelled:        'ملغي'
+  };
+
+  const statusColors = {
+    awaiting_payment: 'bg-orange-100 text-orange-800 border border-orange-300',
+    pending:          'bg-yellow-100 text-yellow-800 border border-yellow-300',
+    confirmed:        'bg-green-100 text-green-800 border border-green-300',
+    visa_processing:  'bg-blue-100 text-blue-800 border border-blue-300',
+    tickets_issued:   'bg-indigo-100 text-indigo-800 border border-indigo-300',
+    completed:        'bg-purple-100 text-purple-800 border border-purple-300',
+    cancelled:        'bg-red-100 text-red-800 border border-red-300',
+    travelling:       'bg-teal-100 text-teal-800 border border-teal-300'
+  };
+
+  // ── Load ──────────────────────────────────────────────
+  async function loadAdminBookings() {
+    if (!window.db) { setTimeout(loadAdminBookings, 500); return; }
+    const { data, error } = await window.db.from('bookings').select('*').order('booking_date', { ascending: false });
+    if (error) {
+      console.error('loadAdminBookings error:', error);
+      document.getElementById('booksBody').innerHTML = `
+        <tr><td colspan="8" class="p-8 text-center text-red-600">
+          <i class="fa-solid fa-triangle-exclamation ml-2"></i>
+          فشل تحميل البيانات — ${error.message || ''}
+          <button onclick="loadAdminBookings()" class="mr-3 underline text-primary font-semibold">إعادة المحاولة</button>
+        </td></tr>`;
+      return;
+    }
+    allBookings = data || [];
+    window.allBookings = allBookings; // ✅
+    applyFilters();
+  }
+
+  // ── Filters ───────────────────────────────────────────
+  let activeQuickFilter = null; // 'paid_full' | 'has_remaining' | 'pending_review' | null
+
+  function applyFilters() {
+    const name   = document.getElementById('filterName').value.trim().toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+    const pkg        = document.getElementById('filterPackage').value.trim().toLowerCase();
+    const bookingNum = document.getElementById('filterBookingNum').value.trim().toLowerCase();
+    const from   = document.getElementById('filterDateFrom').value;
+    const to     = document.getElementById('filterDateTo').value;
+    const smart  = document.getElementById('smartSearch').value.trim().toLowerCase();
+
+    document.getElementById('smartSearchClear').classList.toggle('hidden', !smart);
+
+    filteredBookings = allBookings.filter(b => {
+      if (name   && !(b.customer_name||'').toLowerCase().includes(name))  return false;
+      if (status && b.status !== status)                                   return false;
+      if (pkg        && !(b.package_title||'').toLowerCase().includes(pkg))         return false;
+      if (bookingNum && !(b.booking_number||'').toLowerCase().includes(bookingNum)) return false;
+      if (from   && new Date(b.booking_date) < new Date(from))            return false;
+      if (to     && new Date(b.booking_date) > new Date(to+'T23:59:59'))  return false;
+
+      if (smart && !matchesSmartSearch(b, smart)) return false;
+
+      if (activeQuickFilter && !matchesQuickFilter(b, activeQuickFilter)) return false;
+
+      return true;
+    });
+
+    document.getElementById('filterCount').innerText = filteredBookings.length;
+    const liveEl = document.getElementById('smartSearchResultCount');
+    if (liveEl) liveEl.textContent = `${filteredBookings.length} نتيجة`;
+    window.filteredBookings = filteredBookings; // ✅
+    renderTable(filteredBookings);
+  }
+
+  // ── Smart Search (fuzzy + typo-tolerant) ────────────────
+  // Matches: booking number, primary customer's national ID / passport,
+  // OR any companion's (traveler's) name / national ID / passport.
+  // Falls back to fuzzy distance so small typos still hit.
+
+  // Levenshtein edit distance (small strings, fine perf-wise)
+  function editDistance(a, b) {
+    a = a || ''; b = b || '';
+    const m = a.length, n = b.length;
+    if (!m) return n; if (!n) return m;
+    const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  // True if q fuzzy-matches anywhere inside text (substring first, then
+  // sliding-window edit-distance for typo tolerance).
+  function fuzzyIncludes(text, q) {
+    text = (text || '').toLowerCase();
+    q = (q || '').toLowerCase().trim();
+    if (!q) return false;
+    if (text.includes(q)) return true;
+    if (q.length < 3) return false; // too short, substring-only to avoid noise
+
+    const maxDist = q.length <= 4 ? 1 : q.length <= 8 ? 2 : 3;
+    const words = text.split(/\s+/);
+    // Compare query against each word and against whole text for IDs/numbers
+    return words.some(w => editDistance(w, q) <= maxDist) ||
+           editDistance(text.slice(0, q.length + maxDist), q) <= maxDist;
+  }
+
+  function matchesSmartSearch(b, q) {
+    if (fuzzyIncludes(b.booking_number, q)) return true;
+    if (fuzzyIncludes(b.customer_national_id, q)) return true;
+    if (fuzzyIncludes(b.customer_passport_number, q)) return true;
+
+    const travelers = Array.isArray(b.travelers) ? b.travelers : [];
+    return travelers.some(t =>
+      fuzzyIncludes(t.name, q) ||
+      fuzzyIncludes(t.national_id, q) ||
+      fuzzyIncludes(t.passport, q)
+    );
+  }
+
+  // ── Instant Suggestions + Typo Correction ───────────────
+  let suggestionActiveIndex = -1;
+
+  function buildSuggestionPool() {
+    const pool = new Map(); // label -> kind
+    (allBookings || []).forEach(b => {
+      if (b.booking_number) pool.set(b.booking_number, 'رقم حجز');
+      if (b.customer_name) pool.set(b.customer_name, 'عميل');
+      (Array.isArray(b.travelers) ? b.travelers : []).forEach(t => {
+        if (t.name) pool.set(t.name, 'مرافق');
+      });
+    });
+    return pool;
+  }
+
+  function onSmartSearchInput() {
+    applyFilters();
+    renderSuggestions();
+  }
+
+  function renderSuggestions() {
+    const box = document.getElementById('smartSearchSuggestions');
+    const corrEl = document.getElementById('smartSearchCorrection');
+    const input = document.getElementById('smartSearch');
+    const q = input.value.trim();
+    suggestionActiveIndex = -1;
+
+    if (!q || q.length < 2) {
+      box.classList.add('hidden'); box.innerHTML = '';
+      corrEl.classList.add('hidden');
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      return;
+    }
+
+    const pool = buildSuggestionPool();
+    const ql = q.toLowerCase();
+    const scored = [];
+    pool.forEach((kind, label) => {
+      const ll = label.toLowerCase();
+      let score;
+      if (ll.startsWith(ql)) score = 0;
+      else if (ll.includes(ql)) score = 1;
+      else {
+        const d = editDistance(ll, ql);
+        if (d <= Math.max(1, Math.floor(ql.length / 3))) score = 2 + d;
+        else return;
+      }
+      scored.push({ label, kind, score });
+    });
+    scored.sort((a, b) => a.score - b.score);
+    const top = scored.slice(0, 8);
+
+    // Typo correction hint: best fuzzy hit that isn't a plain substring match
+    const bestFuzzy = top.find(s => s.score >= 2);
+    if (bestFuzzy && !top.some(s => s.score <= 1)) {
+      corrEl.textContent = `تقصد: "${bestFuzzy.label}"؟`;
+      corrEl.classList.remove('hidden');
+    } else {
+      corrEl.classList.add('hidden');
+    }
+
+    if (!top.length) {
+      box.classList.add('hidden'); box.innerHTML = '';
+      input.setAttribute('aria-expanded', 'false');
+      return;
+    }
+
+    box.innerHTML = top.map((s, i) => `
+      <div id="suggestion-opt-${i}" class="suggestion-item px-3 py-2 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 flex justify-between items-center"
+           role="option" aria-selected="false" data-index="${i}"
+           onmousedown="selectSuggestion('${s.label.replace(/'/g, "\\'")}')">
+        <span class="text-gray-700">${s.label}</span>
+        <span class="text-xs text-gray-400">${s.kind}</span>
+      </div>
+    `).join('');
+    box.dataset.values = JSON.stringify(top.map(s => s.label));
+    box.classList.remove('hidden');
+    input.setAttribute('aria-expanded', 'true');
+  }
+
+  function selectSuggestion(label) {
+    document.getElementById('smartSearch').value = label;
+    hideSuggestions();
+    applyFilters();
+    document.getElementById('smartSearch').focus();
+  }
+
+  function hideSuggestions() {
+    const box = document.getElementById('smartSearchSuggestions');
+    box.classList.add('hidden');
+    document.getElementById('smartSearchCorrection').classList.add('hidden');
+    const input = document.getElementById('smartSearch');
+    input.setAttribute('aria-expanded', 'false');
+    input.removeAttribute('aria-activedescendant');
+  }
+
+  function onSmartSearchKeydown(e) {
+    const box = document.getElementById('smartSearchSuggestions');
+    if (box.classList.contains('hidden')) return;
+    const input = document.getElementById('smartSearch');
+    const values = JSON.parse(box.dataset.values || '[]');
+    const items = box.querySelectorAll('.suggestion-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      suggestionActiveIndex = Math.min(suggestionActiveIndex + 1, values.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      suggestionActiveIndex = Math.max(suggestionActiveIndex - 1, 0);
+    } else if (e.key === 'Enter' && suggestionActiveIndex >= 0) {
+      e.preventDefault();
+      selectSuggestion(values[suggestionActiveIndex]);
+      return;
+    } else if (e.key === 'Escape') {
+      hideSuggestions();
+      return;
+    } else { return; }
+    items.forEach((it, i) => {
+      const active = i === suggestionActiveIndex;
+      it.classList.toggle('bg-gray-50', active);
+      it.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    if (suggestionActiveIndex >= 0) {
+      input.setAttribute('aria-activedescendant', `suggestion-opt-${suggestionActiveIndex}`);
+    } else {
+      input.removeAttribute('aria-activedescendant');
+    }
+  }
+
+  // ── Quick Filters ───────────────────────────────────────
+  function matchesQuickFilter(b, filter) {
+    const total     = Number(b.total_price || 0);
+    const paid      = Number(b.paid_amount || 0);
+    const remaining = Number(b.remaining_amount ?? (total - paid));
+
+    if (filter === 'paid_full')       return remaining <= 0 && total > 0;
+    if (filter === 'has_remaining')   return remaining > 0;
+    if (filter === 'pending_review')  return b.status === 'pending';
+    return true;
+  }
+
+  function toggleQuickFilter(filter, btn) {
+    activeQuickFilter = (activeQuickFilter === filter) ? null : filter;
+    syncQuickFilterButtons();
+    applyFilters();
+  }
+
+  function clearQuickFilters() {
+    activeQuickFilter = null;
+    syncQuickFilterButtons();
+    applyFilters();
+  }
+
+  function syncQuickFilterButtons() {
+    document.querySelectorAll('.quick-filter-btn').forEach(b => {
+      const isActive = b.dataset.quickfilter === activeQuickFilter;
+      b.classList.toggle('ring-2', isActive);
+      b.classList.toggle('ring-offset-1', isActive);
+      if (b.dataset.quickfilter === 'paid_full')      b.classList.toggle('ring-green-400', isActive);
+      if (b.dataset.quickfilter === 'has_remaining')  b.classList.toggle('ring-orange-400', isActive);
+      if (b.dataset.quickfilter === 'pending_review') b.classList.toggle('ring-yellow-400', isActive);
+    });
+    document.getElementById('quickFilterReset').classList.toggle('hidden', !activeQuickFilter);
+  }
+
+  function resetFilters() {
+    ['filterName','filterPackage','filterBookingNum','smartSearch'].forEach(id => document.getElementById(id).value = '');
+    ['filterStatus','filterDateFrom','filterDateTo'].forEach(id => document.getElementById(id).value = '');
+    activeQuickFilter = null;
+    syncQuickFilterButtons();
+    applyFilters();
+  }
+
+  // ── Render Table ──────────────────────────────────────
+  function renderTable(data) {
+    const tbody = document.getElementById('booksBody');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-400">لا توجد نتائج مطابقة</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    data.forEach((b, idx) => {
+      const badgeClass = statusColors[b.status] || 'bg-gray-200 text-gray-800';
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-gray-50';
+      tr.innerHTML = `
+        <td class="p-4 font-mono font-bold text-primary">${b.booking_number || '—'}</td>
+        <td class="p-4 text-xs text-gray-500">${new Date(b.booking_date).toLocaleDateString('ar-EG')}</td>
+        <td class="p-4">
+          <p class="font-bold text-darkBg">${b.customer_name}</p>
+          <p class="text-xs text-gray-500" dir="ltr">${b.customer_phone}</p>
+        </td>
+        <td class="p-4">
+          ${b.customer_name
+            ? `<p class="font-bold text-xs text-gray-700">${b.customer_name || '—'}</p>
+               <p class="text-xs text-gray-400" dir="ltr">${b.customer_email || ''}</p>`
+            : b.user_id
+              ? `<p class="text-xs text-gray-400 font-mono">${b.user_id.slice(0,8)}…</p>`
+              : '<p class="text-xs text-gray-300 italic">زائر / غير مسجل</p>'}
+        </td>
+        <td class="p-4">
+          <p class="font-bold text-primary max-w-[180px] truncate" title="${b.package_title}">${b.package_title}</p>
+          <p class="text-xs text-gray-500">${formatDateSimple(b.package_departure)}</p>
+        </td>
+        <td class="p-4 text-center font-bold">${b.adults_count} / ${b.children_count} / ${b.infants_count || 0}</td>
+        <td class="p-4">
+          <select data-id="${b.id}" onchange="updateBookingStatus(this)"
+                  class="text-xs p-1 rounded outline-none font-bold cursor-pointer ${badgeClass}">
+            <option value="awaiting_payment" ${b.status==='awaiting_payment'?'selected':''}>في انتظار الدفع</option>
+            <option value="pending"          ${b.status==='pending'?'selected':''}>قيد التلقي</option>
+            <option value="confirmed"        ${b.status==='confirmed'?'selected':''}>مؤكد</option>
+            <option value="visa_processing"  ${b.status==='visa_processing'?'selected':''}>جاري التأشيرة</option>
+            <option value="tickets_issued"   ${b.status==='tickets_issued'?'selected':''}>تذاكر صادرة</option>
+            <option value="travelling"       ${b.status==='travelling'?'selected':''}>في السفر</option>
+            <option value="completed"        ${b.status==='completed'?'selected':''}>مكتمل</option>
+            <option value="cancelled"        ${b.status==='cancelled'?'selected':''}>ملغي</option>
+          </select>
+        </td>
+        <td class="p-4 text-center">
+          <div class="flex flex-col gap-1 items-center">
+            <button class="text-white bg-primary px-3 py-1 rounded text-xs hover:bg-green-700 transition w-full openBtn" data-idx="${idx}">
+              <i class="fa-solid fa-eye"></i> فتح
+            </button>
+            <button class="text-white bg-amber-500 px-3 py-1 rounded text-xs hover:bg-amber-600 transition w-full invoiceBtn" data-idx="${idx}">
+              <i class="fa-solid fa-file-invoice"></i> فاتورة
+            </button>
+            <button class="text-white bg-red-500 px-3 py-1 rounded text-xs hover:bg-red-700 transition w-full deleteBtn" data-role="super_admin" data-id="${b.id}">
+              <i class="fa-solid fa-trash"></i> حذف
+            </button>
+          </div>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.openBtn').forEach(btn => {
+      btn.addEventListener('click', () => openBooking(filteredBookings[+btn.dataset.idx]));
+    });
+    document.querySelectorAll('.invoiceBtn').forEach(btn => {
+      btn.addEventListener('click', () => printInvoice(filteredBookings[+btn.dataset.idx]));
+    });
+    document.querySelectorAll('.deleteBtn').forEach(btn => {
+      btn.addEventListener('click', () => confirmDelete(btn.dataset.id));
+    });
+  }
+
+  // ── Update Status ─────────────────────────────────────
+  let pendingCancelSelectEl = null;
+
+  function selectCancelReason(btn) {
+    document.querySelectorAll('.cancel-reason-btn').forEach(b => {
+      b.classList.remove('border-red-500', 'bg-red-50', 'text-red-700');
+      b.classList.add('border-gray-200', 'text-gray-600');
+    });
+    btn.classList.add('border-red-500', 'bg-red-50', 'text-red-700');
+    btn.classList.remove('border-gray-200', 'text-gray-600');
+    const reason = btn.dataset.reason;
+    const textarea = document.getElementById('cancelReasonText');
+    if (reason !== 'سبب آخر') {
+      textarea.value = reason;
+    } else {
+      textarea.value = '';
+      textarea.focus();
+    }
+  }
+
+  function closeCancelModal() {
+    document.getElementById('cancelModal').classList.add('hidden');
+    document.getElementById('cancelModal').classList.remove('flex');
+    // Revert the select to previous value
+    if (pendingCancelSelectEl) {
+      const b = allBookings.find(x => x.id === pendingCancelSelectEl.dataset.id);
+      if (b) pendingCancelSelectEl.value = b.status;
+      pendingCancelSelectEl = null;
+    }
+    document.getElementById('cancelReasonText').value = '';
+    document.querySelectorAll('.cancel-reason-btn').forEach(b => {
+      b.classList.remove('border-red-500', 'bg-red-50', 'text-red-700');
+      b.classList.add('border-gray-200', 'text-gray-600');
+    });
+  }
+
+  async function confirmCancelBooking() {
+    if (!pendingCancelSelectEl || !window.db) return;
+    const id = pendingCancelSelectEl.dataset.id;
+    const reason = document.getElementById('cancelReasonText').value.trim();
+
+    const btn = document.getElementById('confirmCancelBtn');
+    btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> جاري...';
+    btn.disabled = true;
+
+    const updatePayload = { status: 'cancelled' };
+    if (reason) updatePayload.status_details = reason;
+
+    const { error } = await window.db.from('bookings').update(updatePayload).eq('id', id);
+
+    btn.innerHTML = '<i class="fa-solid fa-ban"></i> تأكيد الإلغاء';
+    btn.disabled = false;
+
+    if (error) {
+      alert('فشل الإلغاء: ' + error.message);
+      return;
+    }
+
+    // Update local data
+    const b = allBookings.find(x => x.id === id);
+    if (b) { b.status = 'cancelled'; if (reason) b.status_details = reason; }
+    logAudit('update', 'bookings', id, b?.booking_number, { field: 'status', to: 'cancelled', reason: reason || null });
+
+    // Update select UI
+    pendingCancelSelectEl.value = 'cancelled';
+    pendingCancelSelectEl.className = `text-xs p-1 rounded outline-none font-bold cursor-pointer ${statusColors['cancelled']}`;
+    pendingCancelSelectEl = null;
+
+    // Close modal
+    document.getElementById('cancelModal').classList.add('hidden');
+    document.getElementById('cancelModal').classList.remove('flex');
+    document.getElementById('cancelReasonText').value = '';
+    document.querySelectorAll('.cancel-reason-btn').forEach(b => {
+      b.classList.remove('border-red-500', 'bg-red-50', 'text-red-700');
+      b.classList.add('border-gray-200', 'text-gray-600');
+    });
+
+    // Show brief success
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-xl shadow-xl font-bold text-sm z-[100] flex items-center gap-2';
+    toast.innerHTML = '<i class="fa-solid fa-ban"></i> تم إلغاء الحجز بنجاح';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  async function updateBookingStatus(selectEl) {
+    const id = selectEl.dataset.id;
+    const newStatus = selectEl.value;
+
+    // Intercept cancelled → show reason modal
+    if (newStatus === 'cancelled') {
+      pendingCancelSelectEl = selectEl;
+      document.getElementById('cancelModal').classList.remove('hidden');
+      document.getElementById('cancelModal').classList.add('flex');
+      return;
+    }
+
+    if (!window.db) return;
+    selectEl.disabled = true;
+    const { error } = await window.db.from('bookings').update({ status: newStatus }).eq('id', id);
+    selectEl.disabled = false;
+
+    if (error) {
+      alert('فشل تغيير الحالة: ' + error.message);
+      const b = allBookings.find(x => x.id === id);
+      if (b) selectEl.value = b.status;
+      return;
+    }
+
+    const b = allBookings.find(x => x.id === id);
+    const oldStatus = b?.status;
+    if (b) b.status = newStatus;
+    logAudit('update', 'bookings', id, b?.booking_number, { field: 'status', from: oldStatus, to: newStatus });
+    selectEl.className = `text-xs p-1 rounded outline-none font-bold cursor-pointer ${statusColors[newStatus] || 'bg-gray-200 text-gray-800'}`;
+  }
+
+  // ── Paid Amount ───────────────────────────────────────
+  function openPaidModal(booking) {
+    currentBookingData = booking;
+    const total = Number(booking.total_price || 0);
+    const paid  = Number(booking.paid_amount || 0);
+    document.getElementById('paidModalTotal').textContent = total.toLocaleString('ar-EG') + ' ج.م';
+    document.getElementById('paidAmountInput').value = paid;
+    updateRemainingDisplay();
+    document.getElementById('paidModal').classList.remove('hidden'); document.getElementById('paidModal').classList.add('flex');
+  }
+
+  function updateRemainingDisplay() {
+    if (!currentBookingData) return;
+    const total = Number(currentBookingData.total_price || 0);
+    const paid  = Number(document.getElementById('paidAmountInput').value || 0);
+    const rem   = Math.max(0, total - paid);
+    document.getElementById('paidModalRemaining').textContent = rem.toLocaleString('ar-EG') + ' ج.م';
+  }
+
+  document.getElementById('paidAmountInput').addEventListener('input', updateRemainingDisplay);
+
+  async function savePaidAmount() {
+    if (!currentBookingData || !window.db) return;
+    const total = Number(currentBookingData.total_price || 0);
+    const paid  = Number(document.getElementById('paidAmountInput').value || 0);
+    const remaining = Math.max(0, total - paid);
+
+    const { error } = await window.db.from('bookings')
+      .update({ paid_amount: paid, remaining_amount: remaining })
+      .eq('id', currentBookingData.id);
+
+    if (error) { alert('فشل الحفظ: ' + error.message); return; }
+
+    // Update local data
+    const b = allBookings.find(x => x.id === currentBookingData.id);
+    if (b) { b.paid_amount = paid; b.remaining_amount = remaining; }
+    currentBookingData.paid_amount = paid;
+    currentBookingData.remaining_amount = remaining;
+    logAudit('update', 'bookings', currentBookingData.id, b?.booking_number, { field: 'paid_amount', to: paid });
+
+    document.getElementById('paidModal').classList.add('hidden'); document.getElementById('paidModal').classList.remove('flex');
+
+    // Refresh modal if open
+    const modal = document.getElementById('bookingModal');
+    if (modal.style.display !== 'none' && modal.style.display !== '') {
+      openBooking(currentBookingData);
+    }
+    applyFilters();
+  }
+
+  // ── Delete ────────────────────────────────────────────
+  function confirmDelete(id) {
+    currentBookingId = id;
+    document.getElementById('deleteModal').classList.remove('hidden'); document.getElementById('deleteModal').classList.add('flex');
+  }
+
+  document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    if (!currentBookingId || !window.db) return;
+    const b = allBookings.find(x => x.id === currentBookingId);
+    const { error } = await window.db.from('bookings').delete().eq('id', currentBookingId);
+    document.getElementById('deleteModal').classList.add('hidden'); document.getElementById('deleteModal').classList.remove('flex');
+    closeModal();
+    if (error) { alert('فشل الحذف: ' + error.message); return; }
+    logAudit('delete', 'bookings', currentBookingId, b?.booking_number);
+    allBookings = allBookings.filter(b => b.id !== currentBookingId);
+    window.allBookings = allBookings; // keep in sync after delete
+    currentBookingId = null;
+    applyFilters();
+  });
+
+  // ── Open Modal ────────────────────────────────────────
+  function closeModal() {
+    const _bm = document.getElementById('bookingModal');
+    _bm.style.display = 'none';
+    _bm.classList.add('hidden');
+  }
+
+  function openBooking(b) {
+    currentBookingId = b.id;
+    currentBookingData = b;
+
+    const visaLabels   = { not_started:'لم تبدأ', under_review:'قيد المراجعة', approved:'موافق عليها', rejected:'مرفوضة' };
+    const ticketLabels = { not_issued:'لم تصدر', issued:'صادرة', sent_to_customer:'أُرسلت للعميل' };
+
+    let travelersHtml = '<p class="text-gray-400 text-xs">لا توجد بيانات</p>';
+    if (b.travelers && b.travelers.length) {
+      travelersHtml = b.travelers.map((t,i) => `
+        <div class="bg-gray-50 rounded-lg p-3 border">
+          <p class="font-bold">${i+1}. ${t.name||'—'} <span class="text-xs text-gray-400">(${t.type==='child'?'طفل':'بالغ'})</span></p>
+          ${t.national_id?`<p class="text-xs text-gray-500">رقم قومي: ${t.national_id}</p>`:''}
+          ${t.passport?`<p class="text-xs text-gray-500">جواز: ${t.passport}</p>`:''}
+        </div>`).join('');
+    }
+
+    // Documents — placeholder shown immediately, signed URLs loaded async
+    let docsHtml = '<p class="text-gray-400 text-xs italic">لا توجد مستندات مرفقة</p>';
+    if (b.documents && b.documents.length) {
+      docsHtml = b.documents.map((d, i) => {
+        const label = d.traveler_name ? `${d.traveler_name} — جواز سفر` : (d.name || `مستند ${i+1}`);
+        return `<div class="doc-row flex items-center gap-2 py-1.5 border-b border-gray-50" data-path="${d.path||''}" data-url="${d.url||''}">
+          <i class="fa-solid fa-file-image text-red-400 shrink-0"></i>
+          <span class="text-xs text-gray-600 flex-1">${label}</span>
+          <a class="doc-link text-xs text-primary font-bold hover:underline hidden" target="_blank" rel="noopener">فتح</a>
+          <span class="doc-loading text-xs text-gray-300"><i class="fa-solid fa-spinner fa-spin"></i></span>
+        </div>`;
+      }).join('');
+    }
+
+    const paid      = Number(b.paid_amount || 0);
+    const total     = Number(b.total_price || 0);
+    const remaining = Number(b.remaining_amount ?? (total - paid));
+
+    const body = document.getElementById('modalBody');
+    body.innerHTML = '';
+
+    const sections = [
+      { icon:'fa-hashtag', title:'رقم الحجز', html:`<p class="font-mono font-bold text-primary text-lg">${b.booking_number}</p><p class="text-xs text-gray-400">${new Date(b.booking_date).toLocaleDateString('ar-EG')}</p>` },
+      { icon:'fa-user-shield', title:'منشئ الطلب (الحساب المسجّل)', html:
+        b.customer_name
+          ? `<div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+               <div class="w-9 h-9 rounded-full bg-blue-200 flex items-center justify-center flex-shrink-0 text-blue-700 font-bold text-sm">${(b.customer_name||'?')[0]}</div>
+               <div>
+                 <p class="font-bold text-gray-800">${b.customer_name || '—'}</p>
+                 <p class="text-xs text-gray-500" dir="ltr">${b.customer_email || ''}</p>
+                 ${b.customer_phone ? `<p class="text-xs text-gray-500" dir="ltr">${b.customer_phone}</p>` : ''}
+               </div>
+             </div>`
+          : b.user_id
+            ? `<p class="text-xs text-gray-400 font-mono bg-gray-50 rounded p-2">ID: ${b.user_id}</p>`
+            : '<p class="text-xs text-gray-400 italic">تم الحجز كزائر (بدون حساب مسجّل)</p>'
+      },
+      { icon:'fa-user', title:'بيانات العميل', html:buildEditableInfoHtml(b) },
+      { icon:'fa-suitcase-rolling', title:'البرنامج', html:`
+        <div class="grid grid-cols-2 gap-2">
+          <div class="col-span-2"><p class="text-xs text-gray-400">اسم البرنامج</p><p class="font-bold text-primary">${b.package_title}</p></div>
+          <div><p class="text-xs text-gray-400">المغادرة</p><p class="font-bold">${formatDateSimple(b.package_departure)}</p></div>
+          <div><p class="text-xs text-gray-400">الأفراد</p><p class="font-bold">${b.adults_count} بالغ / ${b.children_count} طفل / ${b.infants_count || 0} رضيع</p></div>
+        </div>` },
+      { icon:'fa-money-bill-wave', title:'المالي', html:`
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="bg-green-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-400">الإجمالي</p><p class="font-bold text-green-700">${total.toLocaleString()} ج.م</p></div>
+          <div class="bg-blue-50 rounded-lg p-2 text-center cursor-pointer hover:bg-blue-100 transition" onclick="if(!requireRole('admin'))return; openPaidModal(currentBookingData)" data-role="admin" title="اضغط للتعديل">
+            <p class="text-xs text-gray-400">المدفوع <i class="fa-solid fa-pen text-blue-400 text-[10px]"></i></p>
+            <p class="font-bold text-blue-700">${paid.toLocaleString()} ج.م</p>
+          </div>
+          <div class="bg-red-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-400">المتبقي</p><p class="font-bold text-red-600">${remaining.toLocaleString()} ج.م</p></div>
+        </div>
+        <button onclick="if(!requireRole('admin'))return; openPaidModal(currentBookingData)"
+                class="w-full border-2 border-dashed border-blue-300 hover:border-blue-500 text-blue-600 hover:text-blue-800 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-pen-to-square"></i> تحديث المبلغ المدفوع
+        </button>
+        ${b.coupon_code?`<p class="text-xs text-gray-500 mt-1">كود خصم: <span class="font-mono font-bold">${b.coupon_code}</span></p>`:''}` },
+      { icon:'fa-timeline', title:'حالة المتابعة', html:`
+        <div class="grid grid-cols-2 gap-2">
+          <div><p class="text-xs text-gray-400">حالة الحجز</p><p class="font-bold">${statusLabels[b.status]||b.status}</p></div>
+          <div><p class="text-xs text-gray-400">التأشيرة</p><p class="font-bold">${visaLabels[b.visa_status]||'—'}</p></div>
+          <div><p class="text-xs text-gray-400">التذاكر</p><p class="font-bold">${ticketLabels[b.tickets_status]||'—'}</p></div>
+        </div>
+        ${b.status === 'cancelled' && b.status_details ? `
+          <div class="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 flex gap-2">
+            <i class="fa-solid fa-ban text-red-400 mt-0.5 flex-shrink-0"></i>
+            <div>
+              <p class="text-xs text-red-400 font-bold mb-0.5">سبب الإلغاء</p>
+              <p class="text-sm text-red-700 font-semibold">${b.status_details}</p>
+            </div>
+          </div>` : ''}` },
+      { icon:'fa-users', title:'بيانات المسافرين', html:`<div class="space-y-2">${travelersHtml}</div>` },
+      { icon:'fa-paperclip', title:'المستندات والتحكم', html:buildDocControlsHtml(b) },
+      { icon:'fa-triangle-exclamation', title:'تحذيرات المستندات', html:buildDocWarningsHtml(b) },
+    ];
+
+    if (b.special_requests) {
+      sections.push({ icon:'fa-comment', title:'طلبات خاصة', html:`<p class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-yellow-800">${b.special_requests}</p>` });
+    }
+
+    sections.forEach(s => {
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <h4 class="font-bold text-gray-800 mb-3 border-b pb-2">
+          <i class="fa-solid ${s.icon} ml-2 text-primary"></i>${s.title}
+        </h4>
+        ${s.html}`;
+      body.appendChild(div);
+    });
+
+    // Normalize Egyptian phone → 201xxxxxxxxx
+    let rawPhone = (b.customer_phone||'').replace(/\s|-/g, '');
+    if (rawPhone.startsWith('+2'))      rawPhone = rawPhone.slice(1);   // +2... → 2...
+    else if (rawPhone.startsWith('002'))rawPhone = rawPhone.slice(2);   // 002... → 2...
+    else if (rawPhone.startsWith('0'))  rawPhone = '2' + rawPhone;      // 0... → 20...
+    else if (!rawPhone.startsWith('2')) rawPhone = '20' + rawPhone;     // no prefix → 20...
+    const msg = `مرحباً ${b.customer_name}،\nبخصوص حجزك رقم *${b.booking_number}* — برنامج ${b.package_title}.\n`;
+    document.getElementById('modalWhatsApp').href = `https://wa.me/${rawPhone}?text=${encodeURIComponent(msg)}`;
+
+    // ── Payment Reminder Button ──────────────────────────
+    document.getElementById('modalReminderBtn').onclick = () => {
+      const total    = Number(b.total_price     || 0);
+      const paid     = Number(b.paid_amount     || 0);
+      const remaining = Number(b.remaining_amount ?? (total - paid));
+
+      if (remaining <= 0) {
+        alert('هذا العميل سدّد المبلغ كاملاً — لا يوجد رصيد متبقي.');
+        return;
+      }
+
+      // Suggested deadline: departure date – 7 days, or 14 days from today
+      let deadline = '—';
+      if (b.package_departure) {
+        const dep = new Date(b.package_departure);
+        dep.setDate(dep.getDate() - 7);
+        if (dep > new Date()) {
+          deadline = dep.toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' });
+        }
+      }
+      if (deadline === '—') {
+        const d14 = new Date();
+        d14.setDate(d14.getDate() + 14);
+        deadline = d14.toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' });
+      }
+
+      const fmt = n => Number(n).toLocaleString('ar-EG');
+
+      const reminder =
+        `عزيزي/عزيزتي ${b.customer_name}،
+
+` +
+        `نتشرف بتواصلنا معكم من شركة *نيو سي برنسيس فرع الزقازيق*.
+
+` +
+        `نودّ تذكيركم بأن رحلتكم *${b.package_title}* قد تم تأكيدها تحت رقم الحجز *${b.booking_number}*.
+
+` +
+        `📋 *تفاصيل المدفوعات:*
+` +
+        `• إجمالي قيمة الرحلة: *${fmt(total)} ج.م*
+` +
+        `• المبلغ المسدَّد حتى الآن: *${fmt(paid)} ج.م*
+` +
+        `• ✳️ المبلغ المتبقي: *${fmt(remaining)} ج.م* (ما يعادل ~${(remaining*0.074).toFixed(0)} ريال سعودي)
+
+` +
+        `⏰ نرجو منكم إتمام السداد قبل تاريخ: *${deadline}*
+
+` +
+        `للاستفسار أو ترتيب طريقة السداد، تواصلوا معنا عبر الرسائل أو اتصلوا بنا:
+` +
+        `📞 01555154996 | 01031777295
+
+` +
+        `شكراً لثقتكم، وتقبّل الله منكم صالح الأعمال. 🕋`;
+
+      window.open(`https://wa.me/${rawPhone}?text=${encodeURIComponent(reminder)}`, '_blank');
+    };
+    document.getElementById('modalNotifyProblemBtn').onclick = () => notifyCustomerProblem(b);
+    document.getElementById('modalInvoiceBtn').onclick = () => printInvoice(b);
+    document.getElementById('modalTripSheetBtn').onclick = () => printTripSheet(b);
+    document.getElementById('modalDeleteBtn').onclick = () => {
+      closeModal();
+      confirmDelete(b.id);
+    };
+    document.getElementById('modalRegulatoryBtn').onclick = () => {
+      openRegulatoryExportModal(b);
+    };
+
+    const _bm2 = document.getElementById('bookingModal');
+    _bm2.classList.remove('hidden');
+    _bm2.style.display = 'block';
+
+    // Load signed URLs for private-bucket docs after modal opens
+    if (b.documents && b.documents.length) {
+      loadDocSignedUrls();
+    }
+  }
+
+  // Load signed URLs for private bucket docs and update modal rows
+  async function loadDocSignedUrls() {
+    const rows = document.querySelectorAll('#modalBody .doc-row');
+    for (const row of rows) {
+      const path = row.dataset.path;
+      const url  = row.dataset.url;
+      const link = row.querySelector('.doc-link');
+      const spin = row.querySelector('.doc-loading');
+      let href = url || null;
+      if (!href && path && window.db) {
+        try {
+          const { data: s } = await window.db.storage
+            .from('booking-documents')
+            .createSignedUrl(path, 3600);
+          if (s?.signedUrl) href = s.signedUrl;
+        } catch(e) { /* ignore */ }
+      }
+      if (spin) spin.style.display = 'none';
+      if (href && link) {
+        link.href = href;
+        link.classList.remove('hidden');
+      } else if (link) {
+        const lbl = row.querySelector('span.flex-1');
+        if (lbl) lbl.textContent += ' (تعذّر فتح الملف)';
+      }
+    }
+  }
+
+  // ── Invoice — HTML Print Window (fixes Arabic encoding) ──
+  // print functions → /js/print-utils.js
+
+
+  // ══════════════════════════════════════════════════════════════════
+  //  DOC WARNINGS PANEL — shows per-booking missing-doc alerts
+  // ══════════════════════════════════════════════════════════════════
+
+  function buildDocWarningsHtml(booking) {
+    const warnings = Array.isArray(booking.doc_warnings) ? booking.doc_warnings : [];
+    if (!warnings.length) return '';
+    return `
+      <div class="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 mb-2">
+        <p class="text-amber-700 font-bold text-sm mb-2">
+          <i class="fa-solid fa-triangle-exclamation ml-2 text-lg"></i>
+          تحذيرات المستندات (${warnings.length} مشكلة)
+        </p>
+        <ul class="text-xs text-amber-700 space-y-1 list-disc list-inside">
+          ${warnings.map(w => `<li>${w}</li>`).join('')}
+        </ul>
+      </div>`;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  DOC CONTROLS — delete / re-upload / crop per document
+  // ══════════════════════════════════════════════════════════════════
+
+  const docTypeLabels = {
+    passport:'جواز السفر', national_id:'الرقم القومي', personal_photo:'الصورة الشخصية',
+    vaccination_meningitis:'تطعيم الحمى الشوكية', vaccination_covid:'تطعيم كوفيد-19',
+    birth_certificate:'شهادة الميلاد'
+  };
+
+  function buildDocControlsHtml(booking) {
+    if (!booking.documents || !booking.documents.length) {
+      return `<p class="text-gray-400 text-xs italic">لا توجد مستندات مرفقة</p>
+              <div class="mt-2"><label class="text-xs font-bold text-gray-600 mb-1 block"><i class="fa-solid fa-upload ml-1 text-primary"></i>رفع مستند جديد</label>
+              ${buildReuploadForm(booking, null)}</div>`;
+    }
+
+    const rows = booking.documents.map((d, i) => {
+      const label = docTypeLabels[d.type] || d.type || 'مستند';
+      return `
+        <div class="doc-ctrl-row flex items-center gap-2 py-2 border-b border-gray-100" data-doc-idx="${i}" data-path="${d.path||''}">
+          <i class="fa-solid fa-file-image text-primary shrink-0"></i>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-bold text-gray-700 truncate">${label}</p>
+            <p class="text-xs text-gray-400 truncate">${d.traveler_name || '—'}</p>
+          </div>
+          <div class="flex gap-1 shrink-0">
+            <button onclick="adminViewDoc('${d.path||''}','${d.url||''}')"
+                    class="text-xs bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded font-bold transition">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <button onclick="adminCropDoc(${i}, currentBookingData)"
+                    class="text-xs bg-teal-50 border border-teal-200 text-teal-600 hover:bg-teal-100 px-2 py-1 rounded font-bold transition"
+                    title="اقتصاص الصورة">
+              <i class="fa-solid fa-crop-simple"></i>
+            </button>
+            <button onclick="adminDeleteDoc(${i}, currentBookingData)"
+                    class="text-xs bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 px-2 py-1 rounded font-bold transition"
+                    title="حذف المستند">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="space-y-0 mb-3">${rows}</div>
+      <div class="mt-3 pt-3 border-t border-dashed border-gray-200">
+        <p class="text-xs font-bold text-gray-600 mb-2"><i class="fa-solid fa-upload ml-1 text-green-600"></i>إضافة / استبدال مستند</p>
+        ${buildReuploadForm(booking, null)}
+      </div>`;
+  }
+
+  function buildReuploadForm(booking, _unused) {
+    const types = Object.entries(docTypeLabels).map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+    return `
+      <div class="flex gap-2 flex-wrap">
+        <select id="reuploadType" class="text-xs border rounded p-1 flex-1 min-w-28">
+          ${types}
+        </select>
+        <input type="file" id="reuploadFile" accept="image/jpeg,image/png,application/pdf"
+               class="text-xs border rounded p-1 flex-1">
+        <button onclick="adminReuploadDoc(currentBookingData)"
+                class="text-xs bg-primary hover:bg-green-700 text-white px-3 py-1 rounded font-bold transition whitespace-nowrap">
+          <i class="fa-solid fa-cloud-arrow-up ml-1"></i>رفع
+        </button>
+      </div>`;
+  }
+
+  // ── VIEW ──
+  async function adminViewDoc(path, url) {
+    let href = url;
+    if (!href && path && window.db) {
+      try {
+        const { data } = await window.db.storage.from('booking-documents').createSignedUrl(path, 3600);
+        href = data?.signedUrl;
+      } catch(e) {}
+    }
+    if (href) window.open(href, '_blank');
+    else alert('تعذّر فتح الملف');
+  }
+
+  // ── DELETE ──
+  async function adminDeleteDoc(docIdx, booking) {
+    if (!confirm('هل تريد حذف هذا المستند نهائياً؟')) return;
+    const docs = [...(booking.documents || [])];
+    const doc  = docs[docIdx];
+    // Remove from storage
+    if (doc?.path && window.db) {
+      try { await window.db.storage.from('booking-documents').remove([doc.path]); } catch(e) {}
+    }
+    docs.splice(docIdx, 1);
+    const { error } = await window.db.from('bookings').update({ documents: docs }).eq('id', booking.id);
+    if (error) { alert('فشل الحذف: ' + error.message); return; }
+    const b = allBookings.find(x => x.id === booking.id);
+    if (b) b.documents = docs;
+    booking.documents = docs;
+    logAudit('update', 'bookings', booking.id, booking.booking_number, { action: 'delete_doc', doc_type: doc?.type });
+    showToast('تم حذف المستند بنجاح', 'green');
+    openBooking(booking); // refresh modal
+  }
+
+  // ── RE-UPLOAD ──
+  async function adminReuploadDoc(booking) {
+    const fileInput = document.getElementById('reuploadFile');
+    const typeInput = document.getElementById('reuploadType');
+    if (!fileInput?.files?.[0]) { alert('يرجى اختيار ملف أولاً'); return; }
+    const file    = fileInput.files[0];
+    const docType = typeInput?.value || 'passport';
+
+    const ext      = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+    const filePath = `passports/${booking.user_id || 'admin'}/${fileName}`;
+
+    showToast('جاري الرفع...', 'blue');
+    const { data: upData, error: upErr } = await window.db.storage.from('booking-documents').upload(filePath, file);
+    if (upErr) { alert('فشل الرفع: ' + upErr.message); return; }
+
+    const docs = [...(booking.documents || [])];
+    docs.push({
+      type: docType, traveler_name: booking.customer_name,
+      path: filePath, url: null, uploaded_at: new Date().toISOString()
+    });
+
+    const { error } = await window.db.from('bookings').update({ documents: docs }).eq('id', booking.id);
+    if (error) { alert('فشل الحفظ: ' + error.message); return; }
+    const b = allBookings.find(x => x.id === booking.id);
+    if (b) b.documents = docs;
+    booking.documents = docs;
+    logAudit('update', 'bookings', booking.id, booking.booking_number, { action: 'reupload_doc', doc_type: docType });
+    showToast('تم الرفع بنجاح ✓', 'green');
+    openBooking(booking);
+  }
+
+  // ── CROP (basic: open in new tab with crop instructions) ──
+  async function adminCropDoc(docIdx, booking) {
+    const doc = (booking.documents || [])[docIdx];
+    if (!doc) return;
+    let href = doc.url;
+    if (!href && doc.path && window.db) {
+      try {
+        const { data } = await window.db.storage.from('booking-documents').createSignedUrl(doc.path, 3600);
+        href = data?.signedUrl;
+      } catch(e) {}
+    }
+    if (!href) { alert('تعذّر فتح الملف للاقتصاص'); return; }
+    // Open crop tool (iloveimg or squoosh)
+    const cropUrl = `https://www.iloveimg.com/crop-image`;
+    window.open(cropUrl, '_blank');
+    showToast('افتح الصورة في الأداة ثم ارفع النسخة المُقتطَعة بزر «استبدال»', 'blue');
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  EDITABLE BOOKING INFO
+  // ══════════════════════════════════════════════════════════════════
+
+  let editingInfo = false;
+
+  function buildEditableInfoHtml(booking) {
+    return `
+      <div id="editInfoView">
+        <div class="grid grid-cols-2 gap-2">
+          <div><p class="text-xs text-gray-400">الاسم</p><p class="font-bold">${booking.customer_name||'—'}</p></div>
+          <div><p class="text-xs text-gray-400">الهاتف</p><p class="font-bold" dir="ltr">${booking.customer_phone||'—'}</p></div>
+          <div><p class="text-xs text-gray-400">البريد</p><p class="font-bold">${booking.customer_email||'—'}</p></div>
+          <div><p class="text-xs text-gray-400">الرقم القومي</p><p class="font-bold">${booking.customer_national_id||'—'}</p></div>
+        </div>
+        <button onclick="toggleEditInfo(true)" class="mt-2 text-xs text-blue-600 font-bold hover:underline">
+          <i class="fa-solid fa-pen-to-square ml-1"></i>تعديل البيانات
+        </button>
+      </div>
+      <div id="editInfoForm" class="hidden">
+        <div class="grid grid-cols-1 gap-2">
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="text-xs font-bold text-gray-500 block mb-1">الاسم</label>
+                 <input id="ei_name"  class="border rounded p-1.5 w-full text-sm" value="${booking.customer_name||''}"></div>
+            <div><label class="text-xs font-bold text-gray-500 block mb-1">الهاتف</label>
+                 <input id="ei_phone" class="border rounded p-1.5 w-full text-sm" dir="ltr" value="${booking.customer_phone||''}"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="text-xs font-bold text-gray-500 block mb-1">البريد الإلكتروني</label>
+                 <input id="ei_email" class="border rounded p-1.5 w-full text-sm" value="${booking.customer_email||''}"></div>
+            <div><label class="text-xs font-bold text-gray-500 block mb-1">الرقم القومي</label>
+                 <input id="ei_nid"   class="border rounded p-1.5 w-full text-sm" value="${booking.customer_national_id||''}"></div>
+          </div>
+          <div><label class="text-xs font-bold text-gray-500 block mb-1">ملاحظات خاصة</label>
+               <textarea id="ei_notes" class="border rounded p-1.5 w-full text-sm" rows="2">${booking.special_requests||''}</textarea></div>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <button onclick="saveEditInfo()" class="text-xs bg-primary hover:bg-green-700 text-white px-3 py-1.5 rounded font-bold transition">
+            <i class="fa-solid fa-check ml-1"></i>حفظ
+          </button>
+          <button onclick="toggleEditInfo(false)" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded font-bold transition">
+            إلغاء
+          </button>
+        </div>
+      </div>`;
+  }
+
+  function toggleEditInfo(show) {
+    document.getElementById('editInfoView')?.classList.toggle('hidden', show);
+    document.getElementById('editInfoForm')?.classList.toggle('hidden', !show);
+  }
+
+  async function saveEditInfo() {
+    if (!currentBookingData || !window.db) return;
+    const updates = {
+      customer_name:        document.getElementById('ei_name')?.value?.trim()  || currentBookingData.customer_name,
+      customer_phone:       document.getElementById('ei_phone')?.value?.trim() || currentBookingData.customer_phone,
+      customer_email:       document.getElementById('ei_email')?.value?.trim() || currentBookingData.customer_email,
+      customer_national_id: document.getElementById('ei_nid')?.value?.trim()   || currentBookingData.customer_national_id,
+      special_requests:     document.getElementById('ei_notes')?.value?.trim() || '',
+    };
+
+    const { error } = await window.db.from('bookings').update(updates).eq('id', currentBookingData.id);
+    if (error) { alert('فشل الحفظ: ' + error.message); return; }
+
+    Object.assign(currentBookingData, updates);
+    const b = allBookings.find(x => x.id === currentBookingData.id);
+    if (b) Object.assign(b, updates);
+    logAudit('update', 'bookings', currentBookingData.id, currentBookingData.booking_number, { action: 'edit_info', updates });
+    showToast('تم حفظ التعديلات ✓', 'green');
+    openBooking(currentBookingData);
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  NOTIFY CUSTOMER OF PROBLEM (WhatsApp)
+  // ══════════════════════════════════════════════════════════════════
+
+  function notifyCustomerProblem(booking) {
+    // Build phone
+    let rawPhone = (booking.customer_phone||'').replace(/\s|-/g,'');
+    if (rawPhone.startsWith('+2'))       rawPhone = rawPhone.slice(1);
+    else if (rawPhone.startsWith('002')) rawPhone = rawPhone.slice(2);
+    else if (rawPhone.startsWith('0'))   rawPhone = '2' + rawPhone;
+    else if (!rawPhone.startsWith('2'))  rawPhone = '20' + rawPhone;
+
+    const warnings = Array.isArray(booking.doc_warnings) ? booking.doc_warnings : [];
+    const warningText = warnings.length
+      ? `\n\n📋 *المستندات الناقصة / المشاكل المكتشفة:*\n${warnings.map(w=>`• ${w}`).join('\n')}`
+      : '';
+
+    const msg =
+`عزيزي/عزيزتي ${booking.customer_name}،
+
+تواصل معكم فريق *نيو سي برنسيس فرع الزقازيق* بخصوص حجزكم رقم *${booking.booking_number}* — ${booking.package_title}.
+
+⚠️ تم اكتشاف مشكلة في ملف حجزكم تحتاج إلى متابعة عاجلة.${warningText}
+
+يرجى التواصل معنا في أقرب وقت ممكن لاستكمال ملفكم.
+📞 01555154996 | 01031777295
+
+شكراً لتفهمكم. 🕋`;
+
+    window.open(`https://wa.me/${rawPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  // ── Toast helper ──
+  function showToast(msg, color = 'green') {
+    const map = { green: 'bg-green-600', blue: 'bg-blue-600', red: 'bg-red-600', orange: 'bg-orange-500' };
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 ${map[color]||map.green} text-white px-6 py-3 rounded-xl shadow-xl font-bold text-sm z-[200] flex items-center gap-2`;
+    toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${msg}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  // ── Format Helper ─────────────────────────
+  function formatDateSimple(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('ar-EG');
+  }
+
+  // ── Grouped Report PDF ────────────────────────────────
+
+
+  // ── Export Filtered Bookings to Excel (CSV) ──────────────
+  function exportExcel() {
+    const data = (window.filteredBookings && window.filteredBookings.length)
+      ? window.filteredBookings
+      : (window.allBookings || []);
+
+    if (!data.length) { alert('لا توجد بيانات للتصدير'); return; }
+
+    const statusAR = {
+      awaiting_payment:'في انتظار الدفع', pending:'قيد التلقي', confirmed:'مؤكد',
+      visa_processing:'جاري التأشيرة', tickets_issued:'تذاكر صادرة',
+      travelling:'في السفر', completed:'مكتمل', cancelled:'ملغي'
+    };
+    const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG') : '—';
+    const EGP_TO_SAR = 0.074;
+
+    const headers = [
+      'رقم الحجز','اسم العميل','رقم الهاتف','البريد الإلكتروني',
+      'البرنامج','تاريخ المغادرة','تاريخ الحجز',
+      'عدد البالغين','عدد الأطفال','عدد الرضّع','إجمالي الأفراد',
+      'إجمالي المبلغ (ج.م)','المبلغ المدفوع (ج.م)','الرصيد المتبقي (ج.م)',
+      'ما يعادل الإجمالي (ر.س)','ما يعادل المدفوع (ر.س)','ما يعادل المتبقي (ر.س)',
+      'حالة الحجز','كود الخصم','قيمة الخصم (ج.م)','ملاحظات خاصة'
+    ];
+
+    const rows = data.map(b => {
+      const total    = Number(b.total_price    || 0);
+      const paid     = Number(b.paid_amount    || 0);
+      const discount = Number(b.discount_amount|| 0);
+      const remain   = Number(b.remaining_amount ?? (total - paid));
+      const adults   = Number(b.adults_count   || 0);
+      const children = Number(b.children_count || 0);
+      const infants  = Number(b.infants_count  || 0);
+      return [
+        b.booking_number   || '—',
+        b.customer_name    || '—',
+        b.customer_phone   || '—',
+        b.customer_email   || '—',
+        b.package_title    || '—',
+        fmtDate(b.package_departure),
+        fmtDate(b.booking_date),
+        adults, children, infants, adults + children + infants,
+        total, paid, remain,
+        (total  * EGP_TO_SAR).toFixed(1),
+        (paid   * EGP_TO_SAR).toFixed(1),
+        (remain * EGP_TO_SAR).toFixed(1),
+        statusAR[b.status] || b.status || '—',
+        b.coupon_code       || '—',
+        discount            || 0,
+        (b.special_requests || '').replace(/,/g,' ').replace(/\n/g,' ')
+      ];
+    });
+
+    const esc = v => {
+      const s = String(v);
+      return (s.includes(',') || s.includes('"') || s.includes('\n'))
+        ? '"' + s.replace(/"/g,'""') + '"' : s;
+    };
+    const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), {
+      href: url,
+      download: `حجوزات_نيو_سي_برنسيس_${new Date().toISOString().slice(0,10)}.csv`
+    });
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // ── Init ──────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  //  NEW BOOKING MODAL — ADVANCED WIZARD
+  // ══════════════════════════════════════════════════════════════════════════
+
+  let _nbPackages       = [];
+  let _nbSelectedPkgId  = '';
+  let _nbStep           = 1;
+  let _nbTravelers      = [];
+  let _nbDiscountAmt    = 0;
+  let _nbPayMethod      = '';
+
+  const WB_STEPS = [
+    { label: 'اختيار البرنامج'       },
+    { label: 'العميل والمسافرون'     },
+    { label: 'السعر والدفع'          },
+    { label: 'مراجعة وتأكيد'         },
+  ];
+
+  // ── Open / Close ──────────────────────────────────────
+  async function openNewBookingModal() {
+    _nbStep = 1;
+    _nbTravelers = [];
+    _nbDiscountAmt = 0;
+    _nbPayMethod = '';
+    _nbSelectedPkgId = '';
+    resetNewBookingForm();
+    const modal = document.getElementById('newBookingModal');
+    modal.style.display = '';
+    modal.classList.remove('hidden');
+    wbRenderStep();
+    nbSyncTravelerCards(); // populate initial 1-adult card
+    await loadNbPackages();
+  }
+
+  function closeNewBookingModal() {
+    document.getElementById('newBookingModal').classList.add('hidden');
+    document.getElementById('newBookingModal').style.display = 'none';
+  }
+
+  // ── Wizard navigation ─────────────────────────────────
+  function wbGoStep(dir) {
+    nbHideError();
+    if (dir === 1 && !wbValidateStep(_nbStep)) return;
+    if (dir === 1 && _nbStep === 3) { wbBuildSummary(); }
+    _nbStep = Math.max(1, Math.min(4, _nbStep + dir));
+    wbRenderStep();
+  }
+
+  function wbRenderStep() {
+    // Panels
+    document.querySelectorAll('.wb-panel').forEach((p,i) => {
+      p.classList.toggle('active', i + 1 === _nbStep);
+    });
+    // Dots & lines
+    for (let i = 1; i <= 4; i++) {
+      const dot  = document.getElementById(`wbDot${i}`);
+      const line = document.getElementById(`wbLine${i}`);
+      dot.classList.remove('active','done');
+      if (i < _nbStep)  dot.classList.add('done');
+      if (i === _nbStep) dot.classList.add('active');
+      if (line) line.classList.toggle('done', i < _nbStep);
+    }
+    // Label
+    document.getElementById('wbStepLabel').textContent = `الخطوة ${_nbStep} من 4 — ${WB_STEPS[_nbStep-1].label}`;
+    // Buttons
+    document.getElementById('wbBackBtn').classList.toggle('hidden', _nbStep === 1);
+    document.getElementById('wbCancelBtn').classList.toggle('hidden', _nbStep > 1);
+    document.getElementById('wbNextBtn').classList.toggle('hidden', _nbStep === 4);
+    document.getElementById('nbSubmitBtn').classList.toggle('hidden', _nbStep < 4);
+    document.getElementById('wbNextLabel').textContent = _nbStep === 3 ? 'مراجعة' : 'التالي';
+
+    if (_nbStep === 3) recalcNbTotal();
+  }
+
+  function wbValidateStep(step) {
+    if (step === 1) {
+      if (!_nbSelectedPkgId) { nbShowError('يرجى اختيار البرنامج أولاً'); return false; }
+    }
+    if (step === 2) {
+      const name  = document.getElementById('nb_customer_name').value.trim();
+      const phone = document.getElementById('nb_customer_phone').value.trim();
+      const adults = parseInt(document.getElementById('nb_adults').value) || 0;
+      if (!name)    { nbShowError('يرجى إدخال اسم العميل'); return false; }
+      if (!phone)   { nbShowError('يرجى إدخال رقم الهاتف'); return false; }
+      if (adults < 1){ nbShowError('يجب وجود بالغ واحد على الأقل'); return false; }
+
+      // Validate each traveler card
+      const cards = document.querySelectorAll('#nb_travelers_list .traveler-card');
+      for (const card of cards) {
+        const idx  = card.id.replace('tcard_','');
+        const tname = document.getElementById(`t_name_${idx}`)?.value?.trim();
+        if (!tname) { nbShowError('يرجى إدخال اسم كل مسافر'); return false; }
+      }
+
+      // Validate hotels (if section visible)
+      const hotelSection = document.getElementById('nb_hotel_section');
+      if (!hotelSection.classList.contains('hidden')) {
+        const meccaWrap  = document.getElementById('nb_mecca_hotel_wrapper');
+        const madinaWrap = document.getElementById('nb_madina_hotel_wrapper');
+        if (meccaWrap && !meccaWrap.classList.contains('hidden')) {
+          const val = document.getElementById('nb_mecca_hotel_select')?.value;
+          if (!val && val !== '0') { nbShowError('يرجى اختيار فندق مكة المكرمة'); return false; }
+        }
+        if (madinaWrap && !madinaWrap.classList.contains('hidden')) {
+          const val = document.getElementById('nb_madina_hotel_select')?.value;
+          if (!val && val !== '0') { nbShowError('يرجى اختيار فندق المدينة المنورة'); return false; }
+        }
+      }
+    }
+    if (step === 3) {
+      const total = parseFloat(document.getElementById('nb_total_price').value) || 0;
+      if (total <= 0){ nbShowError('يرجى إدخال السعر الإجمالي'); return false; }
+    }
+    return true;
+  }
+
+  // ── Reset ─────────────────────────────────────────────
+  function resetNewBookingForm() {
+    ['nb_customer_name','nb_customer_phone','nb_customer_phone2','nb_customer_email',
+     'nb_national_id','nb_passport','nb_pkg_search','nb_special_requests',
+     'nb_coupon_code','nb_payment_note'].forEach(id => {
+       const el = document.getElementById(id);
+       if (el) el.value = '';
+     });
+    document.getElementById('nb_adults').value       = '1';
+    document.getElementById('nb_children').value     = '0';
+    document.getElementById('nb_infants').value      = '0';
+    document.getElementById('nb_total_price').value  = '';
+    document.getElementById('nb_paid_amount').value  = '0';
+    document.getElementById('nb_remaining').value    = '';
+    document.getElementById('nb_status').value       = 'pending';
+    document.getElementById('nb_booking_type').value = 'standard';
+    document.getElementById('nb_nid_age').classList.add('hidden');
+    document.getElementById('nb_coupon_result').classList.add('hidden');
+    document.getElementById('nb_package_card').classList.add('hidden');
+    document.getElementById('nb_travelers_list').innerHTML = '';
+    _nbHotelSelections = { mecca: null, madina: null };
+    window._nbRoomTierSelections = {};
+    document.getElementById('nb_hotel_section')?.classList.add('hidden');
+    _travelerIdx = 0;
+    document.getElementById('nb_pay_bar').style.width = '0%';
+    document.getElementById('nb_pay_pct').textContent = '0%';
+    document.getElementById('nbSubmitBtn').disabled = false;
+    document.getElementById('nbSubmitLabel').textContent = 'تأكيد الحجز';
+    document.querySelectorAll('.pay-method-btn').forEach(b => {
+      b.classList.remove('border-primary','text-primary','bg-primary/5');
+    });
+    nbHideError();
+  }
+
+  // ── Package list (card UI) ────────────────────────────
+  async function loadNbPackages() {
+    if (_nbPackages.length > 0) { renderNbPkgCards(_nbPackages); return; }
+    document.getElementById('nb_pkg_list').innerHTML =
+      '<p class="text-xs text-gray-400 text-center py-4"><i class="fa-solid fa-spinner animate-spin ml-2"></i>جاري التحميل…</p>';
+    const { data, error } = await window.db
+      .from('packages')
+      .select('id, title, price_per_person, price_child, price_infant, departure_date, category, available_seats, mecca_hotels, madina_hotels')
+      .eq('is_active', true)
+      .order('departure_date', { ascending: true, nullsFirst: false });
+    if (error || !data) {
+      document.getElementById('nb_pkg_list').innerHTML =
+        `<p class="text-xs text-red-500 text-center py-3">فشل تحميل البرامج — ${error?.message||''}</p>`;
+      return;
+    }
+    _nbPackages = data;
+    renderNbPkgCards(_nbPackages);
+  }
+
+  function renderNbPkgCards(pkgs) {
+    const list = document.getElementById('nb_pkg_list');
+    if (!pkgs.length) {
+      list.innerHTML = '<p class="text-xs text-gray-400 text-center py-3">لا توجد برامج مطابقة</p>';
+      return;
+    }
+    list.innerHTML = pkgs.map(p => {
+      const dep    = p.departure_date ? new Date(p.departure_date).toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'}) : 'تاريخ مفتوح';
+      const seats  = p.available_seats > 0 ? `${p.available_seats} مقعد` : '<span class="text-red-500">ممتلئ</span>';
+      const active = p.id === _nbSelectedPkgId;
+      return `
+        <div onclick="selectNbPackage('${p.id}')"
+             class="pkg-card cursor-pointer border-2 rounded-xl p-3 transition ${active ? 'border-primary bg-green-50' : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-50/40'}">
+          <div class="flex justify-between items-start gap-2">
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-sm text-gray-800 truncate">${p.title}</p>
+              <p class="text-xs text-gray-500 mt-0.5"><i class="fa-solid fa-calendar-day ml-1 text-primary"></i>${dep} &nbsp;|&nbsp; <i class="fa-solid fa-chair ml-1 text-amber-500"></i>${seats}</p>
+            </div>
+            <div class="text-left shrink-0">
+              <p class="text-xs text-gray-400">من</p>
+              <p class="font-bold text-primary text-sm">${window.formatCurrency(p.price_per_person)}</p>
+            </div>
+          </div>
+          ${active ? '<div class="mt-1.5 text-xs text-primary font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check text-green-500"></i> تم الاختيار</div>' : ''}
+        </div>`;
+    }).join('');
+  }
+
+  function filterNbPackages() {
+    const q = document.getElementById('nb_pkg_search').value.trim().toLowerCase();
+    const filtered = q ? _nbPackages.filter(p =>
+      (p.title||'').toLowerCase().includes(q) ||
+      (p.category||'').toLowerCase().includes(q)
+    ) : _nbPackages;
+    renderNbPkgCards(filtered);
+  }
+
+  function selectNbPackage(id) {
+    _nbSelectedPkgId = id;
+    const pkg = _nbPackages.find(p => p.id === id);
+    if (!pkg) return;
+    renderNbPkgCards(_nbPackages); // re-render to show active state
+
+    // Update card
+    const card = document.getElementById('nb_package_card');
+    card.classList.remove('hidden');
+    const dep = pkg.departure_date
+      ? new Date(pkg.departure_date).toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'})
+      : 'تاريخ مفتوح';
+    document.getElementById('nb_pkg_card_title').textContent = pkg.title;
+    document.getElementById('nb_pkg_card_meta').textContent  = `المغادرة: ${dep}`;
+    document.getElementById('nb_pkg_card_cat').textContent   = pkg.category || 'رحلة';
+    document.getElementById('nb_pkg_price_adult').textContent = window.formatCurrency(pkg.price_per_person||0);
+    document.getElementById('nb_pkg_price_child').textContent = pkg.price_child ? window.formatCurrency(pkg.price_child) : '—';
+    document.getElementById('nb_pkg_seats').textContent       = pkg.available_seats > 0 ? `${pkg.available_seats} مقعد` : 'ممتلئ';
+    nbHideError();
+    nbRenderHotelSection(pkg);
+  }
+
+  // ── Traveler counter buttons ───────────────────────────
+  function changeCount(id, delta) {
+    const el = document.getElementById(id);
+    const min = parseInt(el.min || '0');
+    const max = parseInt(el.max || '99');
+    el.value = Math.max(min, Math.min(max, (parseInt(el.value)||0) + delta));
+    recalcNbTotal();
+    nbSyncTravelerCards();
+  }
+
+  // Auto-sync traveler cards to match counts
+  function nbSyncTravelerCards() {
+    const adults   = parseInt(document.getElementById('nb_adults').value)   || 0;
+    const children = parseInt(document.getElementById('nb_children').value) || 0;
+    const infants  = parseInt(document.getElementById('nb_infants').value)  || 0;
+    const total = adults + children + infants;
+
+    const list = document.getElementById('nb_travelers_list');
+    const desired = [
+      ...Array(adults).fill('adult'),
+      ...Array(children).fill('child'),
+      ...Array(infants).fill('infant'),
+    ];
+
+    // Add missing cards
+    const existing = Array.from(list.querySelectorAll('.traveler-card'));
+    for (let i = existing.length; i < total; i++) {
+      nbAddTravelerCard(desired[i]);
+    }
+
+    // Remove excess cards from the end
+    const cards = Array.from(list.querySelectorAll('.traveler-card'));
+    cards.slice(total).forEach(card => card.remove());
+
+    // Re-label and fix type selectors to match desired sequence
+    Array.from(list.querySelectorAll('.traveler-card')).forEach((card, i) => {
+      const idx = card.id.replace('tcard_', '');
+      const typeEl  = document.getElementById('t_type_'  + idx);
+      const labelEl = document.getElementById('t_label_' + idx);
+      if (typeEl && desired[i] && typeEl.value !== desired[i]) {
+        typeEl.value = desired[i];
+        nbOnTravelerTypeChange(parseInt(idx));
+      }
+      const lbl = { adult: 'بالغ', child: 'طفل', infant: 'رضيع' }[desired[i]] || '';
+      if (labelEl) labelEl.textContent = 'مسافر ' + (i+1) + ' — ' + lbl;
+    });
+  }
+
+  // ── Traveler detail cards (full — matches customer-facing form) ──────────
+  let _travelerIdx = 0;
+  function nbAddTravelerCard(defaultType = 'adult') {
+    const idx = _travelerIdx++;
+    const el = document.createElement('div');
+    el.className = 'traveler-card border border-gray-200 rounded-2xl p-4 bg-white relative';
+    el.id = `tcard_${idx}`;
+    el.innerHTML = `
+      <button type="button" onclick="nbRemoveTraveler(${idx})"
+              class="absolute top-2 left-2 text-gray-300 hover:text-red-500 transition text-sm z-10">
+        <i class="fa-solid fa-circle-xmark text-base"></i>
+      </button>
+
+      <!-- Header row: type selector -->
+      <div class="flex items-center gap-3 mb-4 pr-6">
+        <i class="fa-solid fa-user-circle text-primary text-lg"></i>
+        <select id="t_type_${idx}" onchange="nbOnTravelerTypeChange(${idx})"
+                class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold focus:border-primary outline-none bg-gray-50">
+          <option value="adult"${defaultType==='adult'?' selected':''}>بالغ (18+)</option>
+          <option value="child"${defaultType==='child'?' selected':''}>طفل (2–11)</option>
+          <option value="infant"${defaultType==='infant'?' selected':''}>رضيع (0–2)</option>
+        </select>
+        <span class="text-xs text-gray-400" id="t_label_${idx}">مسافر ${idx+1}</span>
+      </div>
+
+      <!-- Basic info -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-gray-500 mb-1">الاسم الرباعي <span class="text-red-500">*</span></label>
+          <input type="text" id="t_name_${idx}" placeholder="الاسم كما في جواز السفر" maxlength="100" required
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none">
+        </div>
+        <div id="t_nid_wrap_${idx}">
+          <label class="block text-xs font-bold text-gray-500 mb-1">الرقم القومي</label>
+          <input type="text" id="t_nid_${idx}" placeholder="14 رقم" maxlength="14"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none" dir="ltr">
+        </div>
+        <div id="t_passport_wrap_${idx}">
+          <label class="block text-xs font-bold text-gray-500 mb-1">رقم جواز السفر <span class="text-red-500">*</span></label>
+          <input type="text" id="t_passport_${idx}" placeholder="A00000000" maxlength="20"
+                 oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase()"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none" dir="ltr">
+        </div>
+        <div id="t_passport_exp_wrap_${idx}">
+          <label class="block text-xs font-bold text-gray-500 mb-1">تاريخ انتهاء الجواز <span class="text-red-500">*</span></label>
+          <input type="date" id="t_passport_exp_${idx}"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none text-gray-600">
+          <p class="text-xs text-amber-600 mt-0.5"><i class="fa-solid fa-triangle-exclamation ml-1"></i>يجب صلاحية 6 أشهر على الأقل</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">الجنسية <span class="text-red-500">*</span></label>
+          <input type="text" id="t_nationality_${idx}" placeholder="مصري / Egyptian" value="مصري" maxlength="50"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">محل الميلاد <span class="text-red-500">*</span></label>
+          <input type="text" id="t_pob_${idx}" placeholder="القاهرة" maxlength="80"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">تاريخ الميلاد <span class="text-red-500">*</span></label>
+          <input type="date" id="t_dob_${idx}"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none text-gray-600">
+        </div>
+        <!-- Age (shown for child/infant only) -->
+        <div id="t_age_wrap_${idx}" class="hidden">
+          <label class="block text-xs font-bold text-gray-500 mb-1">العمر <span class="text-red-500">*</span></label>
+          <input type="number" id="t_age_${idx}" placeholder="العمر" min="0" max="17"
+                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:border-primary outline-none">
+        </div>
+      </div>
+
+      <!-- Gender, marital, age range (adults only) -->
+      <div id="t_adult_fields_${idx}" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 bg-blue-50 border border-blue-200 rounded-xl p-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1"><i class="fa-solid fa-venus-mars ml-1 text-blue-500"></i>الجنس <span class="text-red-500">*</span></label>
+          <select id="t_gender_${idx}" class="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-sm focus:border-primary outline-none bg-white">
+            <option value="">— اختر —</option>
+            <option value="male">ذكر</option>
+            <option value="female">أنثى</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1"><i class="fa-solid fa-ring ml-1 text-pink-500"></i>الحالة الاجتماعية <span class="text-red-500">*</span></label>
+          <select id="t_marital_${idx}" class="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-sm focus:border-primary outline-none bg-white">
+            <option value="">— اختر —</option>
+            <option value="single">أعزب / عزباء</option>
+            <option value="married">متزوج / متزوجة</option>
+            <option value="divorced">مطلق / مطلقة</option>
+            <option value="widowed">أرمل / أرملة</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1"><i class="fa-solid fa-calendar-days ml-1 text-green-600"></i>الفئة العمرية</label>
+          <select id="t_age_range_${idx}" class="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-sm focus:border-primary outline-none bg-white">
+            <option value="adult">بالغ (18+ سنة)</option>
+            <option value="youth">شاب (12–17 سنة)</option>
+          </select>
+        </div>
+      </div>`;
+    document.getElementById('nb_travelers_list').appendChild(el);
+    nbOnTravelerTypeChange(idx); // apply initial visibility
+  }
+
+  function nbOnTravelerTypeChange(idx) {
+    const type = document.getElementById(`t_type_${idx}`)?.value;
+    const isAdult  = type === 'adult';
+    const isChild  = type === 'child';
+    const isInfant = type === 'infant';
+
+    const show = (id, visible) => { document.getElementById(id)?.classList.toggle('hidden', !visible); };
+
+    show(`t_adult_fields_${idx}`, isAdult);
+    show(`t_nid_wrap_${idx}`,     isAdult);
+    show(`t_passport_wrap_${idx}`, isAdult || isChild);
+    show(`t_passport_exp_wrap_${idx}`, isAdult || isChild);
+    show(`t_age_wrap_${idx}`, isChild || isInfant);
+
+    // Update age limits
+    const ageEl = document.getElementById(`t_age_${idx}`);
+    if (ageEl) { ageEl.min = isInfant ? '0' : '2'; ageEl.max = isInfant ? '1' : '11'; ageEl.placeholder = isInfant ? 'العمر بالأشهر' : 'العمر (2–11)'; }
+
+    const lbl = { adult: 'بالغ', child: 'طفل', infant: 'رضيع' }[type] || '';
+    const labelEl = document.getElementById(`t_label_${idx}`);
+    if (labelEl) labelEl.textContent = `مسافر — ${lbl}`;
+  }
+
+  function nbRemoveTraveler(idx) {
+    document.getElementById(`tcard_${idx}`)?.remove();
+  }
+
+  function nbGetTravelers() {
+    const cards = document.querySelectorAll('#nb_travelers_list .traveler-card');
+    return Array.from(cards).map(card => {
+      const idx = card.id.replace('tcard_','');
+      const type = document.getElementById(`t_type_${idx}`)?.value || 'adult';
+      return {
+        name:            document.getElementById(`t_name_${idx}`)?.value?.trim()         || '',
+        type,
+        national_id:     document.getElementById(`t_nid_${idx}`)?.value?.trim()          || '',
+        passport_number: document.getElementById(`t_passport_${idx}`)?.value?.trim()     || '',
+        passport_expiry: document.getElementById(`t_passport_exp_${idx}`)?.value         || '',
+        nationality:     document.getElementById(`t_nationality_${idx}`)?.value?.trim()  || '',
+        place_of_birth:  document.getElementById(`t_pob_${idx}`)?.value?.trim()          || '',
+        date_of_birth:   document.getElementById(`t_dob_${idx}`)?.value                  || '',
+        age:             document.getElementById(`t_age_${idx}`)?.value                  || '',
+        gender:          document.getElementById(`t_gender_${idx}`)?.value               || '',
+        marital_status:  document.getElementById(`t_marital_${idx}`)?.value              || '',
+        age_range:       document.getElementById(`t_age_range_${idx}`)?.value            || '',
+      };
+    }).filter(t => t.name);
+  }
+
+  // ── Hotel selection (mirrors customer-facing renderHotelSelectors) ────────
+  let _nbHotelSelections = { mecca: null, madina: null };
+
+  function nbRenderHotelSection(pkg) {
+    const meccaHotels  = pkg?.mecca_hotels  || [];
+    const madinaHotels = pkg?.madina_hotels || [];
+    const section = document.getElementById('nb_hotel_section');
+    _nbHotelSelections = { mecca: null, madina: null };
+
+    if (!meccaHotels.length && !madinaHotels.length) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+
+    const fillCity = (city, hotels, wrapperId, selectId) => {
+      const wrapper = document.getElementById(wrapperId);
+      const sel     = document.getElementById(selectId);
+      if (!wrapper || !sel) return;
+      if (!hotels.length) { wrapper.classList.add('hidden'); return; }
+      wrapper.classList.remove('hidden');
+      sel.innerHTML = `<option value="">-- اختر فندق ${city === 'mecca' ? 'مكة' : 'المدينة'} --</option>`;
+      hotels.forEach((h, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = h.name + (h.stars ? ` (${h.stars}⭐)` : '');
+        sel.appendChild(opt);
+      });
+      // Auto-select if only one
+      if (hotels.length === 1) {
+        sel.value = '0';
+        _nbHotelSelections[city] = hotels[0];
+        nbRenderRoomTiers(city, hotels[0]);
+      } else {
+        document.getElementById(`nb_${city}_rooms_grid`).innerHTML = '';
+      }
+    };
+
+    fillCity('mecca',  meccaHotels,  'nb_mecca_hotel_wrapper',  'nb_mecca_hotel_select');
+    fillCity('madina', madinaHotels, 'nb_madina_hotel_wrapper', 'nb_madina_hotel_select');
+  }
+
+  function nbOnHotelChange(city) {
+    const pkg = _nbPackages.find(p => p.id === _nbSelectedPkgId);
+    const hotels = city === 'mecca' ? (pkg?.mecca_hotels||[]) : (pkg?.madina_hotels||[]);
+    const idx = document.getElementById(`nb_${city}_hotel_select`)?.value;
+    const hotel = idx !== '' ? hotels[parseInt(idx,10)] : null;
+    _nbHotelSelections[city] = hotel || null;
+    nbRenderRoomTiers(city, hotel);
+  }
+
+  function nbRenderRoomTiers(city, hotel) {
+    const grid = document.getElementById(`nb_${city}_rooms_grid`);
+    if (!grid) return;
+    const tiers = hotel?.room_tiers || [];
+    if (!tiers.length) { grid.innerHTML = ''; return; }
+    grid.innerHTML = `
+      <p class="text-xs font-bold text-gray-600 mb-2"><i class="fa-solid fa-bed ml-1 text-blue-400"></i>نوع الغرفة</p>
+      <div class="grid grid-cols-2 gap-2">
+        ${tiers.map((tier, ti) => `
+          <label class="flex items-center gap-2 border border-gray-200 rounded-xl p-2.5 cursor-pointer hover:border-primary transition bg-white">
+            <input type="radio" name="nb_room_${city}" value="${ti}"
+                   class="accent-primary"
+                   onchange="_nbRoomTierSelections=_nbRoomTierSelections||{};_nbRoomTierSelections['${city}']=${ti}">
+            <span class="text-xs font-bold text-gray-700 flex-1">${tier.name || tier.label || 'غرفة '+ti}</span>
+            ${tier.extra_price ? `<span class="text-xs text-green-700 font-bold">+${window.formatCurrency(tier.extra_price)}</span>` : ''}
+          </label>
+        `).join('')}
+      </div>`;
+  }
+
+  function nbGetHotelSelections() {
+    const tierSelections = window._nbRoomTierSelections || {};
+    const pkg = _nbPackages.find(p => p.id === _nbSelectedPkgId);
+    const meccaHotels  = pkg?.mecca_hotels  || [];
+    const madinaHotels = pkg?.madina_hotels || [];
+
+    const getRoom = (city, hotels) => {
+      const tidx = tierSelections[city];
+      const hotel = _nbHotelSelections[city];
+      if (!hotel) return null;
+      const tier = tidx !== undefined ? (hotel.room_tiers||[])[parseInt(tidx,10)] : null;
+      return { hotel_name: hotel.name, room_type: tier?.name || tier?.label || null };
+    };
+
+    return {
+      mecca_hotel:  getRoom('mecca',  meccaHotels),
+      madina_hotel: getRoom('madina', madinaHotels),
+    };
+  }
+
+  // ── NID age extractor ─────────────────────────────────
+  function nbValidateField(el, type) {
+    el.classList.remove('nb-field-valid','nb-field-invalid');
+    if (!el.value) return;
+    if (type === 'nid') {
+      const nid = el.value.trim();
+      if (nid.length === 14 && /^\d{14}$/.test(nid)) {
+        el.classList.add('nb-field-valid');
+        // Extract birthdate from Egyptian NID
+        try {
+          const century = nid[0] === '2' ? '19' : '20';
+          const year = century + nid.substring(1,3);
+          const month = nid.substring(3,5);
+          const day = nid.substring(5,7);
+          const dob = new Date(`${year}-${month}-${day}`);
+          const age = Math.floor((Date.now() - dob) / 31557600000);
+          const ageEl = document.getElementById('nb_nid_age');
+          ageEl.textContent = `العمر المستخرج: ${age} سنة`;
+          ageEl.classList.remove('hidden');
+        } catch(e) {}
+      } else {
+        el.classList.add('nb-field-invalid');
+        document.getElementById('nb_nid_age').classList.add('hidden');
+      }
+    } else if (type === 'phone') {
+      const valid = /^[0-9]{10,11}$/.test(el.value.trim());
+      el.classList.add(valid ? 'nb-field-valid' : 'nb-field-invalid');
+    } else if (type === 'email') {
+      const valid = !el.value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value);
+      el.classList.add(valid ? 'nb-field-valid' : 'nb-field-invalid');
+    } else if (type === 'name') {
+      el.classList.add(el.value.trim().length >= 3 ? 'nb-field-valid' : 'nb-field-invalid');
+    }
+    // Notes counter
+    if (document.getElementById('nb_special_requests')) {
+      document.getElementById('nb_notes_count').textContent =
+        document.getElementById('nb_special_requests').value.length;
+    }
+  }
+
+  // ── Package price calc ────────────────────────────────
+  function recalcNbTotal() {
+    if (!_nbSelectedPkgId) return;
+    const pkg = _nbPackages.find(p => p.id === _nbSelectedPkgId);
+    if (!pkg) return;
+
+    const adults   = parseInt(document.getElementById('nb_adults').value)   || 0;
+    const children = parseInt(document.getElementById('nb_children').value) || 0;
+    const infants  = parseInt(document.getElementById('nb_infants').value)  || 0;
+
+    const subtotal = (adults   * (pkg.price_per_person || 0))
+                   + (children * (pkg.price_child      || 0))
+                   + (infants  * (pkg.price_infant      || 0));
+
+    const total = Math.max(0, subtotal - _nbDiscountAmt);
+    document.getElementById('nb_total_price').value = total || '';
+
+    // Breakdown
+    const lines = [];
+    if (adults)   lines.push(`<div class="summary-row"><span>${adults} بالغ × ${window.formatCurrency(pkg.price_per_person||0)}</span><span class="font-bold">${window.formatCurrency(adults*(pkg.price_per_person||0))}</span></div>`);
+    if (children) lines.push(`<div class="summary-row"><span>${children} طفل × ${window.formatCurrency(pkg.price_child||0)}</span><span class="font-bold">${window.formatCurrency(children*(pkg.price_child||0))}</span></div>`);
+    if (infants)  lines.push(`<div class="summary-row"><span>${infants} رضيع × ${window.formatCurrency(pkg.price_infant||0)}</span><span class="font-bold">${window.formatCurrency(infants*(pkg.price_infant||0))}</span></div>`);
+    if (_nbDiscountAmt) lines.push(`<div class="summary-row text-green-700"><span><i class="fa-solid fa-tag ml-1"></i>خصم</span><span class="font-bold">- ${window.formatCurrency(_nbDiscountAmt)}</span></div>`);
+    lines.push(`<div class="summary-row text-primary font-bold text-base"><span>الإجمالي</span><span>${window.formatCurrency(total)}</span></div>`);
+    document.getElementById('nb_price_breakdown').innerHTML = lines.join('');
+
+    recalcNbRemaining();
+    updatePayBar();
+  }
+
+  function recalcNbRemaining() {
+    const total = parseFloat(document.getElementById('nb_total_price').value) || 0;
+    const paid  = parseFloat(document.getElementById('nb_paid_amount').value) || 0;
+    document.getElementById('nb_remaining').value = Math.max(0, total - paid);
+  }
+
+  function updatePayBar() {
+    const total = parseFloat(document.getElementById('nb_total_price').value) || 0;
+    const paid  = parseFloat(document.getElementById('nb_paid_amount').value) || 0;
+    const pct   = total > 0 ? Math.min(100, Math.round((paid/total)*100)) : 0;
+    document.getElementById('nb_pay_bar').style.width = pct + '%';
+    document.getElementById('nb_pay_pct').textContent = pct + '%';
+  }
+
+  // ── Coupon ────────────────────────────────────────────
+  async function applyNbCoupon() {
+    const code = document.getElementById('nb_coupon_code').value.trim().toUpperCase();
+    const el   = document.getElementById('nb_coupon_result');
+    if (!code) { el.classList.add('hidden'); return; }
+    const total = parseFloat(document.getElementById('nb_total_price').value) || 0;
+    // Try DB lookup
+    try {
+      const { data, error } = await window.db.from('coupons').select('*')
+        .eq('code', code).eq('is_active', true).single();
+      if (error || !data) throw new Error('invalid');
+      const disc = data.type === 'percent' ? Math.round((total * data.value) / 100) : data.value;
+      _nbDiscountAmt = disc;
+      el.innerHTML = `<div class="coupon-applied"><i class="fa-solid fa-tag text-yellow-600"></i>تم تطبيق كود <strong>${code}</strong> — خصم ${window.formatCurrency(disc)}</div>`;
+      el.classList.remove('hidden');
+      recalcNbTotal();
+    } catch(e) {
+      _nbDiscountAmt = 0;
+      el.innerHTML = '<p class="text-xs text-red-600 font-bold mt-1"><i class="fa-solid fa-xmark ml-1"></i>كود الخصم غير صالح أو منتهي</p>';
+      el.classList.remove('hidden');
+      recalcNbTotal();
+    }
+  }
+
+  // ── Payment method ────────────────────────────────────
+  function selectPayMethod(btn, method) {
+    _nbPayMethod = method;
+    document.querySelectorAll('.pay-method-btn').forEach(b => {
+      b.classList.remove('border-primary','text-primary','bg-primary/5');
+      b.classList.add('border-gray-200','text-gray-600');
+    });
+    btn.classList.add('border-primary','text-primary','bg-primary/5');
+    btn.classList.remove('border-gray-200','text-gray-600');
+    document.getElementById('nb_payment_method').value = method;
+  }
+
+  // ── Summary builder ───────────────────────────────────
+  function wbBuildSummary() {
+    const pkg   = _nbPackages.find(p => p.id === _nbSelectedPkgId);
+    const name  = document.getElementById('nb_customer_name').value.trim();
+    const phone = document.getElementById('nb_customer_phone').value.trim();
+    const email = document.getElementById('nb_customer_email').value.trim();
+    const nid   = document.getElementById('nb_national_id').value.trim();
+    const pass  = document.getElementById('nb_passport').value.trim();
+    const adults   = document.getElementById('nb_adults').value;
+    const children = document.getElementById('nb_children').value;
+    const infants  = document.getElementById('nb_infants').value;
+    const total    = parseFloat(document.getElementById('nb_total_price').value)||0;
+    const paid     = parseFloat(document.getElementById('nb_paid_amount').value)||0;
+    const remaining = Math.max(0, total - paid);
+    const statusLabelsLocal = { pending:'قيد المراجعة', confirmed:'مؤكد', awaiting_payment:'في انتظار الدفع' };
+    const dep = pkg?.departure_date ? new Date(pkg.departure_date).toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'}) : '—';
+    const payMethods = { cash:'كاش', bank_transfer:'تحويل بنكي', instapay:'إنستا باي', vodafone_cash:'فودافون كاش', card:'بطاقة ائتمان', deferred:'آجل', '':'—' };
+
+    const rows = [
+      ['البرنامج',          pkg?.title || '—'],
+      ['تاريخ المغادرة',    dep],
+      ['الحالة الابتدائية', statusLabelsLocal[document.getElementById('nb_status').value]||'—'],
+      ['نوع الحجز',         document.getElementById('nb_booking_type').options[document.getElementById('nb_booking_type').selectedIndex]?.text||'—'],
+      ['اسم العميل',        name||'—'],
+      ['الهاتف',            phone||'—'],
+      ['البريد',            email||'—'],
+      ['الرقم القومي',      nid||'—'],
+      ['رقم الجواز',        pass||'—'],
+      ['المحافظة',          document.getElementById('nb_governorate').value||'—'],
+      ['مصدر العميل',       document.getElementById('nb_lead_source').options[document.getElementById('nb_lead_source').selectedIndex]?.text||'—'],
+      ['المسافرون',         `${adults} بالغ / ${children} طفل / ${infants} رضيع`],
+      ...((_nbHotelSelections?.mecca)  ? [['فندق مكة',   `${_nbHotelSelections.mecca.name}${(window._nbRoomTierSelections?.mecca!==undefined && _nbHotelSelections.mecca.room_tiers?.[window._nbRoomTierSelections.mecca]?.name) ? ' — ' + _nbHotelSelections.mecca.room_tiers[window._nbRoomTierSelections.mecca].name : ''}`]] : []),
+      ...((_nbHotelSelections?.madina) ? [['فندق المدينة', `${_nbHotelSelections.madina.name}${(window._nbRoomTierSelections?.madina!==undefined && _nbHotelSelections.madina.room_tiers?.[window._nbRoomTierSelections.madina]?.name) ? ' — ' + _nbHotelSelections.madina.room_tiers[window._nbRoomTierSelections.madina].name : ''}`]] : []),
+      ['الإجمالي',          window.formatCurrency(total)],
+      ['المدفوع',           window.formatCurrency(paid)],
+      ['المتبقي',           window.formatCurrency(remaining)],
+      ['طريقة الدفع',       payMethods[_nbPayMethod]||'—'],
+    ];
+
+    document.getElementById('nb_summary').innerHTML = rows.map(([k,v]) =>
+      `<div class="summary-row"><span class="text-gray-500 text-xs">${k}</span><span class="font-bold text-xs text-right">${v}</span></div>`
+    ).join('');
+
+    // Travelers list
+    const tvList = nbGetTravelers();
+    if (tvList.length) {
+      document.getElementById('nb_travelers_summary').classList.remove('hidden');
+      document.getElementById('nb_travelers_summary_list').innerHTML = tvList.map(t =>
+        `<p class="text-xs text-gray-700 font-bold"><i class="fa-solid fa-user ml-1 text-primary"></i>${t.name} <span class="text-gray-400 font-normal">(${t.type==='adult'?'بالغ':t.type==='child'?'طفل':'رضيع'})</span></p>`
+      ).join('');
+    } else {
+      document.getElementById('nb_travelers_summary').classList.add('hidden');
+    }
+  }
+
+  // ── Error helpers ─────────────────────────────────────
+  function nbShowError(msg) {
+    const el = document.getElementById('nbError');
+    el.className = 'rounded-xl p-3 text-sm font-bold flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 mb-3';
+    el.innerHTML = `<i class="fa-solid fa-circle-exclamation shrink-0"></i> ${msg}`;
+    el.classList.remove('hidden');
+    el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+  function nbHideError() {
+    document.getElementById('nbError').classList.add('hidden');
+  }
+
+  // ── Submit ────────────────────────────────────────────
+  async function submitNewBooking() {
+    nbHideError();
+    if (!wbValidateStep(3)) return;
+
+    const pkg  = _nbPackages.find(p => p.id === _nbSelectedPkgId);
+    const customerName  = document.getElementById('nb_customer_name').value.trim();
+    const customerPhone = document.getElementById('nb_customer_phone').value.trim();
+    const totalPrice    = parseFloat(document.getElementById('nb_total_price').value) || 0;
+    const paid          = parseFloat(document.getElementById('nb_paid_amount').value) || 0;
+    const remaining     = Math.max(0, totalPrice - paid);
+    const adults        = parseInt(document.getElementById('nb_adults').value) || 0;
+
+    const payload = {
+      package_id:               _nbSelectedPkgId,
+      package_title:            pkg?.title || '',
+      package_departure:        pkg?.departure_date || null,
+      customer_name:            customerName,
+      customer_phone:           customerPhone,
+      customer_phone_2:         document.getElementById('nb_customer_phone2').value.trim() || null,
+      customer_email:           document.getElementById('nb_customer_email').value.trim()  || null,
+      customer_national_id:     document.getElementById('nb_national_id').value.trim()     || null,
+      customer_passport_number: document.getElementById('nb_passport').value.trim()        || null,
+      customer_governorate:     document.getElementById('nb_governorate').value             || null,
+      lead_source:              document.getElementById('nb_lead_source').value             || null,
+      adults_count:             adults,
+      children_count:           parseInt(document.getElementById('nb_children').value)    || 0,
+      infants_count:            parseInt(document.getElementById('nb_infants').value)     || 0,
+      travelers:                nbGetTravelers(),
+      hotel_selections:         nbGetHotelSelections(),
+      mecca_hotel:              nbGetHotelSelections().mecca_hotel?.hotel_name  || null,
+      madina_hotel:             nbGetHotelSelections().madina_hotel?.hotel_name || null,
+      mecca_room_type:          nbGetHotelSelections().mecca_hotel?.room_type   || null,
+      madina_room_type:         nbGetHotelSelections().madina_hotel?.room_type  || null,
+      total_price:              totalPrice,
+      paid_amount:              paid,
+      remaining_amount:         remaining,
+      discount_amount:          _nbDiscountAmt || 0,
+      coupon_code:              document.getElementById('nb_coupon_code').value.trim().toUpperCase() || null,
+      payment_method:           _nbPayMethod || null,
+      payment_note:             document.getElementById('nb_payment_note').value.trim() || null,
+      status:                   document.getElementById('nb_status').value,
+      booking_type:             document.getElementById('nb_booking_type').value,
+      special_requests:         document.getElementById('nb_special_requests').value.trim() || null,
+    };
+
+    const btn = document.getElementById('nbSubmitBtn');
+    const lbl = document.getElementById('nbSubmitLabel');
+    btn.disabled = true;
+    lbl.textContent = 'جاري الحفظ…';
+
+    const { data, error } = await window.db
+      .from('bookings').insert(payload).select().single();
+
+    btn.disabled = false;
+    lbl.textContent = 'تأكيد الحجز';
+
+    if (error) {
+      nbShowError(`فشل إنشاء الحجز: ${error.message || 'خطأ غير معروف'}`);
+      return;
+    }
+
+    await logAudit('create', 'bookings', data.id, data.booking_number, {
+      customer: customerName, package: pkg?.title, total: totalPrice
+    });
+
+    closeNewBookingModal();
+
+    // WhatsApp confirmation
+    if (document.getElementById('nb_send_wa')?.checked && customerPhone) {
+      let rawPhone = customerPhone.replace(/\s|-/g,'');
+      if (rawPhone.startsWith('0')) rawPhone = '2' + rawPhone;
+      const wamsg = `مرحباً ${customerName}،\n\nتم تسجيل حجزكم بنجاح رقم *${data.booking_number}* — برنامج *${pkg?.title||''}*.\nإجمالي الرحلة: *${window.formatCurrency(totalPrice)}*\nالمدفوع: *${window.formatCurrency(paid)}*\nالمتبقي: *${window.formatCurrency(remaining)}*\n\nشكراً لثقتكم 🕋\nنيو سي برنسيس`;
+      setTimeout(() => window.open(`https://wa.me/${rawPhone}?text=${encodeURIComponent(wamsg)}`,'_blank'), 500);
+    }
+
+    // Success toast
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-green-600 text-white px-6 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2';
+    toast.innerHTML = `<i class="fa-solid fa-circle-check text-lg"></i> تم إنشاء الحجز بنجاح — ${data.booking_number}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity='0'; setTimeout(()=>toast.remove(),400); }, 3500);
+
+    _nbPackages = [];
+    await loadAdminBookings();
+
+    const newBooking = (window.allBookings||[]).find(b => b.id === data.id);
+    if (newBooking) {
+      if (document.getElementById('nb_print_after')?.checked) printInvoice(newBooking);
+      else openBooking(newBooking);
+    }
+  }
+
+  // keep old recalcNbTotal alias in case called from elsewhere
+  function onNbPackageChange() { recalcNbTotal(); }
+
+  // ══════════════════════════════════════════════════════════════════════════
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Pre-fill booking number filter if linked from dashboard passport alert
+    const params = new URLSearchParams(location.search);
+    const bookingNum = params.get('bookingNum');
+    if (bookingNum) {
+      document.getElementById('filterBookingNum').value = bookingNum;
+    }
+
+    adminCheckAuth().then(ok => { if (ok) loadAdminBookings(); });
+});
+
+// ── AI Operations Brief ───────────────────────────────────────────────────
+function openOpsBrief() {
+  document.getElementById('opsBriefModal').classList.remove('hidden');
+  runOpsBriefAI();
+}
+function closeOpsBrief() {
+  document.getElementById('opsBriefModal').classList.add('hidden');
+}
+
+async function runOpsBriefAI() {
+  const container = document.getElementById('opsBriefContent');
+  if (!window.AI) {
+    container.innerHTML = '<p class="text-red-500 text-center py-6">خدمة الذكاء الاصطناعي غير متاحة حالياً</p>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="flex flex-col items-center justify-center gap-3 py-10 text-purple-600">
+      <i class="fa-solid fa-spinner fa-spin text-3xl"></i>
+      <p class="text-sm font-medium">جارٍ تحليل العمليات القادمة…</p>
+      <p class="text-xs text-gray-400">يتحقق من الحجوزات والمهام والمتابعات</p>
+    </div>`;
+  try {
+    const result = await window.AI.analyze('operations_brief', null, { context_type: 'operations' });
+    container.innerHTML = `
+      <div class="prose prose-sm max-w-none text-gray-800 leading-relaxed">
+        ${window.AIPanel.renderMarkdown(result)}
+      </div>
+      <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+        <p class="text-xs text-gray-400">
+          <i class="fa-solid fa-clock ml-1"></i>تم التحليل: ${new Date().toLocaleTimeString('ar-EG')}
+        </p>
+        <button onclick="runOpsBriefAI()"
+          class="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1">
+          <i class="fa-solid fa-rotate-right"></i> تحديث
+        </button>
+      </div>`;
+  } catch(err) {
+    container.innerHTML = `
+      <div class="text-center py-6">
+        <i class="fa-solid fa-circle-exclamation text-red-400 text-2xl mb-2 block"></i>
+        <p class="text-red-500 text-sm">${err.message}</p>
+        <button onclick="runOpsBriefAI()" class="mt-3 text-xs text-purple-600 hover:underline">إعادة المحاولة</button>
+      </div>`;
+  }
+}
+</script>
+</div><!-- /flex wrapper -->
+
+<!-- AI Operations Brief Modal -->
+<div id="opsBriefModal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-purple-600 to-purple-800 rounded-t-2xl">
+      <div class="flex items-center gap-3 text-white">
+        <i class="fa-solid fa-sparkles text-purple-200"></i>
+        <div>
+          <h3 class="font-bold text-base">موجز العمليات الذكي</h3>
+          <p class="text-xs text-purple-200">الحجوزات القادمة · المخاطر · أولويات اليوم</p>
+        </div>
+      </div>
+      <button onclick="closeOpsBrief()" class="text-purple-200 hover:text-white transition text-xl">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div id="opsBriefContent" class="flex-1 overflow-y-auto p-6 text-sm"></div>
+  </div>
+</div>
+
+</body>
+</html>

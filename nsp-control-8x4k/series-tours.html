@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الرحلات المتكررة | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css"><link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script><script src="/js/admin.js"></script><script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.1);}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;border-bottom:2px solid #e5e7eb;}
+    .tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#fafafa;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+    .day-chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:.68rem;font-weight:700;background:#f0fdf4;color:#166534;margin-inline-end:3px;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-repeat ml-2 text-primary"></i>الرحلات المتكررة (Series Tours)</h1>
+      <p class="erp-page-subtitle" id="pageSubtitle">رحلات بجدول أسبوعي ثابت</p>
+    </div>
+    <button onclick="openModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+      <i class="fa-solid fa-plus ml-1"></i>رحلة متكررة جديدة
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5" id="kpiStrip">
+    <div class="erp-card p-4 text-center border-b-2 border-primary animate-pulse"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-green-400 animate-pulse"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-blue-400 animate-pulse"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-amber-400 animate-pulse"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+  </div>
+
+  <!-- Filter -->
+  <div class="flex gap-2 mb-4 flex-wrap">
+    <button onclick="setF(true,this)" class="erp-page-btn active-filter">نشطة</button>
+    <button onclick="setF(false,this)" class="erp-page-btn">موقوفة</button>
+    <button onclick="setF(null,this)" class="erp-page-btn">الكل</button>
+    <div class="flex-1"></div>
+    <input type="text" id="search" placeholder="بحث…" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-48" oninput="render()">
+  </div>
+
+  <!-- Table -->
+  <div class="erp-card overflow-x-auto">
+    <table class="w-full tbl">
+      <thead><tr>
+        <th>الكود</th><th>اسم الرحلة</th><th>الوجهة</th><th>المدة</th>
+        <th>أيام الانطلاق</th><th>السعر الأساسي</th><th>الطاقة</th>
+        <th>الموسم</th><th>الحالة</th><th></th>
+      </tr></thead>
+      <tbody id="tbody">
+        <tr><td colspan="10" class="text-center py-10 text-gray-400 animate-pulse">جارٍ التحميل…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+<div id="toast"></div>
+
+<!-- Departures Drawer -->
+<div id="deptDrawer" class="hidden fixed inset-0 z-50 flex">
+  <div class="flex-1 bg-black/40" onclick="closeDepartures()"></div>
+  <div class="bg-white w-full max-w-2xl flex flex-col shadow-2xl">
+    <div class="flex items-center justify-between p-5 border-b bg-white sticky top-0">
+      <div>
+        <h3 class="font-bold text-lg text-primary"><i class="fa-solid fa-plane-departure ml-2"></i>انطلاقات الرحلة</h3>
+        <p class="text-xs text-gray-400" id="deptSubtitle"></p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openAddDeparture()" class="bg-primary text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-lightGreen transition">
+          <i class="fa-solid fa-plus ml-1"></i>إضافة انطلاقة
+        </button>
+        <button onclick="closeDepartures()" class="text-gray-400 hover:text-red-500 text-xl w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-5">
+      <div class="grid grid-cols-3 gap-3 mb-5" id="deptKpis">
+        <div class="bg-blue-50 rounded-xl p-3 text-center"><p class="text-xs text-gray-400 font-bold">إجمالي</p><p class="text-xl font-black text-blue-600" id="dkTotal">—</p></div>
+        <div class="bg-green-50 rounded-xl p-3 text-center"><p class="text-xs text-gray-400 font-bold">مفتوحة</p><p class="text-xl font-black text-green-600" id="dkOpen">—</p></div>
+        <div class="bg-amber-50 rounded-xl p-3 text-center"><p class="text-xs text-gray-400 font-bold">مكتملة</p><p class="text-xl font-black text-amber-600" id="dkDone">—</p></div>
+      </div>
+      <table class="w-full text-sm" id="deptTable">
+        <thead><tr class="border-b bg-gray-50">
+          <th class="text-right p-2 text-xs font-bold text-gray-500">تاريخ الانطلاق</th>
+          <th class="text-right p-2 text-xs font-bold text-gray-500">العودة</th>
+          <th class="text-right p-2 text-xs font-bold text-gray-500">الطاقة</th>
+          <th class="text-right p-2 text-xs font-bold text-gray-500">محجوز</th>
+          <th class="text-right p-2 text-xs font-bold text-gray-500">متاح</th>
+          <th class="text-right p-2 text-xs font-bold text-gray-500">الحالة</th>
+          <th class="p-2"></th>
+        </tr></thead>
+        <tbody id="deptTbody"><tr><td colspan="7" class="text-center py-8 text-gray-400">جاري التحميل…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Departure Modal -->
+<div id="addDeptModal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-800">إضافة انطلاقة</h3>
+      <button onclick="closeAddDeparture()" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div class="grid grid-cols-2 gap-2">
+        <div><label>تاريخ الانطلاق *</label><input type="date" id="dp_from"></div>
+        <div><label>تاريخ العودة</label><input type="date" id="dp_to"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label>الطاقة الاستيعابية</label><input type="number" id="dp_cap" value="20" min="1"></div>
+        <div><label>المحجوز</label><input type="number" id="dp_booked" value="0" min="0"></div>
+      </div>
+      <div><label>المرشد</label><input type="text" id="dp_guide" placeholder="اسم المرشد"></div>
+      <div><label>الفندق</label><input type="text" id="dp_hotel" placeholder="اسم الفندق"></div>
+      <div><label>رقم الرحلة الجوية</label><input type="text" id="dp_flight" dir="ltr"></div>
+      <div>
+        <label>الحالة</label>
+        <select id="dp_status">
+          <option value="open">مفتوحة</option>
+          <option value="sold_out">مكتملة</option>
+          <option value="closed">مغلقة</option>
+          <option value="cancelled">ملغاة</option>
+          <option value="completed">منتهية</option>
+        </select>
+      </div>
+      <div><label>ملاحظات</label><textarea id="dp_notes" rows="2"></textarea></div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button onclick="saveDeparture()" class="flex-1 bg-primary text-white font-bold py-2.5 rounded-lg text-sm hover:bg-lightGreen transition">حفظ</button>
+      <button onclick="closeAddDeparture()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-2.5 rounded-lg text-sm hover:bg-gray-200 transition">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
+      <h3 class="font-bold text-primary" id="modalTitle"><i class="fa-solid fa-repeat ml-2"></i>رحلة متكررة جديدة</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="p-4 grid grid-cols-2 gap-3">
+      <div><label>كود الرحلة *</label><input type="text" id="f_code" placeholder="JOR-7D" dir="ltr"></div>
+      <div class="col-span-1"><label>اسم الرحلة *</label><input type="text" id="f_name" placeholder="رحلة الأردن 7 أيام"></div>
+      <div><label>الوجهة</label><input type="text" id="f_dest" placeholder="عمّان / بتراء"></div>
+      <div><label>المدة (ليالي)</label><input type="number" id="f_nights" value="6" min="1"></div>
+      <div><label>السعر الأساسي / شخص</label><input type="number" id="f_price" step="0.01" value="0"></div>
+      <div><label>العملة</label>
+        <select id="f_curr"><option value="EGP">EGP</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="SAR">SAR</option></select>
+      </div>
+      <div><label>الطاقة الاستيعابية</label><input type="number" id="f_cap" value="20" min="1"></div>
+      <div><label>مرشد مطلوب</label>
+        <select id="f_guide"><option value="true">نعم</option><option value="false">لا</option></select>
+      </div>
+      <div><label>بداية الموسم</label><input type="date" id="f_s_start"></div>
+      <div><label>نهاية الموسم</label><input type="date" id="f_s_end"></div>
+      <div><label>الفندق</label><input type="text" id="f_hotel" placeholder="اسم الفندق الافتراضي"></div>
+      <div><label>وسيلة المواصلات</label><input type="text" id="f_transport" placeholder="حافلة 40 مقعد"></div>
+      <div class="col-span-2">
+        <label>أيام الانطلاق</label>
+        <div class="flex flex-wrap gap-2 mt-1" id="dayCheckboxes">
+          <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" value="sunday" class="day-cb"> الأحد</label>
+          <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" value="monday" class="day-cb"> الاثنين</label>
+          <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" value="tuesday" class="day-cb"> الثلاثاء</label>
+          <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" value="wednesday" class="day-cb"> الأربعاء</label>
+          <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" value="thursday" class="day-cb"> الخميس</label>
+          <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" value="friday" class="day-cb"> الجمعة</label>
+          <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" value="saturday" class="day-cb"> السبت</label>
+        </div>
+      </div>
+      <div><label>الحالة</label>
+        <select id="f_active"><option value="true">نشطة</option><option value="false">موقوفة</option></select>
+      </div>
+      <div class="col-span-2"><label>ملاحظات</label><textarea id="f_notes" rows="2"></textarea></div>
+    </div>
+    <div class="flex justify-end gap-2 p-4 border-t">
+      <button onclick="closeModal()" class="px-4 py-2 text-sm bg-gray-100 rounded-lg">إلغاء</button>
+      <button onclick="save()" class="px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg hover:bg-lightGreen">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DAYS_AR = {sunday:'الأحد',monday:'الاثنين',tuesday:'الثلاثاء',wednesday:'الأربعاء',thursday:'الخميس',friday:'الجمعة',saturday:'السبت'};
+let _all=[], _filterActive=true, _editId=null;
+
+document.addEventListener('DOMContentLoaded', async()=>{
+  if(!await adminCheckAuth())return;
+  NSPNav.init();
+  await load();
+});
+
+async function load(){
+  const {data}=await db.from('series_tours').select('*').order('code');
+  _all=data||[];
+  const active=_all.filter(t=>t.is_active);
+  document.getElementById('pageSubtitle').textContent=`${_all.length} رحلة متكررة مسجّلة`;
+  document.getElementById('kpiStrip').innerHTML=`
+    <div class="erp-card p-4 text-center border-b-2 border-primary"><div class="text-2xl font-black text-primary">${_all.length}</div><div class="text-xs text-gray-400 mt-1">إجمالي</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-green-400"><div class="text-2xl font-black text-green-600">${active.length}</div><div class="text-xs text-gray-400 mt-1">نشطة</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-blue-400"><div class="text-2xl font-black text-blue-600">${_all.reduce((s,t)=>s+(t.capacity||0),0)}</div><div class="text-xs text-gray-400 mt-1">إجمالي طاقة</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-amber-400"><div class="text-xl font-black text-amber-600">${active.filter(t=>(t.departure_days||[]).length>0).length}</div><div class="text-xs text-gray-400 mt-1">بجدول أسبوعي</div></div>`;
+  render();
+}
+
+function setF(v,btn){_filterActive=v;document.querySelectorAll('[onclick^="setF"]').forEach(b=>b.classList.remove('active-filter'));btn.classList.add('active-filter');render();}
+
+function render(){
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  let rows=_all;
+  if(_filterActive===true)rows=rows.filter(t=>t.is_active);
+  else if(_filterActive===false)rows=rows.filter(t=>!t.is_active);
+  if(q)rows=rows.filter(t=>(t.code||'').toLowerCase().includes(q)||(t.name||'').toLowerCase().includes(q)||(t.destination||'').toLowerCase().includes(q));
+  const tbody=document.getElementById('tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="10" class="text-center py-10 text-gray-400">لا توجد نتائج</td></tr>';return;}
+  tbody.innerHTML=rows.map(t=>`<tr class="cursor-pointer" onclick="edit('${t.id}')">
+    <td class="font-mono text-xs font-bold text-primary">${esc(t.code||'—')}</td>
+    <td><div class="font-bold text-sm">${esc(t.name)}</div></td>
+    <td class="text-xs text-gray-500">${esc(t.destination||'—')}</td>
+    <td class="text-center text-sm font-bold">${t.duration_nights} ليالي</td>
+    <td>${(t.departure_days||[]).map(d=>`<span class="day-chip">${DAYS_AR[d]||d}</span>`).join('')||'—'}</td>
+    <td class="font-bold text-sm">${Number(t.base_price||0).toLocaleString('ar-EG')} <span class="text-xs text-gray-400">${t.currency}</span></td>
+    <td class="text-center">${t.capacity||0}</td>
+    <td class="text-xs text-gray-400">${t.season_start||'—'} → ${t.season_end||'—'}</td>
+    <td><span class="text-xs px-2 py-0.5 rounded-full font-bold ${t.is_active?'bg-green-100 text-green-700':'bg-gray-100 text-gray-500'}">${t.is_active?'نشطة':'موقوفة'}</span></td>
+    <td onclick="event.stopPropagation()" class="flex gap-1">
+      <button onclick="openDepartures('${t.id}')" class="text-xs px-2 py-1 rounded font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 transition">
+        <i class="fa-solid fa-plane-departure ml-1"></i>انطلاقات
+      </button>
+      <button onclick="toggleActive('${t.id}',${!t.is_active})" class="text-xs px-2 py-1 rounded font-bold ${t.is_active?'bg-red-50 text-red-600':'bg-green-50 text-green-600'} transition">
+        ${t.is_active?'إيقاف':'تفعيل'}
+      </button>
+    </td>
+  </tr>`).join('');
+}
+
+function openModal(){_editId=null;resetForm();document.getElementById('modal').classList.remove('hidden');}
+function closeModal(){document.getElementById('modal').classList.add('hidden');_editId=null;}
+function resetForm(){['f_code','f_name','f_dest','f_hotel','f_transport','f_notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_nights').value=6;document.getElementById('f_price').value=0;document.getElementById('f_cap').value=20;
+  document.getElementById('f_curr').value='EGP';document.getElementById('f_guide').value='true';document.getElementById('f_active').value='true';
+  document.getElementById('f_s_start').value='';document.getElementById('f_s_end').value='';
+  document.querySelectorAll('.day-cb').forEach(c=>c.checked=false);
+  document.getElementById('modalTitle').innerHTML='<i class="fa-solid fa-repeat ml-2"></i>رحلة متكررة جديدة';}
+
+function edit(id){
+  const t=_all.find(x=>x.id===id); if(!t)return;
+  _editId=id;
+  document.getElementById('f_code').value=t.code||'';
+  document.getElementById('f_name').value=t.name||'';
+  document.getElementById('f_dest').value=t.destination||'';
+  document.getElementById('f_nights').value=t.duration_nights||6;
+  document.getElementById('f_price').value=t.base_price||0;
+  document.getElementById('f_curr').value=t.currency||'EGP';
+  document.getElementById('f_cap').value=t.capacity||20;
+  document.getElementById('f_guide').value=t.guide_required?'true':'false';
+  document.getElementById('f_active').value=t.is_active?'true':'false';
+  document.getElementById('f_s_start').value=t.season_start||'';
+  document.getElementById('f_s_end').value=t.season_end||'';
+  document.getElementById('f_hotel').value=t.hotel_name||'';
+  document.getElementById('f_transport').value=t.transport_type||'';
+  document.getElementById('f_notes').value=t.notes||'';
+  const days=t.departure_days||[];
+  document.querySelectorAll('.day-cb').forEach(c=>c.checked=days.includes(c.value));
+  document.getElementById('modalTitle').innerHTML='<i class="fa-solid fa-pen ml-2"></i>تعديل: '+esc(t.name);
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+async function save(){
+  const code=document.getElementById('f_code').value.trim();
+  const name=document.getElementById('f_name').value.trim();
+  if(!code||!name){toast('الكود والاسم مطلوبان',true);return;}
+  const days=[...document.querySelectorAll('.day-cb:checked')].map(c=>c.value);
+  const payload={
+    code,name,
+    destination:document.getElementById('f_dest').value.trim()||null,
+    duration_nights:parseInt(document.getElementById('f_nights').value)||6,
+    base_price:parseFloat(document.getElementById('f_price').value)||0,
+    currency:document.getElementById('f_curr').value,
+    capacity:parseInt(document.getElementById('f_cap').value)||20,
+    guide_required:document.getElementById('f_guide').value==='true',
+    is_active:document.getElementById('f_active').value==='true',
+    season_start:document.getElementById('f_s_start').value||null,
+    season_end:document.getElementById('f_s_end').value||null,
+    hotel_name:document.getElementById('f_hotel').value.trim()||null,
+    transport_type:document.getElementById('f_transport').value.trim()||null,
+    notes:document.getElementById('f_notes').value.trim()||null,
+    departure_days:days,
+    updated_at:new Date().toISOString(),
+  };
+  const {error}=_editId
+    ?await db.from('series_tours').update(payload).eq('id',_editId)
+    :await db.from('series_tours').insert({...payload,created_by:(await db.auth.getUser()).data?.user?.id});
+  if(error){toast('خطأ: '+error.message,true);return;}
+  closeModal();toast(_editId?'تم التحديث ✓':'تمت الإضافة ✓');await load();
+}
+
+async function toggleActive(id,val){
+  await db.from('series_tours').update({is_active:val,updated_at:new Date().toISOString()}).eq('id',id);
+  await load();toast(val?'تم التفعيل ✓':'تم الإيقاف');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+
+// ── DEPARTURES ──────────────────────────────────────────────────────────────
+let _deptSeriesId = null;
+
+const DEPT_STATUS_MAP = {
+  open:      ['bg-green-100 text-green-700','مفتوحة'],
+  sold_out:  ['bg-amber-100 text-amber-700','مكتملة'],
+  closed:    ['bg-gray-100 text-gray-500','مغلقة'],
+  cancelled: ['bg-red-100 text-red-600','ملغاة'],
+  completed: ['bg-blue-100 text-blue-700','منتهية'],
+};
+
+async function openDepartures(seriesId) {
+  _deptSeriesId = seriesId;
+  const tour = _all.find(t=>t.id===seriesId);
+  document.getElementById('deptSubtitle').textContent = tour ? `${tour.code} — ${tour.name}` : '';
+  document.getElementById('deptDrawer').classList.remove('hidden');
+  await loadDepartures();
+}
+
+function closeDepartures() {
+  document.getElementById('deptDrawer').classList.add('hidden');
+  _deptSeriesId = null;
+}
+
+async function loadDepartures() {
+  const {data} = await db.from('series_departures')
+    .select('*')
+    .eq('series_id', _deptSeriesId)
+    .order('departure_date', {ascending: true});
+  const deps = data||[];
+  document.getElementById('dkTotal').textContent = deps.length;
+  document.getElementById('dkOpen').textContent  = deps.filter(d=>d.status==='open').length;
+  document.getElementById('dkDone').textContent  = deps.filter(d=>d.status==='completed').length;
+
+  const tbody = document.getElementById('deptTbody');
+  if(!deps.length){tbody.innerHTML='<tr><td colspan="7" class="text-center py-8 text-gray-400">لا توجد انطلاقات مسجلة</td></tr>';return;}
+  tbody.innerHTML = deps.map(d=>{
+    const [sc,sl] = DEPT_STATUS_MAP[d.status]||['bg-gray-100 text-gray-600','—'];
+    const avail = d.available_seats ?? (d.capacity - d.booked_count);
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50">
+      <td class="p-2 font-bold text-sm text-gray-800">${d.departure_date||'—'}</td>
+      <td class="p-2 text-sm text-gray-500">${d.return_date||'—'}</td>
+      <td class="p-2 text-center font-bold">${d.capacity||0}</td>
+      <td class="p-2 text-center font-bold text-blue-600">${d.booked_count||0}</td>
+      <td class="p-2 text-center font-bold ${avail>0?'text-green-600':'text-red-600'}">${avail}</td>
+      <td class="p-2"><span class="text-xs px-2 py-0.5 rounded-full font-bold ${sc}">${sl}</span></td>
+      <td class="p-2 flex gap-1">
+        <button onclick="editDeparture('${d.id}')" class="text-xs text-blue-600 hover:underline font-bold"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="deleteDeparture('${d.id}')" class="text-xs text-red-400 hover:text-red-600 font-bold mr-2"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+let _editDeptId = null;
+
+function openAddDeparture() {
+  _editDeptId = null;
+  ['dp_guide','dp_hotel','dp_flight','dp_notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('dp_from').value='';
+  document.getElementById('dp_to').value='';
+  document.getElementById('dp_cap').value=20;
+  document.getElementById('dp_booked').value=0;
+  document.getElementById('dp_status').value='open';
+  document.getElementById('addDeptModal').classList.remove('hidden');
+}
+
+async function editDeparture(id) {
+  const {data} = await db.from('series_departures').select('*').eq('id',id).single();
+  if(!data) return;
+  _editDeptId = id;
+  document.getElementById('dp_from').value   = data.departure_date||'';
+  document.getElementById('dp_to').value     = data.return_date||'';
+  document.getElementById('dp_cap').value    = data.capacity||20;
+  document.getElementById('dp_booked').value = data.booked_count||0;
+  document.getElementById('dp_guide').value  = data.actual_guide_name||'';
+  document.getElementById('dp_hotel').value  = data.actual_hotel||'';
+  document.getElementById('dp_flight').value = data.flight_number||'';
+  document.getElementById('dp_status').value = data.status||'open';
+  document.getElementById('dp_notes').value  = data.notes||'';
+  document.getElementById('addDeptModal').classList.remove('hidden');
+}
+
+function closeAddDeparture() {
+  document.getElementById('addDeptModal').classList.add('hidden');
+  _editDeptId = null;
+}
+
+async function saveDeparture() {
+  const from = document.getElementById('dp_from').value;
+  if(!from){toast('تاريخ الانطلاق مطلوب',true);return;}
+  const payload = {
+    series_id:         _deptSeriesId,
+    departure_date:    from,
+    return_date:       document.getElementById('dp_to').value||null,
+    capacity:          parseInt(document.getElementById('dp_cap').value)||20,
+    booked_count:      parseInt(document.getElementById('dp_booked').value)||0,
+    status:            document.getElementById('dp_status').value,
+    actual_guide_name: document.getElementById('dp_guide').value.trim()||null,
+    actual_hotel:      document.getElementById('dp_hotel').value.trim()||null,
+    flight_number:     document.getElementById('dp_flight').value.trim()||null,
+    notes:             document.getElementById('dp_notes').value.trim()||null,
+  };
+  let error;
+  if(_editDeptId) {
+    ({error} = await db.from('series_departures').update(payload).eq('id',_editDeptId));
+  } else {
+    ({error} = await db.from('series_departures').insert(payload));
+  }
+  if(error){toast('خطأ: '+error.message,true);return;}
+  closeAddDeparture();
+  toast(_editDeptId?'تم التحديث ✓':'تمت الإضافة ✓');
+  await loadDepartures();
+}
+
+async function deleteDeparture(id) {
+  if(!confirm('حذف هذه الانطلاقة؟')) return;
+  const {error} = await db.from('series_departures').delete().eq('id',id);
+  if(error){toast('خطأ',true);return;}
+  toast('تم الحذف');
+  await loadDepartures();
+}
+</script>
+</body>
+</html>

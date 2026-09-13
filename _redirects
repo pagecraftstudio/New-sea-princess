@@ -1,0 +1,3 @@
+/admin    /admin/login.html    302
+/admin/   /admin/login.html    302
+/*        /404.html            404
