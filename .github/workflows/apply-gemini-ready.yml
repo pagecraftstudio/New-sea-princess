@@ -1,0 +1,107 @@
+name: Apply Gemini deployment-ready patch
+
+on:
+  push:
+    branches: [gemini-deployment-ready]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply deployment-ready changes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('supabase/functions/ai-assistant/index.ts')
+          s = p.read_text()
+          replacements = [
+            ("OpenAI fallback provider support", "OpenAI provider support\n * Google Gemini provider support"),
+            ("AI_PROVIDER: 'anthropic' | 'openai' | 'demo'", "AI_PROVIDER: 'anthropic' | 'openai' | 'gemini' | 'demo'\n * GEMINI_API_KEY: Google Gemini API key (server-side only)\n * GEMINI_MODEL_FAST: default gemini-2.5-flash-lite\n * GEMINI_MODEL_SMART: default gemini-2.5-pro"),
+            ('const AI_MODEL_FAST = Deno.env.get("AI_MODEL_FAST") || "claude-3-5-haiku-20241022";', 'const AI_MODEL_FAST = Deno.env.get("AI_MODEL_FAST") || "claude-3-5-haiku-20241022";\nconst GEMINI_KEY = Deno.env.get("GEMINI_API_KEY") || "";\nconst GEMINI_MODEL_FAST = Deno.env.get("GEMINI_MODEL_FAST") || "gemini-2.5-flash-lite";\nconst GEMINI_MODEL_SMART = Deno.env.get("GEMINI_MODEL_SMART") || "gemini-2.5-pro";'),
+            ('const model = AI_PROVIDER === "demo"\n  ? (isFast ? DEMO_MODEL_FAST : DEMO_MODEL_SMART)\n  : (isFast ? AI_MODEL_FAST : AI_MODEL_SMART);', 'const model = AI_PROVIDER === "demo"\n  ? (isFast ? DEMO_MODEL_FAST : DEMO_MODEL_SMART)\n  : AI_PROVIDER === "gemini"\n  ? (isFast ? GEMINI_MODEL_FAST : GEMINI_MODEL_SMART)\n  : (isFast ? AI_MODEL_FAST : AI_MODEL_SMART);'),
+            ('provider: AI_PROVIDER, // "anthropic" | "openai" | "demo"', 'provider: AI_PROVIDER, // "anthropic" | "openai" | "gemini" | "demo"'),
+            ('} else if (AI_PROVIDER === "demo") {\n      return await callDemo(system, userMessage, history, model, controller);', '} else if (AI_PROVIDER === "gemini") {\n      return await callGemini(system, userMessage, history, model, controller);\n    } else if (AI_PROVIDER === "demo") {\n      return await callDemo(system, userMessage, history, model, controller);'),
+            ('throw new Error(`Unsupported AI_PROVIDER: ${AI_PROVIDER}. Use anthropic, openai, or demo.`);', 'throw new Error(`Unsupported AI_PROVIDER: ${AI_PROVIDER}. Use anthropic, openai, gemini, or demo.`);'),
+          ]
+          for old, new in replacements:
+              if s.count(old) != 1:
+                  raise SystemExit(f'Expected exactly one occurrence, found {s.count(old)}: {old[:80]}')
+              s = s.replace(old, new)
+          marker = '// ─── Demo provider — OpenAI-compatible free-tier API (Phase 16.3)'
+          if s.count(marker) != 1:
+              raise SystemExit('Gemini insertion marker not found exactly once')
+          gemini = r'''// ─── Google Gemini provider ───────────────────────────────────────────────────
+// Uses the official Gemini REST generateContent endpoint. The API key is sent
+// in x-goog-api-key and is read only from Supabase Edge Function secrets.
+async function callGemini(system: string, userMsg: string, history: any[], model: string, ctrl: AbortController) {
+  if (!GEMINI_KEY) throw new Error("GEMINI_API_KEY not configured — set it in Supabase secrets to use Gemini");
+
+  const contents = [
+    ...history.map((m: any) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    })),
+    { role: "user", parts: [{ text: userMsg }] },
+  ];
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": GEMINI_KEY,
+    },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents,
+      generationConfig: { maxOutputTokens: MAX_TOKENS },
+    }),
+    signal: ctrl.signal,
+  });
+
+  if (!res.ok) {
+    const errText = (await res.text()).slice(0, 500);
+    throw new Error(`Gemini ${res.status}: ${errText}`);
+  }
+
+  const d = await res.json();
+  const content = (d.candidates || [])
+    .flatMap((candidate: any) => candidate.content?.parts || [])
+    .map((part: any) => part.text || "")
+    .join("")
+    .trim();
+
+  if (!content) {
+    const blockReason = d.promptFeedback?.blockReason || d.candidates?.[0]?.finishReason || "unknown";
+    throw new Error(`Gemini returned no text (reason: ${blockReason})`);
+  }
+
+  const usageMetadata = d.usageMetadata || {};
+  return {
+    content,
+    usage: {
+      input_tokens: usageMetadata.promptTokenCount ?? null,
+      output_tokens: usageMetadata.candidatesTokenCount ?? null,
+    },
+  };
+}
+
+'''
+          s = s.replace(marker, gemini + marker)
+          p.write_text(s)
+          print('Gemini provider patch applied')
+          PY
+          test -f .env.production.example
+          test -f supabase/functions/ai-assistant/index.ts
+          grep -q 'AI_PROVIDER.*gemini' supabase/functions/ai-assistant/index.ts
+          grep -q 'callGemini' supabase/functions/ai-assistant/index.ts
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add supabase/functions/ai-assistant/index.ts
+          git commit -m 'feat: add Google Gemini AI provider' || true
+          git push origin HEAD:gemini-deployment-ready
