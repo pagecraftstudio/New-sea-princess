@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الفرص البيعية | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+
+    .opp-card { cursor:pointer; transition:.15s; }
+    .opp-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+    .stage-col { min-width: 220px; }
+    .kanban-scroll { overflow-x: auto; padding-bottom: 16px; }
+    #oppModal { display:none; }
+    #oppModal.open { display:flex; }
+    select, input { font-family:'Cairo',sans-serif !important; }
+  </style>
+  <script src="/js/admin-nav.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-filter ml-2 text-primary"></i>الفرص البيعية</h1>
+      <p class="erp-page-subtitle" id="oppSummary">جارٍ التحميل…</p>
+    </div>
+    <div class="flex gap-2">
+      <!-- View Toggle -->
+      <div class="flex border border-gray-200 rounded-lg overflow-hidden bg-white text-xs font-bold">
+        <button id="btnKanban" onclick="setView('kanban')"
+          class="px-3 py-2 bg-primary text-white transition">
+          <i class="fa-solid fa-columns"></i> كانبان
+        </button>
+        <button id="btnList" onclick="setView('list')"
+          class="px-3 py-2 text-gray-500 hover:bg-gray-50 transition">
+          <i class="fa-solid fa-list"></i> قائمة
+        </button>
+      </div>
+      <button onclick="openNewOppModal()"
+        class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-lightGreen transition flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> فرصة جديدة
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="grid grid-cols-3 gap-3 mb-5" id="kpiStrip">
+    <div class="bg-white rounded-xl p-3 shadow-sm border-b-2 border-blue-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-1"></div><div class="h-6 bg-gray-100 rounded w-16"></div></div>
+    <div class="bg-white rounded-xl p-3 shadow-sm border-b-2 border-green-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-1"></div><div class="h-6 bg-gray-100 rounded w-16"></div></div>
+    <div class="bg-white rounded-xl p-3 shadow-sm border-b-2 border-purple-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-20 mb-1"></div><div class="h-6 bg-gray-100 rounded w-16"></div></div>
+  </div>
+
+  <!-- Kanban View -->
+  <div id="kanbanView" class="kanban-scroll">
+    <div class="flex gap-4" id="kanbanBoard" style="min-width:max-content">
+      <p class="text-gray-400 text-sm animate-pulse p-4">جارٍ التحميل…</p>
+    </div>
+  </div>
+
+  <!-- List View -->
+  <div id="listView" class="hidden erp-card overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 text-xs font-bold text-gray-500">
+          <th class="text-right py-3 px-3">الفرصة</th>
+          <th class="text-right py-3 px-3">المرحلة</th>
+          <th class="text-right py-3 px-3">القيمة</th>
+          <th class="text-right py-3 px-3 hidden md:table-cell">الاحتمالية</th>
+          <th class="text-right py-3 px-3 hidden md:table-cell">الإغلاق المتوقع</th>
+          <th class="text-right py-3 px-3 hidden lg:table-cell">الوجهة</th>
+          <th class="text-right py-3 px-3">عروض</th>
+        </tr>
+      </thead>
+      <tbody id="listBody">
+        <tr><td colspan="6" class="py-8 text-center text-gray-400 text-sm animate-pulse">جارٍ التحميل…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- New Opportunity Modal -->
+<div id="oppModal" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-5 border-b">
+      <h2 class="font-bold text-gray-800">فرصة بيعية جديدة</h2>
+      <button onclick="closeOppModal()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-5 space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">عنوان الفرصة *</label>
+        <input id="of_title" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الوجهة</label>
+          <input id="of_destination" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">المرحلة</label>
+          <select id="of_stage" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+            <option value="new">جديد</option>
+            <option value="qualification">تأهيل</option>
+            <option value="discovery">استكشاف</option>
+            <option value="itinerary">برنامج</option>
+            <option value="quote">عرض سعر</option>
+            <option value="follow_up">متابعة</option>
+            <option value="negotiation">تفاوض</option>
+            <option value="deposit_pending">إيداع معلق</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">القيمة المتوقعة (EGP)</label>
+          <input id="of_value" type="number" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الاحتمالية %</label>
+          <input id="of_prob" type="number" min="0" max="100" value="20" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ السفر</label>
+          <input id="of_date" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">إغلاق متوقع</label>
+          <input id="of_close" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">عدد الكبار</label>
+        <input id="of_adults" type="number" min="1" value="1" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
+        <textarea id="of_notes" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none resize-none" style="font-family:'Cairo',sans-serif;"></textarea>
+      </div>
+      <div id="oppModalError" class="text-red-600 text-xs font-bold hidden"></div>
+    </div>
+    <div class="flex gap-3 p-5 border-t">
+      <button onclick="saveOpp()" class="flex-1 bg-primary text-white font-bold py-2 rounded-lg hover:bg-lightGreen transition text-sm">حفظ الفرصة</button>
+      <button onclick="closeOppModal()" class="px-4 border border-gray-200 text-gray-600 font-bold py-2 rounded-lg text-sm">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STAGES = [
+  { key:'new',            label:'جديد',          color:'#6b7280' },
+  { key:'qualification',  label:'تأهيل',          color:'#3b82f6' },
+  { key:'discovery',      label:'استكشاف',        color:'#8b5cf6' },
+  { key:'itinerary',      label:'برنامج',          color:'#f59e0b' },
+  { key:'quote',          label:'عرض سعر',        color:'#f97316' },
+  { key:'follow_up',      label:'متابعة',          color:'#ec4899' },
+  { key:'negotiation',    label:'تفاوض',           color:'#14b8a6' },
+  { key:'deposit_pending',label:'إيداع معلق',     color:'#84cc16' },
+  { key:'won',            label:'رابح ✓',          color:'#16a34a' },
+  { key:'lost',           label:'خسارة ✗',         color:'#ef4444' },
+];
+const STAGE_MAP = Object.fromEntries(STAGES.map(s => [s.key, s]));
+
+let opps = [];
+let currentView = 'kanban';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  await loadOpps();
+});
+
+async function loadOpps() {
+  const { data, error } = await db.from('opportunities')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error(error); return; }
+  opps = data || [];
+
+  renderKPIs();
+  renderKanban();
+  renderList();
+}
+
+function renderKPIs() {
+  const active = opps.filter(o => !['won','lost'].includes(o.stage));
+  const won = opps.filter(o => o.stage === 'won');
+  const totalValue = active.reduce((s, o) => s + (Number(o.estimated_value)||0), 0);
+  const wonValue = won.reduce((s, o) => s + (Number(o.estimated_value)||0), 0);
+  const weightedValue = active.reduce((s, o) => s + (Number(o.estimated_value)||0) * (o.probability||0) / 100, 0);
+
+  document.getElementById('oppSummary').textContent = `${opps.length} فرصة إجمالية — ${active.length} نشطة`;
+
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="bg-white rounded-xl p-3 shadow-sm border-b-2 border-blue-400">
+      <p class="text-xs text-gray-500 font-bold">قيمة الـ Pipeline</p>
+      <p class="text-lg font-bold text-blue-600">${formatCurrency ? formatCurrency(totalValue) : totalValue.toLocaleString()}</p>
+      <p class="text-xs text-gray-400">${active.length} فرصة نشطة</p>
+    </div>
+    <div class="bg-white rounded-xl p-3 shadow-sm border-b-2 border-purple-400">
+      <p class="text-xs text-gray-500 font-bold">القيمة المرجحة</p>
+      <p class="text-lg font-bold text-purple-600">${formatCurrency ? formatCurrency(weightedValue) : weightedValue.toLocaleString()}</p>
+      <p class="text-xs text-gray-400">بناءً على الاحتمالية</p>
+    </div>
+    <div class="bg-white rounded-xl p-3 shadow-sm border-b-2 border-green-400">
+      <p class="text-xs text-gray-500 font-bold">إجمالي الفوز</p>
+      <p class="text-lg font-bold text-green-600">${formatCurrency ? formatCurrency(wonValue) : wonValue.toLocaleString()}</p>
+      <p class="text-xs text-gray-400">${won.length} فرصة رابحة</p>
+    </div>
+  `;
+}
+
+function renderKanban() {
+  const stageGroups = {};
+  STAGES.forEach(s => stageGroups[s.key] = []);
+  opps.forEach(o => { if (stageGroups[o.stage] !== undefined) stageGroups[o.stage].push(o); });
+
+  document.getElementById('kanbanBoard').innerHTML = STAGES.map(s => {
+    const items = stageGroups[s.key] || [];
+    const stageVal = items.reduce((sum, o) => sum + (Number(o.estimated_value)||0), 0);
+    return `
+    <div class="stage-col bg-gray-50 rounded-xl p-3 border border-gray-200">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-bold" style="color:${s.color}">${s.label}</span>
+        <span class="text-xs bg-white text-gray-500 font-bold px-2 py-0.5 rounded-full border border-gray-200">${items.length}</span>
+      </div>
+      ${stageVal > 0 ? `<p class="text-xs text-gray-400 mb-2">${formatCurrency ? formatCurrency(stageVal) : stageVal.toLocaleString()} EGP</p>` : ''}
+      <div class="space-y-2">
+        ${items.map(o => oppCard(o)).join('') || '<p class="text-gray-300 text-xs text-center py-4">—</p>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function oppCard(o) {
+  return `
+  <div class="opp-card bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-xs">
+    <p class="font-bold text-gray-800 mb-1 truncate">${o.title}</p>
+    ${o.destination ? `<p class="text-gray-400 mb-1"><i class="fa-solid fa-map-pin text-gray-300 ml-1"></i>${o.destination}</p>` : ''}
+    ${o.estimated_value ? `<p class="font-bold text-green-700">${formatCurrency ? formatCurrency(o.estimated_value) : Number(o.estimated_value).toLocaleString()}</p>` : ''}
+    <div class="flex items-center justify-between mt-2">
+      <div class="flex items-center gap-1">
+        <div class="bg-gray-100 rounded-full h-1.5 w-16 overflow-hidden">
+          <div class="h-full rounded-full bg-green-500" style="width:${o.probability||0}%"></div>
+        </div>
+        <span class="text-gray-400">${o.probability||0}%</span>
+      </div>
+      ${o.expected_close ? `<span class="text-gray-400">${o.expected_close}</span>` : ''}
+    </div>
+    ${o.adults_count > 0 ? `<p class="text-gray-400 mt-1"><i class="fa-solid fa-users text-gray-300 ml-1"></i>${o.adults_count} كبار</p>` : ''}
+    <div class="mt-2 flex gap-1 flex-wrap">
+      <select class="text-xs border border-gray-100 rounded px-1 py-0.5 bg-gray-50 focus:outline-none"
+              onchange="updateStage('${o.id}', this.value)" onclick="event.stopPropagation()">
+        ${STAGES.filter(s => !['won','lost'].includes(s.key)).map(s => `<option value="${s.key}" ${s.key===o.stage?'selected':''}>${s.label}</option>`).join('')}
+        <option value="won" ${o.stage==='won'?'selected':''}>رابح ✓</option>
+        <option value="lost" ${o.stage==='lost'?'selected':''}>خسارة ✗</option>
+      </select>
+    </div>
+    <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between gap-1">
+      ${o.quotes_count > 0
+        ? `<a href="/nsp-control-8x4k/quotations.html?opportunity_id=${o.id}"
+              onclick="event.stopPropagation()"
+              class="text-xs text-indigo-600 hover:underline font-bold">
+              <i class="fa-solid fa-file-contract ml-0.5"></i>${o.quotes_count} عرض
+           </a>`
+        : `<span class="text-xs text-gray-300">لا عروض</span>`}
+      <a href="/nsp-control-8x4k/quotations.html?opportunity_id=${o.id}${o.customer_id ? '&customer_id='+o.customer_id : ''}"
+         onclick="event.stopPropagation()"
+         class="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2 py-0.5 rounded font-bold transition">
+        + عرض سعر
+      </a>
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  if (!opps.length) {
+    document.getElementById('listBody').innerHTML = '<tr><td colspan="6" class="py-8 text-center text-gray-400 text-sm">لا توجد فرص بعد</td></tr>';
+    return;
+  }
+  document.getElementById('listBody').innerHTML = opps.map(o => {
+    const s = STAGE_MAP[o.stage] || {};
+    return `
+    <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
+      <td class="py-3 px-3">
+        <p class="font-bold text-gray-800">${o.title}</p>
+        <p class="text-xs text-gray-400">${o.opp_number||''}</p>
+      </td>
+      <td class="py-3 px-3">
+        <span class="text-xs font-bold px-2 py-1 rounded-full" style="background:${s.color||'#6b7280'}22;color:${s.color||'#6b7280'}">${s.label||o.stage}</span>
+      </td>
+      <td class="py-3 px-3 font-bold text-green-700 text-sm">${o.estimated_value ? (formatCurrency ? formatCurrency(o.estimated_value) : Number(o.estimated_value).toLocaleString()) : '—'}</td>
+      <td class="py-3 px-3 text-gray-500 text-xs hidden md:table-cell">${o.probability||0}%</td>
+      <td class="py-3 px-3 text-gray-500 text-xs hidden md:table-cell">${o.expected_close||'—'}</td>
+      <td class="py-3 px-3 text-gray-500 text-xs hidden lg:table-cell">${o.destination||'—'}</td>
+      <td class="py-3 px-3">
+        <a href="/nsp-control-8x4k/quotations.html?opportunity_id=${o.id}"
+           class="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1">
+          <i class="fa-solid fa-file-contract"></i>
+          ${o.quotes_count > 0 ? o.quotes_count + ' عرض' : '+ إنشاء'}
+        </a>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateStage(id, stage) {
+  const extra = stage === 'won' ? { won_at: new Date().toISOString() } : stage === 'lost' ? { lost_at: new Date().toISOString() } : {};
+  await db.from('opportunities').update({ stage, ...extra, updated_at: new Date().toISOString() }).eq('id', id);
+  await loadOpps();
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('kanbanView').classList.toggle('hidden', v !== 'kanban');
+  document.getElementById('listView').classList.toggle('hidden', v !== 'list');
+  document.getElementById('btnKanban').className = v === 'kanban'
+    ? 'px-3 py-2 bg-primary text-white transition text-xs font-bold'
+    : 'px-3 py-2 text-gray-500 hover:bg-gray-50 transition text-xs font-bold';
+  document.getElementById('btnList').className = v === 'list'
+    ? 'px-3 py-2 bg-primary text-white transition text-xs font-bold'
+    : 'px-3 py-2 text-gray-500 hover:bg-gray-50 transition text-xs font-bold';
+}
+
+function openNewOppModal() { document.getElementById('oppModal').classList.add('open'); }
+function closeOppModal()   { document.getElementById('oppModal').classList.remove('open'); }
+
+async function saveOpp() {
+  const title = document.getElementById('of_title').value.trim();
+  if (!title) {
+    document.getElementById('oppModalError').textContent = 'عنوان الفرصة مطلوب';
+    document.getElementById('oppModalError').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('oppModalError').classList.add('hidden');
+
+  const { data: { session } } = await db.auth.getSession();
+  const { data, error } = await db.from('opportunities').insert({
+    title,
+    destination:      document.getElementById('of_destination').value.trim() || null,
+    stage:            document.getElementById('of_stage').value,
+    estimated_value:  parseFloat(document.getElementById('of_value').value) || null,
+    probability:      parseInt(document.getElementById('of_prob').value) || 20,
+    travel_date_from: document.getElementById('of_date').value || null,
+    expected_close:   document.getElementById('of_close').value || null,
+    adults_count:     parseInt(document.getElementById('of_adults').value) || 1,
+    notes:            document.getElementById('of_notes').value.trim() || null,
+    sales_owner:      session?.user?.id,
+    created_by:       session?.user?.id,
+  }).select().single();
+
+  if (error) {
+    document.getElementById('oppModalError').textContent = error.message;
+    document.getElementById('oppModalError').classList.remove('hidden');
+    return;
+  }
+
+  closeOppModal();
+  await loadOpps();
+}
+</script>
+</body>
+</html>

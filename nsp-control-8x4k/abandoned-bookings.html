@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الحجوزات المهجورة | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css"><link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .tab-btn{padding:6px 14px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;border:none;transition:.15s;white-space:nowrap;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:not(.active){background:#f3f4f6;color:#374151;}
+    .tab-btn:not(.active):hover{background:#e5e7eb;}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;white-space:nowrap;}
+    .tbl td{padding:8px 10px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#fafafa;}
+    .step-dot{display:inline-flex;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-cart-arrow-down ml-2 text-amber-600"></i>الحجوزات المهجورة</h1>
+      <p class="erp-page-subtitle" id="pageSubtitle">تتبع الزوار الذين بدأوا الحجز ولم يكملوه</p>
+    </div>
+    <button onclick="load()" class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-lightGreen transition flex items-center gap-1">
+      <i class="fa-solid fa-rotate"></i> تحديث
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5" id="kpiStrip">
+    <div class="erp-card p-4 text-center animate-pulse border-b-2 border-amber-400"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse border-b-2 border-red-400"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse border-b-2 border-green-400"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse border-b-2 border-blue-400"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse border-b-2 border-primary"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+  </div>
+
+  <!-- Funnel -->
+  <div class="erp-card mb-5 p-4">
+    <h3 class="font-bold text-gray-700 mb-3 text-sm"><i class="fa-solid fa-filter ml-2 text-primary"></i>قمع الحجز — أين يتوقف الزوار؟</h3>
+    <div class="flex flex-wrap gap-2 items-end justify-around" id="funnelBar">
+      <div class="text-center text-gray-400 text-sm py-2 w-full animate-pulse">جارٍ التحميل…</div>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="bg-white rounded-xl shadow-sm p-3 mb-4 flex flex-wrap gap-2 items-center">
+    <div class="flex gap-1 flex-wrap" id="statusTabs">
+      <button class="tab-btn active" onclick="setFilter('all',this)">الكل</button>
+      <button class="tab-btn" onclick="setFilter('new',this)">جديد</button>
+      <button class="tab-btn" onclick="setFilter('contacted',this)">تم التواصل</button>
+      <button class="tab-btn" onclick="setFilter('recovered',this)">استُعيد</button>
+      <button class="tab-btn" onclick="setFilter('lost',this)">مفقود</button>
+    </div>
+    <div class="flex-1"></div>
+    <input type="text" id="searchInput" placeholder="بحث بالبريد أو البرنامج…"
+      class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-52"
+      oninput="renderTable()">
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+    <table class="w-full tbl">
+      <thead><tr>
+        <th>البريد / الجلسة</th><th>البرنامج</th><th>آخر خطوة</th>
+        <th>الحالة</th><th>القيمة المحتملة</th>
+        <th class="hidden md:table-cell">المصدر</th>
+        <th class="hidden md:table-cell">منذ</th>
+        <th>إجراء</th>
+      </tr></thead>
+      <tbody id="tableBody">
+        <tr><td colspan="8" class="text-center py-10 text-gray-400 animate-pulse">جارٍ التحميل…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p id="emptyState" class="hidden text-center text-gray-400 text-sm py-10">لا توجد سجلات مطابقة</p>
+
+</main>
+<div id="toast"></div>
+
+<script>
+const STEPS = {1:'عرض البرنامج',2:'بدء الحجز',3:'بيانات المسافرين',4:'التفاصيل',5:'الدفع'};
+const STEP_CLR = {1:'#6b7280',2:'#3b82f6',3:'#8b5cf6',4:'#f59e0b',5:'#ef4444'};
+const ST_MAP = {
+  new:       {label:'جديد',      bg:'#fef9c3',color:'#854d0e'},
+  contacted: {label:'تم التواصل',bg:'#dbeafe',color:'#1e40af'},
+  recovered: {label:'استُعيد',   bg:'#dcfce7',color:'#166534'},
+  lost:      {label:'مفقود',     bg:'#fee2e2',color:'#991b1b'},
+};
+let _all = [], _filter = 'all';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await load();
+});
+
+async function load() {
+  const { data } = await db.from('abandoned_bookings')
+    .select('*').order('abandoned_at', { ascending: false });
+  _all = data || [];
+  document.getElementById('pageSubtitle').textContent = `${_all.length} حجز مهجور مسجّل`;
+  renderKPIs(); renderFunnel(); renderTable();
+}
+
+function renderKPIs() {
+  const total = _all.length;
+  const newC  = _all.filter(r => r.recovery_status === 'new').length;
+  const rec   = _all.filter(r => r.recovery_status === 'recovered').length;
+  const rate  = total > 0 ? Math.round(rec / total * 100) : 0;
+  const pot   = _all.filter(r => r.recovery_status === 'new').reduce((s,r) => s + Number(r.estimated_value||0), 0);
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="erp-card p-4 text-center border-b-2 border-amber-400"><div class="text-2xl font-black text-amber-600">${total}</div><div class="text-xs text-gray-400 mt-1">إجمالي</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-red-400"><div class="text-2xl font-black text-red-600">${newC}</div><div class="text-xs text-gray-400 mt-1">بلا تواصل</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-green-400"><div class="text-2xl font-black text-green-600">${rec}</div><div class="text-xs text-gray-400 mt-1">استُعيد</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-blue-400"><div class="text-2xl font-black text-blue-600">${rate}%</div><div class="text-xs text-gray-400 mt-1">معدل الاستعادة</div></div>
+    <div class="erp-card p-4 text-center border-b-2 border-primary"><div class="text-xl font-black text-primary">${Number(pot).toLocaleString('ar-EG')}</div><div class="text-xs text-gray-400 mt-1">إيراد محتمل</div></div>`;
+}
+
+function renderFunnel() {
+  const counts = {1:0,2:0,3:0,4:0,5:0};
+  _all.forEach(r => { if (r.last_step) counts[r.last_step] = (counts[r.last_step]||0)+1; });
+  const max = Math.max(...Object.values(counts), 1);
+  document.getElementById('funnelBar').innerHTML = [1,2,3,4,5].map(s => {
+    const cnt = counts[s]||0;
+    const pct = Math.round(cnt/max*100);
+    return `<div class="flex-1 min-w-[60px] text-center">
+      <div class="text-lg font-black" style="color:${STEP_CLR[s]}">${cnt}</div>
+      <div class="h-10 flex items-end justify-center mb-1">
+        <div class="w-8 rounded-t" style="height:${Math.max(pct,4)}%;background:${STEP_CLR[s]};opacity:.7;min-height:3px"></div>
+      </div>
+      <div class="text-xs text-gray-500 leading-tight">${STEPS[s]}</div>
+    </div>`;
+  }).join('<div class="text-gray-300 self-center text-lg">→</div>');
+}
+
+function setFilter(f, btn) {
+  _filter = f;
+  document.querySelectorAll('#statusTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function renderTable() {
+  const q = (document.getElementById('searchInput')?.value||'').toLowerCase().trim();
+  let rows = _filter === 'all' ? _all : _all.filter(r => r.recovery_status === _filter);
+  if (q) rows = rows.filter(r =>
+    (r.customer_email||'').toLowerCase().includes(q) ||
+    (r.package_title||'').toLowerCase().includes(q)
+  );
+
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  if (!rows.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  const fmtAgo = d => {
+    if (!d) return '—';
+    const mins = Math.floor((Date.now()-new Date(d))/60000);
+    if (mins < 60) return `${mins} دقيقة`;
+    if (mins < 1440) return `${Math.floor(mins/60)} ساعة`;
+    return `${Math.floor(mins/1440)} يوم`;
+  };
+
+  tbody.innerHTML = rows.map(r => {
+    const st = ST_MAP[r.recovery_status] || ST_MAP.new;
+    const sc = STEP_CLR[r.last_step] || '#6b7280';
+    const sl = STEPS[r.last_step] || `خطوة ${r.last_step}`;
+    return `<tr>
+      <td>
+        <div class="font-medium text-sm">${esc(r.customer_email||'زائر مجهول')}</div>
+        ${r.customer_name?`<div class="text-xs text-gray-400">${esc(r.customer_name)}</div>`:''}
+      </td>
+      <td class="text-xs max-w-[160px] truncate">${esc(r.package_title||'—')}</td>
+      <td>
+        <div class="flex items-center gap-1.5">
+          <span class="step-dot text-white" style="background:${sc}">${r.last_step||'?'}</span>
+          <span class="text-xs text-gray-600">${sl}</span>
+        </div>
+      </td>
+      <td><span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:${st.bg};color:${st.color}">${st.label}</span></td>
+      <td class="font-bold text-sm text-primary">${r.estimated_value?Number(r.estimated_value).toLocaleString('ar-EG')+' ج.م':'—'}</td>
+      <td class="hidden md:table-cell text-xs text-gray-400">${esc(r.traffic_source||'—')}</td>
+      <td class="hidden md:table-cell text-xs text-gray-400">${fmtAgo(r.abandoned_at)}</td>
+      <td>
+        <div class="flex gap-1">
+          ${r.recovery_status==='new'?`
+          <button onclick="upd('${r.id}','contacted')" title="تم التواصل" class="p-1.5 text-blue-400 hover:text-blue-600 text-sm"><i class="fa-solid fa-phone"></i></button>
+          <button onclick="upd('${r.id}','recovered')" title="استُعيد" class="p-1.5 text-green-400 hover:text-green-600 text-sm"><i class="fa-solid fa-check"></i></button>
+          <button onclick="upd('${r.id}','lost')" title="مفقود" class="p-1.5 text-red-400 hover:text-red-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
+          `:''}
+          ${r.recovery_status==='contacted'?`
+          <button onclick="upd('${r.id}','recovered')" title="استُعيد" class="p-1.5 text-green-400 hover:text-green-600 text-sm"><i class="fa-solid fa-flag-checkered"></i></button>
+          <button onclick="upd('${r.id}','lost')" title="مفقود" class="p-1.5 text-red-400 hover:text-red-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
+          `:''}
+          ${r.customer_email?`<a href="mailto:${encodeURIComponent(r.customer_email)}" title="إرسال بريد" class="p-1.5 text-gray-400 hover:text-primary text-sm"><i class="fa-solid fa-envelope"></i></a>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function upd(id, status) {
+  const patch = { recovery_status: status, updated_at: new Date().toISOString() };
+  if (status === 'recovered') patch.recovered_at = new Date().toISOString();
+  const { error } = await db.from('abandoned_bookings').update(patch).eq('id', id);
+  if (error) { toast('خطأ: '+error.message, true); return; }
+  const labels = { contacted:'تم التواصل ✓', recovered:'استُعيد ✓', lost:'مفقود' };
+  toast(labels[status]||status);
+  const rec = _all.find(r => r.id === id);
+  if (rec) { rec.recovery_status = status; if (status==='recovered') rec.recovered_at = patch.recovered_at; }
+  renderKPIs(); renderTable();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

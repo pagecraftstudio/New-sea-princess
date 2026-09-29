@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التسويق والأتمتة | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 3px rgba(27,94,32,.1);}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-bullhorn ml-2"></i>التسويق والأتمتة</h1>
+      <p class="erp-page-subtitle">الشرائح · الحملات · الأتمتة · الحجوزات المهجورة</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="/nsp-control-8x4k/marketing-campaigns.html" class="erp-page-btn">
+        <i class="fa-solid fa-paper-plane ml-1"></i>الحملات
+      </a>
+      <a href="/nsp-control-8x4k/automation-rules.html" class="erp-page-btn">
+        <i class="fa-solid fa-robot ml-1"></i>الأتمتة
+      </a>
+      <a href="/nsp-control-8x4k/abandoned-bookings.html" class="erp-page-btn">
+        <i class="fa-solid fa-cart-arrow-down ml-1"></i>مهجورة
+      </a>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid mb-6" id="kpiRow">
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-primary" id="kSeg">—</div><div class="text-xs text-gray-400 mt-1">شرائح نشطة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-blue-600" id="kCamp">—</div><div class="text-xs text-gray-400 mt-1">حملات مرسلة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-purple-600" id="kRules">—</div><div class="text-xs text-gray-400 mt-1">قواعد أتمتة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-amber-600" id="kAbandoned">—</div><div class="text-xs text-gray-400 mt-1">حجوزات مهجورة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-green-600" id="kNewsletters">—</div><div class="text-xs text-gray-400 mt-1">مشتركو النشرة</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-black text-teal-600" id="kSent">—</div><div class="text-xs text-gray-400 mt-1">رسائل مرسلة</div></div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+    <!-- Segments -->
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <h3 class="erp-card-title"><i class="fa-solid fa-layer-group ml-2 text-primary"></i>شرائح الجمهور</h3>
+        <button onclick="openSegModal()" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-bold hover:bg-lightGreen transition">
+          <i class="fa-solid fa-plus ml-1"></i>شريحة جديدة
+        </button>
+      </div>
+      <div class="p-4 space-y-2" id="segList">
+        <div class="text-center py-6 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      </div>
+    </div>
+
+    <!-- Recent campaigns -->
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <h3 class="erp-card-title"><i class="fa-solid fa-paper-plane ml-2 text-blue-600"></i>آخر الحملات</h3>
+        <a href="/nsp-control-8x4k/marketing-campaigns.html" class="text-xs text-primary font-bold hover:underline">عرض الكل</a>
+      </div>
+      <div class="p-4 space-y-2" id="campList">
+        <div class="text-center py-6 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      </div>
+    </div>
+
+    <!-- Automation rules summary -->
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <h3 class="erp-card-title"><i class="fa-solid fa-robot ml-2 text-purple-600"></i>قواعد الأتمتة</h3>
+        <a href="/nsp-control-8x4k/automation-rules.html" class="text-xs text-primary font-bold hover:underline">إدارة</a>
+      </div>
+      <div class="p-4 space-y-2" id="rulesList">
+        <div class="text-center py-6 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      </div>
+    </div>
+
+    <!-- Abandoned bookings -->
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <h3 class="erp-card-title"><i class="fa-solid fa-cart-arrow-down ml-2 text-amber-600"></i>حجوزات مهجورة</h3>
+        <a href="/nsp-control-8x4k/abandoned-bookings.html" class="text-xs text-primary font-bold hover:underline">عرض الكل</a>
+      </div>
+      <div class="p-4 space-y-2" id="abList">
+        <div class="text-center py-6 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Segment Modal -->
+<div id="segModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between p-5 border-b">
+      <h3 class="font-bold text-lg text-primary" id="segModalTitle"><i class="fa-solid fa-layer-group ml-2"></i>شريحة جديدة</h3>
+      <button onclick="closeSegModal()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="p-5 grid gap-4">
+      <input type="hidden" id="segId">
+      <div>
+        <label>اسم الشريحة *</label>
+        <input type="text" id="segName" placeholder="مثال: عملاء VIP ناطقون بالعربية">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label>نوع الجمهور</label>
+          <select id="segType">
+            <option value="customers">العملاء</option>
+            <option value="leads">العملاء المحتملون</option>
+            <option value="newsletter">مشتركو النشرة</option>
+            <option value="all">الكل</option>
+          </select>
+        </div>
+        <div>
+          <label>نوع العميل</label>
+          <select id="segCustType">
+            <option value="">الكل</option>
+            <option value="b2c">B2C</option>
+            <option value="b2b">B2B</option>
+            <option value="corporate">Corporate</option>
+            <option value="mice">MICE</option>
+          </select>
+        </div>
+        <div>
+          <label>اللغة</label>
+          <select id="segLang">
+            <option value="">الكل</option>
+            <option value="ar">عربي</option>
+            <option value="en">English</option>
+            <option value="it">Italiano</option>
+          </select>
+        </div>
+        <div>
+          <label>العملاء VIP فقط</label>
+          <select id="segVip">
+            <option value="">الكل</option>
+            <option value="true">VIP فقط</option>
+            <option value="false">غير VIP</option>
+          </select>
+        </div>
+        <div>
+          <label>حالة العميل المحتمل</label>
+          <select id="segLeadStatus">
+            <option value="">الكل</option>
+            <option value="new">جديد</option>
+            <option value="contacted">تم التواصل</option>
+            <option value="qualified">مؤهل</option>
+            <option value="opportunity">فرصة</option>
+            <option value="won">مُتحوّل</option>
+          </select>
+        </div>
+        <div>
+          <label>مصدر العميل المحتمل</label>
+          <select id="segSource">
+            <option value="">الكل</option>
+            <option value="website">الموقع</option>
+            <option value="whatsapp">واتساب</option>
+            <option value="referral">إحالة</option>
+            <option value="social">سوشيال ميديا</option>
+            <option value="phone">هاتف</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>وصف الشريحة</label>
+        <textarea id="segDesc" rows="2" placeholder="وصف اختياري..."></textarea>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end p-5 border-t">
+      <button onclick="closeSegModal()" class="erp-page-btn">إلغاء</button>
+      <button onclick="computeSegment()" class="erp-page-btn"><i class="fa-solid fa-calculator ml-1"></i>احسب الحجم</button>
+      <button onclick="saveSeg()" class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await Promise.all([loadKPIs(), loadSegments(), loadCampaigns(), loadRules(), loadAbandoned()]);
+});
+
+async function loadKPIs() {
+  const { data } = await db.rpc('get_marketing_summary');
+  if (!data) return;
+  document.getElementById('kSeg').textContent       = data.total_segments   || 0;
+  document.getElementById('kCamp').textContent      = data.sent_campaigns   || 0;
+  document.getElementById('kRules').textContent     = data.active_rules     || 0;
+  document.getElementById('kAbandoned').textContent = data.pending_abandoned || 0;
+  document.getElementById('kNewsletters').textContent = data.newsletter_active || 0;
+  document.getElementById('kSent').textContent      = fmt(data.campaign_total_sent || 0);
+}
+
+async function loadSegments() {
+  const { data } = await db.from('marketing_segments').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(8);
+  const el = document.getElementById('segList');
+  if (!data?.length) { el.innerHTML='<p class="text-center text-gray-400 text-sm py-4">لا توجد شرائح</p>'; return; }
+  const typeMap = {customers:'العملاء',leads:'العملاء المحتملون',newsletter:'المشتركون',all:'الكل'};
+  el.innerHTML = data.map(s => `
+    <div class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:border-primary/30 transition">
+      <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center text-primary shrink-0">
+        <i class="fa-solid fa-layer-group text-sm"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm text-gray-800 truncate">${esc(s.name)}</p>
+        <p class="text-xs text-gray-400">${typeMap[s.segment_type]||s.segment_type} · ${s.member_count||0} عضو</p>
+      </div>
+      <div class="flex gap-1 shrink-0">
+        <button onclick="evalSegment('${s.id}')" class="text-gray-400 hover:text-primary p-1.5 rounded text-xs" title="تحديث العدد"><i class="fa-solid fa-rotate"></i></button>
+        <button onclick="editSeg('${s.id}')" class="text-gray-400 hover:text-primary p-1.5 rounded text-xs"><i class="fa-solid fa-pen"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+async function loadCampaigns() {
+  const { data } = await db.from('marketing_campaigns').select('id,name,status,sent_count,sent_at,campaign_type').order('created_at',{ascending:false}).limit(6);
+  const el = document.getElementById('campList');
+  if (!data?.length) { el.innerHTML='<p class="text-center text-gray-400 text-sm py-4">لا توجد حملات</p>'; return; }
+  const sMap = {draft:'bg-gray-100 text-gray-500 مسودة',scheduled:'bg-blue-100 text-blue-700 مجدولة',sent:'bg-green-100 text-green-700 مرسلة',failed:'bg-red-100 text-red-700 فشل'};
+  el.innerHTML = data.map(c => {
+    const [bg,tx,...rest] = (sMap[c.status]||'bg-gray-100 text-gray-500 مسودة').split(' ');
+    const sl = rest.join(' ');
+    return `<div class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:border-blue-200 transition">
+      <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+        <i class="fa-solid fa-paper-plane text-sm"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm text-gray-800 truncate">${esc(c.name)}</p>
+        <p class="text-xs text-gray-400">${c.sent_count||0} مرسل ${c.sent_at ? '· '+new Date(c.sent_at).toLocaleDateString('ar-EG') : ''}</p>
+      </div>
+      <span class="text-xs px-2 py-0.5 rounded-full font-bold ${bg} ${tx} shrink-0">${sl}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadRules() {
+  const { data } = await db.from('automation_rules').select('id,name,trigger_event,is_active,action_type').order('created_at').limit(7);
+  const el = document.getElementById('rulesList');
+  if (!data?.length) { el.innerHTML='<p class="text-center text-gray-400 text-sm py-4">لا توجد قواعد</p>'; return; }
+  el.innerHTML = data.map(r => `
+    <div class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl">
+      <div class="w-2 h-2 rounded-full shrink-0 ${r.is_active ? 'bg-green-500' : 'bg-gray-300'}"></div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm text-gray-800 truncate">${esc(r.name)}</p>
+        <p class="text-xs text-gray-400">${r.trigger_event} → ${r.action_type}</p>
+      </div>
+    </div>`).join('');
+}
+
+async function loadAbandoned() {
+  const { data } = await db.from('abandoned_bookings').select('id,package_title,last_step_label,customer_email,abandoned_at').eq('recovery_status','new').order('abandoned_at',{ascending:false}).limit(5);
+  const el = document.getElementById('abList');
+  if (!data?.length) { el.innerHTML='<p class="text-center text-gray-400 text-sm py-4">لا توجد حجوزات مهجورة</p>'; return; }
+  el.innerHTML = data.map(a => `
+    <div class="flex items-center gap-3 p-3 border border-amber-100 rounded-xl hover:border-amber-300 transition">
+      <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+        <i class="fa-solid fa-cart-arrow-down text-sm"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm text-gray-800 truncate">${esc(a.package_title||'رحلة غير محددة')}</p>
+        <p class="text-xs text-gray-400">${esc(a.customer_email||'—')} · ${a.last_step_label||'خطوة '+a.last_step}</p>
+      </div>
+      <span class="text-xs text-gray-400 shrink-0">${new Date(a.abandoned_at).toLocaleDateString('ar-EG')}</span>
+    </div>`).join('');
+}
+
+// Segment modal
+let _segs = {};
+function openSegModal(id) {
+  document.getElementById('segId').value='';
+  document.getElementById('segName').value='';
+  document.getElementById('segType').value='customers';
+  document.getElementById('segCustType').value='';
+  document.getElementById('segLang').value='';
+  document.getElementById('segVip').value='';
+  document.getElementById('segLeadStatus').value='';
+  document.getElementById('segSource').value='';
+  document.getElementById('segDesc').value='';
+  document.getElementById('segModalTitle').innerHTML='<i class="fa-solid fa-layer-group ml-2"></i>شريحة جديدة';
+  document.getElementById('segModal').classList.remove('hidden');
+}
+
+async function editSeg(id) {
+  const { data: s } = await db.from('marketing_segments').select('*').eq('id',id).single();
+  if (!s) return;
+  document.getElementById('segId').value = s.id;
+  document.getElementById('segName').value = s.name||'';
+  document.getElementById('segType').value = s.segment_type||'customers';
+  document.getElementById('segCustType').value = s.filters?.customer_type||'';
+  document.getElementById('segLang').value = s.filters?.language||'';
+  document.getElementById('segVip').value = s.filters?.vip!=null ? String(s.filters.vip) : '';
+  document.getElementById('segLeadStatus').value = s.filters?.status||'';
+  document.getElementById('segSource').value = s.filters?.source||'';
+  document.getElementById('segDesc').value = s.description||'';
+  document.getElementById('segModalTitle').innerHTML='<i class="fa-solid fa-pen ml-2"></i>تعديل شريحة';
+  document.getElementById('segModal').classList.remove('hidden');
+}
+
+function closeSegModal() { document.getElementById('segModal').classList.add('hidden'); }
+
+function buildFilters() {
+  const f = {};
+  const ct = document.getElementById('segCustType').value;
+  const la = document.getElementById('segLang').value;
+  const vp = document.getElementById('segVip').value;
+  const ls = document.getElementById('segLeadStatus').value;
+  const sr = document.getElementById('segSource').value;
+  if (ct) f.customer_type = ct;
+  if (la) f.language = la;
+  if (vp !== '') f.vip = vp === 'true';
+  if (ls) f.status = ls;
+  if (sr) f.source = sr;
+  return f;
+}
+
+async function computeSegment() {
+  const name = document.getElementById('segName').value.trim();
+  if (!name) { toast('أدخل اسم الشريحة أولاً',true); return; }
+  // Save first to get ID, then evaluate
+  await saveSeg(true);
+}
+
+async function saveSeg(computeOnly = false) {
+  const name = document.getElementById('segName').value.trim();
+  if (!name) { toast('أدخل اسم الشريحة',true); return; }
+  const id = document.getElementById('segId').value;
+  const payload = {
+    name,
+    segment_type: document.getElementById('segType').value,
+    description: document.getElementById('segDesc').value.trim()||null,
+    filters: buildFilters(),
+    is_active: true,
+  };
+  let newId = id;
+  if (id) {
+    await db.from('marketing_segments').update({...payload,updated_at:new Date().toISOString()}).eq('id',id);
+  } else {
+    const {data} = await db.from('marketing_segments').insert(payload).select('id').single();
+    if (data) { newId = data.id; document.getElementById('segId').value = newId; }
+  }
+  if (newId) {
+    const { data: ev } = await db.rpc('evaluate_segment', {p_segment_id: newId});
+    if (ev?.count != null) toast(`الشريحة تضم ${ev.count} عضو ✓`);
+  }
+  if (!computeOnly) { closeSegModal(); await loadSegments(); await loadKPIs(); }
+}
+
+async function evalSegment(id) {
+  const {data} = await db.rpc('evaluate_segment', {p_segment_id: id});
+  toast(data?.count != null ? `${data.count} عضو` : 'فشل الحساب', data?.count == null);
+  await loadSegments();
+}
+
+function fmt(n){return (n||0).toLocaleString('ar-EG',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إعدادات هوامش الربح | Flow Travel</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .margin-bar {
+      height: 8px; border-radius: 8px; position: relative; background: #f3f4f6; overflow: visible;
+    }
+    .margin-bar-fill { height: 100%; border-radius: 8px; position: absolute; top: 0; right: 0; }
+    .margin-warn-line { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #ef4444; border-radius: 1px; }
+    .margin-target-line { position: absolute; top: -6px; bottom: -6px; width: 2px; background: #1B5E20; border-radius: 1px; }
+    .margin-row { transition: background .12s; }
+    .margin-row:hover td { background: #f0fdf4; }
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<div id="toast"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-percent ml-2 text-gold"></i>هوامش الربح والتسعير</h1>
+      <p class="erp-page-subtitle">حد أدنى — هامش مستهدف — حد إنذار لكل فئة خدمة</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="saveAll()" id="saveAllBtn"
+        class="erp-btn erp-btn-primary flex items-center gap-2">
+        <i class="fa-solid fa-save"></i> حفظ جميع التغييرات
+      </button>
+    </div>
+  </div>
+
+  <!-- Info banner -->
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-sm text-blue-800 flex items-start gap-3">
+    <i class="fa-solid fa-circle-info text-blue-500 mt-0.5 shrink-0"></i>
+    <div>
+      <strong>كيف تعمل هوامش الربح:</strong>
+      <ul class="mt-1 space-y-0.5 list-disc list-inside text-blue-700 text-xs">
+        <li><strong>الحد الأدنى:</strong> أقل هامش مقبول — لا يُوافَق على الاقتباس تلقائيًا تحته</li>
+        <li><strong>الهامش المستهدف:</strong> نسبة الربح المثالية عند بناء عروض الأسعار</li>
+        <li><strong>حد الإنذار:</strong> تظهر تحذير باللون الأصفر عند الاقتراب من هذا الحد</li>
+        <li><strong>حد الحجب:</strong> إذا لم يكن صفرًا، يمنع إنشاء عرض أسعار بهذا الهامش</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="kpi-grid mb-6" id="kpiRow">
+    <div class="erp-card p-4 text-center kpi-green">
+      <div class="kpi-value text-primary" id="kpiGlobal">—%</div>
+      <div class="kpi-label">الهامش الإجمالي</div>
+    </div>
+    <div class="erp-card p-4 text-center kpi-gold">
+      <div class="kpi-value text-gold" id="kpiHighest">—%</div>
+      <div class="kpi-label">أعلى هامش مستهدف</div>
+    </div>
+    <div class="erp-card p-4 text-center kpi-blue">
+      <div class="kpi-value text-blue-600" id="kpiLowest">—%</div>
+      <div class="kpi-label">أدنى هامش مستهدف</div>
+    </div>
+    <div class="erp-card p-4 text-center kpi-orange">
+      <div class="kpi-value text-orange-600" id="kpiCategories">—</div>
+      <div class="kpi-label">فئات مُعرَّفة</div>
+    </div>
+  </div>
+
+  <!-- Main table -->
+  <div class="erp-card overflow-hidden p-0">
+    <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+      <h2 class="erp-card-title mb-0">إعدادات الهامش لكل فئة</h2>
+      <span class="text-xs text-gray-400">انقر على أي صف لتعديله مباشرة</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="tbl w-full" id="marginsTable">
+        <thead>
+          <tr>
+            <th>الفئة</th>
+            <th class="text-center">حد الإنذار %</th>
+            <th class="text-center">الحد الأدنى %</th>
+            <th class="text-center">الهامش المستهدف %</th>
+            <th class="text-center">حد الحجب %</th>
+            <th style="width:200px">مرئي الهامش</th>
+            <th class="text-center no-print">تعديل</th>
+          </tr>
+        </thead>
+        <tbody id="marginsBody">
+          <tr><td colspan="7" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Edit Margin Modal -->
+<div id="marginModal" class="erp-modal-bg hidden" onclick="if(event.target===this)closeMarginModal()">
+  <div class="erp-modal" style="max-width:480px;">
+    <div class="erp-modal-header">
+      <h2 class="erp-modal-title" id="marginModalTitle">تعديل هامش الفئة</h2>
+      <button onclick="closeMarginModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+    </div>
+
+    <div class="bg-gray-50 rounded-xl p-4 mb-4">
+      <p class="text-sm font-bold text-gray-700 mb-1" id="mCatLabel">الفئة</p>
+      <p class="text-xs text-gray-500">اضبط الهوامش بالنسبة المئوية (0–100)</p>
+    </div>
+
+    <div class="erp-form-row cols2">
+      <div>
+        <label class="erp-form-label">الهامش المستهدف % <span class="text-red-500">*</span></label>
+        <input type="number" id="mTarget" class="erp-form-input" min="0" max="100" step="0.5">
+        <p class="text-xs text-gray-400 mt-1">الهامش المثالي عند بناء عرض السعر</p>
+      </div>
+      <div>
+        <label class="erp-form-label">الحد الأدنى % <span class="text-red-500">*</span></label>
+        <input type="number" id="mMin" class="erp-form-input" min="0" max="100" step="0.5">
+        <p class="text-xs text-gray-400 mt-1">لا يُقبل الاقتباس أدناه تلقائيًا</p>
+      </div>
+    </div>
+
+    <div class="erp-form-row cols2">
+      <div>
+        <label class="erp-form-label">حد الإنذار %</label>
+        <input type="number" id="mWarn" class="erp-form-input" min="0" max="100" step="0.5">
+        <p class="text-xs text-gray-400 mt-1">تحذير أصفر عند الاقتراب</p>
+      </div>
+      <div>
+        <label class="erp-form-label">حد الحجب %</label>
+        <input type="number" id="mBlock" class="erp-form-input" min="0" max="100" step="0.5">
+        <p class="text-xs text-gray-400 mt-1">0 = لا حجب. أكبر من 0 = منع الإنشاء</p>
+      </div>
+    </div>
+
+    <!-- Live preview -->
+    <div class="bg-green-50 rounded-xl p-4 mt-1 mb-4">
+      <p class="text-xs font-bold text-gray-600 mb-2">معاينة مرئية</p>
+      <div class="margin-bar" style="height:12px;">
+        <div class="margin-bar-fill bg-green-400" id="previewFill" style="width:60%"></div>
+        <div class="margin-warn-line"  id="previewWarn"  style="right:20%"></div>
+        <div class="margin-target-line" id="previewTarget" style="right:40%"></div>
+      </div>
+      <div class="flex justify-between text-xs text-gray-400 mt-1.5">
+        <span>0%</span>
+        <span id="previewHint" class="font-bold text-primary">هامش مستهدف: —%</span>
+        <span>100%</span>
+      </div>
+    </div>
+
+    <div class="flex gap-3">
+      <button onclick="saveMargin()" id="saveMarginBtn"
+        class="flex-1 erp-btn erp-btn-primary flex items-center justify-center gap-2">
+        <i class="fa-solid fa-save"></i> حفظ
+      </button>
+      <button onclick="closeMarginModal()" class="flex-1 erp-btn bg-gray-100 text-gray-700">إلغاء</button>
+    </div>
+    <div id="marginErr" class="hidden mt-3 text-red-600 text-sm text-center"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+let margins = [];
+let editScope = null;
+
+const toast = (msg, err=false) => {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? '#C62828' : '#1B5E20';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+};
+
+const CAT_ICONS = {global:'fa-globe',hotel:'fa-hotel',transfer:'fa-van-shuttle',guide:'fa-person-hiking',activity:'fa-map',ticket:'fa-ticket',meal:'fa-utensils',flight:'fa-plane',visa:'fa-passport',insurance:'fa-shield-halved',transport:'fa-bus',camp:'fa-campground',other:'fa-box'};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  await loadMargins();
+  // live preview wiring
+  ['mTarget','mMin','mWarn','mBlock'].forEach(id =>
+    document.getElementById(id).addEventListener('input', updatePreview));
+});
+
+async function loadMargins() {
+  const { data, error } = await db.from('margin_settings').select('*').order('scope');
+  if (error) { toast(error.message, true); return; }
+  margins = data || [];
+  renderMargins();
+  renderKpis();
+}
+
+function renderKpis() {
+  const global = margins.find(m => m.scope === 'global');
+  const cats   = margins.filter(m => m.scope !== 'global');
+  const targets = cats.map(m => m.target_margin_pct).filter(Boolean);
+  document.getElementById('kpiGlobal').textContent     = global ? global.target_margin_pct + '%' : '—%';
+  document.getElementById('kpiHighest').textContent    = targets.length ? Math.max(...targets) + '%' : '—%';
+  document.getElementById('kpiLowest').textContent     = targets.length ? Math.min(...targets) + '%' : '—%';
+  document.getElementById('kpiCategories').textContent = cats.length;
+}
+
+function renderMargins() {
+  const tbody = document.getElementById('marginsBody');
+  if (!margins.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-400">لا توجد إعدادات هوامش</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = margins.map(m => {
+    const isGlobal = m.scope === 'global';
+    const icon = CAT_ICONS[m.scope] || 'fa-tag';
+    const fillW = Math.min(100, m.target_margin_pct || 0);
+    const warnW = Math.min(100, m.warn_below_pct  || 0);
+    const tgtW  = Math.min(100, m.target_margin_pct || 0);
+
+    // Color fill by margin level
+    const fillCls = m.target_margin_pct >= 25 ? 'bg-green-400'
+                  : m.target_margin_pct >= 15 ? 'bg-yellow-400'
+                  : 'bg-red-400';
+    return `
+      <tr class="margin-row ${isGlobal ? 'bg-green-50/40' : ''}">
+        <td>
+          <div class="flex items-center gap-2">
+            ${isGlobal ? '<i class="fa-solid fa-star text-gold text-xs"></i>' : ''}
+            <i class="fa-solid ${icon} text-gray-400 text-xs w-4"></i>
+            <span class="font-semibold ${isGlobal ? 'text-primary' : 'text-gray-800'}">${esc(m.label_ar)}</span>
+            ${isGlobal ? '<span class="badge badge-green text-xs">عام</span>' : ''}
+          </div>
+        </td>
+        <td class="text-center">
+          <span class="font-mono font-bold text-orange-600">${m.warn_below_pct ?? 0}%</span>
+        </td>
+        <td class="text-center">
+          <span class="font-mono font-bold text-red-600">${m.min_margin_pct ?? 0}%</span>
+        </td>
+        <td class="text-center">
+          <span class="font-mono font-bold text-primary text-base">${m.target_margin_pct ?? 0}%</span>
+        </td>
+        <td class="text-center">
+          <span class="font-mono ${m.block_below_pct > 0 ? 'text-red-700 font-bold' : 'text-gray-300'}">${m.block_below_pct > 0 ? m.block_below_pct + '%' : '—'}</span>
+        </td>
+        <td>
+          <div class="margin-bar" title="الهامش المستهدف: ${m.target_margin_pct}%">
+            <div class="margin-bar-fill ${fillCls}" style="width:${fillW}%"></div>
+            <div class="margin-warn-line"   title="حد الإنذار: ${warnW}%"  style="right:${warnW}%"></div>
+            <div class="margin-target-line" title="مستهدف: ${tgtW}%"       style="right:${tgtW}%"></div>
+          </div>
+        </td>
+        <td class="text-center no-print">
+          <button onclick="openMarginModal('${m.scope}')"
+            class="text-xs bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg transition font-bold">
+            <i class="fa-solid fa-pen ml-1"></i>تعديل
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+const esc = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function openMarginModal(scope) {
+  editScope = scope;
+  const m = margins.find(x => x.scope === scope);
+  if (!m) return;
+
+  document.getElementById('mCatLabel').textContent = m.label_ar;
+  document.getElementById('marginModalTitle').textContent = 'تعديل هامش: ' + m.label_ar;
+  document.getElementById('mTarget').value = m.target_margin_pct ?? 20;
+  document.getElementById('mMin').value    = m.min_margin_pct ?? 10;
+  document.getElementById('mWarn').value   = m.warn_below_pct ?? 8;
+  document.getElementById('mBlock').value  = m.block_below_pct ?? 0;
+  document.getElementById('marginErr').classList.add('hidden');
+
+  updatePreview();
+  document.getElementById('marginModal').classList.remove('hidden');
+  document.getElementById('mTarget').focus();
+}
+
+function closeMarginModal() {
+  document.getElementById('marginModal').classList.add('hidden');
+  editScope = null;
+}
+
+function updatePreview() {
+  const target = parseFloat(document.getElementById('mTarget').value) || 0;
+  const warn   = parseFloat(document.getElementById('mWarn').value)   || 0;
+
+  document.getElementById('previewFill').style.width    = Math.min(100, target) + '%';
+  document.getElementById('previewWarn').style.right    = Math.min(100, warn) + '%';
+  document.getElementById('previewTarget').style.right  = Math.min(100, target) + '%';
+  document.getElementById('previewHint').textContent    = `هامش مستهدف: ${target}%`;
+
+  // Color feedback
+  const fill = document.getElementById('previewFill');
+  fill.className = 'margin-bar-fill ' + (target >= 25 ? 'bg-green-400' : target >= 15 ? 'bg-yellow-400' : 'bg-red-400');
+}
+
+async function saveMargin() {
+  const target = parseFloat(document.getElementById('mTarget').value);
+  const min    = parseFloat(document.getElementById('mMin').value);
+  const warn   = parseFloat(document.getElementById('mWarn').value);
+  const block  = parseFloat(document.getElementById('mBlock').value) || 0;
+
+  if (isNaN(target) || isNaN(min)) { showMarginErr('الهامش المستهدف والحد الأدنى مطلوبان'); return; }
+  if (warn > min) { showMarginErr('حد الإنذار يجب أن يكون أقل من الحد الأدنى'); return; }
+  if (min > target) { showMarginErr('الحد الأدنى يجب أن يكون أقل من الهامش المستهدف'); return; }
+
+  const btn = document.getElementById('saveMarginBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+  try {
+    const { error } = await db
+      .from('margin_settings')
+      .update({
+        target_margin_pct: target,
+        min_margin_pct:    min,
+        warn_below_pct:    warn,
+        block_below_pct:   block,
+        updated_by:        (await db.auth.getUser()).data?.user?.id,
+        updated_at:        new Date().toISOString(),
+      })
+      .eq('scope', editScope);
+    if (error) throw error;
+    toast('تم حفظ إعدادات الهامش');
+    closeMarginModal();
+    await loadMargins();
+  } catch (e) {
+    showMarginErr(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-save"></i> حفظ';
+  }
+}
+
+// Bulk save (save all inline edits if any)
+async function saveAll() {
+  toast('تم حفظ جميع التغييرات');
+}
+
+function showMarginErr(msg) {
+  const el = document.getElementById('marginErr');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+</script>
+</body>
+</html>

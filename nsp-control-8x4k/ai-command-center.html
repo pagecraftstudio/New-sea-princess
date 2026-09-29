@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مركز الأوامر الذكي — Flow Travel</title>
+  <script>
+    tailwind = { config: { theme: { extend: { colors: {
+      primary: { DEFAULT: '#1B5E20', light: '#2E7D32' },
+      accent:  { DEFAULT: '#B8860B' },
+      ai:      { DEFAULT: '#7c3aed', light: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe' }
+    }}}}}
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="/css/erp-ui.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <script src="/js/ai-service.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .chat-bubble-user { background: #e0f2fe; border-radius: 1rem 1rem 0 1rem; }
+    .chat-bubble-ai   { background: #f5f3ff; border-radius: 1rem 1rem 1rem 0; border: 1px solid #ddd6fe; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 9999px; font-size: .75rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .chip:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+    .thinking-dots span { animation: blink 1.4s infinite; }
+    .thinking-dots span:nth-child(2) { animation-delay: .2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  <div id="adminNavMount"></div>
+
+  <main class="flex-1 overflow-auto p-4 md:p-6 flex flex-col max-w-5xl mx-auto w-full">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6">
+      <a href="/nsp-control-8x4k/ai-dashboard.html" class="text-gray-400 hover:text-ai transition">
+        <i class="fa-solid fa-arrow-right"></i>
+      </a>
+      <div class="flex-1">
+        <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-terminal text-ai"></i>
+          مركز الأوامر الذكي
+        </h1>
+        <p class="text-xs text-gray-400">اسأل عن أي شيء في نظامك — يُجيب من بياناتك الفعلية فقط</p>
+      </div>
+      <button onclick="clearChat()" class="text-xs text-gray-400 hover:text-red-500 transition flex items-center gap-1">
+        <i class="fa-solid fa-rotate-left"></i> بدء محادثة جديدة
+      </button>
+    </div>
+
+    <!-- Quick chips -->
+    <div class="flex flex-wrap gap-2 mb-5">
+      <button class="chip bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100"
+        onclick="ask('أي العملاء المحتملين يحتاجون متابعة اليوم؟')">
+        <i class="fa-solid fa-bell text-purple-400"></i> متابعات اليوم
+      </button>
+      <button class="chip bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100"
+        onclick="ask('ما هي أعلى قيمة فرص البيع المفتوحة حالياً؟')">
+        <i class="fa-solid fa-trophy text-blue-400"></i> أعلى فرص
+      </button>
+      <button class="chip bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100"
+        onclick="ask('أي عروض الأسعار المرسلة تجاوزت 5 أيام بدون رد؟')">
+        <i class="fa-solid fa-clock text-amber-400"></i> عروض بدون رد
+      </button>
+      <button class="chip bg-green-50 border border-green-200 text-green-700 hover:bg-green-100"
+        onclick="ask('ما الوضع التشغيلي العام هذا الأسبوع؟')">
+        <i class="fa-solid fa-plane text-green-400"></i> وضع العمليات
+      </button>
+      <button class="chip bg-red-50 border border-red-200 text-red-700 hover:bg-red-100"
+        onclick="ask('أي الموردين يظهرون في بياناتهم ما يستدعي المراجعة؟')">
+        <i class="fa-solid fa-truck text-red-400"></i> مراجعة موردين
+      </button>
+      <button class="chip bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100"
+        onclick="ask('كم عدد العملاء المحتملين الجدد هذا الشهر؟')">
+        <i class="fa-solid fa-chart-bar text-gray-400"></i> إحصائيات المبيعات
+      </button>
+    </div>
+
+    <!-- Chat window -->
+    <div class="erp-card flex-1 flex flex-col" style="min-height: 400px;">
+
+      <div id="chatWindow" class="flex-1 overflow-y-auto space-y-4 p-4 max-h-[500px]">
+        <!-- Welcome message -->
+        <div class="flex justify-start">
+          <div class="chat-bubble-ai px-4 py-3 text-sm max-w-lg">
+            <div class="flex items-center gap-2 mb-2 text-ai font-semibold text-xs">
+              <i class="fa-solid fa-microchip-ai"></i> مساعد Flow الذكي
+            </div>
+            مرحباً! أنا مساعدك الذكي. يمكنني الإجابة على أسئلتك عن العملاء، الفرص، العمليات، والموردين — مستنداً على بيانات نظامك الفعلية فقط.
+            <br/><br/>
+            جرّب أحد الأسئلة السريعة أعلاه، أو اكتب سؤالك الخاص.
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="border-t border-gray-100 p-4">
+        <div class="flex gap-3">
+          <input id="chatInput" type="text"
+            placeholder="اسأل عن أي شيء في نظامك…"
+            class="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ai/30 focus:border-ai"
+            style="font-family:'Cairo',sans-serif;"
+            onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); send(); }" />
+          <button id="sendBtn" onclick="send()"
+            class="bg-ai-DEFAULT text-white px-5 py-3 rounded-xl hover:bg-ai-light transition-colors flex items-center gap-2 text-sm font-semibold"
+            style="background:#7c3aed">
+            <i class="fa-solid fa-paper-plane"></i>
+            إرسال
+          </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-2 flex items-center gap-1">
+          <i class="fa-solid fa-shield-halved text-green-400"></i>
+          المساعد لا يرى إلا البيانات التي لديك صلاحية الوصول إليها. لا يخترع معلومات.
+        </p>
+      </div>
+    </div>
+
+    <!-- Context note -->
+    <p class="text-center text-xs text-gray-400 mt-3">
+      <i class="fa-solid fa-circle-info ml-1"></i>
+      المحادثة لا تُحفظ بعد إغلاق الصفحة. استخدم "بدء محادثة جديدة" لإعادة الضبط.
+    </p>
+  </main>
+
+<script>
+  let chatSession = null;
+  let isLoading = false;
+
+  function getSession() {
+    if (!chatSession) chatSession = window.AI.createChat('command_center', null, {});
+    return chatSession;
+  }
+
+  function clearChat() {
+    chatSession = null;
+    const w = document.getElementById('chatWindow');
+    w.innerHTML = `
+      <div class="flex justify-start">
+        <div class="chat-bubble-ai px-4 py-3 text-sm max-w-lg">
+          <div class="flex items-center gap-2 mb-2 text-ai font-semibold text-xs">
+            <i class="fa-solid fa-microchip-ai"></i> مساعد Flow الذكي
+          </div>
+          تم بدء محادثة جديدة. كيف يمكنني مساعدتك؟
+        </div>
+      </div>`;
+  }
+
+  function ask(question) {
+    document.getElementById('chatInput').value = question;
+    send();
+  }
+
+  async function send() {
+    if (isLoading) return;
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+
+    appendBubble('user', msg);
+    const thinkingId = appendThinking();
+
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+
+    try {
+      const reply = await getSession().send(msg);
+      removeThinking(thinkingId);
+      appendBubble('ai', reply);
+    } catch (err) {
+      removeThinking(thinkingId);
+      appendBubble('ai', '❌ خطأ: ' + (err.message || 'فشل الطلب. تأكد من إعداد مفتاح API.'), true);
+    }
+
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+  }
+
+  function appendBubble(role, content, isError = false) {
+    const w = document.getElementById('chatWindow');
+    const div = document.createElement('div');
+    div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+
+    const inner = role === 'user'
+      ? `<div class="chat-bubble-user px-4 py-3 text-sm max-w-lg">${escHtml(content)}</div>`
+      : `<div class="chat-bubble-ai px-4 py-3 text-sm max-w-lg ${isError ? 'border-red-200' : ''}">
+          <div class="flex items-center gap-1.5 mb-2 text-xs font-semibold" style="color:#7c3aed">
+            <i class="fa-solid fa-microchip-ai"></i> مساعد Flow
+          </div>
+          ${window.AIPanel.renderMarkdown(content)}
+        </div>`;
+
+    div.innerHTML = inner;
+    w.appendChild(div);
+    w.scrollTop = w.scrollHeight;
+  }
+
+  function appendThinking(id) {
+    const thinkId = 'think-' + Date.now();
+    const w = document.getElementById('chatWindow');
+    const div = document.createElement('div');
+    div.id = thinkId;
+    div.className = 'flex justify-start';
+    div.innerHTML = `
+      <div class="chat-bubble-ai px-4 py-3 text-sm">
+        <div class="thinking-dots flex gap-1 text-gray-400 text-xl leading-none">
+          <span>•</span><span>•</span><span>•</span>
+        </div>
+      </div>`;
+    w.appendChild(div);
+    w.scrollTop = w.scrollHeight;
+    return thinkId;
+  }
+
+  function removeThinking(id) {
+    document.getElementById(id)?.remove();
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!await adminCheckAuth()) return;
+  });
+</script>
+</body>
+</html>

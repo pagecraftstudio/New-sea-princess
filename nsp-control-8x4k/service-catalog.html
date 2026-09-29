@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>كتالوج الخدمات | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    label { font-size: 12px; font-weight: 700; color: #374151; display: block; margin-bottom: 3px; }
+    input, select, textarea { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 11px; font-family: 'Cairo',sans-serif; font-size: 13px; outline: none; background: #fff; }
+    input:focus, select:focus, textarea:focus { border-color: #1B5E20; box-shadow: 0 0 0 3px rgba(27,94,32,.1); }
+    .cat-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; font-size: .7rem; font-weight: 700; }
+    .cat-hotel      { background: #dbeafe; color: #1d4ed8; }
+    .cat-transfer   { background: #fef3c7; color: #b45309; }
+    .cat-guide      { background: #d1fae5; color: #065f46; }
+    .cat-activity   { background: #ede9fe; color: #6d28d9; }
+    .cat-ticket     { background: #fce7f3; color: #9d174d; }
+    .cat-meal       { background: #fff7ed; color: #c2410c; }
+    .cat-flight     { background: #e0f2fe; color: #0369a1; }
+    .cat-visa       { background: #f0fdf4; color: #166534; }
+    .cat-insurance  { background: #fdf2f8; color: #86198f; }
+    .cat-transport  { background: #fef9c3; color: #854d0e; }
+    .cat-camp       { background: #f1f5f9; color: #475569; }
+    .cat-other      { background: #f9fafb; color: #6b7280; }
+    #toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none; }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-boxes-stacked ml-2"></i>كتالوج الخدمات</h1>
+      <p class="erp-page-subtitle">الخدمات القابلة للإعادة استخدام في بناء الجداول السياحية</p>
+    </div>
+    <button onclick="openModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+      <i class="fa-solid fa-plus ml-1"></i>إضافة خدمة
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid mb-6" id="kpiRow">
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-bold text-primary" id="kpiTotal">—</div><div class="text-xs text-gray-400 mt-1">إجمالي الخدمات</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-bold text-blue-600" id="kpiHotel">—</div><div class="text-xs text-gray-400 mt-1">فنادق</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-bold text-amber-600" id="kpiTransfer">—</div><div class="text-xs text-gray-400 mt-1">نقل</div></div>
+    <div class="erp-card p-4 text-center"><div class="text-2xl font-bold text-purple-600" id="kpiActivity">—</div><div class="text-xs text-gray-400 mt-1">أنشطة</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="erp-card mb-4 p-4 flex gap-3 flex-wrap items-center">
+    <input type="text" id="searchInput" placeholder="بحث في الخدمات..." oninput="applyFilters()" class="flex-1 min-w-40">
+    <select id="catFilter" onchange="applyFilters()" class="w-44">
+      <option value="">كل الفئات</option>
+      <option value="hotel">فندق</option>
+      <option value="transfer">نقل</option>
+      <option value="guide">مرشد</option>
+      <option value="activity">نشاط</option>
+      <option value="ticket">تذكرة</option>
+      <option value="meal">وجبة</option>
+      <option value="flight">طيران</option>
+      <option value="visa">تأشيرة</option>
+      <option value="insurance">تأمين</option>
+      <option value="transport">مركبة / باص</option>
+      <option value="camp">مخيم</option>
+      <option value="other">أخرى</option>
+    </select>
+    <select id="activeFilter" onchange="applyFilters()" class="w-36">
+      <option value="">الكل</option>
+      <option value="true">نشطة</option>
+      <option value="false">غير نشطة</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="erp-card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-100">
+            <th class="text-right p-3 font-bold text-gray-500 text-xs">الكود</th>
+            <th class="text-right p-3 font-bold text-gray-500 text-xs">اسم الخدمة</th>
+            <th class="text-right p-3 font-bold text-gray-500 text-xs">الفئة</th>
+            <th class="text-right p-3 font-bold text-gray-500 text-xs">الوحدة</th>
+            <th class="text-right p-3 font-bold text-gray-500 text-xs">التكلفة</th>
+            <th class="text-right p-3 font-bold text-gray-500 text-xs">البيع</th>
+            <th class="text-right p-3 font-bold text-gray-500 text-xs">هامش</th>
+            <th class="text-right p-3 font-bold text-gray-500 text-xs">الوجهة</th>
+            <th class="text-right p-3 font-bold text-gray-500 text-xs">الحالة</th>
+            <th class="p-3"></th>
+          </tr>
+        </thead>
+        <tbody id="catalogBody">
+          <tr><td colspan="10" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══ Modal ════════════════════════════════════════════════════════════════ -->
+<div id="svcModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h3 class="font-bold text-lg text-primary" id="modalTitle"><i class="fa-solid fa-box-open ml-2"></i>إضافة خدمة</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-xl transition"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="overflow-y-auto flex-1 p-5">
+      <input type="hidden" id="fId">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label>اسم الخدمة (عربي) *</label>
+          <input type="text" id="fNameAr" placeholder="مثال: جولة الأهرامات وأبو الهول">
+        </div>
+        <div class="col-span-2">
+          <label>اسم الخدمة (إنجليزي)</label>
+          <input type="text" id="fNameEn" placeholder="Pyramids & Sphinx Tour">
+        </div>
+        <div>
+          <label>الفئة *</label>
+          <select id="fCat">
+            <option value="hotel">فندق</option>
+            <option value="transfer">نقل</option>
+            <option value="guide">مرشد</option>
+            <option value="activity">نشاط / جولة</option>
+            <option value="ticket">تذكرة دخول</option>
+            <option value="meal">وجبة</option>
+            <option value="flight">طيران</option>
+            <option value="visa">تأشيرة</option>
+            <option value="insurance">تأمين سفر</option>
+            <option value="transport">باص / مركبة</option>
+            <option value="camp">مخيم</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div>
+          <label>وحدة الحساب *</label>
+          <select id="fUnit">
+            <option value="per_person">لكل شخص</option>
+            <option value="per_group">للمجموعة</option>
+            <option value="per_room">للغرفة</option>
+            <option value="per_vehicle">للمركبة</option>
+            <option value="per_day">لليوم</option>
+            <option value="fixed">سعر ثابت</option>
+          </select>
+        </div>
+        <div>
+          <label>التكلفة (للوحدة) *</label>
+          <input type="number" id="fCost" value="0" min="0" step="0.01" oninput="calcMargin()">
+        </div>
+        <div>
+          <label>سعر البيع (للوحدة) *</label>
+          <input type="number" id="fSell" value="0" min="0" step="0.01" oninput="calcMargin()">
+        </div>
+        <div>
+          <label>هامش الربح</label>
+          <input type="text" id="fMargin" readonly class="bg-gray-50 font-bold text-primary" placeholder="يُحسب تلقائياً">
+        </div>
+        <div>
+          <label>العملة</label>
+          <select id="fCurr">
+            <option value="EGP">EGP — جنيه مصري</option>
+            <option value="USD">USD — دولار أمريكي</option>
+            <option value="EUR">EUR — يورو</option>
+            <option value="SAR">SAR — ريال سعودي</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label>الوجهة (اختياري)</label>
+          <input type="text" id="fDest" placeholder="مثال: القاهرة، الأقصر، أسوان">
+        </div>
+        <div class="col-span-2">
+          <label>وصف / ملاحظات</label>
+          <textarea id="fDesc" rows="2" placeholder="تفاصيل إضافية..."></textarea>
+        </div>
+        <div class="col-span-2 flex gap-4">
+          <label class="flex items-center gap-2 cursor-pointer mb-0">
+            <input type="checkbox" id="fActive" checked class="w-4 h-4 accent-primary">
+            <span class="text-sm font-semibold">خدمة نشطة</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end p-5 border-t border-gray-100">
+      <button onclick="closeModal()" class="erp-page-btn">إلغاء</button>
+      <button onclick="saveSvc()" class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let _allServices = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await loadServices();
+});
+
+async function loadServices() {
+  const { data } = await db.from('service_catalog')
+    .select('*').order('category').order('name_ar');
+  _allServices = data || [];
+  renderKPIs();
+  renderTable(_allServices);
+}
+
+function renderKPIs() {
+  document.getElementById('kpiTotal').textContent    = _allServices.filter(s=>s.is_active).length;
+  document.getElementById('kpiHotel').textContent    = _allServices.filter(s=>s.category==='hotel').length;
+  document.getElementById('kpiTransfer').textContent = _allServices.filter(s=>s.category==='transfer').length;
+  document.getElementById('kpiActivity').textContent = _allServices.filter(s=>['activity','ticket'].includes(s.category)).length;
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('catalogBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-12 text-gray-400">لا توجد خدمات مطابقة</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(s => {
+    const gp   = s.sell_amount - s.cost_amount;
+    const marg = s.sell_amount > 0 ? (gp/s.sell_amount*100).toFixed(0) + '%' : '—';
+    const unitMap = { per_person:'شخص',per_group:'مجموعة',per_room:'غرفة',per_vehicle:'مركبة',per_day:'يوم',fixed:'ثابت' };
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50 transition">
+      <td class="p-3 text-xs text-gray-400 font-mono">${s.code||'—'}</td>
+      <td class="p-3">
+        <div class="font-semibold text-gray-800">${esc(s.name_ar)}</div>
+        ${s.name_en ? `<div class="text-xs text-gray-400">${esc(s.name_en)}</div>` : ''}
+      </td>
+      <td class="p-3"><span class="cat-badge cat-${s.category}">${catLabel(s.category)}</span></td>
+      <td class="p-3 text-xs text-gray-500">${unitMap[s.unit]||s.unit}</td>
+      <td class="p-3 text-red-600 font-semibold text-xs">${fmt(s.cost_amount)} ${s.default_currency}</td>
+      <td class="p-3 text-green-700 font-bold text-xs">${fmt(s.sell_amount)} ${s.default_currency}</td>
+      <td class="p-3 font-bold text-xs ${parseFloat(marg)>=20?'text-primary':'text-amber-600'}">${marg}</td>
+      <td class="p-3 text-xs text-gray-500">${s.destination||'—'}</td>
+      <td class="p-3">
+        <span class="text-xs px-2 py-1 rounded-full font-semibold ${s.is_active?'bg-green-100 text-green-700':'bg-gray-100 text-gray-500'}">
+          ${s.is_active ? 'نشطة' : 'غير نشطة'}
+        </span>
+      </td>
+      <td class="p-3">
+        <div class="flex gap-1">
+          <button onclick="openModal('${s.id}')" class="text-gray-400 hover:text-primary p-1.5 rounded text-xs transition" title="تعديل">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button onclick="toggleActive('${s.id}',${s.is_active})" class="text-gray-400 hover:text-amber-500 p-1.5 rounded text-xs transition" title="${s.is_active?'تعطيل':'تفعيل'}">
+            <i class="fa-solid ${s.is_active ? 'fa-eye-slash' : 'fa-eye'}"></i>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function applyFilters() {
+  const q   = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.getElementById('catFilter').value;
+  const act = document.getElementById('activeFilter').value;
+  const filtered = _allServices.filter(s =>
+    (!q   || s.name_ar.includes(q) || (s.name_en||'').toLowerCase().includes(q) || (s.code||'').includes(q)) &&
+    (!cat || s.category === cat) &&
+    (!act || String(s.is_active) === act)
+  );
+  renderTable(filtered);
+}
+
+function openModal(id) {
+  document.getElementById('fId').value = '';
+  document.getElementById('fNameAr').value = '';
+  document.getElementById('fNameEn').value = '';
+  document.getElementById('fCat').value    = 'activity';
+  document.getElementById('fUnit').value   = 'per_person';
+  document.getElementById('fCost').value   = '0';
+  document.getElementById('fSell').value   = '0';
+  document.getElementById('fMargin').value = '';
+  document.getElementById('fCurr').value   = 'EGP';
+  document.getElementById('fDest').value   = '';
+  document.getElementById('fDesc').value   = '';
+  document.getElementById('fActive').checked = true;
+  document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-box-open ml-2"></i>إضافة خدمة';
+
+  if (id) {
+    const s = _allServices.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('fId').value      = s.id;
+    document.getElementById('fNameAr').value  = s.name_ar || '';
+    document.getElementById('fNameEn').value  = s.name_en || '';
+    document.getElementById('fCat').value     = s.category || 'activity';
+    document.getElementById('fUnit').value    = s.unit || 'per_person';
+    document.getElementById('fCost').value    = s.cost_amount || 0;
+    document.getElementById('fSell').value    = s.sell_amount || 0;
+    document.getElementById('fCurr').value    = s.default_currency || 'EGP';
+    document.getElementById('fDest').value    = s.destination || '';
+    document.getElementById('fDesc').value    = s.notes || '';
+    document.getElementById('fActive').checked = s.is_active !== false;
+    document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen ml-2"></i>تعديل خدمة';
+    calcMargin();
+  }
+
+  document.getElementById('svcModal').classList.remove('hidden');
+  document.getElementById('fNameAr').focus();
+}
+
+function closeModal() { document.getElementById('svcModal').classList.add('hidden'); }
+
+function calcMargin() {
+  const cost = parseFloat(document.getElementById('fCost').value) || 0;
+  const sell = parseFloat(document.getElementById('fSell').value) || 0;
+  const marg = sell > 0 ? ((sell-cost)/sell*100).toFixed(1) + '%' : '—';
+  document.getElementById('fMargin').value = marg;
+}
+
+async function saveSvc() {
+  const nameAr = document.getElementById('fNameAr').value.trim();
+  if (!nameAr) { alert('الرجاء إدخال اسم الخدمة'); return; }
+
+  const payload = {
+    name_ar:          nameAr,
+    name_en:          document.getElementById('fNameEn').value.trim() || null,
+    category:         document.getElementById('fCat').value,
+    unit:             document.getElementById('fUnit').value,
+    cost_amount:      parseFloat(document.getElementById('fCost').value) || 0,
+    sell_amount:      parseFloat(document.getElementById('fSell').value) || 0,
+    default_currency: document.getElementById('fCurr').value,
+    destination:      document.getElementById('fDest').value.trim() || null,
+    notes:            document.getElementById('fDesc').value.trim() || null,
+    is_active:        document.getElementById('fActive').checked,
+    updated_at:       new Date().toISOString(),
+  };
+
+  const id = document.getElementById('fId').value;
+  let error;
+  if (id) {
+    ({ error } = await db.from('service_catalog').update(payload).eq('id', id));
+  } else {
+    ({ error } = await db.from('service_catalog').insert(payload));
+  }
+
+  if (error) { toast('خطأ: ' + error.message, true); return; }
+  closeModal();
+  toast(id ? 'تم تحديث الخدمة ✓' : 'تمت إضافة الخدمة ✓');
+  await loadServices();
+}
+
+async function toggleActive(id, current) {
+  await db.from('service_catalog').update({ is_active: !current }).eq('id', id);
+  toast(current ? 'تم تعطيل الخدمة' : 'تم تفعيل الخدمة');
+  await loadServices();
+}
+
+function fmt(n) { return (n||0).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function catLabel(c) {
+  const m = { hotel:'فندق',transfer:'نقل',guide:'مرشد',activity:'نشاط',ticket:'تذكرة',
+    meal:'وجبة',flight:'طيران',visa:'تأشيرة',insurance:'تأمين',transport:'مركبة',camp:'مخيم',other:'أخرى' };
+  return m[c] || c;
+}
+function toast(msg, err) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = err ? '#c62828' : '#1B5E20';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>

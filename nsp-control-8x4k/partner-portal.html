@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة بوابة الشركاء | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700;}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:9px 12px;text-align:right;border-bottom:2px solid #e5e7eb;white-space:nowrap;}
+    .tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    .tbl tr:hover td{background:#fafafa;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.12);}
+    select,input{font-family:'Cairo',sans-serif!important;}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px;}
+    .partner-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:8px;cursor:pointer;transition:.15s;}
+    .partner-card:hover{border-color:#1B5E20;box-shadow:0 2px 8px rgba(27,94,32,.08);}
+    .partner-card.selected{border-color:#1B5E20;background:#f0fdf4;}
+    .tier-badge{display:inline-flex;padding:1px 8px;border-radius:9999px;font-size:.68rem;font-weight:700;}
+  </style>
+  <script src="/js/admin-nav.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-globe ml-2 text-primary"></i>بوابة الشركاء — إدارة المستخدمين</h1>
+      <p class="erp-page-subtitle">منح الشركاء صلاحية الوصول إلى البوابة الإلكترونية</p>
+    </div>
+    <a href="/partners/login.html" target="_blank"
+      class="bg-gray-700 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-gray-800 transition flex items-center gap-2">
+      <i class="fa-solid fa-external-link"></i> فتح البوابة
+    </a>
+  </div>
+
+  <!-- Info Banner -->
+  <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-5 text-sm text-blue-800 flex items-start gap-3">
+    <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+    <div>
+      <strong>كيفية منح الوصول:</strong>
+      اختر شريكاً، ثم أدخل بريد الشريك الإلكتروني. سيتلقى دعوة من Supabase لإنشاء حساب.
+      بعد إنشاء الحساب، اضغط "ربط مستخدم" لمنحه صلاحية الدخول لبوابة هذا الشريك.
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- Partner List -->
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <h3 class="font-bold text-gray-700 mb-3 text-sm"><i class="fa-solid fa-building ml-2 text-primary"></i>اختر شريكاً</h3>
+      <input type="text" id="partnerSearch" placeholder="بحث…" class="mb-3 text-sm"
+        oninput="filterPartners(this.value)">
+      <div id="partnerList">
+        <p class="text-gray-400 text-sm text-center py-6 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+
+    <!-- Portal Users for selected partner -->
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-xl shadow-sm p-4 mb-4" id="usersPanel" style="display:none">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-gray-700 text-sm" id="selectedPartnerTitle"><i class="fa-solid fa-users ml-2 text-primary"></i>مستخدمو البوابة</h3>
+          <button onclick="openInviteModal()"
+            class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-lightGreen transition flex items-center gap-1">
+            <i class="fa-solid fa-plus"></i> ربط مستخدم
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full tbl">
+            <thead>
+              <tr>
+                <th>البريد الإلكتروني</th>
+                <th>الاسم</th>
+                <th>الدور</th>
+                <th>الحالة</th>
+                <th>آخر دخول</th>
+                <th>إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="6" class="text-center py-6 text-gray-400 text-sm">اختر شريكاً من القائمة</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="noPartnerSelected" class="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400">
+        <i class="fa-solid fa-hand-pointer text-4xl mb-3 block text-gray-300"></i>
+        <p class="font-bold">اختر شريكاً من القائمة لإدارة مستخدمي بوابته</p>
+      </div>
+
+      <!-- Instructions card -->
+      <div class="bg-white rounded-xl shadow-sm p-4 mt-4">
+        <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-circle-question ml-2 text-gold"></i>خطوات إضافة مستخدم جديد</h3>
+        <ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+          <li>أرسل دعوة من Supabase Dashboard → Authentication → Users → Invite user</li>
+          <li>أدخل بريد الشريك الإلكتروني — سيحصل على رابط تسجيل</li>
+          <li>بعد أن يفعّل الشريك حسابه، انسخ User UUID من Supabase</li>
+          <li>اضغط "ربط مستخدم" هنا وأدخل UUID لربطه بالشريك</li>
+          <li>يمكنه الآن الدخول على <strong>/partners/login.html</strong></li>
+        </ol>
+        <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-800">
+          <i class="fa-solid fa-triangle-exclamation ml-1"></i>
+          مستخدم البوابة لا يمكنه رؤية التكلفة الداخلية أو هوامش الربح — يرى فقط السعر النهائي.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Invite / Link Modal -->
+<div id="inviteModal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-primary"><i class="fa-solid fa-user-plus ml-2"></i>ربط مستخدم بالبوابة</h3>
+      <button onclick="closeInviteModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="space-y-3 mb-4">
+      <div>
+        <label>UUID المستخدم (من Supabase Auth)</label>
+        <input type="text" id="inv_user_id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+          dir="ltr" class="font-mono text-sm">
+        <p class="text-xs text-gray-400 mt-1">Supabase Dashboard → Authentication → Users → انسخ الـ UUID</p>
+      </div>
+      <div>
+        <label>الدور في البوابة</label>
+        <select id="inv_role">
+          <option value="member">عضو (member) — الإجراءات الأساسية</option>
+          <option value="admin">مدير (admin) — صلاحيات كاملة للشركة</option>
+          <option value="readonly">قراءة فقط (readonly)</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="inviteError" class="hidden text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2 mb-3"></div>
+    <div id="inviteSuccess" class="hidden text-green-700 text-sm bg-green-50 rounded-lg px-3 py-2 mb-3"></div>
+
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeInviteModal()" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">إلغاء</button>
+      <button onclick="linkUser()" id="linkBtn"
+        class="px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg hover:bg-lightGreen transition flex items-center gap-2">
+        <i class="fa-solid fa-link"></i> ربط المستخدم
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allPartners = [];
+let selectedPartnerId = null;
+
+const TIER_LABEL = { strategic:'استراتيجي', platinum:'بلاتيني', gold:'ذهبي', silver:'فضي', standard:'قياسي', new:'جديد' };
+const TIER_COLOR = {
+  strategic:'background:#f3e8ff;color:#6b21a8',
+  platinum:'background:#f1f5f9;color:#475569',
+  gold:'background:#fef9c3;color:#854d0e',
+  silver:'background:#f3f4f6;color:#6b7280',
+  standard:'background:#dcfce7;color:#166534',
+  new:'background:#dbeafe;color:#1e40af'
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  await loadPartners();
+});
+
+async function loadPartners() {
+  const { data } = await db
+    .from('b2b_partners')
+    .select('id,legal_name,trading_name,tier,email,is_active')
+    .eq('is_active', true)
+    .order('legal_name');
+
+  allPartners = data || [];
+  renderPartnerList(allPartners);
+}
+
+function filterPartners(q) {
+  const filtered = q.trim()
+    ? allPartners.filter(p => (p.legal_name||'').toLowerCase().includes(q.toLowerCase()) || (p.trading_name||'').toLowerCase().includes(q.toLowerCase()))
+    : allPartners;
+  renderPartnerList(filtered);
+}
+
+function renderPartnerList(partners) {
+  const el = document.getElementById('partnerList');
+  if (!partners.length) {
+    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لا توجد نتائج</p>';
+    return;
+  }
+  el.innerHTML = partners.map(p => {
+    const ts = TIER_COLOR[p.tier] || TIER_COLOR.standard;
+    return `<div class="partner-card ${selectedPartnerId===p.id?'selected':''}" onclick="selectPartner('${p.id}','${escJ(p.trading_name||p.legal_name)}')">
+      <div class="flex items-center justify-between">
+        <div class="font-bold text-sm text-gray-800 truncate">${esc(p.trading_name||p.legal_name)}</div>
+        <span class="tier-badge shrink-0" style="${ts}">${TIER_LABEL[p.tier]||p.tier}</span>
+      </div>
+      ${p.email ? `<div class="text-xs text-gray-400 mt-0.5 truncate">${esc(p.email)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function selectPartner(id, name) {
+  selectedPartnerId = id;
+  // Update card highlight
+  document.querySelectorAll('.partner-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  document.getElementById('selectedPartnerTitle').innerHTML =
+    `<i class="fa-solid fa-users ml-2 text-primary"></i>مستخدمو بوابة: <span class="text-primary">${esc(name)}</span>`;
+  document.getElementById('usersPanel').style.display = '';
+  document.getElementById('noPartnerSelected').style.display = 'none';
+
+  await loadUsers(id);
+}
+
+async function loadUsers(partnerId) {
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-400 animate-pulse">جارٍ التحميل…</td></tr>';
+
+  const { data, error } = await db.rpc('get_partner_portal_users', { p_partner_id: partnerId });
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-500 text-sm">خطأ: ${error.message}</td></tr>`;
+    return;
+  }
+
+  const users = data || [];
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-400 text-sm">لا يوجد مستخدمون لهذا الشريك بعد</td></tr>';
+    return;
+  }
+
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG') : '—';
+  const ROLE_LABEL = { admin:'مدير', member:'عضو', readonly:'قراءة فقط' };
+
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td class="text-sm" dir="ltr">${esc(u.email||'—')}</td>
+      <td class="font-bold text-sm">${esc(u.full_name||'—')}</td>
+      <td>
+        <span class="badge" style="background:#f0fdf4;color:#166534">${ROLE_LABEL[u.role]||u.role}</span>
+      </td>
+      <td>
+        <span class="badge" style="${u.is_active?'background:#dcfce7;color:#166534':'background:#fee2e2;color:#991b1b'}">
+          ${u.is_active ? 'نشط' : 'معطل'}
+        </span>
+      </td>
+      <td class="text-xs text-gray-500">${fmtDate(u.last_login_at)}</td>
+      <td>
+        <button onclick="toggleUser('${u.id}',${!u.is_active})"
+          class="text-xs px-2 py-1 rounded font-bold ${u.is_active?'bg-red-50 text-red-600 hover:bg-red-100':'bg-green-50 text-green-600 hover:bg-green-100'} transition">
+          ${u.is_active ? 'تعطيل' : 'تفعيل'}
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+async function toggleUser(ppu_id, new_active) {
+  if (!confirm(new_active ? 'تفعيل هذا المستخدم؟' : 'تعطيل وصول هذا المستخدم؟')) return;
+  const { error } = await db.from('partner_portal_users')
+    .update({ is_active: new_active })
+    .eq('id', ppu_id);
+  if (error) { alert('خطأ: ' + error.message); return; }
+  await loadUsers(selectedPartnerId);
+}
+
+function openInviteModal() {
+  if (!selectedPartnerId) { alert('اختر شريكاً أولاً'); return; }
+  document.getElementById('inv_user_id').value = '';
+  document.getElementById('inv_role').value = 'member';
+  document.getElementById('inviteError').classList.add('hidden');
+  document.getElementById('inviteSuccess').classList.add('hidden');
+  document.getElementById('inviteModal').classList.remove('hidden');
+}
+
+function closeInviteModal() {
+  document.getElementById('inviteModal').classList.add('hidden');
+}
+
+async function linkUser() {
+  const userId = document.getElementById('inv_user_id').value.trim();
+  const role   = document.getElementById('inv_role').value;
+  const errEl  = document.getElementById('inviteError');
+  const okEl   = document.getElementById('inviteSuccess');
+  errEl.classList.add('hidden'); okEl.classList.add('hidden');
+
+  // Basic UUID validation
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRe.test(userId)) {
+    errEl.textContent = 'UUID غير صحيح — تأكد من نسخ الـ UUID كاملاً من Supabase';
+    errEl.classList.remove('hidden'); return;
+  }
+
+  const btn = document.getElementById('linkBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+  const { data, error } = await db.rpc('link_partner_portal_user', {
+    p_partner_id: selectedPartnerId,
+    p_user_id:    userId,
+    p_role:       role,
+  });
+
+  btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-link"></i> ربط المستخدم';
+
+  if (error) {
+    errEl.textContent = 'خطأ: ' + error.message;
+    errEl.classList.remove('hidden'); return;
+  }
+
+  okEl.textContent = 'تم ربط المستخدم بنجاح ✓';
+  okEl.classList.remove('hidden');
+  document.getElementById('inv_user_id').value = '';
+
+  // Reload users table
+  await loadUsers(selectedPartnerId);
+  setTimeout(closeInviteModal, 1500);
+}
+
+function esc(s)  { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escJ(s) { return String(s||'').replace(/'/g,"\\'"); }
+</script>
+</body>
+</html>

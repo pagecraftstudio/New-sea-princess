@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة الذكاء الاصطناعي — Flow Travel</title>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: {
+        primary: { DEFAULT: '#1B5E20', light: '#2E7D32', dark: '#145214' },
+        accent:  { DEFAULT: '#B8860B', light: '#D4A017', dark: '#8B6508' },
+        ai:      { DEFAULT: '#7c3aed', light: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe' }
+      }}}
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="/css/erp-ui.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <script src="/js/ai-service.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .ai-gradient { background: linear-gradient(135deg, #7c3aed 0%, #1B5E20 100%); }
+    .rec-card { border-left: 4px solid; }
+    .rec-high   { border-color: #ef4444; }
+    .rec-medium { border-color: #f59e0b; }
+    .rec-low    { border-color: #10b981; }
+    .conf-badge { font-size: .65rem; font-weight: 700; padding: .15rem .5rem; border-radius: 9999px; }
+    .chat-bubble-user { background:#e0f2fe; border-radius:1rem 1rem 0 1rem; }
+    .chat-bubble-ai   { background:#f5f3ff; border-radius:1rem 1rem 1rem 0; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  <div id="adminNavMount"></div>
+
+  <main class="flex-1 overflow-auto p-4 md:p-6">
+
+    <!-- Header -->
+    <div class="ai-gradient rounded-2xl p-6 mb-6 text-white">
+      <div class="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h1 class="text-2xl font-bold flex items-center gap-3">
+            <i class="fa-solid fa-microchip-ai text-purple-200"></i>
+            لوحة الذكاء الاصطناعي
+          </h1>
+          <p class="text-purple-100 text-sm mt-1">تحليلات وتوصيات مبنية على بيانات نظامك الفعلية</p>
+        </div>
+        <button onclick="runRecommendations()"
+          class="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white border border-white/30 px-4 py-2 rounded-xl text-sm font-semibold transition-colors">
+          <i class="fa-solid fa-arrows-rotate" id="recRefreshIcon"></i>
+          تحديث التوصيات
+        </button>
+      </div>
+    </div>
+
+    <!-- Grid: Recommendations + AI Brief + Command Center -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+
+      <!-- Smart Recommendations — 2/3 width -->
+      <div class="xl:col-span-2">
+        <div class="erp-card p-5 h-full">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold text-gray-800 flex items-center gap-2">
+              <i class="fa-solid fa-lightbulb text-amber-500"></i>
+              التوصيات الذكية
+            </h2>
+            <span class="text-xs text-gray-400" id="recTimestamp"></span>
+          </div>
+          <div id="recommendationsContainer">
+            <div class="text-center py-10 text-gray-400">
+              <i class="fa-solid fa-sparkles text-2xl mb-3 block text-purple-300"></i>
+              اضغط "تحديث التوصيات" لتوليد تحليلات ذكية
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Brief — 1/3 width -->
+      <div class="erp-card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-bold text-gray-800 flex items-center gap-2">
+            <i class="fa-solid fa-clipboard-list text-blue-500"></i>
+            موجز اليوم
+          </h2>
+          <button onclick="runDailyBrief()"
+            class="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1">
+            <i class="fa-solid fa-play text-xs"></i>
+            توليد
+          </button>
+        </div>
+        <div id="dailyBriefContainer">
+          <div class="text-center py-8 text-gray-400 text-sm">
+            <i class="fa-solid fa-sun text-amber-300 text-xl mb-2 block"></i>
+            اضغط "توليد" لإنشاء الموجز اليومي
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Command Center -->
+    <div class="erp-card p-5 mb-6">
+      <div class="flex items-center gap-2 mb-4">
+        <i class="fa-solid fa-terminal text-purple-600"></i>
+        <h2 class="font-bold text-gray-800">مركز الأوامر الذكي</h2>
+        <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">تجريبي</span>
+      </div>
+
+      <!-- Quick question chips -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button onclick="askQuick(this)" data-q="أي العملاء المحتملين يحتاجون متابعة اليوم؟"
+          class="quick-chip text-xs bg-purple-50 border border-purple-200 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-100 transition-colors">
+          متابعات اليوم؟
+        </button>
+        <button onclick="askQuick(this)" data-q="ما هي أعلى قيمة فرص البيع الحالية؟"
+          class="quick-chip text-xs bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors">
+          أعلى فرص قيمة؟
+        </button>
+        <button onclick="askQuick(this)" data-q="أي عروض الأسعار المرسلة لم يتم الرد عليها؟"
+          class="quick-chip text-xs bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-full hover:bg-amber-100 transition-colors">
+          عروض بدون رد؟
+        </button>
+        <button onclick="askQuick(this)" data-q="ما وضع العمليات هذا الأسبوع؟"
+          class="quick-chip text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors">
+          وضع العمليات؟
+        </button>
+        <button onclick="askQuick(this)" data-q="أي الموردين يحتاجون مراجعة؟"
+          class="quick-chip text-xs bg-red-50 border border-red-200 text-red-700 px-3 py-1.5 rounded-full hover:bg-red-100 transition-colors">
+          مراجعة موردين؟
+        </button>
+      </div>
+
+      <!-- Chat UI -->
+      <div id="chatMessages" class="space-y-3 mb-4 max-h-80 overflow-y-auto p-1" style="display:none"></div>
+
+      <div class="flex gap-2">
+        <input id="chatInput" type="text"
+          placeholder="اسأل عن أي شيء في نظامك… (مثال: أي فرص على وشك الانتهاء؟)"
+          class="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+          onkeydown="if(event.key==='Enter')sendChat()" />
+        <button onclick="sendChat()"
+          class="bg-purple-600 text-white px-4 py-2 rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2 text-sm font-medium">
+          <i class="fa-solid fa-paper-plane"></i>
+          إرسال
+        </button>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">
+        <i class="fa-solid fa-circle-info mr-1"></i>
+        المساعد يُجيب من بيانات نظامك الفعلية فقط. لا يخترع معلومات.
+      </p>
+    </div>
+
+    <!-- Stats row: data quality indicators -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="erp-card p-4 text-center" id="statLeads">
+        <div class="text-2xl font-bold text-purple-600" id="statLeadsVal">—</div>
+        <div class="text-xs text-gray-500 mt-1">عملاء محتملون نشطون</div>
+      </div>
+      <div class="erp-card p-4 text-center" id="statOpps">
+        <div class="text-2xl font-bold text-amber-600" id="statOppsVal">—</div>
+        <div class="text-xs text-gray-500 mt-1">فرص مفتوحة</div>
+      </div>
+      <div class="erp-card p-4 text-center">
+        <div class="text-2xl font-bold text-blue-600" id="statQuotesVal">—</div>
+        <div class="text-xs text-gray-500 mt-1">عروض أسعار نشطة</div>
+      </div>
+      <div class="erp-card p-4 text-center">
+        <div class="text-2xl font-bold text-green-700" id="statAIReqVal">—</div>
+        <div class="text-xs text-gray-500 mt-1">طلبات ذكاء اليوم</div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // ─── Chat state ────────────────────────────────────────────────────────
+    let chatSession = null;
+
+    function getChatSession() {
+      if (!chatSession) chatSession = window.AI.createChat('command_center', null, {});
+      return chatSession;
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      appendChat('user', msg);
+      appendChat('ai', null); // loading bubble
+      try {
+        const reply = await getChatSession().send(msg);
+        updateLastAIBubble(reply);
+      } catch (err) {
+        updateLastAIBubble('❌ ' + (err.message || 'فشل الطلب'));
+      }
+    }
+
+    function askQuick(btn) {
+      document.getElementById('chatInput').value = btn.dataset.q;
+      sendChat();
+    }
+
+    function appendChat(role, content) {
+      const container = document.getElementById('chatMessages');
+      container.style.display = 'block';
+      const div = document.createElement('div');
+      div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+      div.innerHTML = `
+        <div class="${role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'} px-4 py-2.5 text-sm max-w-prose">
+          ${role === 'ai' && content === null
+            ? '<i class="fa-solid fa-spinner fa-spin text-purple-400 ai-loading-bubble"></i>'
+            : (role === 'ai' ? window.AIPanel.renderMarkdown(content) : escHtml(content))
+          }
+        </div>`;
+      if (role === 'ai') div.dataset.aiBubble = 'last';
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function updateLastAIBubble(content) {
+      const container = document.getElementById('chatMessages');
+      const last = [...container.querySelectorAll('[data-ai-bubble]')].pop();
+      if (last) {
+        last.querySelector('.chat-bubble-ai').innerHTML = window.AIPanel.renderMarkdown(content);
+        delete last.dataset.aiBubble;
+      }
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ─── Smart Recommendations ─────────────────────────────────────────────
+    async function runRecommendations() {
+      const icon = document.getElementById('recRefreshIcon');
+      const container = document.getElementById('recommendationsContainer');
+      icon.className = 'fa-solid fa-spinner fa-spin';
+      container.innerHTML = `<div class="text-center py-10 text-purple-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i><br/><span class="text-sm mt-2 block">جاري توليد التوصيات…</span></div>`;
+
+      try {
+        const raw = await window.AI.analyze('recommendations', null, {});
+        // Parse JSON from AI response
+        let recs;
+        try {
+          const jsonStr = raw.replace(/```json\s*/g,'').replace(/```/g,'').trim();
+          const parsed = JSON.parse(jsonStr);
+          recs = parsed.recommendations || [];
+        } catch (_) {
+          // Fallback: show raw
+          container.innerHTML = `<div class="prose prose-sm">${window.AIPanel.renderMarkdown(raw)}</div>`;
+          return;
+        }
+
+        if (!recs.length) {
+          container.innerHTML = `<div class="text-center py-8 text-gray-400">لا توجد توصيات حالياً — البيانات تبدو في حالة جيدة!</div>`;
+          return;
+        }
+
+        document.getElementById('recTimestamp').textContent = 'تم التحديث: ' + new Date().toLocaleTimeString('ar-EG');
+
+        const PRIORITY_COLORS = { high: 'text-red-600', medium: 'text-amber-600', low: 'text-green-600' };
+        const CONF_COLORS     = { high: 'bg-green-100 text-green-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-gray-100 text-gray-600', insufficient_data: 'bg-gray-100 text-gray-400' };
+        const CONF_LABELS     = { high: 'ثقة عالية', medium: 'ثقة متوسطة', low: 'ثقة منخفضة', insufficient_data: 'بيانات غير كافية' };
+
+        container.innerHTML = recs.map(r => `
+          <div class="rec-card rec-${r.priority} bg-white rounded-lg p-4 mb-3 shadow-sm">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-dot ${PRIORITY_COLORS[r.priority] || 'text-gray-400'} text-xs mt-0.5"></i>
+                <span class="font-semibold text-sm text-gray-800">${escHtml(r.title)}</span>
+              </div>
+              <span class="conf-badge ${CONF_COLORS[r.confidence] || 'bg-gray-100 text-gray-500'} flex-shrink-0">
+                ${CONF_LABELS[r.confidence] || r.confidence}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600 mr-4">${escHtml(r.body)}</p>
+            ${r.action?.id ? `
+            <div class="mt-3 mr-4">
+              <a href="${getActionUrl(r.action)}"
+                class="inline-flex items-center gap-1.5 text-xs bg-purple-50 border border-purple-200 text-purple-700 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+                ${escHtml(r.action.label || 'عرض')}
+              </a>
+            </div>` : ''}
+          </div>`).join('');
+
+      } catch (err) {
+        container.innerHTML = `<div class="text-center text-red-500 py-6">خطأ: ${escHtml(err.message)}</div>`;
+      }
+
+      icon.className = 'fa-solid fa-arrows-rotate';
+    }
+
+    function getActionUrl(action) {
+      const MAP = {
+        open_lead:  `/nsp-control-8x4k/lead-detail.html?id=`,
+        open_opp:   `/nsp-control-8x4k/opportunities.html?opp=`,
+        open_quote: `/nsp-control-8x4k/quote-detail.html?id=`,
+      };
+      return (MAP[action.type] || '#') + (action.id || '');
+    }
+
+    // ─── Daily Brief ───────────────────────────────────────────────────────
+    async function runDailyBrief() {
+      const container = document.getElementById('dailyBriefContainer');
+      container.innerHTML = `<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-purple-400 text-xl"></i><div class="text-xs text-gray-400 mt-2">جاري الإنشاء…</div></div>`;
+      try {
+        const result = await window.AI.analyze('operations_brief', null, {});
+        container.innerHTML = `<div class="prose prose-sm text-sm">${window.AIPanel.renderMarkdown(result)}</div>`;
+      } catch (err) {
+        container.innerHTML = `<div class="text-red-500 text-sm py-4 text-center">${escHtml(err.message)}</div>`;
+      }
+    }
+
+    // ─── Stats counters (no AI needed — direct DB queries) ─────────────────
+    async function loadStats() {
+      const [leadsRes, oppsRes, quotesRes, aiReqRes] = await Promise.allSettled([
+        window.db.from('leads').select('id', { count: 'exact', head: true })
+          .not('status','in','("won","lost","unqualified")'),
+        window.db.from('opportunities').select('id', { count: 'exact', head: true })
+          .not('stage','in','("won","lost")'),
+        window.db.from('quotations').select('id', { count: 'exact', head: true })
+          .in('status',['draft','internal_review','sent','viewed','negotiation']),
+        window.db.from('ai_requests').select('id', { count: 'exact', head: true })
+          .gte('created_at', new Date().toISOString().slice(0,10)),
+      ]);
+
+      document.getElementById('statLeadsVal').textContent  = leadsRes.value?.count ?? '—';
+      document.getElementById('statOppsVal').textContent   = oppsRes.value?.count  ?? '—';
+      document.getElementById('statQuotesVal').textContent = quotesRes.value?.count ?? '—';
+      document.getElementById('statAIReqVal').textContent  = aiReqRes.value?.count  ?? '—';
+    }
+
+    // ─── Init ──────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await adminCheckAuth()) return;
+      await loadStats();
+    });
+  </script>
+</body>
+</html>

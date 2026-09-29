@@ -1,0 +1,1898 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة البرامج | نيو سي برنسيس فرع الزقازيق</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+
+  </style>
+  <script src="/js/admin-nav.js"></script>
+  <script>
+</script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<div id="adminNavMount"></div>
+
+  <main class="flex-1 flex flex-col p-6" aria-label="المحتوى الرئيسي">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-primary pb-2" aria-label="إدارة البرامج">إدارة البرامج</h2>
+      <button onclick="openModal(null)" class="bg-primary hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow flex items-center gap-2 transition">
+        <i class="fa-solid fa-plus"></i> برنامج جديد
+      </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto">
+      <table class="w-full text-right text-sm">
+        <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
+          <tr>
+            <th class="p-4">العنوان</th>
+            <th class="p-4">الفئة</th>
+            <th class="p-4">المغادرة</th>
+            <th class="p-4">السعر</th>
+            <th class="p-4 text-center">المقاعد</th>
+            <th class="p-4 text-center">الحالة</th>
+            <th class="p-4 text-center">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="adminPackagesList" class="divide-y divide-gray-100">
+          <tr><td colspan="7" class="p-6 text-center text-gray-400">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- ════════════════════════════════════════
+       FULL PACKAGE MODAL (Add + Edit)
+  ════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- PACKAGE MODAL — Premium Tabbed Design                 -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <style>
+    /* Tab nav */
+    .pkg-tab-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 14px; border-bottom:3px solid transparent; color:#6b7280; font-size:0.72rem; font-weight:700; cursor:pointer; transition:all .2s; white-space:nowrap; background:none; border-top:none; border-left:none; border-right:none; }
+    .pkg-tab-btn i { font-size:1.05rem; }
+    .pkg-tab-btn.active { color:#1B5E20; border-bottom-color:#1B5E20; }
+    .pkg-tab-btn:hover:not(.active) { color:#374151; background:#f9fafb; }
+    .pkg-tab-panel { display:none; }
+    .pkg-tab-panel.active { display:block; }
+
+    /* Section card */
+    .pkg-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; margin-bottom:16px; }
+    .pkg-card-title { font-size:0.8rem; font-weight:800; color:#374151; text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #f3f4f6; }
+    .pkg-card-title i { color:#1B5E20; }
+
+    /* Field label */
+    .pkg-label { display:block; font-size:0.78rem; font-weight:700; color:#374151; margin-bottom:5px; }
+    .pkg-label .req { color:#ef4444; }
+
+    /* Input / select shared */
+    .pkg-input { width:100%; border:1.5px solid #e5e7eb; border-radius:8px; padding:9px 12px; font-size:0.88rem; outline:none; background:#fff; color:#111827; transition:border .15s, box-shadow .15s; font-family:inherit; }
+    .pkg-input:focus { border-color:#1B5E20; box-shadow:0 0 0 3px rgba(27,94,32,.1); }
+    .pkg-input::placeholder { color:#9ca3af; }
+
+    /* Toggle switch */
+    .pkg-toggle { position:relative; display:inline-flex; align-items:center; gap:10px; cursor:pointer; }
+    .pkg-toggle input { position:absolute; opacity:0; width:0; }
+    .pkg-toggle-track { width:40px; height:22px; background:#d1d5db; border-radius:100px; transition:.2s; flex-shrink:0; }
+    .pkg-toggle input:checked ~ .pkg-toggle-track { background:#1B5E20; }
+    .pkg-toggle-thumb { position:absolute; left:3px; top:3px; width:16px; height:16px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .pkg-toggle input:checked ~ .pkg-toggle-track .pkg-toggle-thumb { transform:translateX(18px); }
+    .pkg-toggle-label { font-size:0.84rem; font-weight:600; color:#374151; }
+
+    /* Star rating display */
+    .star-btn { background:none; border:none; cursor:pointer; font-size:1.1rem; color:#d1d5db; padding:1px; transition:.15s; }
+    .star-btn.active { color:#f59e0b; }
+
+    /* Progress steps in header */
+    .pkg-step-dot { width:8px; height:8px; border-radius:50%; background:#d1d5db; transition:.2s; }
+    .pkg-step-dot.active { background:#1B5E20; transform:scale(1.3); }
+
+    /* Price badge */
+    .price-badge { display:inline-flex; align-items:center; gap:4px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:4px 10px; font-size:0.78rem; font-weight:700; color:#166534; }
+
+    /* Hotel card */
+    .hotel-entry { border:1.5px solid #e5e7eb; border-radius:10px; padding:14px; background:#fafafa; position:relative; margin-bottom:10px; }
+    .hotel-entry:hover { border-color:#d1fae5; background:#f0fdf4; }
+
+    /* Quick-chip buttons */
+    .quick-chip { font-size:0.72rem; border:1px solid #d1d5db; border-radius:20px; padding:3px 10px; background:#fff; color:#374151; cursor:pointer; transition:.15s; font-weight:600; }
+    .quick-chip:hover { background:#f3f4f6; border-color:#9ca3af; }
+    .quick-chip-amber { border-color:#fcd34d; background:#fffbeb; color:#92400e; }
+    .quick-chip-amber:hover { background:#fef3c7; }
+
+    /* Summary sidebar */
+    #pkgSummaryBar { background:linear-gradient(135deg,#052e0f 0%,#14532d 100%); color:#fff; border-radius:0 0 16px 16px; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+    .summary-pill { background:rgba(255,255,255,.12); border-radius:8px; padding:5px 12px; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:5px; }
+
+    /* Compact grid */
+    .g2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+    .g4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; }
+    @media(max-width:640px) { .g2,.g3,.g4 { grid-template-columns:1fr; } }
+    @media(max-width:768px) { .g3 { grid-template-columns:1fr 1fr; } .g4 { grid-template-columns:1fr 1fr; } }
+  </style>
+
+  <div id="pkgModal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-2 md:p-4" style="backdrop-filter:blur(4px)">
+    <div class="bg-white rounded-2xl w-full shadow-2xl flex flex-col" style="max-width:860px;max-height:95vh;max-height:95dvh">
+
+      <!-- ── Modal Header ── -->
+      <div class="shrink-0" style="background:linear-gradient(135deg,#052e0f 0%,#166534 100%);border-radius:16px 16px 0 0;padding:18px 22px">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-xs font-bold text-green-300 uppercase tracking-widest">إدارة البرامج</span>
+            </div>
+            <h3 class="text-xl font-black text-white" id="pkgModalTitle">إضافة برنامج جديد</h3>
+          </div>
+          <button onclick="closeModal()" class="text-white/60 hover:text-white transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+        <!-- Tab nav -->
+        <div class="flex gap-1 mt-4 -mb-px overflow-x-auto" style="scrollbar-width:none">
+          <button class="pkg-tab-btn active" id="ptab-basic" onclick="switchPkgTab('basic')">
+            <i class="fa-solid fa-circle-info"></i>أساسي
+          </button>
+          <button class="pkg-tab-btn" id="ptab-pricing" onclick="switchPkgTab('pricing')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-money-bill-wave"></i>الأسعار
+          </button>
+          <button class="pkg-tab-btn" id="ptab-hotels" onclick="switchPkgTab('hotels')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-hotel"></i>الفنادق
+          </button>
+          <button class="pkg-tab-btn" id="ptab-transport" onclick="switchPkgTab('transport')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-plane"></i>الطيران
+          </button>
+          <button class="pkg-tab-btn" id="ptab-content" onclick="switchPkgTab('content')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-list-check"></i>المحتوى
+          </button>
+          <button class="pkg-tab-btn" id="ptab-docs" onclick="switchPkgTab('docs')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-file-circle-check"></i>المستندات
+          </button>
+          <button class="pkg-tab-btn" id="ptab-settings" onclick="switchPkgTab('settings')" style="color:rgba(255,255,255,.55);border-bottom-color:transparent">
+            <i class="fa-solid fa-gear"></i>الإعدادات
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Scrollable Body ── -->
+      <div class="overflow-y-auto flex-1 p-5">
+
+        <!-- ════════ TAB 1: BASIC INFO ════════ -->
+        <div class="pkg-tab-panel active" id="ppanel-basic">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-tag"></i> هوية البرنامج</div>
+            <div class="mb-4">
+              <label class="pkg-label">عنوان البرنامج <span class="req">*</span></label>
+              <input type="text" id="pTitle" placeholder="مثال: برنامج العمرة المتميز — رمضان 1447" class="pkg-input" style="font-size:1rem;font-weight:600">
+            </div>
+            <div class="g2">
+              <div>
+                <label class="pkg-label">الفئة <span class="req">*</span></label>
+                <div class="flex gap-2">
+                  <select id="pCategory" class="pkg-input flex-1">
+                    <optgroup label="عمرة">
+                      <option value="اقتصادي">🟢 اقتصادي</option>
+                      <option value="متميز">🔵 متميز</option>
+                      <option value="VIP">⭐ VIP</option>
+                      <option value="عائلي">👨‍👩‍👧 عائلي</option>
+                      <option value="نسائي">🌸 نسائي</option>
+                      <option value="شباب">🎯 شباب</option>
+                      <option value="رمضان">🌙 رمضان</option>
+                    </optgroup>
+                    <optgroup label="حج">
+                      <option value="حج اقتصادي">🕌 حج اقتصادي</option>
+                      <option value="حج متميز">🕌 حج متميز</option>
+                      <option value="حج VIP">🕌 حج VIP</option>
+                    </optgroup>
+                    <optgroup label="أخرى">
+                      <option value="زيارات دينية">🕍 زيارات دينية</option>
+                      <option value="سياحي">✈️ سياحي</option>
+                      <option value="مخصص">🔧 مخصص</option>
+                    </optgroup>
+                  </select>
+                  <button type="button" onclick="showAddOption('category')" class="w-9 h-9 flex-shrink-0 rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center justify-center">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="pkg-label">الموسم</label>
+                <div class="flex gap-2">
+                  <select id="pSeason" class="pkg-input flex-1">
+                    <option value="رجب">رجب</option>
+                    <option value="شعبان">شعبان</option>
+                    <option value="رمضان">رمضان</option>
+                    <option value="ذو الحجة">ذو الحجة</option>
+                    <option value="طوال العام">طوال العام</option>
+                  </select>
+                  <button type="button" onclick="showAddOption('season')" class="w-9 h-9 flex-shrink-0 rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center justify-center">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-calendar-range"></i> التواريخ والمدة</div>
+            <div class="g3">
+              <div>
+                <label class="pkg-label">تاريخ المغادرة <span class="req">*</span></label>
+                <input type="date" id="pDeparture" class="pkg-input" onchange="autoCalcDuration()">
+              </div>
+              <div>
+                <label class="pkg-label">تاريخ العودة <span class="req">*</span></label>
+                <input type="date" id="pReturn" class="pkg-input" onchange="autoCalcDuration()">
+              </div>
+              <div>
+                <label class="pkg-label">عدد الليالي <span class="req">*</span></label>
+                <div class="relative">
+                  <input type="number" id="pDuration" min="1" placeholder="محسوب تلقائياً" class="pkg-input">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold pointer-events-none">ليلة</span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3">
+              <label class="pkg-label">مدينة المغادرة <span class="req">*</span></label>
+              <div class="flex gap-2 flex-wrap mt-1" id="departureCityPicker">
+                <button type="button" onclick="pickDepartureCity(this,'القاهرة')" class="quick-chip active-city" style="background:#f0fdf4;border-color:#86efac;color:#14532d">القاهرة</button>
+                <button type="button" onclick="pickDepartureCity(this,'الإسكندرية')" class="quick-chip">الإسكندرية</button>
+                <button type="button" onclick="pickDepartureCity(this,'أسيوط')" class="quick-chip">أسيوط</button>
+                <button type="button" onclick="pickDepartureCity(this,'الأقصر')" class="quick-chip">الأقصر</button>
+                <button type="button" onclick="pickDepartureCity(this,'أسوان')" class="quick-chip">أسوان</button>
+                <button type="button" onclick="pickDepartureCity(this,'الغردقة')" class="quick-chip">الغردقة</button>
+                <button type="button" onclick="pickDepartureCity(this,'شرم الشيخ')" class="quick-chip">شرم الشيخ</button>
+              </div>
+              <select id="pDepartureCity" class="pkg-input mt-2" style="display:none">
+                <option value="القاهرة">القاهرة</option>
+                <option value="الإسكندرية">الإسكندرية</option>
+                <option value="أسيوط">أسيوط</option>
+                <option value="الأقصر">الأقصر</option>
+                <option value="أسوان">أسوان</option>
+                <option value="الغردقة">الغردقة</option>
+                <option value="شرم الشيخ">شرم الشيخ</option>
+              </select>
+            </div>
+          </div>
+
+        </div><!-- /tab basic -->
+
+        <!-- ════════ TAB 2: PRICING ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-pricing">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-egyptian-pound-sign"></i> أسعار المسافرين</div>
+            <div class="g3" style="margin-bottom:16px">
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-person text-green-600 ml-1"></i>سعر البالغ <span class="req">*</span></label>
+                <div class="relative">
+                  <input type="number" id="pPrice" min="0" placeholder="8500" class="pkg-input" style="padding-right:42px" oninput="updatePriceSummary()">
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">ج.م</span>
+                </div>
+              </div>
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-child text-blue-500 ml-1"></i>سعر الطفل</label>
+                <div class="relative">
+                  <input type="number" id="pPriceChild" min="0" placeholder="اختياري" class="pkg-input" style="padding-right:42px" oninput="updatePriceSummary()">
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">ج.م</span>
+                </div>
+              </div>
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-baby text-purple-500 ml-1"></i>سعر الرضيع</label>
+                <div class="relative">
+                  <input type="number" id="pPriceInfant" min="0" placeholder="مجاني افتراضياً" class="pkg-input" style="padding-right:42px" oninput="updatePriceSummary()">
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">ج.م</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live price preview -->
+            <div id="priceSummaryRow" class="flex gap-2 flex-wrap" style="padding:12px;background:#f0fdf4;border-radius:8px;margin-bottom:16px">
+              <span class="price-badge"><i class="fa-solid fa-person"></i><span id="ps-adult">—</span></span>
+              <span class="price-badge" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af"><i class="fa-solid fa-child"></i><span id="ps-child">—</span></span>
+              <span class="price-badge" style="background:#faf5ff;border-color:#e9d5ff;color:#7e22ce"><i class="fa-solid fa-baby"></i><span id="ps-infant">—</span></span>
+            </div>
+
+            <div class="g2">
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-percent text-amber-500 ml-1"></i>نسبة خصم</label>
+                <div class="flex items-center gap-3">
+                  <input type="range" id="pDiscountRange" min="0" max="50" value="0" step="5" style="flex:1;accent-color:#1B5E20" oninput="document.getElementById('pDiscount').value=this.value;document.getElementById('discountDisplay').textContent=this.value+'%'">
+                  <span id="discountDisplay" class="text-sm font-black text-green-700 w-10 text-center">0%</span>
+                  <input type="number" id="pDiscount" min="0" max="100" value="0" class="pkg-input" style="width:70px" oninput="document.getElementById('pDiscountRange').value=this.value;document.getElementById('discountDisplay').textContent=this.value+'%'">
+                </div>
+              </div>
+              <div>
+                <label class="pkg-label"><i class="fa-solid fa-users text-gray-500 ml-1"></i>أقصى عدد مقاعد</label>
+                <input type="number" id="pMaxSeats" min="1" placeholder="40" class="pkg-input">
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /tab pricing -->
+
+        <!-- ════════ TAB 3: HOTELS ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-hotels">
+
+          <!-- Mecca -->
+          <div class="pkg-card">
+            <div class="pkg-card-title">
+              <i class="fa-solid fa-kaaba" style="color:#15803d"></i> فنادق مكة المكرمة
+              <button type="button" onclick="addHotel('mecca')" class="mr-auto text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
+                <i class="fa-solid fa-plus"></i> إضافة فندق
+              </button>
+            </div>
+            <div id="meccaHotelsList" class="space-y-3"></div>
+            <p id="meccaHotelsEmpty" class="text-sm text-gray-400 text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
+              <i class="fa-solid fa-hotel text-3xl text-gray-200 block mb-2"></i>لا توجد فنادق — اضغط «إضافة فندق»
+            </p>
+          </div>
+
+          <!-- Madina -->
+          <div class="pkg-card">
+            <div class="pkg-card-title">
+              <i class="fa-solid fa-mosque" style="color:#1d4ed8"></i> فنادق المدينة المنورة
+              <button type="button" onclick="addHotel('madina')" class="mr-auto text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
+                <i class="fa-solid fa-plus"></i> إضافة فندق
+              </button>
+            </div>
+            <div id="madinaHotelsList" class="space-y-3"></div>
+            <p id="madinaHotelsEmpty" class="text-sm text-gray-400 text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
+              <i class="fa-solid fa-hotel text-3xl text-gray-200 block mb-2"></i>لا توجد فنادق — اضغط «إضافة فندق»
+            </p>
+          </div>
+
+          <!-- Legacy hidden -->
+          <input type="hidden" id="pMeccaHotel">
+          <input type="hidden" id="pMeccaStars" value="3">
+          <input type="hidden" id="pNightsMecca">
+          <input type="hidden" id="pMeccaDist">
+          <input type="hidden" id="pMedinaHotel">
+          <input type="hidden" id="pMedinaStars" value="3">
+          <input type="hidden" id="pNightsMedina">
+          <input type="hidden" id="pMedinaDist">
+        </div><!-- /tab hotels -->
+
+        <!-- ════════ TAB 4: TRANSPORT ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-transport">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-plane-departure"></i> تفاصيل الطيران</div>
+            <div class="g2">
+              <div>
+                <label class="pkg-label">نوع الرحلة</label>
+                <div class="flex gap-2 mt-1">
+                  <button type="button" id="flightTypeDirect" onclick="setFlightType('مباشر')"
+                    class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-green-500 bg-green-50 text-green-700">
+                    <i class="fa-solid fa-arrow-right-long block text-xl mb-1"></i>مباشر
+                  </button>
+                  <button type="button" id="flightTypeStop" onclick="setFlightType('مع توقف')"
+                    class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-gray-200 bg-white text-gray-500">
+                    <i class="fa-solid fa-arrows-split-up-and-left block text-xl mb-1"></i>مع توقف
+                  </button>
+                </div>
+                <select id="pFlightType" class="hidden">
+                  <option value="مباشر">مباشر</option>
+                  <option value="مع توقف">مع توقف</option>
+                </select>
+              </div>
+              <div>
+                <label class="pkg-label">شركة الطيران</label>
+                <input type="text" id="pAirline" placeholder="مصر للطيران" class="pkg-input">
+                <div class="flex gap-1.5 flex-wrap mt-2">
+                  <button type="button" onclick="document.getElementById('pAirline').value='مصر للطيران'" class="quick-chip">مصر للطيران</button>
+                  <button type="button" onclick="document.getElementById('pAirline').value='فلاي دبي'" class="quick-chip">فلاي دبي</button>
+                  <button type="button" onclick="document.getElementById('pAirline').value='السعودية'" class="quick-chip">السعودية</button>
+                  <button type="button" onclick="document.getElementById('pAirline').value='العربية للطيران'" class="quick-chip">العربية</button>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <label class="pkg-label">سعر تذكرة الطيران للفرد (ج.م)</label>
+              <div class="relative" style="max-width:240px">
+                <input type="number" id="pFlightTicketPrice" min="0" placeholder="0 = مشمول في السعر" class="pkg-input" style="padding-right:42px">
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">ج.م</span>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">القيمة صفر تعني أن التذكرة مشمولة في سعر البرنامج</p>
+            </div>
+          </div>
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-bus"></i> وسيلة النقل الأرضي</div>
+            <div class="flex gap-3 flex-wrap">
+              <button type="button" onclick="setTransport(this,'باص VIP')" class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-green-500 bg-green-50 text-green-700 transport-btn" style="min-width:120px">
+                <i class="fa-solid fa-bus-simple block text-2xl mb-1"></i>باص VIP
+              </button>
+              <button type="button" onclick="setTransport(this,'باص عادي')" class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-gray-200 bg-white text-gray-500 transport-btn" style="min-width:120px">
+                <i class="fa-solid fa-bus block text-2xl mb-1"></i>باص عادي
+              </button>
+              <button type="button" onclick="setTransport(this,'تاكسي خاص')" class="flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-gray-200 bg-white text-gray-500 transport-btn" style="min-width:120px">
+                <i class="fa-solid fa-car-side block text-2xl mb-1"></i>تاكسي خاص
+              </button>
+            </div>
+            <select id="pTransport" class="hidden">
+              <option value="باص VIP">باص VIP</option>
+              <option value="باص عادي">باص عادي</option>
+              <option value="تاكسي خاص">تاكسي خاص</option>
+            </select>
+          </div>
+
+        </div><!-- /tab transport -->
+
+        <!-- ════════ TAB 5: CONTENT ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-content">
+
+          <!-- Image -->
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-image"></i> صورة البرنامج</div>
+            <div class="g2" style="align-items:start">
+              <div class="space-y-3">
+                <div>
+                  <label class="pkg-label"><i class="fa-solid fa-upload text-green-600 ml-1"></i>رفع من الجهاز</label>
+                  <label id="imgUploadLabel" class="flex flex-col items-center justify-center w-full border-2 border-dashed border-green-300 rounded-xl cursor-pointer bg-green-50 hover:bg-green-100 transition" style="height:80px">
+                    <i class="fa-solid fa-cloud-arrow-up text-xl text-green-600 mb-1"></i>
+                    <span class="text-xs text-gray-500">JPG, PNG, WEBP</span>
+                    <input type="file" id="imgFileInput" accept="image/*" class="hidden" onchange="uploadImageFile(this)">
+                  </label>
+                  <div id="imgUploadProgress" class="hidden mt-2 text-xs text-green-700 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...
+                  </div>
+                  <div id="imgUploadSuccess" class="hidden mt-2 text-xs text-green-600 font-bold">
+                    <i class="fa-solid fa-check-circle ml-1"></i> تم رفع الصورة
+                  </div>
+                </div>
+                <div>
+                  <label class="pkg-label"><i class="fa-solid fa-link text-gray-400 ml-1"></i>أو رابط صورة</label>
+                  <input type="url" id="pThumbnail" placeholder="https://example.com/image.jpg" oninput="previewImage(this.value)" class="pkg-input text-sm">
+                </div>
+              </div>
+              <div>
+                <label class="pkg-label">معاينة</label>
+                <div id="imgPreviewBox" class="bg-gray-100 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden" style="height:140px">
+                  <span id="imgPreviewPlaceholder" class="text-gray-400 text-center text-sm"><i class="fa-solid fa-image text-3xl block mb-1 text-gray-300"></i>لا توجد صورة</span>
+                  <img id="imgPreview" src="" alt="معاينة" class="hidden w-full h-full object-cover rounded-xl">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Includes / Excludes -->
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-list-check"></i> يشمل / لا يشمل</div>
+            <div class="g2">
+              <div>
+                <label class="pkg-label" style="color:#15803d"><i class="fa-solid fa-check ml-1"></i>يشمل البرنامج</label>
+                <textarea id="pIncludes" rows="5" placeholder="تذكرة الطيران ذهاباً وإياباً&#10;الإقامة في الفنادق&#10;وجبة الإفطار يومياً&#10;التأشيرة" class="pkg-input" style="resize:vertical"></textarea>
+                <p class="text-xs text-gray-400 mt-1">كل سطر = عنصر واحد</p>
+              </div>
+              <div>
+                <label class="pkg-label" style="color:#dc2626"><i class="fa-solid fa-xmark ml-1"></i>لا يشمل البرنامج</label>
+                <textarea id="pExcludes" rows="5" placeholder="الوجبات الإضافية&#10;المصروف الشخصي&#10;التطعيمات" class="pkg-input" style="resize:vertical"></textarea>
+                <p class="text-xs text-gray-400 mt-1">كل سطر = عنصر واحد</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Itinerary -->
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-calendar-days"></i> خطة الرحلة يوم بيوم</div>
+            <div id="itineraryList" class="space-y-3 mb-3"></div>
+            <button type="button" onclick="addDay()" class="w-full border-2 border-dashed border-green-300 text-green-700 hover:bg-green-50 px-4 py-3 rounded-xl font-bold text-sm transition">
+              <i class="fa-solid fa-plus ml-1"></i> إضافة يوم
+            </button>
+          </div>
+
+          <!-- Notes -->
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-note-sticky"></i> ملاحظات</div>
+            <textarea id="pNotes" rows="3" placeholder="أي ملاحظات إضافية..." class="pkg-input" style="resize:vertical"></textarea>
+          </div>
+
+        </div><!-- /tab content -->
+
+        <!-- ════════ TAB 6: DOCUMENTS ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-docs">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-file-circle-check"></i> متطلبات المستندات لكل مسافر</div>
+
+            <div class="flex gap-1 mb-4 border-b border-gray-200">
+              <button type="button" onclick="switchDocTab('adult')" id="docTab-adult"
+                class="px-4 py-2 text-xs font-bold border-b-2 border-green-600 text-green-700">
+                👤 بالغ
+              </button>
+              <button type="button" onclick="switchDocTab('child')" id="docTab-child"
+                class="px-4 py-2 text-xs font-bold border-b-2 border-transparent text-gray-500">
+                🧒 طفل
+              </button>
+              <button type="button" onclick="switchDocTab('infant')" id="docTab-infant"
+                class="px-4 py-2 text-xs font-bold border-b-2 border-transparent text-gray-500">
+                👶 رضيع
+              </button>
+            </div>
+
+            <script>
+            function switchDocTab(type) {
+              ['adult','child','infant'].forEach(t => {
+                document.getElementById('docPanel-'+t).classList.toggle('hidden', t !== type);
+                const tab = document.getElementById('docTab-'+t);
+                if (t === type) { tab.classList.add('border-green-600','text-green-700'); tab.classList.remove('border-transparent','text-gray-500'); }
+                else            { tab.classList.remove('border-green-600','text-green-700'); tab.classList.add('border-transparent','text-gray-500'); }
+              });
+            }
+            </script>
+
+            <script>
+            function docTableHTML(prefix, rows) {
+              return `<table class="w-full text-sm"><thead><tr class="text-xs text-gray-500 border-b">
+                <th class="text-right pb-2 font-semibold">المستند</th>
+                <th class="pb-2 font-semibold text-center text-red-600"><i class="fa-solid fa-circle-exclamation text-xs ml-1"></i>إلزامي</th>
+                <th class="pb-2 font-semibold text-center text-amber-600"><i class="fa-solid fa-circle-minus text-xs ml-1"></i>اختياري</th>
+                <th class="pb-2 font-semibold text-center text-gray-400"><i class="fa-solid fa-eye-slash text-xs ml-1"></i>مخفي</th>
+              </tr></thead><tbody class="divide-y divide-gray-100">
+              ${rows.map(r=>`<tr><td class="py-2.5 font-medium">${r.label}</td>
+                <td class="text-center"><input type="radio" name="${prefix}_${r.key}" value="required" ${r.def==='required'?'checked':''} class="accent-red-500 w-4 h-4"></td>
+                <td class="text-center"><input type="radio" name="${prefix}_${r.key}" value="optional" ${r.def==='optional'?'checked':''} class="accent-amber-500 w-4 h-4"></td>
+                <td class="text-center"><input type="radio" name="${prefix}_${r.key}" value="hidden"   ${r.def==='hidden'?'checked':''} class="accent-gray-400 w-4 h-4"></td>
+              </tr>`).join('')}
+              </tbody></table>`;
+            }
+            </script>
+
+            <div id="docPanel-adult" class="overflow-x-auto">
+              <div id="docTableAdult"></div>
+              <script>document.getElementById('docTableAdult').innerHTML = docTableHTML('adult_doc', [
+                {key:'passport',       label:'<i class="fa-solid fa-passport text-green-700 text-xs ml-1"></i> جواز السفر',         def:'required'},
+                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-green-700 text-xs ml-1"></i> البطاقة الوطنية',    def:'optional'},
+                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-green-700 text-xs ml-1"></i> الصورة الشخصية', def:'required'},
+                {key:'meningitis',     label:'<i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية', def:'optional'},
+                {key:'covid',          label:'<i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19', def:'optional'},
+                {key:'birth_cert',     label:'<i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد',       def:'hidden'},
+              ]);</script>
+            </div>
+            <div id="docPanel-child" class="overflow-x-auto hidden">
+              <div id="docTableChild"></div>
+              <script>document.getElementById('docTableChild').innerHTML = docTableHTML('child_doc', [
+                {key:'passport',       label:'<i class="fa-solid fa-passport text-green-700 text-xs ml-1"></i> جواز السفر',         def:'required'},
+                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-green-700 text-xs ml-1"></i> البطاقة الوطنية',    def:'hidden'},
+                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-green-700 text-xs ml-1"></i> الصورة الشخصية', def:'required'},
+                {key:'meningitis',     label:'<i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية', def:'optional'},
+                {key:'covid',          label:'<i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19', def:'optional'},
+                {key:'birth_cert',     label:'<i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد',       def:'required'},
+              ]);</script>
+            </div>
+            <div id="docPanel-infant" class="overflow-x-auto hidden">
+              <div id="docTableInfant"></div>
+              <script>document.getElementById('docTableInfant').innerHTML = docTableHTML('infant_doc', [
+                {key:'passport',       label:'<i class="fa-solid fa-passport text-green-700 text-xs ml-1"></i> جواز السفر',         def:'optional'},
+                {key:'national_id',    label:'<i class="fa-solid fa-id-card text-green-700 text-xs ml-1"></i> البطاقة الوطنية',    def:'hidden'},
+                {key:'personal_photo', label:'<i class="fa-solid fa-image-portrait text-green-700 text-xs ml-1"></i> الصورة الشخصية', def:'optional'},
+                {key:'meningitis',     label:'<i class="fa-solid fa-syringe text-blue-500 text-xs ml-1"></i> تطعيم الحمى الشوكية', def:'hidden'},
+                {key:'covid',          label:'<i class="fa-solid fa-shield-virus text-teal-500 text-xs ml-1"></i> تطعيم كوفيد-19', def:'hidden'},
+                {key:'birth_cert',     label:'<i class="fa-solid fa-baby text-yellow-600 text-xs ml-1"></i> شهادة الميلاد',       def:'required'},
+              ]);</script>
+            </div>
+
+            <div class="mt-4 pt-4 border-t">
+              <p class="text-xs font-bold text-gray-600 mb-2"><i class="fa-solid fa-plus ml-1 text-green-600"></i>إضافة مستند مخصص</p>
+              <div class="flex gap-2">
+                <input type="text" id="customDocName" placeholder="مثال: عقد الزواج" class="pkg-input flex-1">
+                <button type="button" onclick="addCustomDoc()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap">
+                  <i class="fa-solid fa-plus ml-1"></i> إضافة
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="text-xs text-gray-400 font-bold self-center">شائع:</span>
+                <button type="button" onclick="quickAddDoc('عقد الزواج')" class="quick-chip">عقد الزواج</button>
+                <button type="button" onclick="quickAddDoc('وثيقة المحرم')" class="quick-chip">وثيقة المحرم</button>
+                <button type="button" onclick="quickAddDoc('كشف حساب بنكي')" class="quick-chip">كشف حساب</button>
+                <button type="button" onclick="quickAddDoc('شهادة القيد العائلي')" class="quick-chip">القيد العائلي</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i> شروط المستندات</div>
+            <textarea id="pDocConditions" rows="4" placeholder="مثال:&#10;- يُشترط أن يكون الجواز صالحاً 6 أشهر بعد تاريخ العودة&#10;- المرأة دون 45 سنة تحتاج محرم&#10;- الأطفال دون 18 سنة يحتاجون موافقة الوالدين" class="pkg-input" style="resize:vertical"></textarea>
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              <span class="text-xs text-gray-400 font-bold self-center">إضافة سريعة:</span>
+              <button type="button" onclick="appendDocCondition('يُشترط أن يكون الجواز صالحاً 6 أشهر على الأقل بعد تاريخ العودة')" class="quick-chip quick-chip-amber">صلاحية الجواز 6 أشهر</button>
+              <button type="button" onclick="appendDocCondition('المرأة دون 45 سنة يجب أن تسافر مع محرم أو ضمن مجموعة نسائية معتمدة')" class="quick-chip quick-chip-amber">اشتراط المحرم</button>
+              <button type="button" onclick="appendDocCondition('يُشترط تقديم شهادة التطعيم ضد الحمى الشوكية (MenACYW) لا تزيد عن 5 سنوات')" class="quick-chip quick-chip-amber">تطعيم الحمى الشوكية</button>
+              <button type="button" onclick="appendDocCondition('يجب تقديم جميع المستندات كاملةً قبل 14 يوم من تاريخ المغادرة')" class="quick-chip quick-chip-amber">موعد التسليم</button>
+            </div>
+          </div>
+
+        </div><!-- /tab docs -->
+
+        <!-- ════════ TAB 7: SETTINGS ════════ -->
+        <div class="pkg-tab-panel" id="ppanel-settings">
+
+          <div class="pkg-card">
+            <div class="pkg-card-title"><i class="fa-solid fa-toggle-on"></i> حالة البرنامج وخياراته</div>
+            <div class="space-y-4">
+
+              <label class="pkg-toggle">
+                <input type="checkbox" id="pIsActive" checked>
+                <div class="pkg-toggle-track"><div class="pkg-toggle-thumb"></div></div>
+                <div>
+                  <div class="pkg-toggle-label">البرنامج نشط وظاهر للعملاء</div>
+                  <p class="text-xs text-gray-400 mt-0.5">إيقاف التشغيل يُخفي البرنامج من الموقع</p>
+                </div>
+              </label>
+
+              <label class="pkg-toggle">
+                <input type="checkbox" id="pIsFeatured">
+                <div class="pkg-toggle-track"><div class="pkg-toggle-thumb"></div></div>
+                <div>
+                  <div class="pkg-toggle-label">عرضه في الصفحة الرئيسية (مميز)</div>
+                  <p class="text-xs text-gray-400 mt-0.5">يظهر في قسم العروض المميزة</p>
+                </div>
+              </label>
+
+              <label class="pkg-toggle">
+                <input type="checkbox" id="pVisaIncluded" checked>
+                <div class="pkg-toggle-track"><div class="pkg-toggle-thumb"></div></div>
+                <div>
+                  <div class="pkg-toggle-label">التأشيرة مشمولة في السعر</div>
+                  <p class="text-xs text-gray-400 mt-0.5">يُعرض شارة «تأشيرة مشمولة» على البرنامج</p>
+                </div>
+              </label>
+
+              <label class="pkg-toggle">
+                <input type="checkbox" id="pIsPreorder" onchange="document.getElementById('preorderNoteWrap').classList.toggle('hidden',!this.checked)">
+                <div class="pkg-toggle-track" style="background:#d1d5db"><div class="pkg-toggle-thumb"></div></div>
+                <div>
+                  <div class="pkg-toggle-label" style="color:#92400e"><i class="fa-solid fa-clock-rotate-left ml-1 text-amber-500"></i>حجز مسبق (Preorder)</div>
+                  <p class="text-xs text-gray-400 mt-0.5">التفاصيل تُحدد قريباً</p>
+                </div>
+              </label>
+
+              <div id="preorderNoteWrap" class="hidden pr-12">
+                <input type="text" id="pPreorderNote" placeholder="مثال: التفاصيل ستُحدد قبل 30 يوم من السفر" class="pkg-input" style="border-color:#fcd34d;background:#fffbeb">
+              </div>
+
+            </div>
+          </div>
+
+        </div><!-- /tab settings -->
+
+      </div><!-- /scrollable body -->
+
+      <!-- ── Summary Bar ── -->
+      <div id="pkgSummaryBar" class="shrink-0">
+        <span class="text-xs text-white/60 font-bold ml-2">ملخص:</span>
+        <span class="summary-pill" id="sum-title"><i class="fa-solid fa-tag"></i><span id="sumTitleText">بدون عنوان</span></span>
+        <span class="summary-pill" id="sum-dates"><i class="fa-solid fa-calendar"></i><span id="sumDatesText">بدون تواريخ</span></span>
+        <span class="summary-pill" id="sum-price"><i class="fa-solid fa-money-bill"></i><span id="sumPriceText">بدون سعر</span></span>
+      </div>
+
+      <!-- ── Footer ── -->
+      <div class="p-4 border-t bg-gray-50 flex justify-between items-center shrink-0 gap-3" style="border-radius:0 0 16px 16px">
+        <button onclick="closeModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-600 bg-white border border-gray-200 hover:bg-gray-100 transition">
+          <i class="fa-solid fa-xmark ml-1"></i>إلغاء
+        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="switchPkgTabPrev()" class="px-4 py-2.5 rounded-xl font-bold text-sm text-gray-600 bg-white border border-gray-200 hover:bg-gray-100 transition" id="pkgTabPrevBtn" style="display:none">
+            <i class="fa-solid fa-arrow-right ml-1"></i>السابق
+          </button>
+          <button type="button" onclick="switchPkgTabNext()" class="px-4 py-2.5 rounded-xl font-bold text-sm text-white bg-green-700 hover:bg-green-800 transition" id="pkgTabNextBtn">
+            التالي<i class="fa-solid fa-arrow-left mr-1"></i>
+          </button>
+          <button onclick="savePackage()" class="px-6 py-2.5 rounded-xl font-black text-sm text-white flex items-center gap-2 transition" id="pkgSaveBtn"
+            style="background:linear-gradient(135deg,#15803d,#166534);box-shadow:0 4px 12px rgba(21,128,61,.35)">
+            <i class="fa-solid fa-floppy-disk"></i> حفظ البرنامج
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ── Tab switching ────────────────────────────────────────
+  const PKG_TABS = ['basic','pricing','hotels','transport','content','docs','settings'];
+  let _pkgTabIdx = 0;
+
+  function switchPkgTab(name) {
+    _pkgTabIdx = PKG_TABS.indexOf(name);
+    PKG_TABS.forEach(t => {
+      const btn = document.getElementById('ptab-'+t);
+      const panel = document.getElementById('ppanel-'+t);
+      const isActive = t === name;
+      btn.classList.toggle('active', isActive);
+      btn.style.color = isActive ? '#1B5E20' : 'rgba(255,255,255,.55)';
+      btn.style.borderBottomColor = isActive ? '#1B5E20' : 'transparent';
+      panel.classList.toggle('active', isActive);
+    });
+    document.getElementById('pkgTabPrevBtn').style.display = _pkgTabIdx === 0 ? 'none' : '';
+    document.getElementById('pkgTabNextBtn').style.display = _pkgTabIdx === PKG_TABS.length-1 ? 'none' : '';
+    updateSummaryBar();
+  }
+  function switchPkgTabNext() { if (_pkgTabIdx < PKG_TABS.length-1) switchPkgTab(PKG_TABS[_pkgTabIdx+1]); }
+  function switchPkgTabPrev() { if (_pkgTabIdx > 0) switchPkgTab(PKG_TABS[_pkgTabIdx-1]); }
+
+  // ── Summary bar ─────────────────────────────────────────
+  function updateSummaryBar() {
+    const title = document.getElementById('pTitle')?.value?.trim() || 'بدون عنوان';
+    document.getElementById('sumTitleText').textContent = title.length > 25 ? title.slice(0,25)+'…' : title;
+    const dep = document.getElementById('pDeparture')?.value;
+    const ret = document.getElementById('pReturn')?.value;
+    document.getElementById('sumDatesText').textContent = (dep && ret) ? dep + ' → ' + ret : 'بدون تواريخ';
+    const price = document.getElementById('pPrice')?.value;
+    document.getElementById('sumPriceText').textContent = price ? Number(price).toLocaleString('ar-EG') + ' ج.م' : 'بدون سعر';
+  }
+  ['pTitle','pDeparture','pReturn','pPrice'].forEach(id => {
+    setTimeout(() => { const el = document.getElementById(id); if(el) el.addEventListener('input', updateSummaryBar); }, 300);
+  });
+
+  // ── Price summary badges ─────────────────────────────────
+  function updatePriceSummary() {
+    const fmt = v => v ? Number(v).toLocaleString('ar-EG') + ' ج.م' : '—';
+    document.getElementById('ps-adult').textContent  = fmt(document.getElementById('pPrice')?.value);
+    document.getElementById('ps-child').textContent  = fmt(document.getElementById('pPriceChild')?.value);
+    document.getElementById('ps-infant').textContent = fmt(document.getElementById('pPriceInfant')?.value);
+  }
+
+  // ── Auto-calc duration ──────────────────────────────────
+  function autoCalcDuration() {
+    const d = document.getElementById('pDeparture')?.value;
+    const r = document.getElementById('pReturn')?.value;
+    if (d && r) {
+      const nights = Math.round((new Date(r) - new Date(d)) / 86400000);
+      if (nights > 0) document.getElementById('pDuration').value = nights;
+    }
+    updateSummaryBar();
+  }
+
+  // ── Departure city picker ────────────────────────────────
+  function pickDepartureCity(btn, city) {
+    document.querySelectorAll('#departureCityPicker .quick-chip').forEach(b => {
+      b.style.background = ''; b.style.borderColor = ''; b.style.color = '';
+    });
+    btn.style.background = '#f0fdf4'; btn.style.borderColor = '#86efac'; btn.style.color = '#14532d';
+    document.getElementById('pDepartureCity').value = city;
+  }
+  // sync select → chips on load
+  function syncDepartureCityChips(city) {
+    document.querySelectorAll('#departureCityPicker .quick-chip').forEach(b => {
+      const match = b.textContent.trim() === city;
+      b.style.background = match ? '#f0fdf4' : '';
+      b.style.borderColor = match ? '#86efac' : '';
+      b.style.color = match ? '#14532d' : '';
+    });
+  }
+
+  // ── Flight type toggle ──────────────────────────────────
+  function setFlightType(val) {
+    document.getElementById('pFlightType').value = val;
+    const isDirect = val === 'مباشر';
+    document.getElementById('flightTypeDirect').className = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm ' + (isDirect ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-500');
+    document.getElementById('flightTypeStop').className   = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm ' + (!isDirect ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-500');
+  }
+
+  // ── Transport toggle ────────────────────────────────────
+  function setTransport(btn, val) {
+    document.getElementById('pTransport').value = val;
+    document.querySelectorAll('.transport-btn').forEach(b => {
+      b.className = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-gray-200 bg-white text-gray-500 transport-btn';
+    });
+    btn.className = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm border-green-500 bg-green-50 text-green-700 transport-btn';
+    btn.style.minWidth = '120px';
+  }
+  </script>
+
+<script>
+  let itineraryItems = [];
+  let editingId = null;
+  let allPackages = []; // null = new package, uuid = editing existing
+
+  // ── Image preview ──────────────────────────────────
+  function previewImage(url) {
+    const box         = document.getElementById('imgPreviewBox');
+    const img         = document.getElementById('imgPreview');
+    const placeholder = document.getElementById('imgPreviewPlaceholder');
+    if (url && (url.startsWith('http') || url.startsWith('blob'))) {
+      img.src = url;
+      img.classList.remove('hidden');
+      if (placeholder) placeholder.classList.add('hidden');
+    } else {
+      img.classList.add('hidden');
+      if (placeholder) placeholder.classList.remove('hidden');
+    }
+  }
+
+  // ── Upload image to Supabase Storage ───────────────
+  async function uploadImageFile(input) {
+    if (!input.files || !input.files[0]) return;
+    let file = input.files[0];
+
+    document.getElementById('imgUploadProgress').classList.remove('hidden');
+    document.getElementById('imgUploadSuccess').classList.add('hidden');
+
+    // ── Compress image before upload ──────────────────────
+    try {
+      const options = {
+        maxSizeMB:       0.8,    // max 800KB
+        maxWidthOrHeight: 1200,  // max dimension
+        useWebWorker:    true,
+        fileType:        'image/webp',
+        onProgress: (p) => {
+          const bar = document.getElementById('imgUploadProgress');
+          if (bar) bar.title = `ضغط: ${p}%`;
+        }
+      };
+      const compressed = await imageCompression(file, options);
+      console.log(`Original: ${(file.size/1024).toFixed(0)}KB → Compressed: ${(compressed.size/1024).toFixed(0)}KB`);
+      file = new File([compressed], file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' });
+    } catch (compErr) {
+      console.warn('Compression failed, uploading original:', compErr);
+    }
+
+    // Show local preview immediately
+    const localUrl = URL.createObjectURL(file);
+    previewImage(localUrl);
+
+    try {
+      const ext      = 'webp';
+      const fileName = `pkg_${Date.now()}.${ext}`;
+      const filePath = `packages/${fileName}`;
+
+      const { data, error } = await window.db.storage
+        .from('booking-documents')
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+
+      if (error) throw error;
+
+      const { data: urlData } = window.db.storage
+        .from('booking-documents')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+      document.getElementById('pThumbnail').value = publicUrl;
+      previewImage(publicUrl);
+
+      document.getElementById('imgUploadProgress').classList.add('hidden');
+      document.getElementById('imgUploadSuccess').classList.remove('hidden');
+
+      // Update upload label to show file name
+      const label = document.getElementById('imgUploadLabel');
+      label.innerHTML = `
+        <i class="fa-solid fa-check-circle text-2xl text-green-500 mb-1"></i>
+        <span class="text-sm text-green-700 font-bold">${file.name}</span>
+        <span class="text-xs text-gray-400">اضغط لتغيير الصورة</span>
+        <input type="file" id="imgFileInput" accept="image/*" class="hidden" onchange="uploadImageFile(this)">`;
+
+    } catch (err) {
+      document.getElementById('imgUploadProgress').classList.add('hidden');
+      alert('فشل رفع الصورة: ' + err.message);
+      console.error(err);
+    }
+  }
+
+  // ══════════════════════════════════════════════════
+  //  MULTI-HOTEL + ROOM TIERS BUILDER
+  // ══════════════════════════════════════════════════
+  let meccaHotels  = []; // [{name, stars, nights, distance, description, room_tiers:[{label,description,price}]}]
+  let madinaHotels = [];
+
+  function addHotel(city) {
+    const list = city === 'mecca' ? meccaHotels : madinaHotels;
+    list.push({ name:'', stars:4, nights: city==='mecca' ? 4 : 3, distance:'', description:'', room_tiers:[] });
+    renderHotels(city);
+  }
+
+  function removeHotel(city, idx) {
+    const list = city === 'mecca' ? meccaHotels : madinaHotels;
+    list.splice(idx, 1);
+    renderHotels(city);
+  }
+
+  function addRoomTier(city, hotelIdx) {
+    const list = city === 'mecca' ? meccaHotels : madinaHotels;
+    list[hotelIdx].room_tiers.push({ label:'', description:'', price: 0 });
+    renderHotels(city);
+  }
+
+  function removeRoomTier(city, hotelIdx, tierIdx) {
+    const list = city === 'mecca' ? meccaHotels : madinaHotels;
+    list[hotelIdx].room_tiers.splice(tierIdx, 1);
+    renderHotels(city);
+  }
+
+  function renderHotels(city) {
+    const list     = city === 'mecca' ? meccaHotels : madinaHotels;
+    const color    = city === 'mecca' ? 'green' : 'blue';
+    const container = document.getElementById(`${city}HotelsList`);
+    const emptyMsg  = document.getElementById(`${city}HotelsEmpty`);
+
+    emptyMsg.style.display = list.length ? 'none' : 'block';
+
+    container.innerHTML = list.map((h, hi) => `
+      <div class="border-2 border-${color}-200 bg-${color}-50 rounded-xl p-4 space-y-3">
+
+        <!-- Hotel Header -->
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-${color}-800 text-sm flex items-center gap-1">
+            <i class="fa-solid fa-hotel"></i> فندق ${hi + 1}
+          </span>
+          <button type="button" onclick="removeHotel('${city}',${hi})"
+                  class="text-red-400 hover:text-red-600 text-sm transition">
+            <i class="fa-solid fa-trash-can"></i> حذف الفندق
+          </button>
+        </div>
+
+        <!-- Hotel Fields -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold mb-1">اسم الفندق <span class="text-red-500">*</span></label>
+            <input type="text" value="${esc(h.name)}" placeholder="مثال: فندق أبراج البيت"
+                   oninput="${city}Hotels[${hi}].name=this.value"
+                   class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">عدد النجوم</label>
+            <select onchange="${city}Hotels[${hi}].stars=parseInt(this.value, 10)"
+                    class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none bg-white">
+              <option value="3" ${h.stars==3?'selected':''}>★★★ 3 نجوم</option>
+              <option value="4" ${h.stars==4?'selected':''}>★★★★ 4 نجوم</option>
+              <option value="5" ${h.stars==5?'selected':''}>★★★★★ 5 نجوم</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">عدد الليالي</label>
+            <input type="number" value="${h.nights}" min="0" placeholder="4"
+                   oninput="${city}Hotels[${hi}].nights=parseInt(this.value,10)||0"
+                   class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">المسافة من ${city==='mecca'?'الحرم':'المسجد النبوي'}</label>
+            <input type="text" value="${esc(h.distance)}" placeholder="200 متر"
+                   oninput="${city}Hotels[${hi}].distance=this.value"
+                   class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">وصف الفندق (اختياري)</label>
+            <input type="text" value="${esc(h.description)}" placeholder="مثال: إطلالة مباشرة على الكعبة"
+                   oninput="${city}Hotels[${hi}].description=this.value"
+                   class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary bg-white">
+          </div>
+        </div>
+
+        <!-- Room Tiers -->
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-gray-600 flex items-center gap-1">
+              <i class="fa-solid fa-bed text-${color}-500"></i> أنواع الغرف وأسعارها
+            </span>
+            <button type="button" onclick="addRoomTier('${city}',${hi})"
+                    class="text-xs bg-white border border-${color}-400 text-${color}-700 hover:bg-${color}-100 px-2 py-1 rounded-lg font-bold transition">
+              <i class="fa-solid fa-plus text-xs"></i> إضافة نوع غرفة
+            </button>
+          </div>
+
+          ${h.room_tiers.length === 0 ? `
+            <p class="text-xs text-gray-400 italic text-center py-2">لا توجد أنواع غرف — اضغط «إضافة نوع غرفة»</p>
+          ` : `
+            <div class="space-y-2">
+              ${h.room_tiers.map((t, ti) => `
+                <div class="bg-white border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                  <div>
+                    <label class="block text-xs font-bold mb-1">نوع الغرفة <span class="text-red-500">*</span></label>
+                    <input type="text" value="${esc(t.label)}" placeholder="مثال: غرفة مزدوجة"
+                           oninput="${city}Hotels[${hi}].room_tiers[${ti}].label=this.value"
+                           class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold mb-1">وصف الغرفة (اختياري)</label>
+                    <input type="text" value="${esc(t.description||'')}" placeholder="مثال: مع إفطار"
+                           oninput="${city}Hotels[${hi}].room_tiers[${ti}].description=this.value"
+                           class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold mb-1">سعة الغرفة (أشخاص) <span class="text-red-500">*</span></label>
+                    <input type="number" value="${t.capacity||2}" min="1" max="10" placeholder="2"
+                           oninput="${city}Hotels[${hi}].room_tiers[${ti}].capacity=parseInt(this.value)||2"
+                           class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
+                  </div>
+                  <div class="flex gap-2 items-end">
+                    <div class="flex-1">
+                      <label class="block text-xs font-bold mb-1">سعر الغرفة (ج.م) <span class="text-red-500">*</span></label>
+                      <input type="number" value="${t.price||''}" min="0" placeholder="8500"
+                             oninput="${city}Hotels[${hi}].room_tiers[${ti}].price=parseFloat(this.value)||0"
+                             class="w-full border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-primary">
+                    </div>
+                    <button type="button" onclick="removeRoomTier('${city}',${hi},${ti})"
+                            class="text-red-400 hover:text-red-600 pb-2 transition shrink-0">
+                      <i class="fa-solid fa-xmark text-base"></i>
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    `).join('');
+
+    // Sync legacy hidden fields from first hotel (backward compat for old booking logic)
+    if (list.length > 0) {
+      if (city === 'mecca') {
+        document.getElementById('pMeccaHotel').value  = list[0].name;
+        document.getElementById('pMeccaStars').value  = list[0].stars;
+        document.getElementById('pNightsMecca').value = list[0].nights;
+        document.getElementById('pMeccaDist').value   = list[0].distance;
+      } else {
+        document.getElementById('pMedinaHotel').value  = list[0].name;
+        document.getElementById('pMedinaStars').value  = list[0].stars;
+        document.getElementById('pNightsMedina').value = list[0].nights;
+        document.getElementById('pMedinaDist').value   = list[0].distance;
+      }
+    }
+  }
+
+  // HTML-escape helper for inline event values
+  function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // ── Itinerary ──────────────────────────────────────
+  function addDay(data = {}) {
+    const idx = itineraryItems.length;
+    itineraryItems.push({ day: idx + 1, title: data.title || '', description: data.description || '', location: data.location || '' });
+    renderItinerary();
+  }
+
+  function removeDay(idx) {
+    itineraryItems.splice(idx, 1);
+    itineraryItems.forEach((item, i) => item.day = i + 1);
+    renderItinerary();
+  }
+
+  function renderItinerary() {
+    const list = document.getElementById('itineraryList');
+    if (!itineraryItems.length) {
+      list.innerHTML = '<p class="text-gray-400 text-sm text-center py-3">لا توجد أيام بعد — اضغط "إضافة يوم"</p>';
+      return;
+    }
+    list.innerHTML = itineraryItems.map((item, idx) => `
+      <div class="flex gap-3 items-start bg-gray-50 border border-gray-200 rounded-xl p-4">
+        <div class="bg-primary text-white rounded-lg w-12 h-12 flex items-center justify-center font-bold text-sm shrink-0">
+          ${item.day}
+        </div>
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+          <input type="text" placeholder="عنوان اليوم" value="${item.title}"
+                 oninput="itineraryItems[${idx}].title=this.value"
+                 class="border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary">
+          <input type="text" placeholder="الموقع (مكة / المدينة...)" value="${item.location||''}"
+                 oninput="itineraryItems[${idx}].location=this.value"
+                 class="border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary">
+          <textarea placeholder="وصف تفصيلي لليوم..."
+                    oninput="itineraryItems[${idx}].description=this.value"
+                    class="border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-primary md:col-span-3" rows="2">${item.description}</textarea>
+        </div>
+        <button type="button" onclick="removeDay(${idx})" class="text-red-400 hover:text-red-600 transition pt-1">
+          <i class="fa-solid fa-trash-can text-lg"></i>
+        </button>
+      </div>`).join('');
+  }
+
+  // ── Open Modal ─────────────────────────────────────
+  function openModal(pkg) {
+    editingId = pkg ? pkg.id : null;
+    itineraryItems = [];
+    meccaHotels  = [];
+    madinaHotels = [];
+
+    // Reset all fields
+    const fields = ['pTitle','pPrice','pPriceChild','pPriceInfant','pMaxSeats','pDiscount','pDeparture',
+                    'pReturn','pDuration','pMeccaHotel','pMeccaDist','pNightsMecca',
+                    'pMedinaHotel','pMedinaDist','pNightsMedina','pAirline','pThumbnail','pIncludes','pExcludes','pNotes'];
+    fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    // Reset image upload UI
+    document.getElementById('imgUploadSuccess').classList.add('hidden');
+    document.getElementById('imgUploadProgress').classList.add('hidden');
+    document.getElementById('imgPreview').classList.add('hidden');
+    document.getElementById('imgPreviewPlaceholder').classList.remove('hidden');
+    const lbl = document.getElementById('imgUploadLabel');
+    lbl.innerHTML = `
+      <i class="fa-solid fa-cloud-arrow-up text-2xl text-primary mb-1"></i>
+      <span class="text-sm text-gray-500">اضغط لاختيار صورة (JPG, PNG, WEBP)</span>
+      <input type="file" id="imgFileInput" accept="image/*" class="hidden" onchange="uploadImageFile(this)">`;
+    document.getElementById('pIsActive').checked = true;
+    document.getElementById('pIsFeatured').checked = false;
+    document.getElementById('pVisaIncluded').checked = true;
+    document.getElementById('pIsPreorder').checked = false;
+    document.getElementById('preorderNoteWrap').classList.add('hidden');
+    document.getElementById('pPreorderNote').value = '';
+    document.getElementById('pDocConditions').value = '';
+    resetCustomDocs();
+    // Reset doc radios to defaults
+    applyDocPreset('umrah_standard');
+
+    if (pkg) {
+      // Fill with existing data
+      document.getElementById('pkgModalTitle').textContent = 'تعديل البرنامج';
+      document.getElementById('pTitle').value          = pkg.title || '';
+      document.getElementById('pCategory').value       = pkg.category || 'اقتصادي';
+      document.getElementById('pSeason').value         = pkg.season || 'طوال العام';
+      document.getElementById('pDeparture').value      = pkg.departure_date || '';
+      document.getElementById('pReturn').value         = pkg.return_date || '';
+      document.getElementById('pDuration').value       = pkg.duration_nights || '';
+      document.getElementById('pDepartureCity').value  = pkg.departure_city || 'القاهرة';
+      document.getElementById('pPrice').value          = pkg.price_per_person || '';
+      document.getElementById('pPriceChild').value     = pkg.price_child || '';
+      document.getElementById('pPriceInfant').value    = pkg.price_infant || '';
+      document.getElementById('pMaxSeats').value       = pkg.max_seats || 40;
+      document.getElementById('pDiscount').value       = pkg.discount_percent || 0;
+      document.getElementById('pMeccaHotel').value     = pkg.mecca_hotel || '';
+      document.getElementById('pMeccaStars').value     = pkg.mecca_hotel_stars || 3;
+      document.getElementById('pNightsMecca').value    = pkg.nights_mecca || '';
+      document.getElementById('pMeccaDist').value      = pkg.mecca_hotel_distance || '';
+      document.getElementById('pMedinaHotel').value    = pkg.medina_hotel || '';
+      document.getElementById('pMedinaStars').value    = pkg.medina_hotel_stars || 3;
+      document.getElementById('pNightsMedina').value   = pkg.nights_medina || '';
+      document.getElementById('pMedinaDist').value     = pkg.medina_hotel_distance || '';
+      document.getElementById('pFlightType').value        = pkg.flight_type || 'مباشر';
+      document.getElementById('pAirline').value           = pkg.airline || '';
+      document.getElementById('pFlightTicketPrice').value = pkg.flight_ticket_price || '';
+      document.getElementById('pTransport').value         = pkg.transport_type || 'باص VIP';
+      document.getElementById('pThumbnail').value      = pkg.thumbnail_url || '';
+      document.getElementById('pIsActive').checked     = pkg.is_active !== false;
+      document.getElementById('pIsFeatured').checked   = pkg.is_featured === true;
+      document.getElementById('pVisaIncluded').checked = pkg.visa_included !== false;
+      document.getElementById('pNotes').value          = pkg.notes || '';
+
+      // Pre-order
+      const isPreorder = pkg.is_preorder === true;
+      document.getElementById('pIsPreorder').checked = isPreorder;
+      document.getElementById('preorderNoteWrap').classList.toggle('hidden', !isPreorder);
+      document.getElementById('pPreorderNote').value = pkg.preorder_note || '';
+
+      // Documents config — per traveler type
+      const dc = pkg.documents_config || {};
+      const docTypes = ['adult','child','infant'];
+      const docKeys  = ['passport','national_id','personal_photo','meningitis','covid','birth_cert'];
+      const docDefaults = {
+        adult:  { passport:'required', national_id:'optional', personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'hidden' },
+        child:  { passport:'required', national_id:'hidden',   personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'required' },
+        infant: { passport:'optional', national_id:'hidden',   personal_photo:'optional', meningitis:'hidden',   covid:'hidden',   birth_cert:'required' },
+      };
+      docTypes.forEach(type => {
+        const typeCfg = dc[type] || {};
+        docKeys.forEach(key => {
+          const val   = typeCfg[key] || docDefaults[type][key];
+          const radio = document.querySelector(`input[name="${type}_doc_${key}"][value="${val}"]`);
+          if (radio) radio.checked = true;
+        });
+      });
+
+      // Custom docs
+      resetCustomDocs();
+      if (Array.isArray(dc.custom_docs)) {
+        dc.custom_docs.forEach(cd => addCustomDoc(cd.label, cd.value));
+      }
+
+      // Doc conditions
+      document.getElementById('pDocConditions').value = pkg.doc_conditions || '';
+
+      // Arrays → textarea (one per line)
+      const inc = Array.isArray(pkg.includes) ? pkg.includes : [];
+      const exc = Array.isArray(pkg.excludes) ? pkg.excludes : [];
+      document.getElementById('pIncludes').value = inc.join('\n');
+      document.getElementById('pExcludes').value = exc.join('\n');
+
+      // Itinerary
+      const itin = Array.isArray(pkg.itinerary) ? pkg.itinerary : [];
+      itin.forEach(d => addDay(d));
+
+      // Multi-hotel arrays
+      meccaHotels  = Array.isArray(pkg.mecca_hotels)  ? JSON.parse(JSON.stringify(pkg.mecca_hotels))  : [];
+      madinaHotels = Array.isArray(pkg.madina_hotels) ? JSON.parse(JSON.stringify(pkg.madina_hotels)) : [];
+      // If no hotel array but old flat fields exist, migrate them as a single hotel
+      if (meccaHotels.length === 0 && pkg.mecca_hotel) {
+        meccaHotels = [{ name: pkg.mecca_hotel, stars: pkg.mecca_hotel_stars||4, nights: pkg.nights_mecca||0, distance: pkg.mecca_hotel_distance||'', description:'', room_tiers:[] }];
+      }
+      if (madinaHotels.length === 0 && pkg.medina_hotel) {
+        madinaHotels = [{ name: pkg.medina_hotel, stars: pkg.medina_hotel_stars||4, nights: pkg.nights_medina||0, distance: pkg.medina_hotel_distance||'', description:'', room_tiers:[] }];
+      }
+      renderHotels('mecca');
+      renderHotels('madina');
+
+      // Image preview for existing package
+      if (pkg.thumbnail_url) {
+        document.getElementById('pThumbnail').value = pkg.thumbnail_url;
+        previewImage(pkg.thumbnail_url);
+      }
+    } else {
+      document.getElementById('pkgModalTitle').textContent = 'إضافة برنامج جديد';
+      renderHotels('mecca');
+      renderHotels('madina');
+    }
+
+    renderItinerary();
+    // Reset to first tab
+    if (typeof switchPkgTab === 'function') switchPkgTab('basic');
+    // Sync departure city chips
+    const depCity = document.getElementById('pDepartureCity')?.value;
+    if (depCity && typeof syncDepartureCityChips === 'function') syncDepartureCityChips(depCity);
+    // Sync flight type UI
+    const ft = document.getElementById('pFlightType')?.value || 'مباشر';
+    if (typeof setFlightType === 'function') setFlightType(ft);
+    // Sync transport UI
+    const tr = document.getElementById('pTransport')?.value || 'باص VIP';
+    document.querySelectorAll('.transport-btn').forEach(b => {
+      const match = b.textContent.trim() === tr;
+      b.className = 'flex-1 border-2 rounded-xl p-3 text-center transition font-bold text-sm transport-btn ' + (match ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-500');
+      b.style.minWidth = '120px';
+    });
+    // Sync price badges
+    if (typeof updatePriceSummary === 'function') updatePriceSummary();
+    if (typeof updateSummaryBar === 'function') updateSummaryBar();
+    document.getElementById('pkgModal').classList.remove('hidden');
+    document.getElementById('pkgModal').classList.add('flex');
+  }
+
+  function closeModal() {
+    document.getElementById('pkgModal').classList.add('hidden');
+    document.getElementById('pkgModal').classList.remove('flex');
+  }
+
+  // ── Save (Insert or Update) ────────────────────────
+  async function savePackage() {
+    const title    = document.getElementById('pTitle').value.trim();
+    const price    = document.getElementById('pPrice').value;
+    const depDate  = document.getElementById('pDeparture').value;
+    const retDate  = document.getElementById('pReturn').value;
+    if (!title || !price || !depDate || !retDate) {
+      alert('يرجى ملء الحقول الإلزامية: العنوان، السعر، التواريخ');
+      return;
+    }
+
+    // Validate hotel arrays: at least one hotel must have a name
+    if (meccaHotels.length === 0) {
+      alert('يرجى إضافة فندق واحد على الأقل في مكة المكرمة');
+      return;
+    }
+    if (madinaHotels.length === 0) {
+      alert('يرجى إضافة فندق واحد على الأقل في المدينة المنورة');
+      return;
+    }
+    const invalidMecca  = meccaHotels.some(h => !h.name.trim());
+    const invalidMadina = madinaHotels.some(h => !h.name.trim());
+    if (invalidMecca)  { alert('يرجى إدخال اسم لكل فندق في مكة المكرمة');   return; }
+    if (invalidMadina) { alert('يرجى إدخال اسم لكل فندق في المدينة المنورة'); return; }
+
+    // Validate room tiers: label, price, capacity required
+    for (const h of [...meccaHotels, ...madinaHotels]) {
+      for (const t of h.room_tiers) {
+        if (!t.label.trim() || !(t.price > 0)) {
+          alert(`يرجى ملء اسم وسعر لكل نوع غرفة في فندق "${h.name}"`);
+          return;
+        }
+        if (!t.capacity || t.capacity < 1) {
+          alert(`يرجى تحديد سعة الغرفة (عدد الأشخاص) لنوع "${t.label}" في فندق "${h.name}"`);
+          return;
+        }
+      }
+    }
+
+    // Keep legacy flat fields from first hotel for backward compat
+    const mHotel   = meccaHotels[0]?.name   || '';
+    const medHotel = madinaHotels[0]?.name  || '';
+
+    const incLines = document.getElementById('pIncludes').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const excLines = document.getElementById('pExcludes').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const maxSeats = parseInt(document.getElementById('pMaxSeats').value, 10) || 40;
+
+    const payload = {
+      title,
+      category:              document.getElementById('pCategory').value,
+      season:                document.getElementById('pSeason').value,
+      departure_date:        depDate,
+      return_date:           retDate,
+      duration_nights:       parseInt(document.getElementById('pDuration').value, 10) || 0,
+      departure_city:        document.getElementById('pDepartureCity').value,
+      price_per_person:      parseFloat(price),
+      price_child:           parseFloat(document.getElementById('pPriceChild').value) || null,
+      price_infant:          parseFloat(document.getElementById('pPriceInfant').value) || null,
+      max_seats:             maxSeats,
+      available_seats:       editingId ? undefined : maxSeats, // only set on new
+      discount_percent:      parseInt(document.getElementById('pDiscount').value, 10) || 0,
+      mecca_hotel:           mHotel,
+      mecca_hotel_stars:     parseInt(document.getElementById('pMeccaStars').value, 10),
+      nights_mecca:          parseInt(document.getElementById('pNightsMecca').value, 10) || 0,
+      mecca_hotel_distance:  document.getElementById('pMeccaDist').value.trim(),
+      medina_hotel:          medHotel,
+      medina_hotel_stars:    parseInt(document.getElementById('pMedinaStars').value, 10),
+      nights_medina:         parseInt(document.getElementById('pNightsMedina').value, 10) || 0,
+      medina_hotel_distance: document.getElementById('pMedinaDist').value.trim(),
+      flight_type:           document.getElementById('pFlightType').value,
+      airline:               document.getElementById('pAirline').value.trim(),
+      flight_ticket_price:   parseFloat(document.getElementById('pFlightTicketPrice').value) || 0,
+      transport_type:        document.getElementById('pTransport').value,
+      thumbnail_url:         document.getElementById('pThumbnail').value.trim() || null,
+      includes:              incLines,
+      excludes:              excLines,
+      itinerary:             itineraryItems,
+      mecca_hotels:          meccaHotels,
+      madina_hotels:         madinaHotels,
+      notes:                 document.getElementById('pNotes').value.trim(),
+      visa_included:         document.getElementById('pVisaIncluded').checked,
+      is_featured:           document.getElementById('pIsFeatured').checked,
+      is_active:             document.getElementById('pIsActive').checked,
+      is_preorder:           document.getElementById('pIsPreorder').checked,
+      preorder_note:         document.getElementById('pPreorderNote').value.trim() || null,
+      doc_conditions:        document.getElementById('pDocConditions').value.trim() || null,
+      documents_config: {
+        // Legacy flat (keep for backward compat — mirrors adult settings)
+        passport:       document.querySelector('input[name="adult_doc_passport"]:checked')?.value       || 'required',
+        national_id:    document.querySelector('input[name="adult_doc_national_id"]:checked')?.value    || 'optional',
+        personal_photo: document.querySelector('input[name="adult_doc_personal_photo"]:checked')?.value || 'required',
+        meningitis:     document.querySelector('input[name="adult_doc_meningitis"]:checked')?.value     || 'optional',
+        covid:          document.querySelector('input[name="adult_doc_covid"]:checked')?.value          || 'optional',
+        birth_cert:     document.querySelector('input[name="adult_doc_birth_cert"]:checked')?.value     || 'hidden',
+        // Per-traveler-type doc config
+        adult: {
+          passport:       document.querySelector('input[name="adult_doc_passport"]:checked')?.value       || 'required',
+          national_id:    document.querySelector('input[name="adult_doc_national_id"]:checked')?.value    || 'optional',
+          personal_photo: document.querySelector('input[name="adult_doc_personal_photo"]:checked')?.value || 'required',
+          meningitis:     document.querySelector('input[name="adult_doc_meningitis"]:checked')?.value     || 'optional',
+          covid:          document.querySelector('input[name="adult_doc_covid"]:checked')?.value          || 'optional',
+          birth_cert:     document.querySelector('input[name="adult_doc_birth_cert"]:checked')?.value     || 'hidden',
+        },
+        child: {
+          passport:       document.querySelector('input[name="child_doc_passport"]:checked')?.value       || 'required',
+          national_id:    document.querySelector('input[name="child_doc_national_id"]:checked')?.value    || 'hidden',
+          personal_photo: document.querySelector('input[name="child_doc_personal_photo"]:checked')?.value || 'required',
+          meningitis:     document.querySelector('input[name="child_doc_meningitis"]:checked')?.value     || 'optional',
+          covid:          document.querySelector('input[name="child_doc_covid"]:checked')?.value          || 'optional',
+          birth_cert:     document.querySelector('input[name="child_doc_birth_cert"]:checked')?.value     || 'required',
+        },
+        infant: {
+          passport:       document.querySelector('input[name="infant_doc_passport"]:checked')?.value       || 'optional',
+          national_id:    document.querySelector('input[name="infant_doc_national_id"]:checked')?.value    || 'hidden',
+          personal_photo: document.querySelector('input[name="infant_doc_personal_photo"]:checked')?.value || 'optional',
+          meningitis:     document.querySelector('input[name="infant_doc_meningitis"]:checked')?.value     || 'hidden',
+          covid:          document.querySelector('input[name="infant_doc_covid"]:checked')?.value          || 'hidden',
+          birth_cert:     document.querySelector('input[name="infant_doc_birth_cert"]:checked')?.value     || 'required',
+        },
+        custom_docs:    collectCustomDocs(),
+      },
+    };
+
+    // Remove undefined keys
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
+    let error;
+    if (editingId) {
+      ({ error } = await window.db.from('packages').update(payload).eq('id', editingId));
+    } else {
+      ({ error } = await window.db.from('packages').insert(payload));
+    }
+
+    if (error) {
+      alert('خطأ في الحفظ: ' + error.message);
+    } else {
+      if (editingId) {
+        logAudit('update', 'packages', editingId, payload.title);
+      } else {
+        logAudit('create', 'packages', null, payload.title);
+      }
+      closeModal();
+      loadAdminPackages();
+    }
+  }
+
+  // ── Load Packages Table ────────────────────────────
+  async function loadAdminPackages() {
+    if (!window.db) { setTimeout(loadAdminPackages, 500); return; }
+    const { data, error } = await window.db.from('packages').select('*').order('created_at', { ascending: false });
+    if (error) return;
+
+    allPackages = data; // cache for PDF lookup, edit modal, etc.
+
+    const tbody = document.getElementById('adminPackagesList');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-gray-400">لا توجد برامج بعد</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    data.forEach(pkg => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-gray-50';
+
+      const catColors = {
+        'اقتصادي':'bg-green-100 text-green-800', 'متميز':'bg-blue-100 text-blue-800',
+        'VIP':'bg-yellow-100 text-yellow-800', 'عائلي':'bg-teal-100 text-teal-800',
+        'نسائي':'bg-pink-100 text-pink-800', 'شباب':'bg-orange-100 text-orange-800',
+        'رمضان':'bg-purple-100 text-purple-800',
+        'حج اقتصادي':'bg-emerald-100 text-emerald-800', 'حج متميز':'bg-cyan-100 text-cyan-800',
+        'حج VIP':'bg-amber-100 text-amber-800',
+        'زيارات دينية':'bg-indigo-100 text-indigo-800', 'سياحي':'bg-sky-100 text-sky-800',
+        'مخصص':'bg-gray-100 text-gray-700',
+      };
+      const catClass = catColors[pkg.category] || 'bg-gray-100 text-gray-800';
+      const seatsColor = pkg.available_seats <= 5 ? 'text-red-600' : pkg.available_seats <= 10 ? 'text-orange-500' : 'text-green-700';
+
+      tr.innerHTML = `
+        <td class="p-4">
+          <div class="flex items-center gap-2">
+            ${pkg.thumbnail_url ? `<img src="${pkg.thumbnail_url}" class="w-10 h-10 rounded object-cover border shrink-0" onerror="this.style.display='none'">` : ''}
+            <div>
+              <p class="font-bold text-gray-800 max-w-[220px] truncate">${pkg.title}</p>
+              <p class="text-xs text-gray-400">${pkg.season || ''}</p>
+              ${(() => {
+                const mh = Array.isArray(pkg.mecca_hotels)  ? pkg.mecca_hotels  : [];
+                const dh = Array.isArray(pkg.madina_hotels) ? pkg.madina_hotels : [];
+                const hasMeccaTiers  = mh.length > 0 && mh.some(h => (h.room_tiers||[]).length > 0);
+                const hasMadinaTiers = dh.length > 0 && dh.some(h => (h.room_tiers||[]).length > 0);
+                if (!hasMeccaTiers || !hasMadinaTiers) {
+                  return `<span class="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold mt-0.5"><i class="fa-solid fa-triangle-exclamation fa-xs"></i>يحتاج فنادق وغرف</span>`;
+                }
+                return '';
+              })()}
+            </div>
+          </div>
+        </td>
+        <td class="p-4"><span class="text-xs font-bold px-2 py-1 rounded ${catClass}">${pkg.category}</span></td>
+        <td class="p-4 text-xs font-mono">${pkg.departure_date}</td>
+        <td class="p-4 font-bold text-green-700">${Number(pkg.price_per_person).toLocaleString()} ج.م</td>
+        <td class="p-4 text-center font-bold ${seatsColor}">${pkg.available_seats} / ${pkg.max_seats}</td>
+        <td class="p-4 text-center">
+          <span class="text-xs px-2 py-1 rounded font-bold ${pkg.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}">
+            ${pkg.is_active ? 'نشط' : 'مخفي'}
+          </span>
+        </td>
+        <td class="p-4">
+          <div class="flex items-center justify-center gap-2">
+            <button class="editBtn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1" data-role="admin" data-id="${pkg.id}">
+              <i class="fa-solid fa-pen"></i> تعديل
+            </button>
+            <button class="toggleBtn text-xs px-3 py-1.5 rounded-lg font-bold transition ${pkg.is_active ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' : 'bg-green-100 hover:bg-green-200 text-green-700'}" data-id="${pkg.id}" data-active="${!pkg.is_active}">
+              ${pkg.is_active ? 'إخفاء' : 'إظهار'}
+            </button>
+            <button class="deleteBtn bg-red-100 hover:bg-red-500 hover:text-white text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition" data-role="super_admin" data-id="${pkg.id}">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+            <button class="pdfBtn bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1" data-id="${pkg.id}">
+              <i class="fa-solid fa-file-pdf"></i> PDF
+            </button>
+          </div>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+
+    // Attach events
+    document.querySelectorAll('.editBtn').forEach(btn => {
+      if (!requireRole('admin')) return;
+      btn.addEventListener('click', () => {
+        const pkg = data.find(p => p.id === btn.dataset.id);
+        if (pkg) openModal(pkg);
+      });
+    });
+    document.querySelectorAll('.toggleBtn').forEach(btn => {
+      btn.addEventListener('click', () => toggleActive(btn.dataset.id, btn.dataset.active === 'true'));
+    });
+    document.querySelectorAll('.deleteBtn').forEach(btn => {
+      btn.addEventListener('click', () => deletePackage(btn.dataset.id));
+    });
+    document.querySelectorAll('.pdfBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pkg = allPackages.find(p => p.id === btn.dataset.id);
+        if (pkg) printPackageDetailPDF(pkg);
+      });
+    });
+  }
+
+  async function toggleActive(id, newState) {
+    if (!confirm('تغيير حالة ظهور البرنامج؟')) return;
+    const pkg = allPackages.find(p => p.id === id);
+    await window.db.from('packages').update({ is_active: newState }).eq('id', id);
+    logAudit('update', 'packages', id, pkg?.title, { field: 'is_active', to: newState });
+    loadAdminPackages();
+  }
+
+  async function deletePackage(id) {
+    if (!requireRole('super_admin')) return;
+    if (!confirm('تحذير: سيتم حذف البرنامج نهائياً! هل توافق؟')) return;
+    const pkg = allPackages.find(p => p.id === id);
+    await window.db.from('packages').delete().eq('id', id);
+    logAudit('delete', 'packages', id, pkg?.title);
+    loadAdminPackages();
+  }
+
+  // ── Init ──────────────────────────────────────────
+  // ── Print Package Detail PDF ──────────────────────────
+  function printPackageDetailPDF(pkg) {
+    const fmt = (d) => d ? new Date(d).toLocaleDateString('ar-EG') : '—';
+    const stars = (n) => '★'.repeat(n||0) + '☆'.repeat(5-(n||0));
+    const currency = (n) => n ? Number(n).toLocaleString('ar-EG') + ' ج.م' : '—';
+
+    const includesHtml = (pkg.includes||[]).length
+      ? (pkg.includes).map(i=>`<li>✅ ${i}</li>`).join('')
+      : '<li style="color:#9ca3af">لا توجد بيانات</li>';
+
+    const excludesHtml = (pkg.excludes||[]).length
+      ? (pkg.excludes).map(i=>`<li>❌ ${i}</li>`).join('')
+      : '<li style="color:#9ca3af">لا توجد بيانات</li>';
+
+    const itinHtml = (pkg.itinerary||[]).length
+      ? (pkg.itinerary).map(d=>`
+          <div style="padding:8px 0;border-bottom:1px solid #f3f4f6;page-break-inside:avoid">
+            <strong style="color:#1B5E20">اليوم ${d.day}: ${d.title||''}</strong>
+            ${d.location ? `<span style="background:#f0fdf4;color:#1B5E20;font-size:10px;padding:1px 6px;border-radius:10px;margin-right:6px">${d.location}</span>` : ''}
+            <p style="font-size:11px;color:#374151;margin-top:3px">${d.description||''}</p>
+          </div>`).join('')
+      : '<p style="color:#9ca3af;font-size:11px">لا توجد خطة يومية مضافة</p>';
+
+    const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تفاصيل — ${pkg.title}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important; }
+  body { font-family:'Cairo',sans-serif;font-size:12px;color:#1a1a1a;background:#fff;padding:22px; }
+  .header { background:#1B5E20;color:#fff;padding:18px 22px;border-radius:8px;margin-bottom:16px; }
+  .header h1 { font-size:20px;font-weight:700;margin-bottom:4px; }
+  .header p  { font-size:11px;opacity:.8; }
+  .badge { display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-right:6px; }
+  .badge-eco  { background:#dcfce7;color:#15803d; }
+  .badge-prem { background:#dbeafe;color:#1d4ed8; }
+  .badge-vip  { background:#fef9c3;color:#854d0e; }
+  .badge-fam  { background:#f0fdfa;color:#0f766e; }
+  .price-box { background:#1B5E20;color:#fff;padding:14px;border-radius:8px;text-align:center;margin-bottom:14px; }
+  .price-box .amount { font-size:26px;font-weight:700;color:#DAA520; }
+  .price-box .label  { font-size:11px;opacity:.8; }
+  .grid2 { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px; }
+  .card { background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px; }
+  .card h3 { font-size:12px;font-weight:700;color:#1B5E20;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:7px; }
+  .card label { font-size:10px;color:#9ca3af;display:block;margin-top:5px; }
+  .card p { font-weight:600;font-size:12px; }
+  .card .stars { color:#B8860B;font-size:13px; }
+  .section { margin-bottom:14px; }
+  .section h2 { font-size:13px;font-weight:700;color:#1B5E20;border-right:4px solid #B8860B;padding-right:8px;margin-bottom:7px; }
+  ul { padding-right:16px; }
+  li { font-size:11px;margin-bottom:3px; }
+  .sig-row { display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:18px; }
+  .sig-box { text-align:center; }
+  .sig-line { border-bottom:1.5px solid #1B5E20;height:55px;width:130px;margin:0 auto; }
+  .footer { text-align:center;font-size:10px;color:#9ca3af;margin-top:14px;border-top:1px solid #e5e7eb;padding-top:8px; }
+  @media print { button{display:none} }
+</style>
+  <style>
+
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>${pkg.title}</h1>
+  <p>نيو سي برنسيس فرع الزقازيق &nbsp;|&nbsp; د. شيماء السعداوي | الداعية د. محمد دحروج | أ. ياسمين منصور &nbsp;|&nbsp; 01555154996</p>
+  <p style="margin-top:4px">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p>
+</div>
+
+<div style="margin-bottom:12px">
+  <span class="badge badge-${ {'اقتصادي':'eco','متميز':'prem','VIP':'vip','عائلي':'fam','نسائي':'nis','شباب':'sha','رمضان':'ram','حج اقتصادي':'heco','حج متميز':'hprem','حج VIP':'hvip','زيارات دينية':'rel','سياحي':'tour','مخصص':'cust'}[pkg.category]||'eco' }">${pkg.category}</span>
+  ${pkg.season ? `<span class="badge" style="background:#fef3c7;color:#92400e">${pkg.season}</span>` : ''}
+  ${pkg.is_active ? '<span class="badge" style="background:#dcfce7;color:#15803d">نشط</span>' : '<span class="badge" style="background:#fee2e2;color:#991b1b">مخفي</span>'}
+</div>
+
+<div class="price-box">
+  <div class="label">سعر الفرد البالغ</div>
+  <div class="amount">${currency(pkg.price_per_person)}</div>
+  ${pkg.price_child ? `<div style="font-size:11px;opacity:.8;margin-top:3px">سعر الطفل: ${currency(pkg.price_child)}</div>` : ''}
+  ${pkg.price_infant ? `<div style="font-size:11px;opacity:.8;margin-top:3px">سعر الرضيع: ${currency(pkg.price_infant)}</div>` : ''}
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h3>📅 معلومات الرحلة</h3>
+    <label>تاريخ المغادرة</label><p>${fmt(pkg.departure_date)}</p>
+    <label>تاريخ العودة</label><p>${fmt(pkg.return_date)}</p>
+    <label>المدة</label><p>${pkg.duration_nights} ليالي</p>
+    <label>مدينة المغادرة</label><p>${pkg.departure_city||'—'}</p>
+    <label>نوع الطيران</label><p>${pkg.flight_type||'—'}</p>
+    <label>شركة الطيران</label><p>${pkg.airline||'—'}</p>
+    <label>المقاعد المتاحة</label><p style="color:#dc2626;font-weight:700">${pkg.available_seats} من ${pkg.max_seats}</p>
+    ${pkg.visa_included ? '<p style="color:#16a34a;font-size:11px;margin-top:4px">✅ التأشيرة مشمولة</p>' : ''}
+  </div>
+  <div class="card">
+    <h3>🏨 الفنادق</h3>
+    <label>فندق مكة المكرمة</label>
+    <p>${pkg.mecca_hotel||'—'}</p>
+    <div class="stars">${stars(pkg.mecca_hotel_stars)}</div>
+    <label>المسافة من الحرم</label><p>${pkg.mecca_hotel_distance||'—'}</p>
+    <label>عدد الليالي بمكة</label><p>${pkg.nights_mecca} ليالي</p>
+    <label style="margin-top:8px">فندق المدينة المنورة</label>
+    <p>${pkg.medina_hotel||'—'}</p>
+    <div class="stars">${stars(pkg.medina_hotel_stars)}</div>
+    <label>المسافة من المسجد النبوي</label><p>${pkg.medina_hotel_distance||'—'}</p>
+    <label>عدد الليالي بالمدينة</label><p>${pkg.nights_medina} ليالي</p>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="section">
+    <h2>✅ البرنامج يشمل</h2>
+    <ul>${includesHtml}</ul>
+  </div>
+  <div class="section">
+    <h2>❌ البرنامج لا يشمل</h2>
+    <ul>${excludesHtml}</ul>
+  </div>
+</div>
+
+<div class="section">
+  <h2>📋 خطة الرحلة اليومية</h2>
+  ${itinHtml}
+</div>
+
+${pkg.notes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:14px;font-size:11px;color:#92400e"><strong>ملاحظات:</strong> ${pkg.notes}</div>` : ''}
+
+<div class="sig-row">
+  <div class="sig-box">
+    <div style="border:2px dashed #d1d5db;border-radius:50%;width:80px;height:80px;margin:0 auto;display:flex;align-items:center;justify-content:center;">
+      <span style="font-size:9px;color:#d1d5db;font-weight:700">ختم الشركة</span>
+    </div>
+    <p style="font-size:10px;color:#9ca3af;margin-top:5px">الختم الرسمي</p>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <p style="font-size:11px;font-weight:700;color:#1B5E20;margin-top:5px">د. شيماء السعداوي</p>
+    <p style="font-size:10px;color:#9ca3af">المشرف الإداري — التوقيع</p>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <p style="font-size:11px;font-weight:700;color:#1B5E20;margin-top:5px">الداعية د. محمد دحروج</p>
+    <p style="font-size:10px;color:#9ca3af">المشرف الديني — التوقيع</p>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <p style="font-size:11px;font-weight:700;color:#1B5E20;margin-top:5px">أ. ياسمين منصور</p>
+    <p style="font-size:10px;color:#9ca3af">مشرف رحلات — التوقيع</p>
+  </div>
+</div>
+
+<div class="footer">
+  نيو سي برنسيس فرع الزقازيق &nbsp;|&nbsp; 01555154996 &nbsp;|&nbsp; 01031777295 &nbsp;|&nbsp; 01093475254<br>
+  للحجز تواصل معنا عبر الواتساب أو أحد أرقام التليفون المذكورة
+</div>
+
+<' + 'script>window.onload=()=>window.print();</' + 'script>
+</body>
+</html>`;
+
+    // Use blob URL — avoids popup blockers completely
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.target   = '_blank';
+    a.rel      = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    adminCheckAuth().then(ok => { if (ok) loadAdminPackages(); });
+});
+// ══════════════════════════════════════
+  //  DOCUMENT CONFIG HELPERS
+  // ══════════════════════════════════════
+
+  // Custom docs state: [{label, value}]
+  let _customDocs = [];
+
+  function resetCustomDocs() {
+    _customDocs = [];
+    renderCustomDocRows();
+  }
+
+  function addCustomDoc(label, value) {
+    const name = label || document.getElementById('customDocName')?.value?.trim();
+    if (!name) return;
+    const key  = value || 'doc_custom_' + Date.now();
+    if (_customDocs.find(d => d.label === name)) return; // no duplicate
+    _customDocs.push({ label: name, value: key });
+    document.getElementById('customDocName').value = '';
+    renderCustomDocRows();
+  }
+
+  function quickAddDoc(label) {
+    addCustomDoc(label, 'doc_custom_' + label.replace(/\s+/g, '_'));
+  }
+
+  function removeCustomDoc(idx) {
+    _customDocs.splice(idx, 1);
+    renderCustomDocRows();
+  }
+
+  function renderCustomDocRows() {
+    const container = document.getElementById('customDocRows');
+    if (!container) return;
+    if (_customDocs.length === 0) { container.innerHTML = ''; return; }
+    container.innerHTML = _customDocs.map((cd, i) => `
+      <tr class="bg-blue-50/60">
+        <td class="py-2 font-medium text-blue-800">
+          <i class="fa-solid fa-file text-blue-400 text-xs ml-1"></i>${cd.label}
+          <button type="button" onclick="removeCustomDoc(${i})" class="mr-2 text-red-400 hover:text-red-600 text-xs"><i class="fa-solid fa-xmark"></i></button>
+        </td>
+        <td class="text-center"><input type="radio" name="doc_custom_${i}" value="required" class="accent-red-500 w-4 h-4"></td>
+        <td class="text-center"><input type="radio" name="doc_custom_${i}" value="optional" checked class="accent-amber-500 w-4 h-4"></td>
+        <td class="text-center"><input type="radio" name="doc_custom_${i}" value="hidden" class="accent-gray-400 w-4 h-4"></td>
+      </tr>`).join('');
+  }
+
+  function collectCustomDocs() {
+    return _customDocs.map((cd, i) => ({
+      label: cd.label,
+      key:   cd.value,
+      status: document.querySelector(`input[name="doc_custom_${i}"]:checked`)?.value || 'optional',
+    }));
+  }
+
+  // ── Presets ──
+  const DOC_PRESETS = {
+    umrah_standard: { passport:'required', national_id:'optional', personal_photo:'required', meningitis:'optional', covid:'optional', birth_cert:'optional' },
+    umrah_ramadan:  { passport:'required', national_id:'required', personal_photo:'required', meningitis:'required', covid:'optional', birth_cert:'optional' },
+    hajj:           { passport:'required', national_id:'required', personal_photo:'required', meningitis:'required', covid:'required', birth_cert:'required' },
+    minimal:        { passport:'required', national_id:'hidden',   personal_photo:'hidden',   meningitis:'hidden',   covid:'hidden',   birth_cert:'hidden' },
+  };
+
+  function applyDocPreset(preset) {
+    const cfg = DOC_PRESETS[preset];
+    if (!cfg) return;
+    Object.entries(cfg).forEach(([key, val]) => {
+      const r = document.querySelector(`input[name="doc_${key}"][value="${val}"]`);
+      if (r) r.checked = true;
+    });
+  }
+
+  // ── Append condition line ──
+  function appendDocCondition(text) {
+    const ta = document.getElementById('pDocConditions');
+    if (!ta) return;
+    const current = ta.value.trim();
+    ta.value = current ? current + '\n- ' + text : '- ' + text;
+  }
+
+  // ══════════════════════════════════════
+  //  CUSTOM CATEGORIES & SEASONS
+  // ══════════════════════════════════════
+
+  const SETTINGS_KEY_CAT    = 'custom_categories';
+  const SETTINGS_KEY_SEASON = 'custom_seasons';
+
+  // Load custom options from Supabase app_settings and inject into selects
+  async function loadCustomOptions() {
+    try {
+      const { data, error } = await window.db
+        .from('app_settings')
+        .select('key, value')
+        .in('key', [SETTINGS_KEY_CAT, SETTINGS_KEY_SEASON]);
+      if (error) return; // table may not exist yet — silent fail
+      (data || []).forEach(row => {
+        const list = Array.isArray(row.value) ? row.value : [];
+        if (row.key === SETTINGS_KEY_CAT)    list.forEach(v => injectOption('pCategory', v));
+        if (row.key === SETTINGS_KEY_SEASON) list.forEach(v => injectOption('pSeason', v));
+      });
+    } catch(e) { /* table doesn't exist yet — ignore */ }
+  }
+
+  function injectOption(selectId, value) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    // Don't duplicate
+    if ([...sel.options].some(o => o.value === value)) return;
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = value;
+    // Find or create "مضاف" optgroup
+    let grp = [...sel.querySelectorAll('optgroup')].find(g => g.label === 'مضاف');
+    if (!grp) { grp = document.createElement('optgroup'); grp.label = 'مضاف'; sel.appendChild(grp); }
+    grp.appendChild(opt);
+  }
+
+  async function saveCustomOption(type, value) {
+    const key = type === 'category' ? SETTINGS_KEY_CAT : SETTINGS_KEY_SEASON;
+    try {
+      // Fetch existing list
+      const { data } = await window.db.from('app_settings').select('value').eq('key', key).maybeSingle();
+      const list = Array.isArray(data?.value) ? data.value : [];
+      if (list.includes(value)) return; // already saved
+      list.push(value);
+      await window.db.from('app_settings').upsert({ key, value: list }, { onConflict: 'key' });
+    } catch(e) { /* silent — option still works for this session */ }
+  }
+
+  async function deleteCustomOption(type, value) {
+    const key = type === 'category' ? SETTINGS_KEY_CAT : SETTINGS_KEY_SEASON;
+    try {
+      const { data } = await window.db.from('app_settings').select('value').eq('key', key).maybeSingle();
+      const list = (Array.isArray(data?.value) ? data.value : []).filter(v => v !== value);
+      await window.db.from('app_settings').upsert({ key, value: list }, { onConflict: 'key' });
+    } catch(e) {}
+  }
+
+  // ── Inline popup ──
+  let _addOptionType = null; // 'category' | 'season'
+
+  function showAddOption(type) {
+    _addOptionType = type;
+    const label = type === 'category' ? 'فئة' : 'موسم';
+    document.getElementById('addOptionLabel').textContent = label;
+    document.getElementById('addOptionInput').value = '';
+    document.getElementById('addOptionPopup').classList.remove('hidden');
+    setTimeout(() => document.getElementById('addOptionInput').focus(), 50);
+  }
+
+  function hideAddOption() {
+    document.getElementById('addOptionPopup').classList.add('hidden');
+    _addOptionType = null;
+  }
+
+  async function confirmAddOption() {
+    const val = document.getElementById('addOptionInput').value.trim();
+    if (!val) { document.getElementById('addOptionInput').focus(); return; }
+    const selectId = _addOptionType === 'category' ? 'pCategory' : 'pSeason';
+    injectOption(selectId, val);
+    document.getElementById(selectId).value = val;
+    await saveCustomOption(_addOptionType, val);
+    hideAddOption();
+    if (typeof showToast === 'function') showToast('تمت الإضافة بنجاح ✓');
+  }
+
+  // Enter key confirms
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('addOptionPopup').classList.contains('hidden')) {
+      e.preventDefault();
+      confirmAddOption();
+    }
+    if (e.key === 'Escape') hideAddOption();
+  });
+
+  // Load on page ready
+  document.addEventListener('DOMContentLoaded', loadCustomOptions);
+</script>
+
+<!-- ── Add Option Popup ── -->
+<div id="addOptionPopup" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" dir="rtl">
+    <h3 class="font-bold text-lg text-darkBg mb-4">
+      <i class="fa-solid fa-plus-circle text-primary ml-2"></i>
+      إضافة <span id="addOptionLabel">فئة</span> جديدة
+    </h3>
+    <input type="text" id="addOptionInput" placeholder="اكتب الاسم هنا..."
+      class="w-full border-2 border-gray-200 focus:border-primary rounded-xl p-3 text-base outline-none mb-4 font-bold">
+    <div class="flex gap-3">
+      <button onclick="confirmAddOption()"
+        class="flex-1 bg-primary hover:bg-green-700 text-white py-2.5 rounded-xl font-bold transition">
+        <i class="fa-solid fa-check ml-1"></i> إضافة
+      </button>
+      <button onclick="hideAddOption()"
+        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-bold transition">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /flex wrapper -->
+</body>
+</html>

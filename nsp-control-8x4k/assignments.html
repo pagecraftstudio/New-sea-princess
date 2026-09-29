@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>جدول التعيينات اليومي | Flow Travel</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:flex; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; }
+    .modal { background:#fff; border-radius:16px; padding:28px; width:100%; max-width:560px; margin:auto; }
+    .assign-row { transition:.15s; }
+    .assign-row:hover { background:#f9fafb; }
+    .conflict-warn { background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:8px 12px; font-size:.78rem; color:#92400e; }
+    input,select,textarea { font-family:'Cairo',sans-serif; }
+    .type-badge-driver  { background:#dbeafe; color:#1d4ed8; }
+    .type-badge-guide   { background:#ede9fe; color:#7c3aed; }
+    .type-badge-vehicle { background:#ffedd5; color:#c2410c; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-calendar-day ml-2 text-gold"></i>جدول التعيينات</h1>
+      <p class="erp-page-subtitle">تعيين السائقين والمرشدين والمركبات لرحلات اليوم</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="prevDay()" class="erp-page-btn px-3 py-2"><i class="fa-solid fa-chevron-right"></i></button>
+      <input type="date" id="dateSelector" onchange="loadSchedule()"
+             class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-bold">
+      <button onclick="nextDay()" class="erp-page-btn px-3 py-2"><i class="fa-solid fa-chevron-left"></i></button>
+      <button onclick="openModal()" class="bg-primary text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-lightGreen transition flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> تعيين جديد
+      </button>
+    </div>
+  </div>
+
+  <!-- Date label -->
+  <div class="mb-4">
+    <p id="dateLabelAr" class="text-lg font-bold text-gray-700"></p>
+  </div>
+
+  <!-- Filter by resource type -->
+  <div class="flex gap-2 mb-4 flex-wrap">
+    <button class="erp-page-btn active" onclick="setFilter('',this)">الكل</button>
+    <button class="erp-page-btn" onclick="setFilter('driver',this)"><i class="fa-solid fa-car ml-1"></i>سائقون</button>
+    <button class="erp-page-btn" onclick="setFilter('guide',this)"><i class="fa-solid fa-person ml-1"></i>مرشدون</button>
+    <button class="erp-page-btn" onclick="setFilter('vehicle',this)"><i class="fa-solid fa-bus ml-1"></i>مركبات</button>
+  </div>
+
+  <!-- Schedule table -->
+  <div class="erp-card overflow-x-auto">
+    <div id="scheduleBody">
+      <div class="text-center py-12 text-gray-400 animate-pulse">جارٍ التحميل…</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── ASSIGNMENT MODAL ── -->
+<div id="modal" class="modal-bg hidden" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h3 id="modalTitle" class="text-lg font-bold text-gray-800">تعيين جديد</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div class="col-span-2">
+        <label class="block text-xs font-bold text-gray-600 mb-1">ملف الرحلة <span class="text-red-500">*</span></label>
+        <select id="f_trip_file" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+          <option value="">— اختر رحلة —</option>
+        </select>
+      </div>
+      <div class="col-span-2">
+        <label class="block text-xs font-bold text-gray-600 mb-1">نوع المورد <span class="text-red-500">*</span></label>
+        <div class="flex gap-2">
+          <button class="flex-1 erp-page-btn active" onclick="setResourceType('driver',this)"><i class="fa-solid fa-car ml-1"></i>سائق</button>
+          <button class="flex-1 erp-page-btn" onclick="setResourceType('guide',this)"><i class="fa-solid fa-person ml-1"></i>مرشد</button>
+          <button class="flex-1 erp-page-btn" onclick="setResourceType('vehicle',this)"><i class="fa-solid fa-bus ml-1"></i>مركبة</button>
+        </div>
+      </div>
+      <div class="col-span-2">
+        <label class="block text-xs font-bold text-gray-600 mb-1" id="resourceLabel">اختر السائق <span class="text-red-500">*</span></label>
+        <select id="f_resource_id" onchange="checkConflict()"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+          <option value="">— اختر —</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">التاريخ <span class="text-red-500">*</span></label>
+        <input id="f_date" type="date" onchange="checkConflict()"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">الحالة</label>
+        <select id="f_status" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          <option value="scheduled">مجدول</option>
+          <option value="confirmed">مؤكد</option>
+          <option value="completed">منتهي</option>
+          <option value="cancelled">ملغي</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">وقت البدء</label>
+        <input id="f_time_start" type="time" onchange="checkConflict()"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">وقت الانتهاء</label>
+        <input id="f_time_end" type="time" onchange="checkConflict()"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">موقع الاستلام</label>
+        <input id="f_pickup" type="text" placeholder="المطار، الفندق…"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">موقع التسليم</label>
+        <input id="f_dropoff" type="text"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">عدد الركاب</label>
+        <input id="f_pax" type="number" min="1" value="1"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div class="col-span-2">
+        <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
+        <textarea id="f_notes" rows="2"
+                  class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"></textarea>
+      </div>
+    </div>
+
+    <div id="conflictWarn" class="conflict-warn hidden mb-3">
+      <i class="fa-solid fa-triangle-exclamation ml-1"></i>
+      <span id="conflictMsg">تعارض محتمل في الجدول</span>
+    </div>
+    <div id="modalError" class="hidden text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2 mb-3"></div>
+
+    <div class="flex gap-3 justify-end">
+      <button onclick="closeModal()" class="px-4 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50">إلغاء</button>
+      <button onclick="saveAssignment()" id="saveBtn" class="px-5 py-2 rounded-xl bg-primary text-white font-bold text-sm hover:bg-lightGreen transition">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let schedule = [];
+let currentFilter = '';
+let resourceType = 'driver';
+let editingId = null;
+let allDrivers = [], allGuides = [], allVehicles = [], tripFiles = [];
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+
+  // Set today or URL param date
+  const p = new URLSearchParams(window.location.search);
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('dateSelector').value = today;
+  updateDateLabel();
+
+  await Promise.all([loadResources(), loadSchedule()]);
+
+  // Pre-select resource from URL if coming from resource card
+  if (p.get('driver_id') || p.get('guide_id') || p.get('vehicle_id')) {
+    openModal();
+    if (p.get('driver_id'))  { setResourceType('driver');  document.getElementById('f_resource_id').value = p.get('driver_id'); }
+    if (p.get('guide_id'))   { setResourceType('guide');   document.getElementById('f_resource_id').value = p.get('guide_id'); }
+    if (p.get('vehicle_id')) { setResourceType('vehicle'); document.getElementById('f_resource_id').value = p.get('vehicle_id'); }
+  }
+
+  // Pre-select trip if coming from trip-file.html
+  if (p.get('trip_id')) {
+    openModal();
+    // Wait for trip select to be populated then set value
+    setTimeout(() => {
+      const tfSel = document.getElementById('f_trip_file');
+      if (tfSel) tfSel.value = p.get('trip_id');
+    }, 300);
+  }
+});
+
+async function loadResources() {
+  const [dRes, gRes, vRes, tfRes] = await Promise.all([
+    db.from('drivers').select('id,full_name,phone,status,default_vehicle_id').eq('status','available').order('full_name'),
+    db.from('guides').select('id,full_name,phone,status,languages').eq('status','available').order('full_name'),
+    db.from('vehicles').select('id,name_ar,plate_number,capacity,vehicle_type,status').eq('status','available').order('name_ar'),
+    db.from('trip_files').select('id,trip_ref,title').in('status',['planning','supplier_confirmation','ready','in_operation']).order('trip_ref'),
+  ]);
+  allDrivers  = dRes.data || [];
+  allGuides   = gRes.data || [];
+  allVehicles = vRes.data || [];
+  tripFiles   = tfRes.data || [];
+
+  // Populate trip file select
+  const tfSel = document.getElementById('f_trip_file');
+  tripFiles.forEach(tf => {
+    const o = document.createElement('option');
+    o.value = tf.id;
+    o.textContent = `${tf.trip_ref} — ${tf.title}`;
+    tfSel.appendChild(o);
+  });
+
+  populateResourceSelect();
+}
+
+function populateResourceSelect() {
+  const sel = document.getElementById('f_resource_id');
+  sel.innerHTML = '<option value="">— اختر —</option>';
+  let list = [];
+  if (resourceType === 'driver')  list = allDrivers.map(d => ({ id:d.id, label:`${d.full_name}${d.phone?' · '+d.phone:''}` }));
+  if (resourceType === 'guide')   list = allGuides.map(g  => ({ id:g.id, label:`${g.full_name}${g.languages?' · '+(g.languages||[]).join('/'): ''}` }));
+  if (resourceType === 'vehicle') list = allVehicles.map(v => ({ id:v.id, label:`${v.name_ar||v.plate_number||'?'} · ${v.capacity} راكب${v.plate_number?' · '+v.plate_number:''}` }));
+  list.forEach(r => {
+    const o = document.createElement('option'); o.value=r.id; o.textContent=r.label; sel.appendChild(o);
+  });
+  document.getElementById('resourceLabel').innerHTML =
+    (resourceType==='driver'?'اختر السائق':resourceType==='guide'?'اختر المرشد':'اختر المركبة') +
+    ' <span class="text-red-500">*</span>';
+}
+
+// ── Schedule ──────────────────────────────────────────────────────────────────
+async function loadSchedule() {
+  updateDateLabel();
+  const date = document.getElementById('dateSelector').value;
+  const { data, error } = await db.rpc('get_daily_schedule', { p_date: date });
+  schedule = data || [];
+  renderSchedule();
+}
+
+function renderSchedule() {
+  const list = currentFilter ? schedule.filter(r => r.resource_type === currentFilter) : schedule;
+  const el = document.getElementById('scheduleBody');
+  if (list.length === 0) {
+    el.innerHTML = `<div class="text-center py-16">
+      <i class="fa-solid fa-calendar-xmark text-gray-200 text-5xl mb-3 block"></i>
+      <p class="text-gray-400">لا توجد تعيينات لهذا اليوم</p>
+      <button onclick="openModal()" class="mt-3 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-lightGreen transition">+ إضافة تعيين</button>
+    </div>`;
+    return;
+  }
+
+  const RTYPE = { driver:'سائق', guide:'مرشد', vehicle:'مركبة' };
+  const RTYPE_BADGE = { driver:'type-badge-driver', guide:'type-badge-guide', vehicle:'type-badge-vehicle' };
+  const STATUS_LBL = { scheduled:'مجدول', confirmed:'مؤكد', completed:'منتهي', cancelled:'ملغي' };
+  const STATUS_COLOR = { scheduled:'#d97706', confirmed:'#16a34a', completed:'#6b7280', cancelled:'#dc2626' };
+
+  el.innerHTML = `
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500">الرحلة</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500">النوع</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500">المورد</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500 hidden md:table-cell">الوقت</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500 hidden lg:table-cell">الاستلام / التسليم</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500 hidden md:table-cell">الركاب</th>
+          <th class="text-right py-3 px-3 text-xs font-bold text-gray-500">الحالة</th>
+          <th class="py-3 px-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        ${list.map(r => `
+          <tr class="assign-row">
+            <td class="py-3 px-3">
+              <a href="/nsp-control-8x4k/trip-file.html?id=${r.trip_file_id}" class="font-bold text-primary hover:underline text-xs">${r.trip_ref||'—'}</a>
+              <p class="text-xs text-gray-400 truncate max-w-[120px]">${r.trip_title||''}</p>
+            </td>
+            <td class="py-3 px-3">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full ${RTYPE_BADGE[r.resource_type]||''}">${RTYPE[r.resource_type]||r.resource_type}</span>
+            </td>
+            <td class="py-3 px-3">
+              <p class="font-bold text-gray-800">${r.resource_name||'—'}</p>
+              ${r.resource_phone ? `<p class="text-xs text-gray-400">${r.resource_phone}</p>` : ''}
+              ${r.vehicle_plate  ? `<p class="text-xs text-gray-400">${r.vehicle_plate} · ${r.vehicle_cap} راكب</p>` : ''}
+            </td>
+            <td class="py-3 px-3 hidden md:table-cell text-xs text-gray-600">
+              ${r.time_start||''} ${r.time_end ? '← '+r.time_end : ''}
+            </td>
+            <td class="py-3 px-3 hidden lg:table-cell text-xs text-gray-500">
+              ${r.pickup_location||''} ${r.dropoff_location ? '← '+r.dropoff_location : ''}
+            </td>
+            <td class="py-3 px-3 hidden md:table-cell text-xs text-gray-600">${r.passenger_count||''}</td>
+            <td class="py-3 px-3">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:${STATUS_COLOR[r.status]||'#6b7280'}22;color:${STATUS_COLOR[r.status]||'#6b7280'}">
+                ${STATUS_LBL[r.status]||r.status}
+              </span>
+            </td>
+            <td class="py-3 px-3">
+              <button onclick="cancelAssignment('${r.assignment_id}')"
+                      class="text-xs text-red-400 hover:text-red-600 p-1 rounded" title="إلغاء">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.erp-page-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSchedule();
+}
+
+// ── Date Navigation ────────────────────────────────────────────────────────────
+function prevDay() { shiftDay(-1); }
+function nextDay() { shiftDay(+1); }
+function shiftDay(delta) {
+  const sel = document.getElementById('dateSelector');
+  const d = new Date(sel.value);
+  d.setDate(d.getDate() + delta);
+  sel.value = d.toISOString().split('T')[0];
+  loadSchedule();
+}
+function updateDateLabel() {
+  const sel = document.getElementById('dateSelector');
+  if (!sel.value) return;
+  const d = new Date(sel.value + 'T12:00:00');
+  document.getElementById('dateLabelAr').textContent =
+    d.toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'تعيين جديد';
+  document.getElementById('f_date').value = document.getElementById('dateSelector').value;
+  document.getElementById('f_trip_file').value = '';
+  document.getElementById('f_time_start').value = '';
+  document.getElementById('f_time_end').value = '';
+  document.getElementById('f_pickup').value = '';
+  document.getElementById('f_dropoff').value = '';
+  document.getElementById('f_pax').value = 1;
+  document.getElementById('f_notes').value = '';
+  document.getElementById('f_status').value = 'scheduled';
+  hideError(); hideConflict();
+  setResourceType('driver');
+  document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+function setResourceType(type, btn) {
+  resourceType = type;
+  document.querySelectorAll('#modal .erp-page-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const btns = document.querySelectorAll('#modal .erp-page-btn');
+    const idx = ['driver','guide','vehicle'].indexOf(type);
+    if (btns[idx]) btns[idx].classList.add('active');
+  }
+  populateResourceSelect();
+}
+
+async function checkConflict() {
+  const rid  = document.getElementById('f_resource_id').value;
+  const date = document.getElementById('f_date').value;
+  if (!rid || !date) return;
+  const ts = document.getElementById('f_time_start').value || null;
+  const te = document.getElementById('f_time_end').value || null;
+  const { data } = await db.rpc('check_resource_conflict', {
+    p_resource_type: resourceType,
+    p_resource_id:   rid,
+    p_date:          date,
+    p_time_start:    ts,
+    p_time_end:      te,
+    p_exclude_id:    editingId || null,
+  });
+  if (data) {
+    document.getElementById('conflictMsg').textContent =
+      `هذا ${resourceType==='driver'?'السائق':resourceType==='guide'?'المرشد':'المركبة'} مشغول في هذا الوقت`;
+    document.getElementById('conflictWarn').classList.remove('hidden');
+  } else {
+    hideConflict();
+  }
+}
+
+function hideConflict() { document.getElementById('conflictWarn').classList.add('hidden'); }
+function showError(msg) { const el=document.getElementById('modalError'); el.textContent=msg; el.classList.remove('hidden'); }
+function hideError() { document.getElementById('modalError').classList.add('hidden'); }
+
+async function saveAssignment() {
+  hideError();
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const tripId = document.getElementById('f_trip_file').value;
+    const rid    = document.getElementById('f_resource_id').value;
+    const date   = document.getElementById('f_date').value;
+    if (!tripId) { showError('ملف الرحلة مطلوب'); return; }
+    if (!rid)    { showError('اختر موردًا'); return; }
+    if (!date)   { showError('التاريخ مطلوب'); return; }
+
+    const user = (await db.auth.getUser()).data?.user;
+    const payload = {
+      trip_file_id:     tripId,
+      resource_type:    resourceType,
+      driver_id:        resourceType==='driver'  ? rid : null,
+      guide_id:         resourceType==='guide'   ? rid : null,
+      vehicle_id:       resourceType==='vehicle' ? rid : null,
+      assigned_date:    date,
+      time_start:       document.getElementById('f_time_start').value || null,
+      time_end:         document.getElementById('f_time_end').value   || null,
+      pickup_location:  document.getElementById('f_pickup').value.trim() || null,
+      dropoff_location: document.getElementById('f_dropoff').value.trim() || null,
+      passenger_count:  parseInt(document.getElementById('f_pax').value) || 1,
+      notes:            document.getElementById('f_notes').value.trim() || null,
+      status:           document.getElementById('f_status').value,
+      assigned_by:      user?.id || null,
+    };
+
+    const { error } = editingId
+      ? await db.from('resource_assignments').update(payload).eq('id', editingId)
+      : await db.from('resource_assignments').insert(payload);
+
+    if (error) { showError(error.message); return; }
+    closeModal();
+    await loadSchedule();
+  } finally {
+    btn.disabled = false; btn.textContent = 'حفظ';
+  }
+}
+
+async function cancelAssignment(id) {
+  if (!confirm('إلغاء هذا التعيين؟')) return;
+  const { error } = await db.from('resource_assignments').update({ status:'cancelled' }).eq('id', id);
+  if (error) { alert(error.message); return; }
+  await loadSchedule();
+}
+</script>
+</body>
+</html>

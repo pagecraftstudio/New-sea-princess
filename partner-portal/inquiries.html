@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الاستفسارات — بوابة الشركاء</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B"}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/partner-auth.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;background:#f8f9fa;}
+    i{font-family:'Font Awesome 6 Free'!important;font-weight:900!important;}
+    .partner-nav-item{display:inline-flex;align-items:center;padding:10px 14px;color:#9ca3af;font-size:13px;font-weight:600;text-decoration:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+    .partner-nav-item:hover{color:white;}
+    .partner-nav-item.active{color:#B8860B;border-bottom-color:#B8860B;}
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="sticky top-0 z-40 shadow-sm border-b border-gray-200" style="background:#0D1B0E">
+    <div class="flex items-center justify-between px-4 md:px-6 h-16">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,#1B5E20,#B8860B)"><i class="fa-solid fa-plane text-white text-xs"></i></div>
+        <span class="font-bold text-sm text-amber-400">Flow Travel</span><span class="text-gray-500 text-xs mr-2">— بوابة الشركاء</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-300 hidden md:block" id="partnerName">—</span>
+        <button onclick="partnerLogout()" class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5 border border-red-900 px-3 py-1.5 rounded-lg"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+      </div>
+    </div>
+    <div class="flex gap-1 px-4 md:px-6 overflow-x-auto" style="background:#111827;scrollbar-width:none">
+      <a href="dashboard.html" class="partner-nav-item">لوحة التحكم</a>
+      <a href="inquiries.html" class="partner-nav-item active">الاستفسارات</a>
+      <a href="quotes.html"    class="partner-nav-item">عروض الأسعار</a>
+      <a href="bookings.html"  class="partner-nav-item">الحجوزات</a>
+      <a href="finance.html"   class="partner-nav-item">المالية</a>
+    </div>
+  </header>
+
+  <main class="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full">
+    <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+      <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2"><i class="fa-solid fa-inbox text-blue-500"></i> الاستفسارات</h1>
+      <button onclick="openNewModal()" class="bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-green-800 transition-colors flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> استفسار جديد
+      </button>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="text-right py-3 px-4 font-semibold text-gray-600">رقم الاستفسار</th>
+            <th class="text-right py-3 px-4 font-semibold text-gray-600">الوجهة</th>
+            <th class="text-right py-3 px-4 font-semibold text-gray-600 hidden md:table-cell">تواريخ السفر</th>
+            <th class="text-right py-3 px-4 font-semibold text-gray-600 hidden md:table-cell">عدد المسافرين</th>
+            <th class="text-right py-3 px-4 font-semibold text-gray-600">الحالة</th>
+            <th class="py-3 px-4"></th>
+          </tr>
+        </thead>
+        <tbody id="inqTableBody">
+          <tr><td colspan="6" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-xl"></i></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- New Inquiry Modal -->
+  <div id="newInqModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between p-5 border-b border-gray-200">
+        <h2 class="font-bold text-gray-800">استفسار جديد</h2>
+        <button onclick="closeNewModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="newInqForm" class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">عنوان الرحلة <span class="text-red-500">*</span></label>
+          <input name="title" required class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">الوجهة <span class="text-red-500">*</span></label>
+          <input name="destination" required class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">فئة الفندق</label>
+          <select name="hotel_class" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">— اختر —</option>
+            <option value="3star">3 نجوم</option><option value="4star">4 نجوم</option>
+            <option value="5star">5 نجوم</option><option value="luxury">فاخر</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">تاريخ المغادرة</label>
+          <input type="date" name="travel_date_from" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">تاريخ العودة</label>
+          <input type="date" name="travel_date_to" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">عدد البالغين</label>
+          <input type="number" name="adults_count" value="1" min="1" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">عدد الأطفال</label>
+          <input type="number" name="children_count" value="0" min="0" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">النقل المطلوب</label>
+          <select name="transport" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">— اختر —</option>
+            <option value="flight">طيران</option><option value="bus">باص</option>
+            <option value="private">سيارة خاصة</option><option value="none">بدون نقل</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">لغة المرشد</label>
+          <select name="guide_language" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">— اختر —</option>
+            <option value="ar">عربي</option><option value="en">إنجليزي</option>
+            <option value="fr">فرنسي</option><option value="none">بدون مرشد</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">الميزانية التقريبية</label>
+          <input type="number" name="budget" min="0" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">الأنشطة المطلوبة</label>
+          <input name="activities" placeholder="مثال: رحلات بحرية، مواقع تاريخية…" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">تفاصيل الغرف / rooming list</label>
+          <textarea name="rooming_details" rows="2" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"></textarea>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">طلبات خاصة</label>
+          <textarea name="special_requests" rows="2" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"></textarea>
+        </div>
+        <div class="col-span-2 flex gap-3 justify-end pt-2">
+          <button type="button" onclick="closeNewModal()" class="px-5 py-2 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">إلغاء</button>
+          <button type="submit" class="px-5 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-green-800 flex items-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> إرسال الاستفسار
+          </button>
+        </div>
+        <div id="inqFormErr" class="col-span-2 text-red-500 text-sm hidden"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const STATUS_LABELS = {submitted:'مُرسَل',acknowledged:'مستلم',in_progress:'قيد المعالجة',quoted:'تم الاقتباس',confirmed:'مؤكد',rejected:'مرفوض',cancelled:'ملغى'};
+    const STATUS_COLORS = {submitted:'bg-blue-100 text-blue-700',acknowledged:'bg-purple-100 text-purple-700',in_progress:'bg-amber-100 text-amber-700',quoted:'bg-green-100 text-green-700',confirmed:'bg-emerald-100 text-emerald-700',rejected:'bg-red-100 text-red-700',cancelled:'bg-gray-100 text-gray-500'};
+
+    async function loadInquiries() {
+      const { data, error } = await window.db.from('partner_inquiries')
+        .select('*').eq('partner_id', window.PARTNER_ID)
+        .order('created_at',{ascending:false});
+
+      const tbody = document.getElementById('inqTableBody');
+      if (error || !data?.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 text-gray-400"><i class="fa-solid fa-inbox text-3xl mb-3 block"></i>لا استفسارات حتى الآن. أرسل استفساراً جديداً!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(i => `
+        <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+          <td class="py-3 px-4 font-mono text-xs text-gray-600">${i.inquiry_number}</td>
+          <td class="py-3 px-4"><div class="font-medium text-gray-800 text-sm">${i.title}</div><div class="text-xs text-gray-400">${i.destination}</div></td>
+          <td class="py-3 px-4 text-xs text-gray-600 hidden md:table-cell">${i.travel_date_from?new Date(i.travel_date_from).toLocaleDateString('ar-EG'):'—'} ${i.travel_date_to?' — '+new Date(i.travel_date_to).toLocaleDateString('ar-EG'):''}</td>
+          <td class="py-3 px-4 text-xs text-gray-600 hidden md:table-cell">${i.adults_count||1} بالغ${i.children_count>0?' · '+i.children_count+' طفل':''}</td>
+          <td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[i.status]||'bg-gray-100 text-gray-500'}">${STATUS_LABELS[i.status]||i.status}</span></td>
+          <td class="py-3 px-4 text-left">${i.quotation_id?`<a href="quotes.html?inquiry=${i.id}" class="text-xs text-primary hover:underline">عرض السعر</a>`:'<span class="text-xs text-gray-400">—</span>'}</td>
+        </tr>`).join('');
+    }
+
+    function openNewModal() { document.getElementById('newInqModal').classList.remove('hidden'); }
+    function closeNewModal() { document.getElementById('newInqModal').classList.add('hidden'); document.getElementById('newInqForm').reset(); document.getElementById('inqFormErr').classList.add('hidden'); }
+
+    document.getElementById('newInqForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const payload = { partner_id: window.PARTNER_ID, submitted_by: (await window.db.auth.getSession()).data.session?.user?.id };
+      for (const [k,v] of fd.entries()) if (v !== '') payload[k] = v;
+      if (payload.adults_count) payload.adults_count = parseInt(payload.adults_count);
+      if (payload.children_count) payload.children_count = parseInt(payload.children_count);
+      if (payload.budget) payload.budget = parseFloat(payload.budget);
+
+      const btn = e.target.querySelector('[type=submit]');
+      btn.disabled = true;
+      const { error } = await window.db.from('partner_inquiries').insert([payload]);
+      btn.disabled = false;
+      if (error) { document.getElementById('inqFormErr').textContent = error.message; document.getElementById('inqFormErr').classList.remove('hidden'); return; }
+      closeNewModal();
+      loadInquiries();
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await partnerCheckAuth()) return;
+      document.getElementById('partnerName').textContent = window.PARTNER_DATA?.trading_name || window.PARTNER_DATA?.legal_name || '—';
+      loadInquiries();
+      // Auto-open new modal if ?new=1
+      if (new URLSearchParams(location.search).get('new') === '1') openNewModal();
+    });
+  </script>
+</body>
+</html>

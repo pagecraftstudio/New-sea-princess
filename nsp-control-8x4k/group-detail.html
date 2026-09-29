@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تفاصيل المجموعة | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css"><link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script><script src="/js/admin.js"></script><script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .tab-btn{padding:7px 16px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;border:none;transition:.15s;white-space:nowrap;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:not(.active){background:#f3f4f6;color:#374151;}
+    .tab-btn:not(.active):hover{background:#e5e7eb;}
+    .tab-panel{display:none;}.tab-panel.active{display:block;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.1);}
+    .info-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:.875rem;}
+    .info-row:last-child{border-bottom:none;}
+    .info-label{color:#9ca3af;width:140px;flex-shrink:0;font-size:.78rem;}
+    .info-val{color:#1f2937;font-weight:600;flex:1;}
+    .tbl th{background:#f9fafb;font-size:11px;font-weight:700;color:#374151;padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;}
+    .tbl td{padding:8px 10px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="flex items-start gap-3 mb-5">
+    <a href="/nsp-control-8x4k/group-files.html" class="text-gray-400 hover:text-primary mt-1 transition"><i class="fa-solid fa-arrow-right text-lg"></i></a>
+    <div class="flex-1">
+      <div class="flex items-center gap-2 flex-wrap">
+        <h1 class="erp-page-title" id="pageTitle"><i class="fa-solid fa-people-group ml-2 text-primary"></i>جارٍ التحميل…</h1>
+        <span id="statusBadge" class="text-xs px-3 py-0.5 rounded-full font-bold"></span>
+      </div>
+      <p class="text-sm text-gray-400 mt-0.5" id="pageSubtitle"></p>
+    </div>
+    <div class="flex gap-2 flex-wrap" id="actionBar"></div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5" id="kpiStrip">
+    <div class="erp-card p-4 text-center animate-pulse"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+    <div class="erp-card p-4 text-center animate-pulse"><div class="h-6 bg-gray-100 rounded w-10 mx-auto mb-1"></div><div class="h-3 bg-gray-100 rounded w-16 mx-auto"></div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 flex-wrap mb-4">
+    <button class="tab-btn active" onclick="switchTab('info',this)"><i class="fa-solid fa-circle-info ml-1"></i>المعلومات</button>
+    <button class="tab-btn" onclick="switchTab('rooming',this)"><i class="fa-solid fa-bed ml-1"></i>قائمة الغرف</button>
+    <button class="tab-btn" onclick="switchTab('manifest',this)"><i class="fa-solid fa-passport ml-1"></i>قائمة الركاب</button>
+    <button class="tab-btn" onclick="switchTab('export',this)"><i class="fa-solid fa-file-export ml-1"></i>تصدير</button>
+  </div>
+
+  <!-- TAB: Info -->
+  <div class="tab-panel active" id="tab-info">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="erp-card p-4">
+        <h3 class="font-bold text-primary mb-3 text-sm"><i class="fa-solid fa-circle-info ml-2"></i>بيانات المجموعة</h3>
+        <div id="infoRows"></div>
+      </div>
+      <div class="erp-card p-4">
+        <h3 class="font-bold text-primary mb-3 text-sm"><i class="fa-solid fa-pen ml-2"></i>تعديل الحالة</h3>
+        <div class="space-y-3">
+          <div>
+            <label>الحالة</label>
+            <select id="editStatus">
+              <option value="inquiry">استفسار</option>
+              <option value="quoted">عرض سعر</option>
+              <option value="deposit_pending">إيداع معلق</option>
+              <option value="confirmed">مؤكدة</option>
+              <option value="in_operation">في التشغيل</option>
+              <option value="completed">مكتملة</option>
+              <option value="cancelled">ملغاة</option>
+            </select>
+          </div>
+          <div>
+            <label>إجمالي السعر</label>
+            <input type="number" id="editPrice" step="0.01">
+          </div>
+          <div>
+            <label>ملاحظات</label>
+            <textarea id="editNotes" rows="3"></textarea>
+          </div>
+          <button onclick="saveInfo()" class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-lightGreen transition">
+            <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Rooming -->
+  <div class="tab-panel" id="tab-rooming">
+    <div class="erp-card p-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-primary text-sm"><i class="fa-solid fa-bed ml-2"></i>قائمة الغرف</h3>
+        <button onclick="addRoom()" class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-lightGreen transition">
+          <i class="fa-solid fa-plus ml-1"></i>إضافة غرفة
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full tbl">
+          <thead><tr>
+            <th>رقم الغرفة</th><th>النوع</th><th>وجبات</th>
+            <th>الساكن 1</th><th>الساكن 2</th><th>الساكن 3</th><th>الساكن 4</th>
+            <th>ملاحظات</th><th></th>
+          </tr></thead>
+          <tbody id="roomingTbody">
+            <tr><td colspan="9" class="text-center py-8 text-gray-400 animate-pulse">جارٍ التحميل…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Manifest -->
+  <div class="tab-panel" id="tab-manifest">
+    <div class="erp-card p-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-primary text-sm"><i class="fa-solid fa-passport ml-2"></i>قائمة الركاب (Manifest)</h3>
+        <button onclick="addPassenger()" class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-lightGreen transition">
+          <i class="fa-solid fa-plus ml-1"></i>إضافة راكب
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full tbl">
+          <thead><tr>
+            <th>#</th><th>الاسم الكامل</th><th>رقم الجواز</th><th>الجنسية</th>
+            <th>تاريخ الميلاد</th><th>الجنس</th><th>رقم الغرفة</th><th>ملاحظات</th><th></th>
+          </tr></thead>
+          <tbody id="manifestTbody">
+            <tr><td colspan="9" class="text-center py-8 text-gray-400 animate-pulse">جارٍ التحميل…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Export -->
+  <div class="tab-panel" id="tab-export">
+    <div class="erp-card p-6">
+      <h3 class="font-bold text-primary mb-4 text-sm"><i class="fa-solid fa-file-export ml-2"></i>تصدير وطباعة</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button onclick="exportManifestCSV()" class="border-2 border-primary text-primary rounded-xl p-4 hover:bg-primary/5 transition text-center">
+          <i class="fa-solid fa-file-csv text-2xl mb-2 block"></i>
+          <div class="font-bold text-sm">تصدير قائمة الركاب CSV</div>
+          <div class="text-xs text-gray-400 mt-1">مناسب لوزارة السياحة ونسك</div>
+        </button>
+        <button onclick="exportRoomingCSV()" class="border-2 border-blue-400 text-blue-600 rounded-xl p-4 hover:bg-blue-50 transition text-center">
+          <i class="fa-solid fa-file-csv text-2xl mb-2 block"></i>
+          <div class="font-bold text-sm">تصدير قائمة الغرف CSV</div>
+          <div class="text-xs text-gray-400 mt-1">للفندق وشريك العمليات</div>
+        </button>
+        <button onclick="printManifest()" class="border-2 border-gray-300 text-gray-600 rounded-xl p-4 hover:bg-gray-50 transition text-center">
+          <i class="fa-solid fa-print text-2xl mb-2 block"></i>
+          <div class="font-bold text-sm">طباعة الكشف</div>
+          <div class="text-xs text-gray-400 mt-1">نسخة PDF للطباعة</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+<div id="toast"></div>
+
+<!-- Add Room Modal -->
+<div id="roomModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-4 border-b">
+      <h3 class="font-bold text-primary"><i class="fa-solid fa-bed ml-2"></i>إضافة غرفة</h3>
+      <button onclick="closeRoomModal()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="p-4 grid grid-cols-2 gap-3">
+      <div><label>رقم الغرفة</label><input type="number" id="rm_num" placeholder="101"></div>
+      <div><label>نوع الغرفة</label>
+        <select id="rm_type">
+          <option value="single">مفردة</option><option value="double" selected>مزدوجة</option>
+          <option value="triple">ثلاثية</option><option value="quad">رباعية</option>
+          <option value="suite">جناح</option><option value="family">عائلية</option><option value="twin">توأم</option>
+        </select>
+      </div>
+      <div><label>نوع السرير</label>
+        <select id="rm_bed">
+          <option value="">—</option><option value="king">King</option><option value="twin">Twin</option>
+          <option value="bunk">بنك</option>
+        </select>
+      </div>
+      <div><label>وجبات</label>
+        <select id="rm_meal">
+          <option value="breakfast" selected>إفطار</option><option value="half_board">نصف إقامة</option>
+          <option value="full_board">إقامة كاملة</option><option value="all_inclusive">شامل</option>
+          <option value="room_only">غرفة فقط</option>
+        </select>
+      </div>
+      <div class="col-span-2"><label>الساكن 1 — الاسم</label><input type="text" id="rm_o1" placeholder="الاسم الكامل"></div>
+      <div><label>جواز الساكن 1</label><input type="text" id="rm_p1" placeholder="رقم الجواز" dir="ltr"></div>
+      <div class="col-span-2"><label>الساكن 2 — الاسم</label><input type="text" id="rm_o2" placeholder="الاسم الكامل"></div>
+      <div><label>جواز الساكن 2</label><input type="text" id="rm_p2" placeholder="رقم الجواز" dir="ltr"></div>
+      <div class="col-span-2"><label>الساكن 3 — الاسم (اختياري)</label><input type="text" id="rm_o3"></div>
+      <div class="col-span-2"><label>الساكن 4 — الاسم (اختياري)</label><input type="text" id="rm_o4"></div>
+      <div class="col-span-2"><label>ملاحظات خاصة</label><textarea id="rm_notes" rows="2"></textarea></div>
+    </div>
+    <div class="flex justify-end gap-2 p-4 border-t">
+      <button onclick="closeRoomModal()" class="px-4 py-2 text-sm bg-gray-100 rounded-lg">إلغاء</button>
+      <button onclick="saveRoom()" class="px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg hover:bg-lightGreen">حفظ الغرفة</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Passenger Modal -->
+<div id="paxModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between p-4 border-b">
+      <h3 class="font-bold text-primary"><i class="fa-solid fa-passport ml-2"></i>إضافة راكب</h3>
+      <button onclick="closePaxModal()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="p-4 grid grid-cols-2 gap-3">
+      <div class="col-span-2"><label>الاسم الكامل *</label><input type="text" id="px_name" placeholder="كما في الجواز"></div>
+      <div><label>رقم الجواز *</label><input type="text" id="px_passport" dir="ltr"></div>
+      <div><label>الجنسية</label><input type="text" id="px_nat" placeholder="مصري / سعودي…"></div>
+      <div><label>تاريخ الميلاد</label><input type="date" id="px_dob"></div>
+      <div><label>الجنس</label>
+        <select id="px_gender"><option value="">—</option><option value="male">ذكر</option><option value="female">أنثى</option></select>
+      </div>
+      <div><label>رقم الغرفة</label><input type="number" id="px_room" placeholder="101"></div>
+      <div><label>نوع الراكب</label>
+        <select id="px_type"><option value="adult">بالغ</option><option value="child">طفل</option><option value="infant">رضيع</option></select>
+      </div>
+      <div class="col-span-2"><label>ملاحظات</label><textarea id="px_notes" rows="2"></textarea></div>
+    </div>
+    <div class="flex justify-end gap-2 p-4 border-t">
+      <button onclick="closePaxModal()" class="px-4 py-2 text-sm bg-gray-100 rounded-lg">إلغاء</button>
+      <button onclick="savePassenger()" class="px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg hover:bg-lightGreen">حفظ الراكب</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const GID = new URLSearchParams(location.search).get('id');
+const STATUS_MAP = {
+  inquiry:{label:'استفسار',bg:'bg-gray-100',color:'text-gray-600'},
+  quoted:{label:'عرض سعر',bg:'bg-blue-100',color:'text-blue-700'},
+  deposit_pending:{label:'إيداع معلق',bg:'bg-amber-100',color:'text-amber-700'},
+  confirmed:{label:'مؤكدة',bg:'bg-green-100',color:'text-green-700'},
+  in_operation:{label:'في التشغيل',bg:'bg-purple-100',color:'text-purple-700'},
+  completed:{label:'مكتملة',bg:'bg-gray-100',color:'text-gray-500'},
+  cancelled:{label:'ملغاة',bg:'bg-red-100',color:'text-red-600'},
+};
+const TYPE_MAP={leisure:'ترفيهية',educational:'تعليمية',corporate:'شركات',religious:'دينية',incentive:'تحفيزية',mice:'MICE',sports:'رياضية',other:'أخرى'};
+const ROOM_TYPE_MAP={single:'مفردة',double:'مزدوجة',triple:'ثلاثية',quad:'رباعية',suite:'جناح',family:'عائلية',twin:'توأم'};
+const MEAL_MAP={room_only:'غرفة فقط',breakfast:'إفطار',half_board:'نصف إقامة',full_board:'إقامة كاملة',all_inclusive:'شامل'};
+
+let _group = null, _rooming = [], _manifest = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!GID) { location.href='/nsp-control-8x4k/group-files.html'; return; }
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await load();
+});
+
+async function load() {
+  const [gRes, rRes, mRes] = await Promise.all([
+    db.from('group_files').select('*').eq('id', GID).single(),
+    db.from('rooming_list').select('*').eq('group_id', GID).order('room_number'),
+    db.from('passenger_manifest').select('*').eq('group_id', GID).order('created_at'),
+  ]);
+  _group = gRes.data;
+  _rooming = rRes.data || [];
+  _manifest = mRes.data || [];
+  renderHeader();
+  renderKPIs();
+  renderInfo();
+  renderRooming();
+  renderManifest();
+}
+
+function renderHeader() {
+  const g = _group;
+  const sm = STATUS_MAP[g.status] || STATUS_MAP.inquiry;
+  document.getElementById('pageTitle').innerHTML = `<i class="fa-solid fa-people-group ml-2 text-primary"></i>${esc(g.name)}`;
+  document.getElementById('pageSubtitle').textContent = `${g.group_number} — ${TYPE_MAP[g.group_type]||g.group_type} — ${g.destination||''}`;
+  const sb = document.getElementById('statusBadge');
+  sb.textContent = sm.label; sb.className = `text-xs px-3 py-0.5 rounded-full font-bold ${sm.bg} ${sm.color}`;
+}
+
+function renderKPIs() {
+  const g = _group;
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="erp-card p-4 text-center border-b-2 border-primary">
+      <div class="text-2xl font-black text-primary">${g.pax_total||0}</div>
+      <div class="text-xs text-gray-400 mt-1">إجمالي الركاب</div>
+    </div>
+    <div class="erp-card p-4 text-center border-b-2 border-blue-400">
+      <div class="text-2xl font-black text-blue-600">${g.rooms_count||0}</div>
+      <div class="text-xs text-gray-400 mt-1">عدد الغرف</div>
+    </div>
+    <div class="erp-card p-4 text-center border-b-2 border-green-400">
+      <div class="text-xl font-black text-green-700">${Number(g.total_price||0).toLocaleString('ar-EG')}</div>
+      <div class="text-xs text-gray-400 mt-1">${g.currency||'EGP'}</div>
+    </div>
+    <div class="erp-card p-4 text-center border-b-2 border-amber-400">
+      <div class="text-xl font-black text-amber-600">${_manifest.length}/${g.pax_total||0}</div>
+      <div class="text-xs text-gray-400 mt-1">ركاب مُسجَّلون</div>
+    </div>`;
+}
+
+function renderInfo() {
+  const g = _group;
+  const fmtD = d => d ? new Date(d).toLocaleDateString('ar-EG') : '—';
+  const rows = [
+    ['رقم الملف',       g.group_number],
+    ['نوع المجموعة',    TYPE_MAP[g.group_type]||g.group_type],
+    ['الوجهة',          g.destination],
+    ['تاريخ السفر',     fmtD(g.travel_date_from)+' → '+fmtD(g.travel_date_to)],
+    ['مسؤول المجموعة',  g.leader_name],
+    ['هاتف المسؤول',    g.leader_phone],
+    ['بريد المسؤول',    g.leader_email],
+    ['إجمالي الركاب',   g.pax_total],
+    ['عدد البالغين',    g.adults_count],
+    ['عدد الغرف',       g.rooms_count],
+    ['إجمالي السعر',    Number(g.total_price||0).toLocaleString('ar-EG')+' '+g.currency],
+    ['الشريك',          g.b2b_partner_id ? '🔗 مرتبط' : '—'],
+    ['ملاحظات',         g.notes],
+  ];
+  document.getElementById('infoRows').innerHTML = rows.map(([l,v])=>`
+    <div class="info-row"><div class="info-label">${l}</div><div class="info-val">${esc(v||'—')}</div></div>`).join('');
+
+  document.getElementById('editStatus').value = g.status||'inquiry';
+  document.getElementById('editPrice').value  = g.total_price||0;
+  document.getElementById('editNotes').value  = g.notes||'';
+}
+
+function renderRooming() {
+  const tbody = document.getElementById('roomingTbody');
+  if (!_rooming.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400 text-sm">لا توجد غرف مضافة بعد</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _rooming.map(r => `<tr>
+    <td class="font-bold">${r.room_number}</td>
+    <td>${ROOM_TYPE_MAP[r.room_type]||r.room_type}</td>
+    <td class="text-xs">${MEAL_MAP[r.meal_plan]||r.meal_plan||'—'}</td>
+    <td class="text-xs">${esc(r.occupant_1_name||'—')}${r.occupant_1_passport?`<div class="text-gray-400 font-mono">${r.occupant_1_passport}</div>`:''}</td>
+    <td class="text-xs">${esc(r.occupant_2_name||'—')}${r.occupant_2_passport?`<div class="text-gray-400 font-mono">${r.occupant_2_passport}</div>`:''}</td>
+    <td class="text-xs">${esc(r.occupant_3_name||'—')}</td>
+    <td class="text-xs">${esc(r.occupant_4_name||'—')}</td>
+    <td class="text-xs text-gray-400">${esc(r.notes||'—')}</td>
+    <td>
+      <button onclick="deleteRoom('${r.id}')" class="text-red-400 hover:text-red-600 text-xs p-1"><i class="fa-solid fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
+}
+
+function renderManifest() {
+  const tbody = document.getElementById('manifestTbody');
+  if (!_manifest.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400 text-sm">لا يوجد ركاب مسجّلون بعد</td></tr>';
+    return;
+  }
+  const typeMap = {adult:'بالغ',child:'طفل',infant:'رضيع'};
+  const genderMap = {male:'ذكر',female:'أنثى'};
+  tbody.innerHTML = _manifest.map((p,i) => `<tr>
+    <td class="font-bold text-gray-400">${i+1}</td>
+    <td class="font-bold">${esc(p.full_name)}</td>
+    <td class="font-mono text-xs text-gray-600">${esc(p.passport_number||'—')}</td>
+    <td class="text-xs">${esc(p.nationality||'—')}</td>
+    <td class="text-xs">${p.date_of_birth||'—'}</td>
+    <td class="text-xs">${genderMap[p.gender]||'—'}</td>
+    <td class="text-center font-bold">${p.room_number||'—'}</td>
+    <td class="text-xs text-gray-400">${esc(p.notes||'—')}</td>
+    <td>
+      <button onclick="deletePax('${p.id}')" class="text-red-400 hover:text-red-600 text-xs p-1"><i class="fa-solid fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
+}
+
+// ── Save Info ──────────────────────────────────────────────────
+async function saveInfo() {
+  const { error } = await db.from('group_files').update({
+    status:       document.getElementById('editStatus').value,
+    total_price:  parseFloat(document.getElementById('editPrice').value)||0,
+    notes:        document.getElementById('editNotes').value.trim()||null,
+    updated_at:   new Date().toISOString(),
+  }).eq('id', GID);
+  if (error) { toast('خطأ: '+error.message, true); return; }
+  toast('تم الحفظ ✓');
+  await load();
+}
+
+// ── Rooming CRUD ───────────────────────────────────────────────
+function addRoom() { document.getElementById('roomModal').classList.remove('hidden'); }
+function closeRoomModal() { document.getElementById('roomModal').classList.add('hidden'); }
+
+async function saveRoom() {
+  const num = parseInt(document.getElementById('rm_num').value);
+  if (!num) { toast('أدخل رقم الغرفة', true); return; }
+  const { error } = await db.from('rooming_list').insert({
+    group_id:        GID,
+    room_number:     num,
+    room_type:       document.getElementById('rm_type').value,
+    bed_type:        document.getElementById('rm_bed').value||null,
+    meal_plan:       document.getElementById('rm_meal').value,
+    occupant_1_name: document.getElementById('rm_o1').value.trim()||null,
+    occupant_1_passport: document.getElementById('rm_p1').value.trim()||null,
+    occupant_2_name: document.getElementById('rm_o2').value.trim()||null,
+    occupant_2_passport: document.getElementById('rm_p2').value.trim()||null,
+    occupant_3_name: document.getElementById('rm_o3').value.trim()||null,
+    occupant_4_name: document.getElementById('rm_o4').value.trim()||null,
+    notes:           document.getElementById('rm_notes').value.trim()||null,
+  });
+  if (error) { toast('خطأ: '+error.message, true); return; }
+  closeRoomModal();
+  toast('تمت إضافة الغرفة ✓');
+  await load();
+}
+
+async function deleteRoom(id) {
+  if (!confirm('حذف هذه الغرفة؟')) return;
+  await db.from('rooming_list').delete().eq('id', id);
+  await load();
+}
+
+// ── Manifest CRUD ──────────────────────────────────────────────
+function addPassenger() { document.getElementById('paxModal').classList.remove('hidden'); }
+function closePaxModal() { document.getElementById('paxModal').classList.add('hidden'); }
+
+async function savePassenger() {
+  const name = document.getElementById('px_name').value.trim();
+  if (!name) { toast('أدخل اسم الراكب', true); return; }
+  const { error } = await db.from('passenger_manifest').insert({
+    group_id:        GID,
+    full_name:       name,
+    passport_number: document.getElementById('px_passport').value.trim()||null,
+    nationality:     document.getElementById('px_nat').value.trim()||null,
+    date_of_birth:   document.getElementById('px_dob').value||null,
+    gender:          document.getElementById('px_gender').value||null,
+    room_number:     parseInt(document.getElementById('px_room').value)||null,
+    passenger_type:  document.getElementById('px_type').value,
+    notes:           document.getElementById('px_notes').value.trim()||null,
+  });
+  if (error) { toast('خطأ: '+error.message, true); return; }
+  closePaxModal();
+  toast('تمت إضافة الراكب ✓');
+  await load();
+}
+
+async function deletePax(id) {
+  if (!confirm('حذف هذا الراكب؟')) return;
+  await db.from('passenger_manifest').delete().eq('id', id);
+  await load();
+}
+
+// ── Export ─────────────────────────────────────────────────────
+function exportManifestCSV() {
+  const headers = ['الاسم الكامل','رقم الجواز','الجنسية','تاريخ الميلاد','الجنس','رقم الغرفة','النوع'];
+  const rows = _manifest.map(p => [
+    p.full_name, p.passport_number||'', p.nationality||'',
+    p.date_of_birth||'', p.gender||'', p.room_number||'', p.passenger_type||'adult'
+  ]);
+  downloadCSV([headers, ...rows], `manifest_${_group.group_number}.csv`);
+}
+
+function exportRoomingCSV() {
+  const headers = ['رقم الغرفة','النوع','وجبات','الساكن 1','الجواز 1','الساكن 2','الجواز 2','الساكن 3','الساكن 4'];
+  const rows = _rooming.map(r => [
+    r.room_number, r.room_type, r.meal_plan||'',
+    r.occupant_1_name||'', r.occupant_1_passport||'',
+    r.occupant_2_name||'', r.occupant_2_passport||'',
+    r.occupant_3_name||'', r.occupant_4_name||''
+  ]);
+  downloadCSV([headers, ...rows], `rooming_${_group.group_number}.csv`);
+}
+
+function downloadCSV(rows, filename) {
+  const bom = '\uFEFF';
+  const csv = bom + rows.map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = filename; a.click();
+}
+
+function printManifest() {
+  window.print();
+}
+
+// ── Tabs ───────────────────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

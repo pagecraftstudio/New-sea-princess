@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ملفات الرحلات — العمليات | Flow Travel</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+
+    /* Kanban columns */
+    .kanban-col {
+      min-width: 220px;
+      max-width: 260px;
+      flex-shrink: 0;
+    }
+    .kanban-col-header {
+      padding: 8px 12px;
+      border-radius: 8px 8px 0 0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .trip-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: box-shadow .15s, border-color .15s;
+    }
+    .trip-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,.1);
+      border-color: #B8860B;
+    }
+    .readiness-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+    .readiness-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width .3s;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .view-btn { padding:6px 14px; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:.2s; border:2px solid transparent; }
+    .view-btn.active { background:#1B5E20; color:#fff; }
+    .view-btn:not(.active) { background:#f3f4f6; color:#374151; }
+    .view-btn:not(.active):hover { background:#e5e7eb; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 flex flex-col p-6" aria-label="ملفات الرحلات">
+
+  <!-- Header -->
+  <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-primary pb-1">
+        <i class="fa-solid fa-folder-open text-primary ml-2"></i>ملفات الرحلات
+      </h2>
+      <p class="text-xs text-gray-400 mt-1">إدارة العمليات التشغيلية لجميع الرحلات المؤكدة</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <!-- View toggle -->
+      <div class="flex gap-1 bg-white border border-gray-200 rounded-lg p-1">
+        <button class="view-btn active" id="btnKanban" onclick="setView('kanban')">
+          <i class="fa-solid fa-columns"></i> كانبان
+        </button>
+        <button class="view-btn" id="btnList" onclick="setView('list')">
+          <i class="fa-solid fa-list"></i> قائمة
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="kpiStrip">
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <p class="text-xs text-gray-400 font-bold mb-1">رحلات نشطة</p>
+      <p class="text-2xl font-black text-primary" id="kpiActive">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <p class="text-xs text-gray-400 font-bold mb-1">جاهزة للتنفيذ</p>
+      <p class="text-2xl font-black text-green-600" id="kpiReady">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <p class="text-xs text-gray-400 font-bold mb-1">تحتاج تأكيدات</p>
+      <p class="text-2xl font-black text-yellow-600" id="kpiPending">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <p class="text-xs text-gray-400 font-bold mb-1">مشكلات مفتوحة</p>
+      <p class="text-2xl font-black text-red-600" id="kpiIssues">—</p>
+    </div>
+  </div>
+
+  <!-- Kanban View -->
+  <div id="kanbanView" class="overflow-x-auto pb-4">
+    <div class="flex gap-4 min-w-max" id="kanbanBoard">
+      <div class="text-center text-gray-400 py-12 w-full">
+        <i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i>
+        <p>جاري تحميل لوحة العمليات…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- List View (hidden by default) -->
+  <div id="listView" class="hidden">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b">
+          <tr>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500">رقم الملف</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500">العميل</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500">تاريخ السفر</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500">الحالة</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500">الجاهزية</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500">مهام / مشكلات</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500"></th>
+          </tr>
+        </thead>
+        <tbody id="listTableBody">
+          <tr><td colspan="7" class="text-center py-8 text-gray-400">جاري التحميل…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+
+  const OPS_STATUSES = [
+    { key:'new',                   label:'جديد',            color:'#6b7280', bg:'#f3f4f6', icon:'fa-plus-circle' },
+    { key:'planning',              label:'تخطيط',           color:'#2563eb', bg:'#eff6ff', icon:'fa-pencil' },
+    { key:'supplier_confirmation', label:'تأكيد الموردين',  color:'#d97706', bg:'#fffbeb', icon:'fa-handshake' },
+    { key:'ready',                 label:'جاهز',            color:'#059669', bg:'#ecfdf5', icon:'fa-circle-check' },
+    { key:'in_operation',          label:'في التنفيذ',      color:'#7c3aed', bg:'#f5f3ff', icon:'fa-play' },
+    { key:'completed',             label:'مكتملة',          color:'#1B5E20', bg:'#f0fdf4', icon:'fa-flag-checkered' },
+    { key:'post_trip',             label:'ما بعد الرحلة',   color:'#B8860B', bg:'#fefce8', icon:'fa-star' },
+  ];
+
+  let allTrips = [];
+  let currentView = 'kanban';
+
+  async function loadTrips() {
+    try {
+      const { data, error } = await window.db
+        .from('trip_files')
+        .select(`
+          id, trip_number, ops_status, customer_name, travel_date_start,
+          travel_date_end, pax_count, readiness_score, destination,
+          booking:bookings(booking_number, total_price, status),
+          open_tasks:trip_tasks(count),
+          open_issues:trip_issues(count)
+        `)
+        .not('ops_status', 'eq', 'closed')
+        .order('travel_date_start', { ascending: true, nullsFirst: false });
+
+      if (error) throw error;
+      allTrips = data || [];
+      renderAll();
+    } catch (err) {
+      console.error(err);
+      // Fallback: try RPC
+      try {
+        const { data } = await window.db.rpc('get_ops_board');
+        allTrips = Array.isArray(data) ? data : [];
+        renderAll();
+      } catch(e2) {
+        document.getElementById('kanbanBoard').innerHTML =
+          '<div class="text-red-500 text-center py-8 w-full"><i class="fa-solid fa-triangle-exclamation ml-2"></i>تعذّر تحميل ملفات الرحلات</div>';
+      }
+    }
+  }
+
+  function renderAll() {
+    updateKPIs();
+    if (currentView === 'kanban') renderKanban();
+    else renderList();
+  }
+
+  function updateKPIs() {
+    const active   = allTrips.filter(t => !['completed','post_trip','closed'].includes(t.ops_status)).length;
+    const ready    = allTrips.filter(t => t.ops_status === 'ready').length;
+    const pending  = allTrips.filter(t => (t.pending_critical_services || 0) > 0).length;
+    const issues   = allTrips.reduce((s,t) => s + (t.open_issues || 0), 0);
+    document.getElementById('kpiActive').textContent  = active;
+    document.getElementById('kpiReady').textContent   = ready;
+    document.getElementById('kpiPending').textContent = pending;
+    document.getElementById('kpiIssues').textContent  = issues;
+  }
+
+  function readinessColor(score) {
+    if (score >= 80) return '#059669';
+    if (score >= 50) return '#d97706';
+    return '#dc2626';
+  }
+
+  function tripCard(trip) {
+    const r = trip.readiness_score || 0;
+    const tasks  = trip.open_tasks  || 0;
+    const issues = trip.open_issues || 0;
+    const bnum   = trip.booking?.booking_number || trip.booking_number || '—';
+    const date   = trip.travel_date_start
+      ? new Date(trip.travel_date_start).toLocaleDateString('ar-EG', { day:'2-digit', month:'short' })
+      : '—';
+
+    return `
+      <div class="trip-card" onclick="openTripFile('${trip.id}')">
+        <div class="flex justify-between items-start mb-2">
+          <span class="text-xs font-black text-primary">${trip.trip_number || '—'}</span>
+          <span class="text-xs text-gray-400">${date}</span>
+        </div>
+        <p class="font-bold text-sm text-gray-800 mb-1 truncate" title="${trip.customer_name||''}">
+          ${trip.customer_name || '—'}
+        </p>
+        ${trip.destination ? `<p class="text-xs text-gray-400 mb-2"><i class="fa-solid fa-location-dot ml-1"></i>${trip.destination}</p>` : ''}
+        <p class="text-xs text-gray-400 mb-2">${bnum} · ${trip.pax_count || 1} مسافرين</p>
+        <div class="readiness-bar mb-1">
+          <div class="readiness-fill" style="width:${r}%;background:${readinessColor(r)}"></div>
+        </div>
+        <div class="flex justify-between text-xs mt-1">
+          <span style="color:${readinessColor(r)};font-weight:700">${r}% جاهزية</span>
+          <span class="text-gray-400">
+            ${tasks > 0 ? `<span class="text-orange-500 ml-1"><i class="fa-solid fa-list-check"></i> ${tasks}</span>` : ''}
+            ${issues > 0 ? `<span class="text-red-500"><i class="fa-solid fa-triangle-exclamation"></i> ${issues}</span>` : ''}
+          </span>
+        </div>
+      </div>`;
+  }
+
+  function renderKanban() {
+    const board = document.getElementById('kanbanBoard');
+    if (!allTrips.length) {
+      board.innerHTML = `<div class="text-center text-gray-400 py-16 w-full">
+        <i class="fa-solid fa-folder-open text-4xl mb-3 opacity-30"></i>
+        <p>لا توجد رحلات نشطة حالياً</p>
+        <p class="text-xs mt-1">يتم إنشاء ملفات الرحلات تلقائياً عند تأكيد الحجزين</p>
+      </div>`;
+      return;
+    }
+
+    board.innerHTML = OPS_STATUSES.map(s => {
+      const trips = allTrips.filter(t => t.ops_status === s.key);
+      return `
+        <div class="kanban-col">
+          <div class="kanban-col-header" style="background:${s.bg};color:${s.color}">
+            <i class="fa-solid ${s.icon}"></i>
+            <span>${s.label}</span>
+            <span class="mr-auto bg-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-black" style="color:${s.color}">${trips.length}</span>
+          </div>
+          <div style="background:#f8fafc;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;padding:8px;min-height:120px">
+            ${trips.length ? trips.map(tripCard).join('') : '<p class="text-center text-xs text-gray-300 py-6">لا يوجد</p>'}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderList() {
+    const tbody = document.getElementById('listTableBody');
+    if (!allTrips.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-gray-400">لا توجد رحلات نشطة</td></tr>';
+      return;
+    }
+
+    const STATUS_MAP = Object.fromEntries(OPS_STATUSES.map(s => [s.key, s]));
+
+    tbody.innerHTML = allTrips.map(trip => {
+      const s = STATUS_MAP[trip.ops_status] || { label: trip.ops_status, color:'#6b7280', bg:'#f3f4f6' };
+      const r = trip.readiness_score || 0;
+      const date = trip.travel_date_start
+        ? new Date(trip.travel_date_start).toLocaleDateString('ar-EG')
+        : '—';
+      const tasks  = trip.open_tasks  || 0;
+      const issues = trip.open_issues || 0;
+      return `
+        <tr class="border-b hover:bg-gray-50 cursor-pointer" onclick="openTripFile('${trip.id}')">
+          <td class="px-4 py-3 font-black text-primary text-xs">${trip.trip_number || '—'}</td>
+          <td class="px-4 py-3">
+            <p class="font-bold text-sm">${trip.customer_name || '—'}</p>
+            <p class="text-xs text-gray-400">${trip.destination || ''}</p>
+          </td>
+          <td class="px-4 py-3 text-sm">${date}</td>
+          <td class="px-4 py-3">
+            <span class="status-badge" style="background:${s.bg};color:${s.color}">${s.label}</span>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <div class="readiness-bar flex-1" style="width:80px">
+                <div class="readiness-fill" style="width:${r}%;background:${readinessColor(r)}"></div>
+              </div>
+              <span class="text-xs font-bold" style="color:${readinessColor(r)}">${r}%</span>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-xs">
+            ${tasks  > 0 ? `<span class="text-orange-500 ml-2"><i class="fa-solid fa-list-check ml-1"></i>${tasks} مهام</span>` : ''}
+            ${issues > 0 ? `<span class="text-red-500"><i class="fa-solid fa-triangle-exclamation ml-1"></i>${issues} مشكلات</span>` : ''}
+            ${!tasks && !issues ? '<span class="text-green-600"><i class="fa-solid fa-check ml-1"></i>لا مشكلات</span>' : ''}
+          </td>
+          <td class="px-4 py-3">
+            <a href="/nsp-control-8x4k/trip-file.html?id=${trip.id}"
+               class="text-primary hover:text-green-800 font-bold text-xs"
+               onclick="event.stopPropagation()">
+              <i class="fa-solid fa-arrow-left"></i> فتح
+            </a>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  window.setView = function(v) {
+    currentView = v;
+    document.getElementById('kanbanView').classList.toggle('hidden', v !== 'kanban');
+    document.getElementById('listView').classList.toggle('hidden', v !== 'list');
+    document.getElementById('btnKanban').classList.toggle('active', v === 'kanban');
+    document.getElementById('btnList').classList.toggle('active', v === 'list');
+    renderAll();
+  };
+
+  window.openTripFile = function(id) {
+    window.location.href = `/nsp-control-8x4k/trip-file.html?id=${id}`;
+  };
+
+  await loadTrips();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة الشركاء — لوحة التحكم</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B"}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/partner-auth.js"></script>
+  <style>
+    body { font-family:'Cairo',sans-serif; background:#f8f9fa; }
+    .kpi { background:white; border-radius:12px; padding:20px; border:1px solid #e5e7eb; }
+    .kpi-val { font-size:1.8rem; font-weight:800; line-height:1; }
+    .stat-icon { width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center; }
+    i { font-family:'Font Awesome 6 Free' !important; font-weight:900 !important; }
+    i.fa-brands { font-family:'Font Awesome 6 Brands' !important; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Nav -->
+  <header class="sticky top-0 z-40 shadow-sm border-b border-gray-200" style="background:#0D1B0E">
+    <div class="flex items-center justify-between px-4 md:px-6 h-16">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,#1B5E20,#B8860B)">
+          <i class="fa-solid fa-plane text-white text-xs"></i>
+        </div>
+        <div>
+          <span class="font-bold text-sm text-amber-400">Flow Travel</span>
+          <span class="text-gray-500 text-xs mr-2">— بوابة الشركاء</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-300 hidden md:block" id="partnerName">—</span>
+        <button onclick="partnerLogout()" class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5 border border-red-900 px-3 py-1.5 rounded-lg transition-colors hover:border-red-700">
+          <i class="fa-solid fa-right-from-bracket"></i> خروج
+        </button>
+      </div>
+    </div>
+    <!-- Sub nav -->
+    <div class="flex gap-1 px-4 md:px-6 pb-0 overflow-x-auto" style="background:#111827;scrollbar-width:none">
+      <a href="dashboard.html"  class="partner-nav-item active">لوحة التحكم</a>
+      <a href="inquiries.html"  class="partner-nav-item">الاستفسارات</a>
+      <a href="quotes.html"     class="partner-nav-item">عروض الأسعار</a>
+      <a href="bookings.html"   class="partner-nav-item">الحجوزات</a>
+      <a href="finance.html"    class="partner-nav-item">المالية</a>
+    </div>
+  </header>
+
+  <style>
+    .partner-nav-item { display:inline-flex;align-items:center;padding:10px 14px;color:#9ca3af;font-size:13px;font-weight:600;text-decoration:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap; }
+    .partner-nav-item:hover { color:white; }
+    .partner-nav-item.active { color:#B8860B;border-bottom-color:#B8860B; }
+  </style>
+
+  <main class="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">
+
+    <!-- Welcome -->
+    <div class="mb-6">
+      <h1 class="text-xl font-bold text-gray-800">مرحباً، <span id="partnerNameMain">—</span></h1>
+      <p class="text-sm text-gray-500 mt-0.5" id="todayDate">—</p>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="kpiGrid">
+      <div class="kpi col-span-2 md:col-span-4 flex items-center justify-center py-8 text-gray-400">
+        <i class="fa-solid fa-spinner fa-spin text-xl mr-2"></i> جاري التحميل…
+      </div>
+    </div>
+
+    <!-- Two columns: recent inquiries + pending quotes -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Recent Inquiries -->
+      <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-gray-800 flex items-center gap-2">
+            <i class="fa-solid fa-inbox text-blue-500"></i> آخر الاستفسارات
+          </h3>
+          <a href="inquiries.html" class="text-xs text-primary hover:underline">عرض الكل</a>
+        </div>
+        <div id="recentInquiries" class="space-y-2 text-sm text-gray-500">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+        </div>
+        <a href="inquiries.html?new=1"
+          class="mt-4 block text-center bg-primary text-white rounded-xl py-2.5 text-sm font-bold hover:bg-green-800 transition-colors">
+          <i class="fa-solid fa-plus ml-1"></i> استفسار جديد
+        </a>
+      </div>
+
+      <!-- Pending Quotes -->
+      <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-gray-800 flex items-center gap-2">
+            <i class="fa-solid fa-file-contract text-amber-500"></i> عروض الأسعار
+          </h3>
+          <a href="quotes.html" class="text-xs text-primary hover:underline">عرض الكل</a>
+        </div>
+        <div id="pendingQuotes" class="space-y-2 text-sm text-gray-500">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming bookings -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-calendar-check text-green-600"></i> الحجوزات القادمة
+        </h3>
+        <a href="bookings.html" class="text-xs text-primary hover:underline">عرض الكل</a>
+      </div>
+      <div id="upcomingBookings" class="text-sm text-gray-500">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const STATUS_INQ = {submitted:'مُرسَل',acknowledged:'مستلم',in_progress:'قيد المعالجة',quoted:'تم الاقتباس',confirmed:'مؤكد',rejected:'مرفوض',cancelled:'ملغى'};
+    const STATUS_INQ_COLOR = {submitted:'bg-blue-100 text-blue-700',acknowledged:'bg-purple-100 text-purple-700',in_progress:'bg-amber-100 text-amber-700',quoted:'bg-green-100 text-green-700',confirmed:'bg-emerald-100 text-emerald-700',rejected:'bg-red-100 text-red-700',cancelled:'bg-gray-100 text-gray-500'};
+    const STATUS_Q = {sent:'مُرسَل',viewed:'مُطّلع عليه',negotiation:'تفاوض',accepted:'مقبول',deposit_pending:'انتظار إيداع',confirmed:'مؤكد',expired:'منتهي',rejected:'مرفوض'};
+    const STATUS_Q_COLOR = {sent:'bg-blue-100 text-blue-700',viewed:'bg-purple-100 text-purple-700',negotiation:'bg-amber-100 text-amber-700',accepted:'bg-green-100 text-green-700',deposit_pending:'bg-orange-100 text-orange-700',confirmed:'bg-emerald-100 text-emerald-700',expired:'bg-gray-100 text-gray-500',rejected:'bg-red-100 text-red-700'};
+
+    function badge(label,cls){return `<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${label}</span>`;}
+    function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('ar-EG');}
+
+    async function loadDashboard() {
+      const pid = window.PARTNER_ID;
+      document.getElementById('partnerNameMain').textContent = window.PARTNER_DATA?.trading_name || window.PARTNER_DATA?.legal_name || '—';
+      document.getElementById('todayDate').textContent = new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+      const [inqRes, quoteRes, bookRes] = await Promise.all([
+        window.db.from('partner_inquiries').select('id,inquiry_number,title,status,created_at').eq('partner_id',pid).order('created_at',{ascending:false}).limit(5),
+        window.db.from('quotations').select('id,quote_number,title,total_amount,currency,status,validity_date').eq('b2b_partner_id',pid).not('status','in','("draft","internal_review")').order('created_at',{ascending:false}).limit(5),
+        window.db.from('bookings').select('id,booking_number,package_title,package_departure,status,adults_count').eq('b2b_partner_id',pid).gte('package_departure',new Date().toISOString().slice(0,10)).order('package_departure').limit(6),
+      ]);
+
+      const inq = inqRes.data || [];
+      const quotes = quoteRes.data || [];
+      const books = bookRes.data || [];
+
+      const pendingQuotes = quotes.filter(q=>['sent','viewed','negotiation'].includes(q.status));
+
+      // KPIs
+      document.getElementById('kpiGrid').innerHTML = [
+        {icon:'fa-inbox',label:'إجمالي الاستفسارات',val:inq.length,color:'text-blue-600',bg:'bg-blue-50'},
+        {icon:'fa-file-contract',label:'عروض بانتظار ردك',val:pendingQuotes.length,color:'text-amber-600',bg:'bg-amber-50'},
+        {icon:'fa-calendar-check',label:'حجوزات قادمة',val:books.length,color:'text-green-700',bg:'bg-green-50'},
+        {icon:'fa-coins',label:'رصيد الائتمان',val:(window.PARTNER_DATA?.credit_limit||0).toLocaleString('ar-EG')+' '+(window.PARTNER_DATA?.currency||''),color:'text-purple-600',bg:'bg-purple-50'},
+      ].map(k=>`
+        <div class="kpi flex items-center gap-4">
+          <div class="stat-icon ${k.bg}"><i class="fa-solid ${k.icon} ${k.color} text-lg"></i></div>
+          <div><div class="kpi-val ${k.color}">${k.val}</div><div class="text-xs text-gray-500 mt-0.5">${k.label}</div></div>
+        </div>`).join('');
+
+      // Recent inquiries
+      document.getElementById('recentInquiries').innerHTML = inq.length
+        ? inq.map(i=>`
+          <a href="inquiries.html?id=${i.id}" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
+            <div><div class="font-medium text-gray-800 text-xs">${i.title}</div>
+            <div class="text-xs text-gray-400">${i.inquiry_number} · ${fmtDate(i.created_at)}</div></div>
+            ${badge(STATUS_INQ[i.status]||i.status, STATUS_INQ_COLOR[i.status]||'bg-gray-100 text-gray-600')}
+          </a>`).join('')
+        : '<div class="text-center py-6 text-gray-400"><i class="fa-solid fa-inbox text-2xl mb-2 block"></i>لا استفسارات حتى الآن</div>';
+
+      // Pending quotes
+      document.getElementById('pendingQuotes').innerHTML = quotes.length
+        ? quotes.map(q=>`
+          <a href="quotes.html?id=${q.id}" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
+            <div><div class="font-medium text-gray-800 text-xs">${q.title}</div>
+            <div class="text-xs text-gray-400">${q.quote_number} · ${(q.total_amount||0).toLocaleString('ar-EG')} ${q.currency||''}</div></div>
+            ${badge(STATUS_Q[q.status]||q.status, STATUS_Q_COLOR[q.status]||'bg-gray-100 text-gray-500')}
+          </a>`).join('')
+        : '<div class="text-center py-6 text-gray-400"><i class="fa-solid fa-file-contract text-2xl mb-2 block"></i>لا عروض أسعار حالياً</div>';
+
+      // Upcoming bookings
+      document.getElementById('upcomingBookings').innerHTML = books.length
+        ? `<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="border-b border-gray-100">
+            <th class="text-right py-2 px-3 font-semibold text-gray-600">رقم الحجز</th>
+            <th class="text-right py-2 px-3 font-semibold text-gray-600">الرحلة</th>
+            <th class="text-right py-2 px-3 font-semibold text-gray-600">تاريخ المغادرة</th>
+            <th class="text-right py-2 px-3 font-semibold text-gray-600">الحالة</th>
+          </tr></thead><tbody>${books.map(b=>`
+          <tr class="border-b border-gray-50 hover:bg-gray-50">
+            <td class="py-2 px-3 font-mono text-gray-700">${b.booking_number}</td>
+            <td class="py-2 px-3 text-gray-800">${b.package_title||'—'}</td>
+            <td class="py-2 px-3 text-gray-600">${fmtDate(b.package_departure)}</td>
+            <td class="py-2 px-3">${badge(b.status,'bg-green-100 text-green-700')}</td>
+          </tr>`).join('')}</tbody></table></div>`
+        : '<div class="text-center py-6 text-gray-400"><i class="fa-solid fa-calendar text-2xl mb-2 block"></i>لا حجوزات قادمة</div>';
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await partnerCheckAuth()) return;
+      document.getElementById('partnerName').textContent = window.PARTNER_DATA?.trading_name || window.PARTNER_DATA?.legal_name || '—';
+      await loadDashboard();
+    });
+  </script>
+</body>
+</html>

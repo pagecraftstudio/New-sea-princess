@@ -1,0 +1,1411 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ملف الرحلة | Flow Travel</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .tab-btn { padding:8px 16px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; transition:.2s; border:2px solid transparent; white-space:nowrap; }
+    .tab-btn.active { background:#1B5E20; color:#fff; }
+    .tab-btn:not(.active) { background:#f3f4f6; color:#374151; }
+    .tab-btn:not(.active):hover { background:#e5e7eb; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .conf-badge {
+      display:inline-flex; align-items:center; gap:3px;
+      padding:2px 8px; border-radius:20px; font-size:0.68rem; font-weight:700;
+    }
+    .conf-pending   { background:#fef9c3; color:#92400e; }
+    .conf-requested { background:#dbeafe; color:#1e40af; }
+    .conf-confirmed { background:#dcfce7; color:#166534; }
+    .conf-rejected  { background:#fee2e2; color:#991b1b; }
+    .conf-cancelled { background:#f3f4f6; color:#6b7280; }
+    .priority-urgent { color:#dc2626; }
+    .priority-high   { color:#d97706; }
+    .priority-normal { color:#2563eb; }
+    .priority-low    { color:#6b7280; }
+    .readiness-ring {
+      width:72px; height:72px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.1rem; font-weight:900; border:5px solid;
+    }
+    .ops-select {
+      border:2px solid #1B5E20; border-radius:8px; padding:5px 10px;
+      font-family:'Cairo',sans-serif; font-weight:700; font-size:0.82rem;
+      color:#1B5E20; background:#f0fdf4; cursor:pointer; outline:none;
+    }
+    .service-row:hover { background:#f9fafb; }
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .modal-box { background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 flex flex-col p-4 md:p-6">
+
+  <!-- Back link + title -->
+  <div class="flex items-center gap-3 mb-4">
+    <a href="/nsp-control-8x4k/trip-files.html" class="text-gray-400 hover:text-primary transition">
+      <i class="fa-solid fa-arrow-right text-lg"></i>
+    </a>
+    <div class="flex-1">
+      <h2 class="text-xl font-black text-gray-800" id="pageTitle">ملف الرحلة — جاري التحميل…</h2>
+      <p class="text-xs text-gray-400" id="pageSubtitle"></p>
+    </div>
+    <!-- Ops status selector -->
+    <div class="flex items-center gap-2">
+      <select class="ops-select" id="opsStatusSelect" onchange="updateOpsStatus(this.value)">
+        <option value="new">جديد</option>
+        <option value="planning">تخطيط</option>
+        <option value="supplier_confirmation">تأكيد الموردين</option>
+        <option value="ready">جاهز</option>
+        <option value="in_operation">في التنفيذ</option>
+        <option value="completed">مكتملة</option>
+        <option value="post_trip">ما بعد الرحلة</option>
+        <option value="closed">مغلق</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Hero strip: readiness + summary KPIs -->
+  <div class="bg-white rounded-xl shadow border border-gray-200 p-4 mb-4 flex flex-wrap gap-4 items-center">
+    <!-- Readiness ring -->
+    <div class="flex items-center gap-4">
+      <div class="readiness-ring" id="readinessRing" style="color:#6b7280;border-color:#e5e7eb">0%</div>
+      <div>
+        <p class="text-xs text-gray-400 font-bold">جاهزية الرحلة</p>
+        <p class="text-xs text-gray-500" id="readinessDesc">—</p>
+      </div>
+    </div>
+    <div class="border-r border-gray-200 h-12 hidden md:block"></div>
+    <!-- KPIs -->
+    <div class="flex flex-wrap gap-5 text-center flex-1">
+      <div>
+        <p class="text-xs text-gray-400 font-bold">المسافرون</p>
+        <p class="text-lg font-black text-gray-700" id="kpiPax">—</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-bold">الخدمات</p>
+        <p class="text-lg font-black" id="kpiServices">—</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-bold">مؤكدة</p>
+        <p class="text-lg font-black text-green-600" id="kpiConfirmed">—</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-bold">في الانتظار</p>
+        <p class="text-lg font-black text-yellow-600" id="kpiPendingServices">—</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-bold">المهام المفتوحة</p>
+        <p class="text-lg font-black text-blue-600" id="kpiOpenTasks">—</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-bold">المشكلات</p>
+        <p class="text-lg font-black text-red-600" id="kpiOpenIssues">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
+    <button class="tab-btn active" onclick="switchTab('services')"><i class="fa-solid fa-boxes-stacked ml-1"></i>الخدمات</button>
+    <button class="tab-btn" onclick="switchTab('resources')"><i class="fa-solid fa-users-gear ml-1"></i>الموارد</button>
+    <button class="tab-btn" onclick="switchTab('travelers')"><i class="fa-solid fa-users ml-1"></i>المسافرون</button>
+    <button class="tab-btn" onclick="switchTab('itinerary')"><i class="fa-solid fa-map ml-1"></i>البرنامج</button>
+    <button class="tab-btn" onclick="switchTab('commercial')"><i class="fa-solid fa-file-contract ml-1"></i>التجاري</button>
+    <button class="tab-btn" onclick="switchTab('tasks')"><i class="fa-solid fa-list-check ml-1"></i>المهام</button>
+    <button class="tab-btn" onclick="switchTab('issues')"><i class="fa-solid fa-triangle-exclamation ml-1"></i>المشكلات</button>
+    <button class="tab-btn" onclick="switchTab('comms')"><i class="fa-solid fa-comments ml-1"></i>التواصل</button>
+    <button class="tab-btn" onclick="switchTab('finance')"><i class="fa-solid fa-coins ml-1"></i>المالية</button>
+    <button class="tab-btn" onclick="switchTab('documents')"><i class="fa-solid fa-folder-open ml-1"></i>المستندات</button>
+    <button class="tab-btn" onclick="switchTab('timeline')"><i class="fa-solid fa-clock-rotate-left ml-1"></i>السجل</button>
+  </div>
+
+  <!-- ── SERVICES TAB ── -->
+  <!-- ── TAB: RESOURCES (Phase 10) ── -->
+  <div class="tab-panel" id="tab-resources">
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-users-gear text-primary"></i>الموارد المُعيَّنة</span>
+        <a id="addAssignBtn" href="/nsp-control-8x4k/assignments.html"
+           class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-bold hover:bg-lightGreen transition">
+          + تعيين مورد
+        </a>
+      </div>
+      <div id="tripAssignments" class="mt-2">
+        <p class="text-gray-400 text-sm text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel active" id="tab-services">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-boxes-stacked text-primary ml-2"></i>خدمات الرحلة</h3>
+        <button onclick="openAddServiceModal()"
+          class="bg-primary hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+          <i class="fa-solid fa-plus ml-1"></i> إضافة خدمة
+        </button>
+      </div>
+      <div id="servicesList">
+        <div class="text-center py-10 text-gray-400">جاري التحميل…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COMMERCIAL TAB ── -->
+  <div class="tab-panel" id="tab-commercial">
+    <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+      <h3 class="font-bold text-gray-700 mb-4 text-sm"><i class="fa-solid fa-file-contract text-primary ml-2"></i>البيانات التجارية</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" id="commercialGrid">
+        <div class="text-gray-400 text-center py-6 col-span-2">جاري التحميل…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TASKS TAB ── -->
+  <div class="tab-panel" id="tab-tasks">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-list-check text-primary ml-2"></i>مهام العمليات</h3>
+        <button onclick="openAddTaskModal()"
+          class="bg-primary hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+          <i class="fa-solid fa-plus ml-1"></i> مهمة جديدة
+        </button>
+      </div>
+      <div id="tasksList">
+        <div class="text-center py-10 text-gray-400">جاري التحميل…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ISSUES TAB ── -->
+  <div class="tab-panel" id="tab-issues">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-triangle-exclamation text-primary ml-2"></i>المشكلات والحوادث</h3>
+        <button onclick="openAddIssueModal()"
+          class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+          <i class="fa-solid fa-plus ml-1"></i> رصد مشكلة
+        </button>
+      </div>
+      <div id="issuesList">
+        <div class="text-center py-10 text-gray-400">جاري التحميل…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COMMS TAB ── -->
+  <div class="tab-panel" id="tab-comms">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-comments text-primary ml-2"></i>سجل التواصل</h3>
+        <button onclick="openAddCommModal()"
+          class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+          <i class="fa-solid fa-plus ml-1"></i> تسجيل تواصل
+        </button>
+      </div>
+      <div id="commsList" class="divide-y">
+        <div class="text-center py-10 text-gray-400">جاري التحميل…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TRAVELERS TAB ── -->
+  <div class="tab-panel" id="tab-travelers">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-users text-primary ml-2"></i>قائمة المسافرين</h3>
+        <button onclick="window.print()" class="text-xs text-gray-500 hover:text-primary font-bold border border-gray-200 rounded-lg px-3 py-1.5">
+          <i class="fa-solid fa-print ml-1"></i>طباعة القائمة
+        </button>
+      </div>
+      <div id="travelersList"><div class="text-center py-10 text-gray-400">جاري التحميل…</div></div>
+    </div>
+  </div>
+
+  <!-- ── ITINERARY TAB ── -->
+  <div class="tab-panel" id="tab-itinerary">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-map text-primary ml-2"></i>البرنامج السياحي</h3>
+        <a id="itineraryLink" href="#" class="hidden text-xs text-primary hover:underline font-bold">
+          <i class="fa-solid fa-external-link ml-1"></i>فتح في محرر الجداول
+        </a>
+      </div>
+      <div id="itineraryContent"><div class="text-center py-10 text-gray-400">جاري التحميل…</div></div>
+    </div>
+  </div>
+
+  <!-- ── FINANCE TAB ── -->
+  <div class="tab-panel" id="tab-finance">
+    <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+      <h3 class="font-bold text-gray-700 mb-4 text-sm"><i class="fa-solid fa-coins text-primary ml-2"></i>الملخص المالي</h3>
+      <div id="financeGrid" class="text-gray-400 text-center py-6">جاري التحميل…</div>
+    </div>
+  </div>
+
+  <!-- ── DOCUMENTS TAB ── -->
+  <div class="tab-panel" id="tab-documents">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-folder-open text-primary ml-2"></i>مستندات الرحلة</h3>
+        <button onclick="printTripFileFn()" class="bg-primary hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+          <i class="fa-solid fa-print ml-1"></i>طباعة ملف الرحلة
+        </button>
+      </div>
+      <div id="documentsList"></div>
+    </div>
+  </div>
+
+  <!-- ── TIMELINE TAB ── -->
+  <div class="tab-panel" id="tab-timeline">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+      <div class="p-4 border-b">
+        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-clock-rotate-left text-primary ml-2"></i>سجل الأحداث الكامل</h3>
+      </div>
+      <div id="timelineList"><div class="text-center py-10 text-gray-400">جاري التحميل…</div></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── SERVICE CONFIRM MODAL ── -->
+<div id="confirmModal" class="modal-bg hidden">
+  <div class="modal-box p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-gray-800"><i class="fa-solid fa-circle-check text-primary ml-2"></i>تحديث تأكيد الخدمة</h3>
+      <button onclick="closeModal('confirmModal')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <input type="hidden" id="confirmSvcId">
+    <div class="space-y-3">
+      <div>
+        <label class="text-xs font-bold text-gray-500 block mb-1">حالة التأكيد</label>
+        <select id="confirmStatus" class="w-full border border-gray-300 rounded-lg p-2 text-sm" style="font-family:'Cairo',sans-serif">
+          <option value="pending">في الانتظار</option>
+          <option value="requested">تم الطلب</option>
+          <option value="confirmed">مؤكد ✓</option>
+          <option value="rejected">مرفوض</option>
+          <option value="cancelled">ملغي</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 block mb-1">رقم تأكيد المورد</label>
+        <input id="confirmRef" type="text" placeholder="مثال: HTL-2026-9912" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 block mb-1">تاريخ التأكيد</label>
+        <input id="confirmDate" type="date" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 block mb-1">ملاحظات</label>
+        <textarea id="confirmNotes" rows="2" placeholder="أي تفاصيل إضافية…" class="w-full border border-gray-300 rounded-lg p-2 text-sm" style="font-family:'Cairo',sans-serif"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4 justify-end">
+      <button onclick="closeModal('confirmModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50">إلغاء</button>
+      <button onclick="saveConfirmation()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700">
+        <i class="fa-solid fa-save ml-1"></i>حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD SERVICE MODAL ── -->
+<div id="addServiceModal" class="modal-bg hidden">
+  <div class="modal-box p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-800">إضافة خدمة</h3>
+      <button onclick="closeModal('addServiceModal')" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">نوع الخدمة *</label>
+        <select id="svcType" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+          <option value="hotel">فندق</option>
+          <option value="transfer">نقل</option>
+          <option value="guide">مرشد</option>
+          <option value="activity">نشاط</option>
+          <option value="ticket">تذكرة</option>
+          <option value="meal">وجبات</option>
+          <option value="flight">رحلة جوية</option>
+          <option value="visa">تأشيرة</option>
+          <option value="transport">مواصلات</option>
+          <option value="other">أخرى</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">اسم الخدمة *</label>
+        <input type="text" id="svcName" class="w-full border border-gray-300 rounded-lg p-2 text-sm" placeholder="مثال: فندق النيل كايرو — غرفة دبل">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ الخدمة</label>
+          <input type="date" id="svcDate" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الوقت</label>
+          <input type="time" id="svcTime" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
+        <textarea id="svcNotes" rows="2" class="w-full border border-gray-300 rounded-lg p-2 text-sm" placeholder="تفاصيل إضافية…"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button onclick="saveService()" class="flex-1 bg-primary hover:bg-green-700 text-white font-bold py-2 rounded-lg text-sm transition">حفظ الخدمة</button>
+      <button onclick="closeModal('addServiceModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 rounded-lg text-sm transition">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD TASK MODAL ── -->
+<div id="addTaskModal" class="modal-bg hidden">
+  <div class="modal-box p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-800">مهمة جديدة</h3>
+      <button onclick="closeModal('addTaskModal')" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">عنوان المهمة *</label>
+        <input type="text" id="taskTitle" class="w-full border border-gray-300 rounded-lg p-2 text-sm" placeholder="مثال: تأكيد حجز الفندق">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الأولوية</label>
+          <select id="taskPriority" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+            <option value="urgent">عاجل</option>
+            <option value="high">مرتفعة</option>
+            <option value="normal" selected>عادية</option>
+            <option value="low">منخفضة</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ الاستحقاق</label>
+          <input type="date" id="taskDue" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
+        <textarea id="taskNotes" rows="2" class="w-full border border-gray-300 rounded-lg p-2 text-sm"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button onclick="saveTask()" class="flex-1 bg-primary hover:bg-green-700 text-white font-bold py-2 rounded-lg text-sm transition">حفظ المهمة</button>
+      <button onclick="closeModal('addTaskModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 rounded-lg text-sm transition">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD ISSUE MODAL ── -->
+<div id="addIssueModal" class="modal-bg hidden">
+  <div class="modal-box p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-800">رصد مشكلة</h3>
+      <button onclick="closeModal('addIssueModal')" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">وصف المشكلة *</label>
+        <input type="text" id="issueTitle" class="w-full border border-gray-300 rounded-lg p-2 text-sm" placeholder="مثال: المورد لم يؤكد حجز الباص">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الخطورة</label>
+          <select id="issueSeverity" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+            <option value="critical">حرجة</option>
+            <option value="high">مرتفعة</option>
+            <option value="medium" selected>متوسطة</option>
+            <option value="low">منخفضة</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">التصنيف</label>
+          <select id="issueCategory" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+            <option value="operational">تشغيلية</option>
+            <option value="supplier">مورد</option>
+            <option value="customer">عميل</option>
+            <option value="financial">مالية</option>
+            <option value="document">مستندات</option>
+            <option value="transport">نقل</option>
+            <option value="accommodation">إقامة</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">تفاصيل</label>
+        <textarea id="issueDesc" rows="2" class="w-full border border-gray-300 rounded-lg p-2 text-sm"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button onclick="saveIssue()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-sm transition">رصد المشكلة</button>
+      <button onclick="closeModal('addIssueModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 rounded-lg text-sm transition">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD COMM MODAL ── -->
+<div id="addCommModal" class="modal-bg hidden">
+  <div class="modal-box p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-800">تسجيل تواصل</h3>
+      <button onclick="closeModal('addCommModal')" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">القناة</label>
+          <select id="commChannel" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+            <option value="whatsapp">واتساب</option>
+            <option value="phone">هاتف</option>
+            <option value="email">بريد إلكتروني</option>
+            <option value="in_person">مقابلة شخصية</option>
+            <option value="internal_note">ملاحظة داخلية</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الاتجاه</label>
+          <select id="commDirection" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+            <option value="outbound">صادر</option>
+            <option value="inbound">وارد</option>
+            <option value="internal">داخلي</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">الجهة *</label>
+        <select id="commRecipient" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+          <option value="customer">العميل</option>
+          <option value="supplier">المورد</option>
+          <option value="partner">الشريك</option>
+          <option value="internal">داخلي</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">ملخص التواصل *</label>
+        <textarea id="commSummary" rows="3" class="w-full border border-gray-300 rounded-lg p-2 text-sm" placeholder="مثال: تم إرسال تفاصيل الفندق والبرنامج للعميل عبر واتساب"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button onclick="saveComm()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm transition">تسجيل</button>
+      <button onclick="closeModal('addCommModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 rounded-lg text-sm transition">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const TRIP_ID = params.get('id');
+  if (!TRIP_ID) { alert('معرّف ملف الرحلة مفقود'); history.back(); return; }
+
+  let tripData  = null;
+  let bookingData = null;
+  let servicesData = [];
+  let tasksData    = [];
+  let issuesData   = [];
+  let commsData    = [];
+
+  // ── LOAD ──────────────────────────────────────────────────────────────────
+
+  async function loadAll() {
+    // Trip file
+    const { data: tf, error: tfe } = await window.db
+      .from('trip_files')
+      .select('*')
+      .eq('id', TRIP_ID)
+      .single();
+    if (tfe || !tf) { alert('لم يُعثر على ملف الرحلة'); history.back(); return; }
+    tripData = tf;
+
+    // Booking
+    const { data: b } = await window.db
+      .from('bookings')
+      .select('*')
+      .eq('id', tf.booking_id)
+      .single();
+    bookingData = b || {};
+
+    // Services
+    const { data: sv } = await window.db
+      .from('trip_services')
+      .select('*, supplier:suppliers(name_ar, name_en)')
+      .eq('trip_file_id', TRIP_ID)
+      .order('service_date', { ascending: true, nullsFirst: false })
+      .order('sort_order');
+    servicesData = sv || [];
+
+    // Tasks
+    const { data: tk } = await window.db
+      .from('trip_tasks')
+      .select('*')
+      .eq('trip_file_id', TRIP_ID)
+      .order('due_date', { ascending: true, nullsFirst: false });
+    tasksData = tk || [];
+
+    // Issues
+    const { data: is } = await window.db
+      .from('trip_issues')
+      .select('*')
+      .eq('trip_file_id', TRIP_ID)
+      .order('reported_at', { ascending: false });
+    issuesData = is || [];
+
+    // Comms
+    const { data: cm } = await window.db
+      .from('trip_communications')
+      .select('*')
+      .eq('trip_file_id', TRIP_ID)
+      .order('sent_at', { ascending: false })
+      .limit(50);
+    commsData = cm || [];
+
+    renderAll();
+  }
+
+  function renderAll() {
+    renderHeader();
+    renderServices();
+    renderTravelers();
+    renderItinerary();
+    renderCommercial();
+    renderTasks();
+    renderIssues();
+    renderComms();
+    renderFinance();
+    renderDocuments();
+    renderTimeline();
+    renderResources();
+  }
+
+  // ── TRAVELERS ─────────────────────────────────────────────────────────────
+
+  function renderTravelers() {
+    const el = document.getElementById('travelersList');
+    const b  = bookingData;
+    const travelers = b.travelers || [];
+
+    // Lead traveler row always shown from booking fields
+    const leadRow = `<tr class="bg-green-50">
+      <td class="px-4 py-3 text-center font-bold text-primary">1</td>
+      <td class="px-4 py-3 font-bold text-gray-800">${b.customer_name || tripData.customer_name || '—'}<span class="mr-2 text-xs bg-primary text-white px-2 py-0.5 rounded-full">قائد</span></td>
+      <td class="px-4 py-3 text-gray-600">${b.customer_phone || tripData.customer_phone || '—'}</td>
+      <td class="px-4 py-3 text-gray-600">${b.customer_email || tripData.customer_email || '—'}</td>
+      <td class="px-4 py-3 text-gray-500 font-mono text-xs">${b.customer_passport_number || '—'}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs">${b.customer_national_id || '—'}</td>
+    </tr>`;
+
+    const travelerRows = travelers.length > 0
+      ? travelers.map((t, i) => `<tr>
+          <td class="px-4 py-3 text-center text-gray-500">${i + 2}</td>
+          <td class="px-4 py-3 font-bold text-gray-800">${t.name || t.full_name || '—'}</td>
+          <td class="px-4 py-3 text-gray-600">${t.phone || '—'}</td>
+          <td class="px-4 py-3 text-gray-600">${t.email || '—'}</td>
+          <td class="px-4 py-3 text-gray-500 font-mono text-xs">${t.passport_number || t.passport || '—'}</td>
+          <td class="px-4 py-3 text-gray-500 text-xs">${t.national_id || '—'}</td>
+        </tr>`).join('')
+      : '';
+
+    el.innerHTML = `
+      <div class="px-4 py-3 text-xs text-gray-500 bg-gray-50 border-b flex gap-4">
+        <span><i class="fa-solid fa-user ml-1 text-primary"></i>بالغون: <strong>${b.adults_count || 1}</strong></span>
+        <span><i class="fa-solid fa-child ml-1 text-gold"></i>أطفال: <strong>${b.children_count || 0}</strong></span>
+        <span><i class="fa-solid fa-baby ml-1 text-blue-400"></i>رضع: <strong>${b.infants_count || 0}</strong></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b">
+            <tr>
+              <th class="px-4 py-2 text-right text-xs font-bold text-gray-500 w-10">#</th>
+              <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">الاسم</th>
+              <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">الهاتف</th>
+              <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">البريد</th>
+              <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">رقم الجواز</th>
+              <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">الرقم القومي</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            ${leadRow}
+            ${travelerRows}
+          </tbody>
+        </table>
+      </div>
+      ${!travelers.length && (b.adults_count || 1) > 1
+        ? `<div class="px-4 py-3 text-xs text-yellow-600 bg-yellow-50 border-t"><i class="fa-solid fa-triangle-exclamation ml-1"></i>لم يتم إدخال بيانات المسافرين الإضافيين بعد</div>`
+        : ''}`;
+  }
+
+  // ── ITINERARY ─────────────────────────────────────────────────────────────
+
+  async function renderItinerary() {
+    const el = document.getElementById('itineraryContent');
+    const itinId = tripData.itinerary_id;
+
+    if (!itinId) {
+      el.innerHTML = `<div class="text-center py-12 text-gray-400">
+        <i class="fa-solid fa-map text-3xl opacity-20 mb-3 block"></i>
+        <p class="text-sm font-bold">لا يوجد جدول سياحي مرتبط</p>
+        <p class="text-xs mt-1">يمكنك إنشاء جدول سياحي من <a href="/nsp-control-8x4k/itineraries.html" class="text-primary underline">صفحة الجداول</a> وربطه بهذه الرحلة</p>
+      </div>`;
+      return;
+    }
+
+    // Show link to builder
+    const linkEl = document.getElementById('itineraryLink');
+    if (linkEl) { linkEl.href = `/nsp-control-8x4k/itinerary-builder.html?id=${itinId}`; linkEl.classList.remove('hidden'); }
+
+    const { data: itin } = await window.db.from('itineraries').select('*').eq('id', itinId).single();
+    if (!itin) { el.innerHTML = '<div class="p-4 text-red-500 text-sm">خطأ في تحميل الجدول السياحي</div>'; return; }
+
+    const { data: days } = await window.db.from('itinerary_days')
+      .select('*, itinerary_items(*)')
+      .eq('itinerary_id', itinId)
+      .order('day_number');
+
+    const daysArr = days || [];
+    const SVC_ICONS = {hotel:'🏨',flight:'✈️',transport:'🚌',guide:'🧭',visa:'📋',excursion:'🗺️',meal:'🍽️',ticket:'🎫',transfer:'🚐',activity:'🏃',camp:'⛺',other:'📦'};
+    const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG',{weekday:'short',day:'2-digit',month:'short'}) : '';
+
+    el.innerHTML = `
+      <div class="px-4 py-3 bg-gray-50 border-b text-xs text-gray-500 flex gap-4">
+        <span><i class="fa-solid fa-moon text-primary ml-1"></i>المدة: <strong>${itin.duration_nights || daysArr.length} يوم/ليلة</strong></span>
+        <span><i class="fa-solid fa-map-marker text-gold ml-1"></i>الوجهة: <strong>${itin.destination || '—'}</strong></span>
+      </div>
+      <div class="divide-y">
+        ${daysArr.length === 0 ? '<div class="text-center py-10 text-gray-400 text-sm">لا توجد أيام في الجدول بعد</div>' :
+          daysArr.map(day => {
+            const items = day.itinerary_items || [];
+            return `<div class="p-4">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-black text-sm flex-shrink-0">${day.day_number}</div>
+                <div>
+                  <div class="font-bold text-gray-800 text-sm">${day.label || 'اليوم ' + day.day_number}</div>
+                  ${day.city ? `<div class="text-xs text-gray-400"><i class="fa-solid fa-map-marker ml-1"></i>${day.city}</div>` : ''}
+                  ${day.day_date ? `<div class="text-xs text-gray-400">${fmtDate(day.day_date)}</div>` : ''}
+                </div>
+              </div>
+              ${items.length === 0 ? '<div class="text-xs text-gray-300 mr-12">لا توجد خدمات</div>' :
+                `<div class="mr-12 space-y-1">
+                  ${items.map(it => `<div class="flex items-start gap-2 text-sm">
+                    <span class="text-base flex-shrink-0">${SVC_ICONS[it.item_type]||'📦'}</span>
+                    <div class="flex-1">
+                      <span class="font-bold text-gray-700">${it.description}</span>
+                      ${it.time_slot ? `<span class="text-xs text-gray-400 mr-2">${it.time_slot}</span>` : ''}
+                      ${it.client_note ? `<div class="text-xs text-gray-400 mt-0.5">${it.client_note}</div>` : ''}
+                    </div>
+                  </div>`).join('')}
+                </div>`}
+              ${day.notes ? `<div class="mr-12 mt-2 text-xs text-yellow-700 bg-yellow-50 rounded px-2 py-1"><i class="fa-solid fa-note-sticky ml-1"></i>${day.notes}</div>` : ''}
+            </div>`;
+          }).join('')}
+      </div>`;
+  }
+
+  // ── DOCUMENTS ─────────────────────────────────────────────────────────────
+
+  function renderDocuments() {
+    const el = document.getElementById('documentsList');
+    const b  = bookingData;
+    const docs = b.documents || {};
+    const docConfig = b.documents_config || {};
+
+    // Build a checklist based on booking doc status
+    const docItems = [
+      { key:'passport',    label:'جواز السفر',        icon:'fa-passport',     status: docs.passport    || 'pending' },
+      { key:'national_id', label:'الرقم القومي',      icon:'fa-id-card',      status: docs.national_id || 'pending' },
+      { key:'visa',        label:'التأشيرة',           icon:'fa-stamp',        status: docs.visa        || 'pending' },
+      { key:'ticket',      label:'تذكرة الطيران',     icon:'fa-plane-up',     status: docs.ticket      || 'pending' },
+      { key:'insurance',   label:'التأمين',            icon:'fa-shield-halved',status: docs.insurance   || 'pending' },
+      { key:'hotel_voucher',label:'فاوتشر الفندق',   icon:'fa-hotel',        status: docs.hotel_voucher|| 'pending' },
+    ];
+
+    const statusStyle = {
+      approved: 'background:#dcfce7;color:#166534',
+      pending:  'background:#fef9c3;color:#854d0e',
+      missing:  'background:#fee2e2;color:#991b1b',
+      uploaded: 'background:#dbeafe;color:#1e40af',
+      na:       'background:#f3f4f6;color:#9ca3af',
+    };
+    const statusAr = { approved:'مكتمل ✓', pending:'في الانتظار', missing:'مفقود', uploaded:'تم الرفع', na:'لا ينطبق' };
+
+    el.innerHTML = `
+      <div class="divide-y">
+        ${docItems.map(d => `
+          <div class="flex items-center gap-4 px-4 py-3">
+            <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-primary flex-shrink-0">
+              <i class="fa-solid ${d.icon} text-sm"></i>
+            </div>
+            <div class="flex-1 font-bold text-sm text-gray-700">${d.label}</div>
+            <span class="text-xs font-bold px-3 py-1 rounded-full" style="${statusStyle[d.status]||statusStyle.pending}">${statusAr[d.status]||d.status}</span>
+          </div>`).join('')}
+      </div>
+      <div class="p-4 border-t bg-gray-50">
+        <p class="text-xs text-gray-400 font-bold mb-2"><i class="fa-solid fa-print ml-1"></i>إجراءات سريعة</p>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="printTripFileFn()"
+            class="bg-primary text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-green-700 transition">
+            <i class="fa-solid fa-file-pdf ml-1"></i>طباعة ملف الرحلة الكامل
+          </button>
+          <a href="/nsp-control-8x4k/invoices-payments.html"
+            class="bg-white border border-gray-200 text-gray-600 text-xs font-bold px-3 py-2 rounded-lg hover:bg-gray-50 transition">
+            <i class="fa-solid fa-file-invoice ml-1"></i>الفاتورة
+          </a>
+        </div>
+      </div>`;
+  }
+
+  // ── TIMELINE ──────────────────────────────────────────────────────────────
+
+  // ── RESOURCES (Phase 10) ──────────────────────────────────────────────────
+  async function renderResources() {
+    const el = document.getElementById('tripAssignments');
+    const addBtn = document.getElementById('addAssignBtn');
+    if (addBtn) {
+      addBtn.href = `/nsp-control-8x4k/assignments.html?trip_id=${TRIP_ID}`;
+    }
+
+    const { data: assignments, error } = await window.db
+      .from('resource_assignments')
+      .select(`
+        id, resource_type, assigned_date, time_start, time_end,
+        pickup_location, dropoff_location, passenger_count, status, notes,
+        drivers(full_name, phone),
+        guides(full_name, phone),
+        vehicles(name_ar, plate_number, capacity, vehicle_type)
+      `)
+      .eq('trip_file_id', TRIP_ID)
+      .neq('status', 'cancelled')
+      .order('assigned_date')
+      .order('time_start');
+
+    if (error) {
+      el.innerHTML = `<p class="text-red-500 text-sm text-center py-4">خطأ في تحميل الموارد: ${error.message}</p>`;
+      return;
+    }
+
+    if (!assignments || assignments.length === 0) {
+      el.innerHTML = `
+        <div class="text-center py-10 text-gray-400">
+          <i class="fa-solid fa-users-gear text-4xl text-gray-200 mb-3 block"></i>
+          <p class="font-bold text-sm">لم يتم تعيين موارد بعد</p>
+          <p class="text-xs mt-1">اضغط "+ تعيين مورد" لإضافة سائق أو مرشد أو مركبة</p>
+        </div>`;
+      return;
+    }
+
+    const TYPE_LBL   = { driver:'سائق', guide:'مرشد', vehicle:'مركبة' };
+    const TYPE_COLOR = { driver:'#dbeafe;color:#1d4ed8', guide:'#ede9fe;color:#7c3aed', vehicle:'#ffedd5;color:#c2410c' };
+    const STS_LBL    = { scheduled:'مجدول', confirmed:'مؤكد', completed:'منتهي' };
+    const STS_COLOR  = { scheduled:'#fef3c7;color:#92400e', confirmed:'#dcfce7;color:#166534', completed:'#f3f4f6;color:#6b7280' };
+
+    const fmtDate = d => d ? new Date(d + 'T12:00:00').toLocaleDateString('ar-EG', { weekday:'short', month:'short', day:'numeric' }) : '—';
+    const fmtTime = t => t ? t.slice(0,5) : '';
+
+    // Group by date
+    const byDate = {};
+    assignments.forEach(a => {
+      const dk = a.assigned_date || 'unknown';
+      if (!byDate[dk]) byDate[dk] = [];
+      byDate[dk].push(a);
+    });
+
+    el.innerHTML = Object.entries(byDate).map(([date, list]) => `
+      <div class="mb-4">
+        <p class="text-xs font-bold text-gray-500 mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-calendar-day text-primary"></i>
+          ${fmtDate(date)}
+        </p>
+        <div class="space-y-2">
+          ${list.map(a => {
+            const resource = a.resource_type === 'driver' ? a.drivers
+                           : a.resource_type === 'guide'  ? a.guides
+                           : a.vehicles;
+            const name  = a.resource_type === 'vehicle'
+              ? (resource?.name_ar || resource?.plate_number || '—')
+              : resource?.full_name || '—';
+            const phone = resource?.phone || null;
+            const extra = a.resource_type === 'vehicle'
+              ? `${resource?.plate_number || ''} · ${resource?.capacity || ''} راكب`
+              : '';
+            return `
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                      style="background:${TYPE_COLOR[a.resource_type] || '#f3f4f6'}">
+                  ${TYPE_LBL[a.resource_type] || a.resource_type}
+                </span>
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-gray-800 text-sm">${name}</p>
+                  <p class="text-xs text-gray-400">
+                    ${fmtTime(a.time_start)}${a.time_end ? ' ← ' + fmtTime(a.time_end) : ''}
+                    ${a.pickup_location ? ' · ' + a.pickup_location : ''}
+                    ${phone ? ' · ' + phone : ''}
+                    ${extra ? ' · ' + extra : ''}
+                  </p>
+                </div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                      style="background:${STS_COLOR[a.status] || '#f3f4f6'}">
+                  ${STS_LBL[a.status] || a.status}
+                </span>
+                <button onclick="cancelTripAssignment('${a.id}')"
+                        class="text-red-400 hover:text-red-600 text-xs shrink-0" title="إلغاء">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  window.cancelTripAssignment = async function(id) {
+    if (!confirm('إلغاء هذا التعيين؟')) return;
+    const { error } = await window.db
+      .from('resource_assignments').update({ status: 'cancelled' }).eq('id', id);
+    if (error) { alert(error.message); return; }
+    await renderResources();
+  };
+
+  function renderTimeline() {
+    const el = document.getElementById('timelineList');
+    // Merge: comms + tasks (completed) + issues (resolved) sorted by date desc
+    const events = [];
+
+    commsData.forEach(c => events.push({
+      date: c.sent_at || c.created_at,
+      icon: 'fa-comments',
+      color: '#2563eb',
+      title: `تواصل (${c.channel === 'whatsapp' ? 'واتساب' : c.channel === 'email' ? 'بريد' : c.channel === 'phone' ? 'هاتف' : c.channel})`,
+      body: c.summary,
+      tag: c.direction === 'inbound' ? 'وارد' : c.direction === 'internal' ? 'داخلي' : 'صادر',
+      tagColor: c.direction === 'inbound' ? '#dbeafe;color:#1e40af' : c.direction === 'internal' ? '#f3f4f6;color:#374151' : '#dcfce7;color:#166534',
+    }));
+
+    tasksData.filter(t => t.status === 'done').forEach(t => events.push({
+      date: t.completed_at || t.updated_at,
+      icon: 'fa-circle-check',
+      color: '#16a34a',
+      title: 'مهمة مكتملة',
+      body: t.title,
+      tag: null,
+    }));
+
+    issuesData.filter(i => i.status === 'resolved' || i.status === 'closed').forEach(i => events.push({
+      date: i.resolved_at || i.updated_at,
+      icon: 'fa-circle-check',
+      color: '#d97706',
+      title: 'مشكلة محلولة',
+      body: i.title,
+      tag: null,
+    }));
+
+    servicesData.filter(s => s.confirmation_date).forEach(s => events.push({
+      date: s.confirmation_date,
+      icon: 'fa-box-check',
+      color: '#059669',
+      title: 'تأكيد خدمة',
+      body: `${s.name_ar} — ${s.confirmation_ref || ''}`,
+      tag: 'مؤكد',
+      tagColor: '#dcfce7;color:#166534',
+    }));
+
+    events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (!events.length) {
+      el.innerHTML = '<div class="text-center py-10 text-gray-400 text-sm">لا توجد أحداث مسجلة بعد</div>';
+      return;
+    }
+
+    const fmtDt = d => d ? new Date(d).toLocaleString('ar-EG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+
+    el.innerHTML = `<ul class="divide-y">
+      ${events.map(ev => `
+        <li class="flex gap-3 px-4 py-3 hover:bg-gray-50">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+               style="background:${ev.color}22">
+            <i class="fa-solid ${ev.icon} text-xs" style="color:${ev.color}"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-sm text-gray-700">${ev.title}</span>
+              ${ev.tag ? `<span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:${ev.tagColor.split(';')[0].replace('background:','')};color:${ev.tagColor.split(';')[1]?.replace('color:','')}">${ev.tag}</span>` : ''}
+            </div>
+            <p class="text-xs text-gray-500 mt-0.5 truncate">${ev.body || ''}</p>
+            <p class="text-xs text-gray-400 mt-0.5">${fmtDt(ev.date)}</p>
+          </div>
+        </li>`).join('')}
+    </ul>`;
+
+  // ── HEADER + KPIs ──────────────────────────────────────────────────────────
+
+  function renderHeader() {
+    document.getElementById('pageTitle').textContent =
+      (tripData.trip_number || 'ملف الرحلة') + ' — ' + (tripData.customer_name || '—');
+    document.getElementById('pageSubtitle').textContent =
+      (bookingData.booking_number || '') +
+      (tripData.travel_date_start ? ' · ' + new Date(tripData.travel_date_start).toLocaleDateString('ar-EG') : '');
+
+    document.getElementById('opsStatusSelect').value = tripData.ops_status;
+
+    const r = tripData.readiness_score || 0;
+    const ring = document.getElementById('readinessRing');
+    const col = r >= 80 ? '#059669' : r >= 50 ? '#d97706' : '#dc2626';
+    ring.style.color = col;
+    ring.style.borderColor = col;
+    ring.textContent = r + '%';
+    document.getElementById('readinessDesc').textContent =
+      r === 100 ? 'الرحلة جاهزة تماماً' :
+      r >= 80   ? 'شبه جاهزة — بعض التفاصيل متبقية' :
+      r >= 50   ? 'تحتاج متابعة للتأكيدات' :
+                  'تحتاج عمل عاجل';
+
+    const conf    = servicesData.filter(s => s.confirmation_status === 'confirmed').length;
+    const pending = servicesData.filter(s => s.confirmation_status === 'pending').length;
+    const openT   = tasksData.filter(t => t.status === 'open').length;
+    const openI   = issuesData.filter(i => i.status !== 'resolved' && i.status !== 'closed').length;
+
+    document.getElementById('kpiPax').textContent             = tripData.pax_count || 1;
+    document.getElementById('kpiServices').textContent        = servicesData.length;
+    document.getElementById('kpiConfirmed').textContent       = conf;
+    document.getElementById('kpiPendingServices').textContent = pending;
+    document.getElementById('kpiOpenTasks').textContent       = openT;
+    document.getElementById('kpiOpenIssues').textContent      = openI;
+  }
+
+  // ── SERVICES ───────────────────────────────────────────────────────────────
+
+  const CONF_LABELS = {
+    pending:   ['conf-badge conf-pending',   'في الانتظار'],
+    requested: ['conf-badge conf-requested', 'تم الطلب'],
+    confirmed: ['conf-badge conf-confirmed', 'مؤكد ✓'],
+    rejected:  ['conf-badge conf-rejected',  'مرفوض'],
+    cancelled: ['conf-badge conf-cancelled', 'ملغي'],
+  };
+
+  const SVC_ICONS = {
+    hotel:'fa-bed', transfer:'fa-van-shuttle', guide:'fa-person',
+    activity:'fa-person-hiking', ticket:'fa-ticket', meal:'fa-utensils',
+    flight:'fa-plane', visa:'fa-passport', transport:'fa-bus',
+    camp:'fa-campground', other:'fa-box'
+  };
+
+  function renderServices() {
+    const el = document.getElementById('servicesList');
+    if (!servicesData.length) {
+      el.innerHTML = `<div class="text-center py-10 text-gray-400">
+        <i class="fa-solid fa-boxes-stacked text-3xl opacity-20 mb-3"></i>
+        <p class="text-sm">لا توجد خدمات مضافة بعد</p>
+        <p class="text-xs mt-1">أضف الخدمات يدوياً أو سيتم ملؤها تلقائياً من الجدول السياحي عند تأكيد الحجز</p>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = `<table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b">
+        <tr>
+          <th class="px-4 py-2 text-right text-xs font-bold text-gray-500 w-8"></th>
+          <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">الخدمة</th>
+          <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">التاريخ</th>
+          <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">المورد</th>
+          <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">الحالة</th>
+          <th class="px-4 py-2 text-right text-xs font-bold text-gray-500">رقم التأكيد</th>
+          <th class="px-4 py-2 text-right text-xs font-bold text-gray-500"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        ${servicesData.map(s => {
+          const [badgeClass, badgeLabel] = CONF_LABELS[s.confirmation_status] || ['conf-badge conf-pending','—'];
+          const icon = SVC_ICONS[s.service_type] || 'fa-box';
+          const date = s.service_date ? new Date(s.service_date).toLocaleDateString('ar-EG', {day:'2-digit',month:'short'}) : '—';
+          const supplier = s.supplier?.name_ar || s.supplier?.name_en || '—';
+          return `
+            <tr class="service-row hover:bg-gray-50">
+              <td class="px-4 py-3 text-gray-400 text-center"><i class="fa-solid ${icon}"></i></td>
+              <td class="px-4 py-3">
+                <p class="font-bold text-gray-800">${s.name_ar}</p>
+                ${s.description ? `<p class="text-xs text-gray-400">${s.description}</p>` : ''}
+              </td>
+              <td class="px-4 py-3 text-gray-600">${date}${s.time_start ? ' ' + s.time_start.slice(0,5) : ''}</td>
+              <td class="px-4 py-3 text-gray-600">${supplier}</td>
+              <td class="px-4 py-3"><span class="${badgeClass}">${badgeLabel}</span></td>
+              <td class="px-4 py-3 text-xs text-gray-500 font-mono">${s.confirmation_ref || '—'}</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <button onclick="cycleConfirmation('${s.id}','${s.confirmation_status}')"
+                    class="text-xs text-blue-600 hover:text-blue-800 font-bold">تحديث</button>
+                  <button onclick="deleteService('${s.id}','${s.name_ar}')"
+                    class="text-xs text-red-400 hover:text-red-600 font-bold">حذف</button>
+                </div>
+              </td>
+            </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  // ── COMMERCIAL ─────────────────────────────────────────────────────────────
+
+  function renderCommercial() {
+    const el = document.getElementById('commercialGrid');
+    const tf = tripData;
+    const b  = bookingData;
+    const field = (label, val) => `
+      <div class="border border-gray-100 rounded-lg p-3">
+        <p class="text-xs text-gray-400 font-bold mb-1">${label}</p>
+        <p class="font-bold text-gray-800 text-sm">${val || '—'}</p>
+      </div>`;
+    el.innerHTML =
+      field('رقم الحجز',  b.booking_number) +
+      field('رقم ملف الرحلة', tf.trip_number) +
+      field('اسم العميل', tf.customer_name) +
+      field('هاتف العميل', tf.customer_phone) +
+      field('البريد الإلكتروني', tf.customer_email) +
+      field('عدد المسافرين', tf.pax_count) +
+      field('الوجهة', tf.destination) +
+      field('تاريخ بداية الرحلة', tf.travel_date_start ? new Date(tf.travel_date_start).toLocaleDateString('ar-EG') : null) +
+      field('إجمالي الحجز', b.total_price ? window.formatCurrency(b.total_price) : null) +
+      field('حالة الحجز', b.status) +
+      field('ملاحظات تشغيلية', tf.ops_notes);
+  }
+
+  // ── TASKS ──────────────────────────────────────────────────────────────────
+
+  const PRIORITY_MAP = { urgent:'priority-urgent fa-circle-exclamation', high:'priority-high fa-arrow-up', normal:'priority-normal fa-minus', low:'priority-low fa-arrow-down' };
+  const PRIORITY_AR  = { urgent:'عاجل', high:'مرتفعة', normal:'عادية', low:'منخفضة' };
+
+  function renderTasks() {
+    const el = document.getElementById('tasksList');
+    if (!tasksData.length) {
+      el.innerHTML = '<div class="text-center py-8 text-gray-400 text-sm">لا توجد مهام</div>';
+      return;
+    }
+    el.innerHTML = `<ul class="divide-y">
+      ${tasksData.map(t => {
+        const done = t.status === 'done';
+        const [priorClass] = (PRIORITY_MAP[t.priority] || '').split(' ');
+        const icon = (PRIORITY_MAP[t.priority] || '').split(' ')[1] || 'fa-minus';
+        const due = t.due_date ? new Date(t.due_date).toLocaleDateString('ar-EG') : '';
+        return `
+          <li class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50">
+            <button onclick="toggleTaskDone('${t.id}','${t.status}')"
+              class="mt-1 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition
+                     ${done ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 hover:border-green-400'}">
+              ${done ? '<i class="fa-solid fa-check text-xs"></i>' : ''}
+            </button>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-sm ${done ? 'line-through text-gray-400' : 'text-gray-800'}">${t.title}</p>
+              <div class="flex gap-3 text-xs mt-1">
+                <span class="${priorClass}"><i class="fa-solid ${icon} ml-1"></i>${PRIORITY_AR[t.priority]||''}</span>
+                ${due ? `<span class="text-gray-400"><i class="fa-regular fa-calendar ml-1"></i>${due}</span>` : ''}
+              </div>
+            </div>
+          </li>`;
+      }).join('')}
+    </ul>`;
+  }
+
+  // ── ISSUES ─────────────────────────────────────────────────────────────────
+
+  const SEV_MAP = { critical:'bg-red-100 text-red-700', high:'bg-orange-100 text-orange-700', medium:'bg-yellow-100 text-yellow-700', low:'bg-gray-100 text-gray-600' };
+  const SEV_AR  = { critical:'حرجة', high:'مرتفعة', medium:'متوسطة', low:'منخفضة' };
+
+  function renderIssues() {
+    const el = document.getElementById('issuesList');
+    const open = issuesData.filter(i => i.status !== 'closed');
+    if (!open.length) {
+      el.innerHTML = '<div class="text-center py-8 text-green-600 text-sm"><i class="fa-solid fa-circle-check ml-2"></i>لا توجد مشكلات مفتوحة</div>';
+      return;
+    }
+    el.innerHTML = `<ul class="divide-y">
+      ${open.map(i => `
+        <li class="px-4 py-3 hover:bg-gray-50">
+          <div class="flex items-start gap-3">
+            <span class="status-badge ${SEV_MAP[i.severity]||''} mt-1 text-xs flex-shrink-0">${SEV_AR[i.severity]||''}</span>
+            <div class="flex-1">
+              <p class="font-bold text-sm text-gray-800">${i.title}</p>
+              ${i.description ? `<p class="text-xs text-gray-400 mt-1">${i.description}</p>` : ''}
+              <div class="flex gap-2 mt-2">
+                <button onclick="resolveIssue('${i.id}')"
+                  class="text-xs text-green-600 hover:text-green-800 font-bold border border-green-200 rounded px-2 py-1">
+                  <i class="fa-solid fa-check ml-1"></i>حل المشكلة
+                </button>
+              </div>
+            </div>
+          </div>
+        </li>`).join('')}
+    </ul>`;
+  }
+
+  // ── COMMS ──────────────────────────────────────────────────────────────────
+
+  const CHANNEL_ICONS = { whatsapp:'fa-whatsapp fab text-green-500', phone:'fa-phone fa-solid text-blue-500', email:'fa-envelope fa-solid text-yellow-500', in_person:'fa-handshake fa-solid text-purple-500', internal_note:'fa-sticky-note fa-solid text-gray-400', portal:'fa-globe fa-solid text-indigo-500', sms:'fa-sms fa-solid text-cyan-500' };
+
+  function renderComms() {
+    const el = document.getElementById('commsList');
+    if (!commsData.length) {
+      el.innerHTML = '<div class="text-center py-8 text-gray-400 text-sm">لا يوجد سجل تواصل</div>';
+      return;
+    }
+    el.innerHTML = commsData.map(c => {
+      const icon = CHANNEL_ICONS[c.channel] || 'fa-comment fa-solid text-gray-400';
+      const [lib, cls, color] = icon.split(' ');
+      const when = c.sent_at ? new Date(c.sent_at).toLocaleString('ar-EG', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      return `
+        <div class="flex gap-3 px-4 py-3 hover:bg-gray-50">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:#f3f4f6">
+            <i class="${lib || 'fa-solid'} ${cls} ${color} text-sm"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-800">${c.summary}</p>
+            <p class="text-xs text-gray-400 mt-1">${when}</p>
+          </div>
+          <span class="text-xs text-gray-400 self-start mt-1 flex-shrink-0">${c.direction === 'inbound' ? 'وارد' : c.direction === 'internal' ? 'داخلي' : 'صادر'}</span>
+        </div>`;
+    }).join('');
+  }
+
+  // ── FINANCE ────────────────────────────────────────────────────────────────
+
+  function renderFinance() {
+    const el = document.getElementById('financeGrid');
+    const total = bookingData.total_price   || 0;
+    const paid  = bookingData.paid_amount   || 0;
+    const rem   = bookingData.remaining_amount || (total - paid);
+
+    const cost  = servicesData.reduce((s,sv) => s + (sv.cost_unit || 0) * (sv.quantity || 1), 0);
+    const gp    = total - cost;
+    const margin= total > 0 ? (gp / total * 100).toFixed(1) : 0;
+
+    el.innerHTML = `
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-green-50 rounded-xl p-4 text-center">
+          <p class="text-xs text-gray-400 font-bold mb-1">إجمالي البيع</p>
+          <p class="text-xl font-black text-green-700">${window.formatCurrency ? window.formatCurrency(total) : total.toLocaleString()}</p>
+        </div>
+        <div class="bg-blue-50 rounded-xl p-4 text-center">
+          <p class="text-xs text-gray-400 font-bold mb-1">المحصّل</p>
+          <p class="text-xl font-black text-blue-700">${window.formatCurrency ? window.formatCurrency(paid) : paid.toLocaleString()}</p>
+        </div>
+        <div class="bg-red-50 rounded-xl p-4 text-center">
+          <p class="text-xs text-gray-400 font-bold mb-1">المتبقي</p>
+          <p class="text-xl font-black text-red-700">${window.formatCurrency ? window.formatCurrency(rem) : rem.toLocaleString()}</p>
+        </div>
+        <div class="bg-yellow-50 rounded-xl p-4 text-center">
+          <p class="text-xs text-gray-400 font-bold mb-1">هامش الربح</p>
+          <p class="text-xl font-black text-yellow-700">${margin}%</p>
+        </div>
+      </div>
+      <div class="mt-4 text-center">
+        <a href="/nsp-control-8x4k/invoices-payments.html"
+           class="text-primary text-sm font-bold hover:underline">
+          <i class="fa-solid fa-arrow-left ml-1"></i>عرض الفواتير والمدفوعات الكاملة
+        </a>
+      </div>`;
+  }
+
+  // ── ACTIONS ────────────────────────────────────────────────────────────────
+
+  window.switchTab = function(tab) {
+    const tabs = ['services','travelers','itinerary','commercial','tasks','issues','comms','finance','documents','timeline'];
+    document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i] === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+  };
+
+  window.updateOpsStatus = async function(newStatus) {
+    const { error } = await window.db
+      .from('trip_files')
+      .update({ ops_status: newStatus })
+      .eq('id', TRIP_ID);
+    if (error) { alert('خطأ في تحديث الحالة'); return; }
+    tripData.ops_status = newStatus;
+    showToast('تم تحديث حالة الرحلة');
+  };
+
+  // Open confirmation modal (replaces old cycle)
+  window.cycleConfirmation = function(serviceId, current) {
+    document.getElementById('confirmSvcId').value   = serviceId;
+    document.getElementById('confirmStatus').value  = current;
+    document.getElementById('confirmRef').value     = '';
+    document.getElementById('confirmDate').value    = '';
+    document.getElementById('confirmNotes').value   = '';
+    // Pre-fill from existing service data
+    const svc = servicesData.find(s => s.id === serviceId);
+    if (svc) {
+      if (svc.confirmation_ref)  document.getElementById('confirmRef').value  = svc.confirmation_ref;
+      if (svc.confirmation_date) document.getElementById('confirmDate').value = svc.confirmation_date;
+      if (svc.confirmation_notes) document.getElementById('confirmNotes').value = svc.confirmation_notes;
+    }
+    document.getElementById('confirmModal').classList.remove('hidden');
+  };
+
+  window.saveConfirmation = async function() {
+    const id     = document.getElementById('confirmSvcId').value;
+    const status = document.getElementById('confirmStatus').value;
+    const ref    = document.getElementById('confirmRef').value.trim() || null;
+    const date   = document.getElementById('confirmDate').value || null;
+    const notes  = document.getElementById('confirmNotes').value.trim() || null;
+    const { error } = await window.db.from('trip_services').update({
+      confirmation_status: status,
+      confirmation_ref:    ref,
+      confirmation_date:   date,
+      confirmation_notes:  notes,
+    }).eq('id', id);
+    if (error) { alert('خطأ في الحفظ: ' + error.message); return; }
+    closeModal('confirmModal');
+    await loadAll();
+    switchTab('services');
+    showToast('تم تحديث التأكيد');
+  };
+
+  window.deleteService = async function(serviceId, name) {
+    if (!confirm(`حذف الخدمة "${name}"؟`)) return;
+    const { error } = await window.db.from('trip_services').delete().eq('id', serviceId);
+    if (error) { alert('خطأ في الحذف'); return; }
+    await loadAll();
+    switchTab('services');
+    showToast('تم حذف الخدمة');
+  };
+
+  window.printTripFileFn = function() {
+    if (typeof printTripFile === 'function') {
+      printTripFile(tripData, bookingData, servicesData, tasksData);
+    } else {
+      window.print();
+    }
+  };
+
+  window.toggleTaskDone = async function(taskId, current) {
+    const newStatus = current === 'done' ? 'open' : 'done';
+    const update = { status: newStatus };
+    if (newStatus === 'done') update.completed_at = new Date().toISOString();
+    const { error } = await window.db.from('trip_tasks').update(update).eq('id', taskId);
+    if (error) { alert('خطأ'); return; }
+    await loadAll();
+    switchTab('tasks');
+  };
+
+  window.resolveIssue = async function(issueId) {
+    const { error } = await window.db.from('trip_issues')
+      .update({ status:'resolved', resolved_at: new Date().toISOString() })
+      .eq('id', issueId);
+    if (error) { alert('خطأ'); return; }
+    await loadAll();
+    switchTab('issues');
+  };
+
+  // ── MODALS ─────────────────────────────────────────────────────────────────
+
+  window.openAddServiceModal = () => document.getElementById('addServiceModal').classList.remove('hidden');
+  window.openAddTaskModal    = () => document.getElementById('addTaskModal').classList.remove('hidden');
+  window.openAddIssueModal   = () => document.getElementById('addIssueModal').classList.remove('hidden');
+  window.openAddCommModal    = () => document.getElementById('addCommModal').classList.remove('hidden');
+  window.closeModal = id => document.getElementById(id).classList.add('hidden');
+
+  window.saveService = async function() {
+    const name = document.getElementById('svcName').value.trim();
+    if (!name) { alert('اسم الخدمة مطلوب'); return; }
+    const { error } = await window.db.from('trip_services').insert({
+      trip_file_id: TRIP_ID,
+      service_type: document.getElementById('svcType').value,
+      name_ar:      name,
+      service_date: document.getElementById('svcDate').value || null,
+      time_start:   document.getElementById('svcTime').value || null,
+      description:  document.getElementById('svcNotes').value || null,
+    });
+    if (error) { alert('خطأ في الحفظ: ' + error.message); return; }
+    closeModal('addServiceModal');
+    document.getElementById('svcName').value = '';
+    document.getElementById('svcNotes').value = '';
+    await loadAll();
+    switchTab('services');
+    showToast('تم إضافة الخدمة');
+  };
+
+  window.saveTask = async function() {
+    const title = document.getElementById('taskTitle').value.trim();
+    if (!title) { alert('عنوان المهمة مطلوب'); return; }
+    const { error } = await window.db.from('trip_tasks').insert({
+      trip_file_id: TRIP_ID,
+      title,
+      priority:  document.getElementById('taskPriority').value,
+      due_date:  document.getElementById('taskDue').value || null,
+      notes:     document.getElementById('taskNotes').value || null,
+    });
+    if (error) { alert('خطأ: ' + error.message); return; }
+    closeModal('addTaskModal');
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('taskNotes').value = '';
+    await loadAll();
+    switchTab('tasks');
+    showToast('تمت إضافة المهمة');
+  };
+
+  window.saveIssue = async function() {
+    const title = document.getElementById('issueTitle').value.trim();
+    if (!title) { alert('وصف المشكلة مطلوب'); return; }
+    const { error } = await window.db.from('trip_issues').insert({
+      trip_file_id: TRIP_ID,
+      title,
+      severity:    document.getElementById('issueSeverity').value,
+      category:    document.getElementById('issueCategory').value,
+      description: document.getElementById('issueDesc').value || null,
+    });
+    if (error) { alert('خطأ: ' + error.message); return; }
+    closeModal('addIssueModal');
+    document.getElementById('issueTitle').value = '';
+    document.getElementById('issueDesc').value = '';
+    await loadAll();
+    switchTab('issues');
+    showToast('تم رصد المشكلة');
+  };
+
+  window.saveComm = async function() {
+    const summary = document.getElementById('commSummary').value.trim();
+    if (!summary) { alert('ملخص التواصل مطلوب'); return; }
+    const { error } = await window.db.from('trip_communications').insert({
+      trip_file_id:   TRIP_ID,
+      channel:        document.getElementById('commChannel').value,
+      direction:      document.getElementById('commDirection').value,
+      recipient_type: document.getElementById('commRecipient').value,
+      summary,
+    });
+    if (error) { alert('خطأ: ' + error.message); return; }
+    closeModal('addCommModal');
+    document.getElementById('commSummary').value = '';
+    await loadAll();
+    switchTab('comms');
+    showToast('تم تسجيل التواصل');
+  };
+
+  // ── TOAST ──────────────────────────────────────────────────────────────────
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-lg z-50 transition';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  // ── INIT ───────────────────────────────────────────────────────────────────
+  await loadAll();
+});
+</script>
+</body>
+</html>

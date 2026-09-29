@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الموارد البشرية والمركبات | Flow Travel</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .tab-btn { padding:7px 18px; border-radius:8px; font-size:.82rem; font-weight:700; cursor:pointer; transition:.15s; border:none; white-space:nowrap; }
+    .tab-btn.active { background:#1B5E20; color:#fff; }
+    .tab-btn:not(.active) { background:#f3f4f6; color:#374151; }
+    .tab-btn:not(.active):hover { background:#e5e7eb; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-left:5px; }
+    .resource-card { transition:.15s; }
+    .resource-card:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.08); }
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:flex; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; }
+    .modal { background:#fff; border-radius:16px; padding:28px; width:100%; max-width:600px; margin:auto; }
+    input,select,textarea { font-family:'Cairo',sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header mb-5">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-users-gear ml-2 text-gold"></i>الموارد البشرية والمركبات</h1>
+      <p class="erp-page-subtitle">إدارة السائقين، المرشدين، والمركبات</p>
+    </div>
+    <button onclick="openCreateModal()" class="bg-primary text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-lightGreen transition flex items-center gap-2">
+      <i class="fa-solid fa-plus"></i> إضافة
+    </button>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-grid mb-5" id="kpiStrip">
+    <div class="erp-card animate-pulse"><div class="h-3 bg-gray-200 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+    <div class="erp-card animate-pulse"><div class="h-3 bg-gray-200 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+    <div class="erp-card animate-pulse"><div class="h-3 bg-gray-200 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+    <div class="erp-card animate-pulse"><div class="h-3 bg-gray-200 rounded w-20 mb-2"></div><div class="h-7 bg-gray-100 rounded w-12"></div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 mb-4 flex-wrap" id="mainTabs">
+    <button class="tab-btn active" onclick="switchTab('drivers',this)"><i class="fa-solid fa-car ml-1"></i>السائقون</button>
+    <button class="tab-btn" onclick="switchTab('guides',this)"><i class="fa-solid fa-person ml-1"></i>المرشدون</button>
+    <button class="tab-btn" onclick="switchTab('vehicles',this)"><i class="fa-solid fa-bus ml-1"></i>المركبات</button>
+  </div>
+
+  <!-- ── TAB: DRIVERS ── -->
+  <div id="tab-drivers" class="tab-panel active">
+    <div class="flex flex-col md:flex-row gap-3 mb-4">
+      <input id="driverSearch" type="text" placeholder="بحث عن سائق…" oninput="renderDrivers()"
+             class="border border-gray-200 rounded-xl px-4 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-primary/30">
+      <select id="driverStatusFilter" onchange="renderDrivers()"
+              class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+        <option value="">كل الحالات</option>
+        <option value="available">متاح</option>
+        <option value="busy">مشغول</option>
+        <option value="off">إجازة</option>
+        <option value="inactive">غير نشط</option>
+      </select>
+    </div>
+    <div id="driversGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="col-span-full text-center py-12 text-gray-400 animate-pulse">جارٍ التحميل…</div>
+    </div>
+  </div>
+
+  <!-- ── TAB: GUIDES ── -->
+  <div id="tab-guides" class="tab-panel">
+    <div class="flex flex-col md:flex-row gap-3 mb-4">
+      <input id="guideSearch" type="text" placeholder="بحث عن مرشد…" oninput="renderGuides()"
+             class="border border-gray-200 rounded-xl px-4 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-primary/30">
+      <select id="guideStatusFilter" onchange="renderGuides()"
+              class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+        <option value="">كل الحالات</option>
+        <option value="available">متاح</option>
+        <option value="busy">مشغول</option>
+        <option value="off">إجازة</option>
+        <option value="inactive">غير نشط</option>
+      </select>
+    </div>
+    <div id="guidesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="col-span-full text-center py-12 text-gray-400 animate-pulse">جارٍ التحميل…</div>
+    </div>
+  </div>
+
+  <!-- ── TAB: VEHICLES ── -->
+  <div id="tab-vehicles" class="tab-panel">
+    <div class="flex flex-col md:flex-row gap-3 mb-4">
+      <input id="vehicleSearch" type="text" placeholder="بحث عن مركبة…" oninput="renderVehicles()"
+             class="border border-gray-200 rounded-xl px-4 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-primary/30">
+      <select id="vehicleStatusFilter" onchange="renderVehicles()"
+              class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+        <option value="">كل الحالات</option>
+        <option value="available">متاح</option>
+        <option value="in_use">مستخدم</option>
+        <option value="maintenance">صيانة</option>
+        <option value="retired">متقاعد</option>
+      </select>
+      <select id="vehicleTypeFilter" onchange="renderVehicles()"
+              class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+        <option value="">كل الأنواع</option>
+        <option value="sedan">سيدان</option>
+        <option value="suv">SUV</option>
+        <option value="minivan">ميني فان</option>
+        <option value="minibus">ميني باص</option>
+        <option value="bus">باص</option>
+        <option value="van">فان</option>
+        <option value="coaster">كوستر</option>
+        <option value="luxury">فاخر</option>
+      </select>
+    </div>
+    <div id="vehiclesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="col-span-full text-center py-12 text-gray-400 animate-pulse">جارٍ التحميل…</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── CREATE / EDIT MODAL ── -->
+<div id="modal" class="modal-bg hidden" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h3 id="modalTitle" class="text-lg font-bold text-gray-800">إضافة</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    </div>
+
+    <!-- Resource type selector (only on create) -->
+    <div id="typeSelectorWrap" class="flex gap-2 mb-5">
+      <button class="tab-btn active flex-1" onclick="setModalType('driver',this)"><i class="fa-solid fa-car ml-1"></i>سائق</button>
+      <button class="tab-btn flex-1" onclick="setModalType('guide',this)"><i class="fa-solid fa-person ml-1"></i>مرشد</button>
+      <button class="tab-btn flex-1" onclick="setModalType('vehicle',this)"><i class="fa-solid fa-bus ml-1"></i>مركبة</button>
+    </div>
+
+    <!-- Shared fields -->
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div class="col-span-2 shared-field">
+        <label class="block text-xs font-bold text-gray-600 mb-1">الاسم <span class="text-red-500">*</span></label>
+        <input id="f_name" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="الاسم الكامل">
+      </div>
+      <div class="shared-field non-vehicle">
+        <label class="block text-xs font-bold text-gray-600 mb-1">الهاتف</label>
+        <input id="f_phone" type="tel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div class="shared-field non-vehicle">
+        <label class="block text-xs font-bold text-gray-600 mb-1">واتساب</label>
+        <input id="f_whatsapp" type="tel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div class="shared-field non-vehicle">
+        <label class="block text-xs font-bold text-gray-600 mb-1">رقم الرخصة</label>
+        <input id="f_license" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div class="shared-field non-vehicle">
+        <label class="block text-xs font-bold text-gray-600 mb-1">انتهاء الرخصة</label>
+        <input id="f_license_expiry" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+    </div>
+
+    <!-- Driver-specific -->
+    <div id="driverFields" class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">المركبة الافتراضية</label>
+        <select id="f_default_vehicle" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          <option value="">— اختر مركبة —</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">الحالة</label>
+        <select id="f_driver_status" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          <option value="available">متاح</option>
+          <option value="busy">مشغول</option>
+          <option value="off">إجازة</option>
+          <option value="inactive">غير نشط</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Guide-specific -->
+    <div id="guideFields" class="grid grid-cols-2 gap-3 mb-3 hidden">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">اللغات (مفصولة بفاصلة)</label>
+        <input id="f_languages" type="text" placeholder="ar, en, fr" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">التخصصات</label>
+        <input id="f_specializations" type="text" placeholder="القاهرة، الأقصر…" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">التقييم (1-5)</label>
+        <input id="f_rating" type="number" min="1" max="5" step="0.1" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">الحالة</label>
+        <select id="f_guide_status" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          <option value="available">متاح</option>
+          <option value="busy">مشغول</option>
+          <option value="off">إجازة</option>
+          <option value="inactive">غير نشط</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Vehicle-specific -->
+    <div id="vehicleFields" class="grid grid-cols-2 gap-3 mb-3 hidden">
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">النوع <span class="text-red-500">*</span></label>
+        <select id="f_vehicle_type" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          <option value="sedan">سيدان</option>
+          <option value="suv">SUV</option>
+          <option value="minivan">ميني فان</option>
+          <option value="minibus" selected>ميني باص</option>
+          <option value="bus">باص</option>
+          <option value="van">فان</option>
+          <option value="coaster">كوستر</option>
+          <option value="luxury">فاخر</option>
+          <option value="other">أخرى</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">رقم اللوحة</label>
+        <input id="f_plate" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">السعة (عدد الركاب) <span class="text-red-500">*</span></label>
+        <input id="f_capacity" type="number" min="1" value="4" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">الماركة / الموديل</label>
+        <input id="f_make_model" type="text" placeholder="Toyota Hiace" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">اللون</label>
+        <input id="f_color" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">الحالة</label>
+        <select id="f_vehicle_status" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          <option value="available">متاح</option>
+          <option value="in_use">مستخدم</option>
+          <option value="maintenance">صيانة</option>
+          <option value="retired">متقاعد</option>
+        </select>
+      </div>
+      <div class="col-span-2 flex items-center gap-2">
+        <input id="f_is_owned" type="checkbox" class="w-4 h-4">
+        <label for="f_is_owned" class="text-sm text-gray-600">مركبة مملوكة للشركة</label>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="mb-4">
+      <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
+      <textarea id="f_notes" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"></textarea>
+    </div>
+
+    <div id="modalError" class="hidden text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2 mb-3"></div>
+
+    <div class="flex gap-3 justify-end">
+      <button onclick="closeModal()" class="px-4 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50">إلغاء</button>
+      <button onclick="saveResource()" id="saveBtn" class="px-5 py-2 rounded-xl bg-primary text-white font-bold text-sm hover:bg-lightGreen transition">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let drivers = [], guides = [], vehicles = [];
+let currentTab = 'drivers';
+let modalType = 'driver';
+let editingId = null;
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  await Promise.all([loadAll(), loadKPIs()]);
+});
+
+async function loadAll() {
+  const [dRes, gRes, vRes] = await Promise.all([
+    db.from('drivers').select('*,vehicles(name_ar,plate_number,capacity,vehicle_type)').order('full_name'),
+    db.from('guides').select('*').order('full_name'),
+    db.from('vehicles').select('*,suppliers(name_ar)').order('name_ar'),
+  ]);
+  drivers  = dRes.data || [];
+  guides   = gRes.data || [];
+  vehicles = vRes.data || [];
+  renderDrivers();
+  renderGuides();
+  renderVehicles();
+  // Populate vehicle select in modal
+  const sel = document.getElementById('f_default_vehicle');
+  vehicles.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.id;
+    o.textContent = `${v.name_ar||v.make_model||'?'} (${v.plate_number||'بدون لوحة'}) — ${v.capacity} راكب`;
+    sel.appendChild(o);
+  });
+}
+
+async function loadKPIs() {
+  const { data } = await db.rpc('get_resource_summary');
+  if (!data) return;
+  const d = data;
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="erp-card cursor-pointer hover:shadow-md transition" onclick="switchTab('drivers',document.querySelector('[onclick*=drivers]'))">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-car text-blue-500"></i>
+        </div>
+        <p class="text-xs text-gray-500 font-bold">السائقون</p>
+      </div>
+      <p class="text-2xl font-bold text-gray-800">${d.drivers_total}</p>
+      <p class="text-xs text-green-600 mt-1">متاح: ${d.drivers_available} · مشغول: ${d.drivers_busy}</p>
+    </div>
+    <div class="erp-card cursor-pointer hover:shadow-md transition" onclick="switchTab('guides',document.querySelectorAll('#mainTabs .tab-btn')[1])">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-9 h-9 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-person text-purple-500"></i>
+        </div>
+        <p class="text-xs text-gray-500 font-bold">المرشدون</p>
+      </div>
+      <p class="text-2xl font-bold text-gray-800">${d.guides_total}</p>
+      <p class="text-xs text-green-600 mt-1">متاح: ${d.guides_available} · مشغول: ${d.guides_busy}</p>
+    </div>
+    <div class="erp-card cursor-pointer hover:shadow-md transition" onclick="switchTab('vehicles',document.querySelectorAll('#mainTabs .tab-btn')[2])">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-9 h-9 bg-orange-50 rounded-lg flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-bus text-orange-500"></i>
+        </div>
+        <p class="text-xs text-gray-500 font-bold">المركبات</p>
+      </div>
+      <p class="text-2xl font-bold text-gray-800">${d.vehicles_total}</p>
+      <p class="text-xs text-orange-500 mt-1">متاح: ${d.vehicles_available} · مستخدم: ${d.vehicles_in_use}</p>
+    </div>
+    <div class="erp-card">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-calendar-day text-green-500"></i>
+        </div>
+        <p class="text-xs text-gray-500 font-bold">تعيينات اليوم</p>
+      </div>
+      <p class="text-2xl font-bold text-gray-800">${d.assignments_today}</p>
+      ${d.license_expiring > 0 ? `<p class="text-xs text-red-500 mt-1">⚠️ ${d.license_expiring} رخصة تنتهي قريباً</p>` : '<p class="text-xs text-gray-400 mt-1">لا تنبيهات</p>'}
+    </div>`;
+}
+
+// ── Status helpers ─────────────────────────────────────────────────────────────
+const STATUS_COLORS = {
+  available:'#16a34a', busy:'#d97706', off:'#6b7280',
+  inactive:'#9ca3af', in_use:'#2563eb', maintenance:'#dc2626', retired:'#9ca3af'
+};
+const STATUS_LBL = {
+  available:'متاح', busy:'مشغول', off:'إجازة', inactive:'غير نشط',
+  in_use:'مستخدم', maintenance:'صيانة', retired:'متقاعد'
+};
+const VEHICLE_TYPE_LBL = {
+  sedan:'سيدان', suv:'SUV', minivan:'ميني فان', minibus:'ميني باص',
+  bus:'باص', van:'فان', coaster:'كوستر', luxury:'فاخر', other:'أخرى'
+};
+const VEHICLE_ICONS = {
+  sedan:'🚗', suv:'🚙', minivan:'🚐', minibus:'🚌', bus:'🚌',
+  van:'🚐', coaster:'🚌', luxury:'🏎️', other:'🚗'
+};
+
+function statusBadge(s) {
+  const c = STATUS_COLORS[s] || '#6b7280';
+  return `<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:${c}22;color:${c}">${STATUS_LBL[s]||s}</span>`;
+}
+
+// ── RENDER DRIVERS ─────────────────────────────────────────────────────────────
+function renderDrivers() {
+  const q = document.getElementById('driverSearch').value.toLowerCase();
+  const sf = document.getElementById('driverStatusFilter').value;
+  const list = drivers.filter(d =>
+    (!q || d.full_name.toLowerCase().includes(q) || (d.phone||'').includes(q)) &&
+    (!sf || d.status === sf)
+  );
+  document.getElementById('driversGrid').innerHTML = list.length === 0
+    ? `<div class="col-span-full text-center py-12 text-gray-400"><i class="fa-solid fa-car text-5xl text-gray-200 mb-3 block"></i>لا يوجد سائقون</div>`
+    : list.map(d => `
+      <div class="erp-card resource-card">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg shrink-0">
+              ${d.full_name[0]}
+            </div>
+            <div>
+              <p class="font-bold text-gray-800">${d.full_name}</p>
+              ${d.phone ? `<p class="text-xs text-gray-500">${d.phone}</p>` : ''}
+            </div>
+          </div>
+          ${statusBadge(d.status)}
+        </div>
+        ${d.vehicles ? `
+          <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+            <i class="fa-solid fa-car text-gray-300"></i>
+            ${d.vehicles.name_ar||'?'} · ${d.vehicles.plate_number||'بدون لوحة'} · ${d.vehicles.capacity} راكب
+          </div>` : ''}
+        ${d.license_expiry ? `
+          <div class="text-xs ${new Date(d.license_expiry) < new Date(Date.now()+30*864e5) ? 'text-red-500 font-bold' : 'text-gray-400'}">
+            <i class="fa-solid fa-id-card ml-1"></i>الرخصة: ${new Date(d.license_expiry).toLocaleDateString('ar-EG')}
+          </div>` : ''}
+        <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+          <button onclick="editResource('driver','${d.id}')" class="flex-1 text-xs text-center py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">
+            <i class="fa-solid fa-pen ml-1"></i>تعديل
+          </button>
+          <a href="/nsp-control-8x4k/assignments.html?driver_id=${d.id}" class="flex-1 text-xs text-center py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold transition">
+            <i class="fa-solid fa-calendar ml-1"></i>جدوله
+          </a>
+        </div>
+      </div>`).join('');
+}
+
+// ── RENDER GUIDES ─────────────────────────────────────────────────────────────
+function renderGuides() {
+  const q = document.getElementById('guideSearch').value.toLowerCase();
+  const sf = document.getElementById('guideStatusFilter').value;
+  const list = guides.filter(g =>
+    (!q || g.full_name.toLowerCase().includes(g) || (g.phone||'').includes(q) || g.full_name.toLowerCase().includes(q)) &&
+    (!sf || g.status === sf)
+  );
+  document.getElementById('guidesGrid').innerHTML = list.length === 0
+    ? `<div class="col-span-full text-center py-12 text-gray-400"><i class="fa-solid fa-person text-5xl text-gray-200 mb-3 block"></i>لا يوجد مرشدون</div>`
+    : list.map(g => `
+      <div class="erp-card resource-card">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-lg shrink-0">
+              ${g.full_name[0]}
+            </div>
+            <div>
+              <p class="font-bold text-gray-800">${g.full_name}</p>
+              ${g.phone ? `<p class="text-xs text-gray-500">${g.phone}</p>` : ''}
+            </div>
+          </div>
+          ${statusBadge(g.status)}
+        </div>
+        ${g.languages && g.languages.length ? `
+          <div class="flex flex-wrap gap-1 mb-2">
+            ${g.languages.map(l => `<span class="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full font-bold">${l.toUpperCase()}</span>`).join('')}
+          </div>` : ''}
+        ${g.specializations && g.specializations.length ? `
+          <p class="text-xs text-gray-400 mb-2"><i class="fa-solid fa-map-pin ml-1"></i>${g.specializations.join(' · ')}</p>` : ''}
+        ${g.rating ? `<div class="text-xs text-yellow-500 mb-2">${'★'.repeat(Math.round(g.rating))}${'☆'.repeat(5-Math.round(g.rating))} ${g.rating}</div>` : ''}
+        ${g.license_expiry ? `
+          <div class="text-xs ${new Date(g.license_expiry) < new Date(Date.now()+30*864e5) ? 'text-red-500 font-bold' : 'text-gray-400'}">
+            <i class="fa-solid fa-id-card ml-1"></i>الرخصة: ${new Date(g.license_expiry).toLocaleDateString('ar-EG')}
+          </div>` : ''}
+        <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+          <button onclick="editResource('guide','${g.id}')" class="flex-1 text-xs text-center py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">
+            <i class="fa-solid fa-pen ml-1"></i>تعديل
+          </button>
+          <a href="/nsp-control-8x4k/assignments.html?guide_id=${g.id}" class="flex-1 text-xs text-center py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-600 font-bold transition">
+            <i class="fa-solid fa-calendar ml-1"></i>جدوله
+          </a>
+        </div>
+      </div>`).join('');
+}
+
+// ── RENDER VEHICLES ────────────────────────────────────────────────────────────
+function renderVehicles() {
+  const q = document.getElementById('vehicleSearch').value.toLowerCase();
+  const sf = document.getElementById('vehicleStatusFilter').value;
+  const tf = document.getElementById('vehicleTypeFilter').value;
+  const list = vehicles.filter(v =>
+    (!q || (v.name_ar||'').toLowerCase().includes(q) || (v.plate_number||'').toLowerCase().includes(q) || (v.make_model||'').toLowerCase().includes(q)) &&
+    (!sf || v.status === sf) &&
+    (!tf || v.vehicle_type === tf)
+  );
+  document.getElementById('vehiclesGrid').innerHTML = list.length === 0
+    ? `<div class="col-span-full text-center py-12 text-gray-400"><i class="fa-solid fa-bus text-5xl text-gray-200 mb-3 block"></i>لا توجد مركبات</div>`
+    : list.map(v => `
+      <div class="erp-card resource-card">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-orange-100 flex items-center justify-center text-2xl shrink-0">
+              ${VEHICLE_ICONS[v.vehicle_type]||'🚗'}
+            </div>
+            <div>
+              <p class="font-bold text-gray-800">${v.name_ar || v.make_model || VEHICLE_TYPE_LBL[v.vehicle_type]}</p>
+              <p class="text-xs text-gray-500">${VEHICLE_TYPE_LBL[v.vehicle_type]||v.vehicle_type}</p>
+            </div>
+          </div>
+          ${statusBadge(v.status)}
+        </div>
+        <div class="grid grid-cols-2 gap-y-1 text-xs text-gray-500 mb-2">
+          ${v.plate_number ? `<span><i class="fa-solid fa-hashtag ml-1 text-gray-300"></i>${v.plate_number}</span>` : '<span></span>'}
+          <span><i class="fa-solid fa-users ml-1 text-gray-300"></i>${v.capacity} راكب</span>
+          ${v.make_model ? `<span class="col-span-2"><i class="fa-solid fa-car ml-1 text-gray-300"></i>${v.make_model}</span>` : ''}
+          ${v.color ? `<span><i class="fa-solid fa-palette ml-1 text-gray-300"></i>${v.color}</span>` : ''}
+          ${v.suppliers ? `<span class="col-span-2 text-indigo-600"><i class="fa-solid fa-building ml-1"></i>${v.suppliers.name_ar}</span>` : ''}
+          ${v.is_owned ? `<span class="col-span-2 text-green-600 font-bold">مملوكة للشركة</span>` : ''}
+        </div>
+        <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+          <button onclick="editResource('vehicle','${v.id}')" class="flex-1 text-xs text-center py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">
+            <i class="fa-solid fa-pen ml-1"></i>تعديل
+          </button>
+          <a href="/nsp-control-8x4k/assignments.html?vehicle_id=${v.id}" class="flex-1 text-xs text-center py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold transition">
+            <i class="fa-solid fa-calendar ml-1"></i>جدولها
+          </a>
+        </div>
+      </div>`).join('');
+}
+
+// ── TAB SWITCHING ──────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#mainTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  currentTab = name;
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openCreateModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'إضافة مورد جديد';
+  document.getElementById('typeSelectorWrap').classList.remove('hidden');
+  clearForm();
+  const typeMap = { drivers:'driver', guides:'guide', vehicles:'vehicle' };
+  setModalType(typeMap[currentTab] || 'driver');
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function setModalType(type, btn) {
+  modalType = type;
+  document.querySelectorAll('#typeSelectorWrap .tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const btns = document.querySelectorAll('#typeSelectorWrap .tab-btn');
+    const idx = ['driver','guide','vehicle'].indexOf(type);
+    if (btns[idx]) btns[idx].classList.add('active');
+  }
+  document.getElementById('driverFields').classList.toggle('hidden', type !== 'driver');
+  document.getElementById('guideFields').classList.toggle('hidden', type !== 'guide');
+  document.getElementById('vehicleFields').classList.toggle('hidden', type !== 'vehicle');
+  document.querySelectorAll('.non-vehicle').forEach(el => el.classList.toggle('hidden', type === 'vehicle'));
+}
+
+function clearForm() {
+  ['f_name','f_phone','f_whatsapp','f_license','f_license_expiry',
+   'f_languages','f_specializations','f_rating',
+   'f_plate','f_capacity','f_make_model','f_color','f_notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f_capacity').value = 4;
+  document.getElementById('f_driver_status').value = 'available';
+  document.getElementById('f_guide_status').value = 'available';
+  document.getElementById('f_vehicle_status').value = 'available';
+  document.getElementById('f_vehicle_type').value = 'minibus';
+  document.getElementById('f_default_vehicle').value = '';
+  document.getElementById('f_is_owned').checked = false;
+  hideError();
+}
+
+async function editResource(type, id) {
+  editingId = id;
+  modalType = type;
+  document.getElementById('modalTitle').textContent = 'تعديل';
+  document.getElementById('typeSelectorWrap').classList.add('hidden');
+  setModalType(type);
+  clearForm();
+
+  let row;
+  if (type === 'driver')  row = drivers.find(d => d.id === id);
+  if (type === 'guide')   row = guides.find(g => g.id === id);
+  if (type === 'vehicle') row = vehicles.find(v => v.id === id);
+  if (!row) return;
+
+  document.getElementById('f_name').value  = row.full_name || row.name_ar || '';
+  document.getElementById('f_notes').value = row.notes || '';
+
+  if (type !== 'vehicle') {
+    document.getElementById('f_phone').value          = row.phone || '';
+    document.getElementById('f_whatsapp').value       = row.whatsapp || '';
+    document.getElementById('f_license').value        = row.license_number || '';
+    document.getElementById('f_license_expiry').value = row.license_expiry || '';
+  }
+  if (type === 'driver') {
+    document.getElementById('f_default_vehicle').value = row.default_vehicle_id || '';
+    document.getElementById('f_driver_status').value   = row.status || 'available';
+  }
+  if (type === 'guide') {
+    document.getElementById('f_languages').value      = (row.languages||[]).join(', ');
+    document.getElementById('f_specializations').value= (row.specializations||[]).join(', ');
+    document.getElementById('f_rating').value         = row.rating || '';
+    document.getElementById('f_guide_status').value   = row.status || 'available';
+  }
+  if (type === 'vehicle') {
+    document.getElementById('f_vehicle_type').value   = row.vehicle_type || 'minibus';
+    document.getElementById('f_plate').value          = row.plate_number || '';
+    document.getElementById('f_capacity').value       = row.capacity || 4;
+    document.getElementById('f_make_model').value     = row.make_model || '';
+    document.getElementById('f_color').value          = row.color || '';
+    document.getElementById('f_vehicle_status').value = row.status || 'available';
+    document.getElementById('f_is_owned').checked     = row.is_owned || false;
+  }
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+function showError(msg) {
+  const el = document.getElementById('modalError');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+function hideError() { document.getElementById('modalError').classList.add('hidden'); }
+
+async function saveResource() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = '…';
+  hideError();
+
+  try {
+    const name = document.getElementById('f_name').value.trim();
+    if (!name) { showError('الاسم مطلوب'); return; }
+
+    let payload = {};
+    let table   = '';
+
+    if (modalType === 'driver') {
+      table = 'drivers';
+      payload = {
+        full_name:          name,
+        phone:              document.getElementById('f_phone').value.trim() || null,
+        whatsapp:           document.getElementById('f_whatsapp').value.trim() || null,
+        license_number:     document.getElementById('f_license').value.trim() || null,
+        license_expiry:     document.getElementById('f_license_expiry').value || null,
+        default_vehicle_id: document.getElementById('f_default_vehicle').value || null,
+        status:             document.getElementById('f_driver_status').value,
+        notes:              document.getElementById('f_notes').value.trim() || null,
+      };
+    } else if (modalType === 'guide') {
+      table = 'guides';
+      const langs  = document.getElementById('f_languages').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const specs  = document.getElementById('f_specializations').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const rating = parseFloat(document.getElementById('f_rating').value);
+      payload = {
+        full_name:        name,
+        phone:            document.getElementById('f_phone').value.trim() || null,
+        whatsapp:         document.getElementById('f_whatsapp').value.trim() || null,
+        license_number:   document.getElementById('f_license').value.trim() || null,
+        license_expiry:   document.getElementById('f_license_expiry').value || null,
+        languages:        langs.length ? langs : ['ar'],
+        specializations:  specs,
+        rating:           isNaN(rating) ? null : rating,
+        status:           document.getElementById('f_guide_status').value,
+        notes:            document.getElementById('f_notes').value.trim() || null,
+      };
+    } else {
+      table = 'vehicles';
+      const cap = parseInt(document.getElementById('f_capacity').value);
+      if (!cap || cap < 1) { showError('السعة مطلوبة'); return; }
+      payload = {
+        name_ar:      name,
+        vehicle_type: document.getElementById('f_vehicle_type').value,
+        plate_number: document.getElementById('f_plate').value.trim() || null,
+        capacity:     cap,
+        make_model:   document.getElementById('f_make_model').value.trim() || null,
+        color:        document.getElementById('f_color').value.trim() || null,
+        status:       document.getElementById('f_vehicle_status').value,
+        is_owned:     document.getElementById('f_is_owned').checked,
+        notes:        document.getElementById('f_notes').value.trim() || null,
+      };
+    }
+
+    let error;
+    if (editingId) {
+      ({ error } = await db.from(table).update(payload).eq('id', editingId));
+    } else {
+      const user = (await db.auth.getUser()).data?.user;
+      if (user) payload.created_by = user.id;
+      ({ error } = await db.from(table).insert(payload));
+    }
+    if (error) { showError(error.message); return; }
+
+    closeModal();
+    await loadAll();
+    await loadKPIs();
+  } finally {
+    btn.disabled = false; btn.textContent = 'حفظ';
+  }
+}
+</script>
+</body>
+</html>

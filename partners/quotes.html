@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>عروض الأسعار — بوابة الشركاء</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/partner-auth.js"></script>
+  <script src="/js/partner-layout.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;background:#f3f4f6;}
+    .card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 1px 8px rgba(0,0,0,.06);border:1px solid #e5e7eb;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700;}
+    .s-sent{background:#dbeafe;color:#1d4ed8;}
+    .s-accepted{background:#d1fae5;color:#065f46;}
+    .s-rejected{background:#fee2e2;color:#991b1b;}
+    .s-expired{background:#f3f4f6;color:#6b7280;}
+    .s-revision{background:#fef3c7;color:#b45309;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;}
+    textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 3px rgba(27,94,32,.1);}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="min-h-screen">
+<div class="flex min-h-screen">
+  <div id="partnerNavMount" class="flex"></div>
+
+  <main class="flex-1 overflow-auto p-4 md:p-6">
+    <div class="mb-6">
+      <h1 class="text-xl font-black text-gray-800"><i class="fa-solid fa-file-contract text-primary ml-2"></i>عروض الأسعار</h1>
+      <p class="text-sm text-gray-400">راجع واعتمد عروض الأسعار المرسلة إليك</p>
+    </div>
+
+    <!-- Filter -->
+    <div class="flex gap-2 mb-4 flex-wrap">
+      <button onclick="setFilter('all',this)" class="px-4 py-1.5 rounded-lg text-xs font-bold border-2 border-primary text-primary bg-primary/5">الكل</button>
+      <button onclick="setFilter('sent',this)" class="px-4 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-primary">مرسل</button>
+      <button onclick="setFilter('accepted',this)" class="px-4 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-primary">مقبول</button>
+      <button onclick="setFilter('rejected',this)" class="px-4 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-primary">مرفوض</button>
+    </div>
+
+    <div class="card">
+      <div id="quoteList" class="space-y-3">
+        <div class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Action Modal (approve / reject / revision) -->
+<div id="actionModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md">
+    <div class="flex items-center justify-between p-5 border-b">
+      <h3 class="font-black text-gray-800" id="actionTitle">إجراء على عرض السعر</h3>
+      <button onclick="closeAction()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="p-5">
+      <input type="hidden" id="actionQuoteId">
+      <input type="hidden" id="actionType">
+      <div>
+        <label id="noteLabel">ملاحظة (اختياري)</label>
+        <textarea id="actionNote" rows="3" placeholder="أي تعليق أو ملاحظة..."></textarea>
+      </div>
+      <p id="actionErr" class="hidden text-red-500 text-sm font-bold mt-2"></p>
+    </div>
+    <div class="flex gap-3 justify-end p-5 border-t">
+      <button onclick="closeAction()" class="px-4 py-2 rounded-xl border text-sm font-bold text-gray-600 hover:bg-gray-50">إلغاء</button>
+      <button onclick="confirmAction()" id="actionConfirmBtn" class="px-5 py-2 rounded-xl text-sm font-bold text-white bg-primary hover:bg-green-800 transition">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let _filter = 'all';
+let _all = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const ppu = await PartnerAuth.requirePartnerAuth();
+  if (!ppu) return;
+  PartnerLayout.init();
+  await load();
+});
+
+async function load() {
+  const pid = PartnerAuth.getPartnerId();
+  // Quotes linked to this partner via partner_id field on quotations OR via b2b_partner_id
+  const { data } = await db.from('quotations')
+    .select('id,quote_number,title,status,total_amount,currency,valid_until,created_at,travel_date_from,travel_date_to,adults_count')
+    .eq('b2b_partner_id', pid)
+    .order('created_at',{ascending:false});
+  _all = data || [];
+
+  // Also load any partner_quote_actions for these quotes
+  render();
+}
+
+function setFilter(f, btn) {
+  _filter = f;
+  document.querySelectorAll('[onclick^="setFilter"]').forEach(b => {
+    b.className = 'px-4 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-primary';
+  });
+  btn.className = 'px-4 py-1.5 rounded-lg text-xs font-bold border-2 border-primary text-primary bg-primary/5';
+  render();
+}
+
+function render() {
+  const rows = _filter === 'all' ? _all : _all.filter(q => q.status === _filter);
+  const el = document.getElementById('quoteList');
+  if (!rows.length) { el.innerHTML='<p class="text-center text-gray-400 py-10">لا توجد عروض أسعار</p>'; return; }
+  const sMap = {
+    sent:'s-sent مرسل', accepted:'s-accepted مقبول', rejected:'s-rejected مرفوض',
+    expired:'s-expired منتهي', revision_requested:'s-revision مراجعة مطلوبة',
+    draft:'s-revision مسودة'
+  };
+  el.innerHTML = rows.map(q => {
+    const [sc,sl] = (sMap[q.status]||'s-sent مرسل').split(' ');
+    const expired = q.validity_date && new Date(q.validity_date) < new Date();
+    const canAct = q.status === 'sent' && !expired;
+    return `<div class="p-4 border border-gray-100 rounded-xl hover:border-primary/30 transition">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap mb-1">
+            <span class="font-bold text-sm text-gray-800">${esc(q.title||q.quote_number)}</span>
+            <span class="badge ${sc}">${sl}</span>
+            ${expired && q.status==='sent' ? '<span class="badge" style="background:#fee2e2;color:#991b1b">منتهي الصلاحية</span>' : ''}
+          </div>
+          <div class="text-xs text-gray-400 flex gap-3 flex-wrap">
+            <span class="font-mono text-gray-500">${q.quote_number}</span>
+            ${q.travel_date_from ? `<span><i class="fa-regular fa-calendar ml-1"></i>${q.travel_date_from}</span>` : ''}
+            ${q.total_amount ? `<span class="font-bold text-green-700">${fmt(q.total_amount)} ${q.currency||'EGP'}</span>` : ''}
+            ${q.validity_date ? `<span>صالح حتى: ${q.validity_date}</span>` : ''}
+          </div>
+        </div>
+        ${canAct ? `
+        <div class="flex gap-2 shrink-0">
+          <button onclick="openAction('${q.id}','approve')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-700 transition">
+            <i class="fa-solid fa-check ml-1"></i>قبول
+          </button>
+          <button onclick="openAction('${q.id}','revision')" class="bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-600 transition">
+            <i class="fa-solid fa-rotate-right ml-1"></i>مراجعة
+          </button>
+          <button onclick="openAction('${q.id}','reject')" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 transition">
+            <i class="fa-solid fa-xmark ml-1"></i>رفض
+          </button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAction(qid, type) {
+  document.getElementById('actionQuoteId').value = qid;
+  document.getElementById('actionType').value = type;
+  document.getElementById('actionNote').value = '';
+  document.getElementById('actionErr').classList.add('hidden');
+  const titles = {approve:'تأكيد القبول',revision:'طلب مراجعة',reject:'تأكيد الرفض'};
+  const notes = {approve:'ملاحظة للموافقة (اختياري)',revision:'ما الذي تريد تعديله؟ *',reject:'سبب الرفض (اختياري)'};
+  const colors = {approve:'bg-green-600 hover:bg-green-700',revision:'bg-amber-500 hover:bg-amber-600',reject:'bg-red-500 hover:bg-red-600'};
+  document.getElementById('actionTitle').textContent = titles[type];
+  document.getElementById('noteLabel').textContent = notes[type];
+  document.getElementById('actionConfirmBtn').className = `px-5 py-2 rounded-xl text-sm font-bold text-white ${colors[type]} transition`;
+  document.getElementById('actionModal').classList.remove('hidden');
+}
+function closeAction() { document.getElementById('actionModal').classList.add('hidden'); }
+
+async function confirmAction() {
+  const qid  = document.getElementById('actionQuoteId').value;
+  const type = document.getElementById('actionType').value;
+  const note = document.getElementById('actionNote').value.trim();
+  const err  = document.getElementById('actionErr');
+  err.classList.add('hidden');
+  if (type==='revision' && !note) { err.textContent='الرجاء توضيح ما تريد تعديله'; err.classList.remove('hidden'); return; }
+
+  const actionMap = {approve:'accepted',revision:'revision_requested',reject:'rejected'};
+  const {data:{session}} = await db.auth.getSession();
+
+  // Log action in partner_quote_actions
+  await db.from('partner_quote_actions').insert({
+    quotation_id: qid,
+    partner_id: PartnerAuth.getPartnerId(),
+    action_by: session.user.id,
+    action_type: type,
+    note: note||null,
+  });
+
+  // Update quotation status
+  await db.from('quotations').update({status: actionMap[type]}).eq('id', qid);
+
+  closeAction();
+  toast(type==='approve' ? 'تم قبول عرض السعر ✓' : type==='revision' ? 'تم إرسال طلب المراجعة' : 'تم رفض عرض السعر');
+  await load();
+}
+
+function fmt(n){return (n||0).toLocaleString('ar-EG',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حسابي — بوابة الشركاء</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/partner-auth.js"></script>
+  <script src="/js/partner-layout.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;background:#f3f4f6;}
+    .card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 1px 8px rgba(0,0,0,.06);border:1px solid #e5e7eb;}
+    .info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;}
+    .info-row:last-child{border-bottom:none;}
+    .info-label{font-size:.75rem;color:#9ca3af;font-weight:700;}
+    .info-val{font-size:.875rem;font-weight:700;color:#111827;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;}
+    input:focus{border-color:#1B5E20;box-shadow:0 0 0 3px rgba(27,94,32,.1);}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="min-h-screen">
+<div class="flex min-h-screen">
+  <div id="partnerNavMount" class="flex"></div>
+
+  <main class="flex-1 overflow-auto p-4 md:p-6">
+    <div class="mb-6">
+      <h1 class="text-xl font-black text-gray-800"><i class="fa-solid fa-user-gear text-primary ml-2"></i>حسابي</h1>
+      <p class="text-sm text-gray-400">معلومات الشركة وبيانات الوصول</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+      <!-- Company info (read-only from admin) -->
+      <div class="card">
+        <h2 class="font-black text-gray-800 text-sm mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-building text-primary"></i>معلومات الشركة
+          <span class="text-xs text-gray-400 font-normal">(تعديل الإدارة)</span>
+        </h2>
+        <div id="companyInfo">
+          <div class="text-center py-6 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        </div>
+      </div>
+
+      <!-- User profile (editable) -->
+      <div class="card">
+        <h2 class="font-black text-gray-800 text-sm mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-user text-primary"></i>بياناتي الشخصية
+        </h2>
+        <div class="grid gap-4">
+          <div>
+            <label>الاسم الكامل</label>
+            <input type="text" id="uName" placeholder="اسمك الكامل">
+          </div>
+          <div>
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="uEmail" readonly class="bg-gray-50 text-gray-500">
+          </div>
+          <div>
+            <label>رقم الهاتف</label>
+            <input type="tel" id="uPhone" placeholder="+20xxxxxxxxxx">
+          </div>
+          <p id="profErr" class="hidden text-red-500 text-sm font-bold"></p>
+          <button onclick="saveProfile()" class="bg-primary text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-green-800 transition">
+            <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ التغييرات
+          </button>
+        </div>
+      </div>
+
+      <!-- Change password -->
+      <div class="card lg:col-span-2">
+        <h2 class="font-black text-gray-800 text-sm mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-key text-primary"></i>تغيير كلمة المرور
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label>كلمة المرور الجديدة</label>
+            <input type="password" id="pwNew" placeholder="8 أحرف على الأقل">
+          </div>
+          <div>
+            <label>تأكيد كلمة المرور</label>
+            <input type="password" id="pwConfirm" placeholder="أعد الكتابة">
+          </div>
+          <div class="flex items-end">
+            <button onclick="changePassword()" class="w-full bg-gray-800 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-gray-700 transition">
+              تغيير كلمة المرور
+            </button>
+          </div>
+        </div>
+        <p id="pwErr" class="hidden text-red-500 text-sm font-bold mt-2"></p>
+      </div>
+
+      <!-- Contract info (read-only) -->
+      <div class="card lg:col-span-2">
+        <h2 class="font-black text-gray-800 text-sm mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-file-signature text-primary"></i>معلومات العقد
+        </h2>
+        <div id="contractInfo" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="text-center py-4 col-span-4 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+<div id="toast"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const ppu = await PartnerAuth.requirePartnerAuth();
+  if (!ppu) return;
+  PartnerLayout.init();
+  renderCompany();
+  await loadUser();
+});
+
+function renderCompany() {
+  const p = PartnerAuth.getPartner();
+  if (!p) return;
+  document.getElementById('companyInfo').innerHTML = `
+    <div class="info-row"><span class="info-label">اسم الشركة</span><span class="info-val">${esc(p.trading_name||p.legal_name||'—')}</span></div>
+    <div class="info-row"><span class="info-label">الاسم القانوني</span><span class="info-val">${esc(p.legal_name||'—')}</span></div>
+    <div class="info-row"><span class="info-label">الدولة</span><span class="info-val">${esc(p.country||'—')}</span></div>
+    <div class="info-row"><span class="info-label">المدينة</span><span class="info-val">${esc(p.city||'—')}</span></div>
+    <div class="info-row"><span class="info-label">البريد الإلكتروني</span><span class="info-val">${esc(p.email||'—')}</span></div>
+    <div class="info-row"><span class="info-label">هاتف الشركة</span><span class="info-val">${esc(p.phone||'—')}</span></div>`;
+
+  // Contract info
+  const tier = {strategic:'استراتيجي',platinum:'بلاتيني',gold:'ذهبي',silver:'فضي',standard:'قياسي',new:'جديد'};
+  document.getElementById('contractInfo').innerHTML = `
+    <div class="text-center p-4 bg-gray-50 rounded-xl">
+      <p class="text-xs text-gray-400 mb-1">مستوى الشراكة</p>
+      <p class="font-black text-lg text-primary">${tier[p.tier]||p.tier||'—'}</p>
+    </div>
+    <div class="text-center p-4 bg-gray-50 rounded-xl">
+      <p class="text-xs text-gray-400 mb-1">العملة</p>
+      <p class="font-black text-lg text-gray-800">${p.currency||'EGP'}</p>
+    </div>
+    <div class="text-center p-4 bg-gray-50 rounded-xl">
+      <p class="text-xs text-gray-400 mb-1">شروط الدفع</p>
+      <p class="font-black text-lg text-gray-800">${p.payment_terms_days||30} يوم</p>
+    </div>
+    <div class="text-center p-4 bg-gray-50 rounded-xl">
+      <p class="text-xs text-gray-400 mb-1">حالة العقد</p>
+      <p class="font-black text-lg ${p.contract_status==='active'?'text-green-600':'text-red-500'}">${p.contract_status==='active'?'نشط':'غير نشط'}</p>
+    </div>`;
+}
+
+async function loadUser() {
+  const { data:{user} } = await db.auth.getUser();
+  if (!user) return;
+  document.getElementById('uEmail').value = user.email || '';
+  document.getElementById('uName').value = user.user_metadata?.full_name || '';
+  document.getElementById('uPhone').value = user.user_metadata?.phone || '';
+}
+
+async function saveProfile() {
+  const name = document.getElementById('uName').value.trim();
+  const phone = document.getElementById('uPhone').value.trim();
+  const err = document.getElementById('profErr');
+  err.classList.add('hidden');
+  const { error } = await db.auth.updateUser({ data:{ full_name:name, phone } });
+  if (error) { err.textContent='خطأ: '+error.message; err.classList.remove('hidden'); return; }
+  toast('تم حفظ البيانات ✓');
+}
+
+async function changePassword() {
+  const pw1 = document.getElementById('pwNew').value;
+  const pw2 = document.getElementById('pwConfirm').value;
+  const err = document.getElementById('pwErr');
+  err.classList.add('hidden');
+  if (pw1.length < 8) { err.textContent='كلمة المرور يجب أن تكون 8 أحرف على الأقل'; err.classList.remove('hidden'); return; }
+  if (pw1 !== pw2)  { err.textContent='كلمتا المرور غير متطابقتين'; err.classList.remove('hidden'); return; }
+  const { error } = await db.auth.updateUser({ password: pw1 });
+  if (error) { err.textContent='خطأ: '+error.message; err.classList.remove('hidden'); return; }
+  document.getElementById('pwNew').value = '';
+  document.getElementById('pwConfirm').value = '';
+  toast('تم تغيير كلمة المرور ✓');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

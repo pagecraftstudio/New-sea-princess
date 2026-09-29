@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تفاصيل عرض السعر | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/print-utils.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    .tab-btn{padding:8px 18px;border-radius:8px;font-size:.85rem;font-weight:700;color:#6b7280;cursor:pointer;border:none;background:transparent;transition:.2s;}
+    .tab-btn.active{background:#1B5E20;color:#fff;}
+    .tab-btn:hover:not(.active){background:#f3f4f6;color:#1B5E20;}
+    .tab-panel{display:none;}
+    .tab-panel.active{display:block;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700;}
+    .info-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:.875rem;}
+    .info-row:last-child{border-bottom:none;}
+    .info-label{color:#9ca3af;width:140px;flex-shrink:0;font-size:.8rem;}
+    .info-val{color:#1f2937;font-weight:600;flex:1;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 2px rgba(27,94,32,.12);}
+    select,input,textarea{font-family:'Cairo',sans-serif!important;}
+    .item-row{display:grid;grid-template-columns:auto 2fr 1fr 1fr 1fr 1fr 1fr 36px;gap:6px;align-items:center;padding:6px;background:#f9fafb;border-radius:8px;margin-bottom:6px;font-size:12px;}
+    .item-row input, .item-row select{padding:5px 7px;font-size:11px;}
+    .action-btn{padding:7px 14px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;transition:.15s;border:none;display:inline-flex;align-items:center;gap:5px;}
+    .btn-primary{background:#1B5E20;color:#fff;}
+    .btn-primary:hover{background:#2E7D32;}
+    .btn-gold{background:#B8860B;color:#fff;}
+    .btn-gold:hover{background:#a07209;}
+    .btn-outline{background:#fff;color:#374151;border:1.5px solid #d1d5db;}
+    .btn-outline:hover{background:#f3f4f6;}
+    .btn-red{background:#fee2e2;color:#991b1b;}
+    .btn-red:hover{background:#fecaca;}
+    .btn-green{background:#dcfce7;color:#166534;}
+    .btn-green:hover{background:#bbf7d0;}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:500px;}
+    .totals-row{display:flex;justify-content:space-between;padding:8px 12px;font-size:13px;}
+    .totals-row.grand{background:#f0fdf4;font-weight:900;font-size:15px;border-top:2px solid #1B5E20;}
+    .version-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px;}
+    @media(max-width:768px){.item-row{grid-template-columns:1fr;gap:4px;}}
+  </style>
+  <script src="/js/admin-nav.js"></script>
+  <script src="/js/ai-service.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Back + Header -->
+  <div class="flex items-start gap-3 mb-5">
+    <a href="/nsp-control-8x4k/quotations.html" class="text-gray-400 hover:text-primary transition mt-1">
+      <i class="fa-solid fa-arrow-right text-lg"></i>
+    </a>
+    <div class="flex-1">
+      <div class="flex items-center gap-2 flex-wrap">
+        <h1 class="erp-page-title" id="pageTitle">جارٍ التحميل…</h1>
+        <span id="statusBadge" class="badge"></span>
+        <span id="versionBadge" class="badge" style="background:#eff6ff;color:#1e40af;display:none"></span>
+      </div>
+      <p class="text-sm text-gray-500 mt-1" id="pageSubtitle"></p>
+      <div class="mt-2" id="itnBadge" style="display:none"></div>
+    </div>
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-2" id="actionBar"></div>
+  </div>
+
+  <!-- Alert bar (expired, etc.) -->
+  <div id="alertBar" class="hidden mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-bold flex items-center gap-2">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <span id="alertMsg"></span>
+  </div>
+
+  <!-- Totals Summary Strip -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5" id="totalsStrip">
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-primary animate-pulse"><div class="h-3 bg-gray-100 rounded w-16 mb-1"></div><div class="h-6 bg-gray-100 rounded w-20"></div></div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-green-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-16 mb-1"></div><div class="h-6 bg-gray-100 rounded w-20"></div></div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-blue-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-16 mb-1"></div><div class="h-6 bg-gray-100 rounded w-20"></div></div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-yellow-400 animate-pulse"><div class="h-3 bg-gray-100 rounded w-16 mb-1"></div><div class="h-6 bg-gray-100 rounded w-20"></div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 mb-4 flex-wrap">
+    <button class="tab-btn active" onclick="switchTab('items',this)"><i class="fa-solid fa-list ml-1"></i>بنود العرض</button>
+    <button class="tab-btn" onclick="switchTab('info',this)"><i class="fa-solid fa-info-circle ml-1"></i>المعلومات</button>
+    <button class="tab-btn" onclick="switchTab('versions',this)"><i class="fa-solid fa-clock-rotate-left ml-1"></i>الإصدارات</button>
+    <button class="tab-btn" onclick="switchTab('link',this)"><i class="fa-solid fa-link ml-1"></i>رابط العميل</button>
+  </div>
+
+  <!-- ── TAB: Items ─────────────────────────────────────────────────── -->
+  <div class="tab-panel active" id="tab-items">
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-primary"><i class="fa-solid fa-list ml-2"></i>بنود الخدمات</h3>
+        <button id="addItemBtn" onclick="addItemRow()"
+          class="action-btn btn-primary text-xs">
+          <i class="fa-solid fa-plus"></i> إضافة بند
+        </button>
+      </div>
+
+      <!-- Items Header (desktop only) -->
+      <div class="item-row hidden md:grid text-xs font-bold text-gray-500 bg-transparent p-1 mb-0" style="grid-template-columns:auto 2fr 1fr 1fr 1fr 1fr 1fr 36px">
+        <div></div>
+        <div>الوصف</div>
+        <div>النوع</div>
+        <div>الكمية</div>
+        <div>التكلفة (داخلي)</div>
+        <div>سعر البيع</div>
+        <div>الإجمالي</div>
+        <div></div>
+      </div>
+
+      <div id="itemsContainer"></div>
+      <div id="noItems" class="text-center text-gray-400 text-sm py-6 hidden">
+        لا توجد بنود — أضف خدمة من الزر أعلاه
+      </div>
+
+      <!-- Save Items Button -->
+      <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
+        <button id="saveItemsBtn" onclick="saveAllItems()"
+          class="action-btn btn-primary hidden">
+          <i class="fa-solid fa-floppy-disk"></i> حفظ البنود
+        </button>
+        <!-- Totals -->
+        <div class="bg-gray-50 rounded-xl overflow-hidden border border-gray-100" style="min-width:260px" id="totalBox"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Info ──────────────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-info">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Left: Quote Info -->
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <h3 class="font-bold text-primary mb-3"><i class="fa-solid fa-circle-info ml-2"></i>بيانات العرض</h3>
+        <div id="infoRows"></div>
+      </div>
+      <!-- Right: Edit Form (only for draft/revision) -->
+      <div class="bg-white rounded-xl shadow-sm p-4" id="editPanel">
+        <h3 class="font-bold text-primary mb-3"><i class="fa-solid fa-pen ml-2"></i>تعديل</h3>
+        <div id="editForm"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Versions ──────────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-versions">
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <h3 class="font-bold text-primary mb-3"><i class="fa-solid fa-clock-rotate-left ml-2"></i>سجل الإصدارات</h3>
+      <div id="versionsContainer">
+        <p class="text-gray-400 text-sm text-center py-6 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Client Link ───────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-link">
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <h3 class="font-bold text-primary mb-3"><i class="fa-solid fa-link ml-2"></i>رابط العميل العام</h3>
+      <p class="text-sm text-gray-600 mb-4">
+        هذا الرابط يتيح للعميل رؤية العرض بدون تسجيل دخول. مناسب للإرسال عبر واتساب أو البريد الإلكتروني.
+      </p>
+      <div class="flex gap-2 mb-3">
+        <input type="text" id="publicLinkInput" readonly class="flex-1 bg-gray-50 text-gray-700 text-sm">
+        <button onclick="copyLink()" class="action-btn btn-outline text-sm">
+          <i class="fa-solid fa-copy"></i> نسخ
+        </button>
+        <button onclick="openLink()" class="action-btn btn-primary text-sm">
+          <i class="fa-solid fa-external-link"></i> فتح
+        </button>
+      </div>
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-800">
+        <i class="fa-solid fa-triangle-exclamation ml-1"></i>
+        الرابط يُظهر للعميل الأسعار والشروط فقط — لا يظهر التكلفة الداخلية أو هامش الربح.
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Quotation Intelligence Panel -->
+  <div class="card mt-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-700 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-purple-600"></i>
+        مراجعة عرض السعر بالذكاء الاصطناعي
+      </h3>
+      <div class="flex gap-2">
+        <button onclick="runQuoteAI('quote_review')"
+          class="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-magnifying-glass-chart"></i> مراجعة ذكية
+        </button>
+      </div>
+    </div>
+    <div id="quoteAiContainer">
+      <p class="text-xs text-gray-400 text-center py-4 italic">
+        اضغط "مراجعة ذكية" لتحليل هذا العرض — الهامش، البنود المفقودة، وفرص البيع الإضافي
+      </p>
+    </div>
+  </div>
+
+</main>
+
+<!-- Status Change Modal -->
+<div id="statusModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3 class="font-bold text-lg mb-4" id="statusModalTitle">تغيير الحالة</h3>
+    <div id="statusModalBody"></div>
+    <div class="flex gap-2 justify-end mt-4">
+      <button onclick="closeStatusModal()" class="action-btn btn-outline">إلغاء</button>
+      <button onclick="confirmStatusChange()" id="statusModalConfirm" class="action-btn btn-primary">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  QUOTE DETAIL PAGE
+// ═══════════════════════════════════════════════════════
+
+const PARAMS = new URLSearchParams(location.search);
+const QUOTE_ID = PARAMS.get('id');
+
+const STATUS_LABEL = {
+  draft:'مسودة', internal_review:'مراجعة داخلية', sent:'مُرسل', viewed:'تمت المشاهدة',
+  revision_requested:'طُلبت مراجعة', negotiation:'تفاوض', accepted:'مقبول',
+  deposit_pending:'انتظار عربون', confirmed:'مؤكد', expired:'منتهي الصلاحية',
+  rejected:'مرفوض', cancelled:'ملغي'
+};
+const STATUS_STYLE = {
+  draft:'background:#f3f4f6;color:#374151', internal_review:'background:#fef9c3;color:#854d0e',
+  sent:'background:#dbeafe;color:#1e40af', viewed:'background:#dbeafe;color:#1e40af',
+  revision_requested:'background:#fef9c3;color:#854d0e', negotiation:'background:#fef9c3;color:#854d0e',
+  accepted:'background:#dcfce7;color:#166534', deposit_pending:'background:#dcfce7;color:#166534',
+  confirmed:'background:#dcfce7;color:#166534', expired:'background:#fee2e2;color:#991b1b',
+  rejected:'background:#fee2e2;color:#991b1b', cancelled:'background:#fee2e2;color:#991b1b'
+};
+const ITEM_TYPES = {
+  hotel:'فندق', flight:'طيران', transport:'مواصلات', guide:'مرشد',
+  visa:'تأشيرة', excursion:'رحلة يومية', meal:'وجبات', ticket:'تذاكر', other:'أخرى'
+};
+
+let quoteData = null;
+let quoteItems = [];
+let itemsDirty = false;
+let pendingStatus = null;
+
+// ── Init ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!QUOTE_ID) { location.href='/nsp-control-8x4k/quotations.html'; return; }
+  if (!await adminCheckAuth()) return;
+  await loadQuote();
+});
+
+// ── Load Quote ────────────────────────────────────────
+async function loadQuote() {
+  const { data, error } = await db
+    .from('quotations')
+    .select(`*, itinerary_id, customers(full_name,phone,email), opportunities(title,stage)`)
+    .eq('id', QUOTE_ID)
+    .single();
+
+  if (error || !data) { alert('العرض غير موجود'); location.href='/nsp-control-8x4k/quotations.html'; return; }
+  quoteData = data;
+
+  await loadItems();
+  renderHeader();
+  renderTotalsStrip();
+  renderActionBar();
+  renderInfoTab();
+  renderEditForm();
+  renderVersionsTab();
+  renderLinkTab();
+  renderItemsTab();
+}
+
+// ── Load Items ────────────────────────────────────────
+async function loadItems() {
+  const { data } = await db
+    .from('quotation_items')
+    .select('*')
+    .eq('quotation_id', QUOTE_ID)
+    .order('sort_order');
+  quoteItems = data || [];
+}
+
+// ── Header ────────────────────────────────────────────
+function renderHeader() {
+  const q = quoteData;
+  document.title = `${q.quote_number} — نيو سي برنسيس`;
+  document.getElementById('pageTitle').textContent = q.quote_number || 'عرض سعر';
+  document.getElementById('pageSubtitle').textContent = q.title + (q.destination ? ` — ${q.destination}` : '');
+
+  const sb = document.getElementById('statusBadge');
+  sb.textContent = STATUS_LABEL[q.status] || q.status;
+  sb.setAttribute('style', STATUS_STYLE[q.status] || '');
+
+  const vb = document.getElementById('versionBadge');
+  if (q.version > 1) { vb.textContent = `الإصدار ${q.version}`; vb.style.display=''; }
+
+  // Alert for expired quotes
+  if (q.validity_date && new Date(q.validity_date) < new Date() && ['sent','viewed','revision_requested'].includes(q.status)) {
+    document.getElementById('alertBar').classList.remove('hidden');
+    document.getElementById('alertMsg').textContent = `هذا العرض انتهت صلاحيته بتاريخ ${new Date(q.validity_date).toLocaleDateString('ar-EG')}`;
+  }
+
+  // Itinerary link badge
+  const itnBadge = document.getElementById('itnBadge');
+  if (itnBadge) {
+    if (q.itinerary_id) {
+      itnBadge.innerHTML = `<a href="/nsp-control-8x4k/itinerary-builder.html?id=${q.itinerary_id}"
+        class="inline-flex items-center gap-1 bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded-full text-xs font-bold hover:bg-purple-100 transition">
+        <i class="fa-solid fa-map-location-dot"></i> فتح الجدول السياحي
+      </a>`;
+      itnBadge.style.display = '';
+    } else {
+      itnBadge.innerHTML = `<a href="/nsp-control-8x4k/itinerary-builder.html"
+        class="inline-flex items-center gap-1 bg-gray-50 text-gray-500 border border-gray-200 px-3 py-1 rounded-full text-xs font-semibold hover:bg-gray-100 transition">
+        <i class="fa-solid fa-plus"></i> إنشاء جدول سياحي
+      </a>`;
+      itnBadge.style.display = '';
+    }
+  }
+}
+
+// ── Totals Strip ──────────────────────────────────────
+function renderTotalsStrip() {
+  const q = quoteData;
+  const fmt = n => Number(n||0).toLocaleString('ar-EG');
+  const margin = Number(q.margin_pct||0);
+  const marginColor = margin >= 20 ? '#16a34a' : margin >= 10 ? '#ca8a04' : '#dc2626';
+  const cur = q.currency || 'EGP';
+
+  document.getElementById('totalsStrip').innerHTML = `
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-primary">
+      <div class="text-xs text-gray-500 mb-1">إجمالي العرض</div>
+      <div class="text-xl font-black text-primary">${fmt(q.total_amount)}</div>
+      <div class="text-xs text-gray-400">${cur}</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-green-400">
+      <div class="text-xs text-gray-500 mb-1">التكلفة (داخلي)</div>
+      <div class="text-xl font-black text-green-700">${fmt(q.cost_total)}</div>
+      <div class="text-xs text-gray-400">${cur}</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-blue-400">
+      <div class="text-xs text-gray-500 mb-1">هامش الربح</div>
+      <div class="text-xl font-black" style="color:${marginColor}">${margin.toFixed(1)}%</div>
+      <div class="text-xs text-gray-400">${fmt(q.gross_profit)} ${cur}</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-b-2 border-yellow-400">
+      <div class="text-xs text-gray-500 mb-1">الصلاحية</div>
+      <div class="text-base font-black text-yellow-700">${q.validity_date ? new Date(q.validity_date).toLocaleDateString('ar-EG') : '—'}</div>
+      <div class="text-xs text-gray-400">${q.version > 1 ? 'إصدار '+q.version : 'الإصدار الأول'}</div>
+    </div>`;
+}
+
+// ── Action Bar ────────────────────────────────────────
+function renderActionBar() {
+  const q = quoteData;
+  const status = q.status;
+  const editable = ['draft','revision_requested','negotiation'].includes(status);
+  const btns = [];
+
+  // PDF always available
+  btns.push(`<button onclick="printQuotePDF()" class="action-btn btn-outline">
+    <i class="fa-solid fa-print"></i> PDF
+  </button>`);
+
+  if (status === 'draft') {
+    btns.push(`<button onclick="changeStatus('internal_review')" class="action-btn btn-outline">
+      <i class="fa-solid fa-search"></i> مراجعة داخلية
+    </button>`);
+    btns.push(`<button onclick="changeStatus('sent')" class="action-btn btn-gold">
+      <i class="fa-solid fa-paper-plane"></i> إرسال للعميل
+    </button>`);
+  }
+  if (status === 'internal_review') {
+    btns.push(`<button onclick="changeStatus('sent')" class="action-btn btn-gold">
+      <i class="fa-solid fa-paper-plane"></i> إرسال للعميل
+    </button>`);
+  }
+  if (['sent','viewed','negotiation'].includes(status)) {
+    btns.push(`<button onclick="changeStatus('accepted')" class="action-btn btn-green">
+      <i class="fa-solid fa-check-double"></i> قبول
+    </button>`);
+    btns.push(`<button onclick="changeStatus('rejected')" class="action-btn btn-red">
+      <i class="fa-solid fa-xmark"></i> رفض
+    </button>`);
+    btns.push(`<button onclick="reviseQuote()" class="action-btn btn-outline">
+      <i class="fa-solid fa-pen"></i> مراجعة
+    </button>`);
+  }
+  if (status === 'accepted' || status === 'deposit_pending') {
+    btns.push(`<button onclick="changeStatus('confirmed')" class="action-btn btn-green">
+      <i class="fa-solid fa-flag-checkered"></i> تأكيد
+    </button>`);
+    btns.push(`<button onclick="convertToBooking()" class="action-btn btn-primary">
+      <i class="fa-solid fa-ticket"></i> تحويل لحجز
+    </button>`);
+  }
+  if (editable) {
+    btns.push(`<button onclick="saveQuoteInfo()" class="action-btn btn-primary">
+      <i class="fa-solid fa-floppy-disk"></i> حفظ
+    </button>`);
+  }
+
+  document.getElementById('actionBar').innerHTML = btns.join('');
+}
+
+// ── Items Tab ─────────────────────────────────────────
+function renderItemsTab() {
+  const q = quoteData;
+  const editable = ['draft','revision_requested','negotiation'].includes(q.status);
+  document.getElementById('addItemBtn').style.display = editable ? '' : 'none';
+  renderItemRows(editable);
+  renderTotalBox();
+}
+
+function renderItemRows(editable) {
+  const container = document.getElementById('itemsContainer');
+  const noItems = document.getElementById('noItems');
+
+  if (!quoteItems.length) {
+    container.innerHTML = '';
+    noItems.classList.remove('hidden');
+    return;
+  }
+  noItems.classList.add('hidden');
+
+  container.innerHTML = quoteItems.map((item, idx) => {
+    if (!editable) {
+      // Read-only row
+      const tp = Number(item.unit_price||0) * Number(item.quantity||1);
+      const fmt = n => Number(n||0).toLocaleString('ar-EG');
+      return `<div class="item-row" style="grid-template-columns:36px 2fr 1fr 1fr 1fr 1fr 1fr 0px">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white" style="background:#1B5E20">${ITEM_TYPES[item.item_type]?.charAt(0)||'✓'}</div>
+        <div>
+          <div class="font-bold text-gray-800 text-sm">${item.description}</div>
+          ${item.destination ? `<div class="text-xs text-gray-400">${item.destination}</div>` : ''}
+        </div>
+        <div class="text-xs text-gray-500">${ITEM_TYPES[item.item_type]||item.item_type}</div>
+        <div class="text-sm">${item.quantity} ${item.unit_label||'فرد'}</div>
+        <div class="text-xs text-gray-400">${fmt(item.unit_cost)} (داخلي)</div>
+        <div class="font-bold text-sm">${fmt(item.unit_price)}</div>
+        <div class="font-bold text-primary">${fmt(tp)}</div>
+      </div>`;
+    }
+
+    // Editable row
+    return `<div class="item-row" id="itemRow_${idx}" data-idx="${idx}">
+      <div class="w-6 h-6 rounded flex items-center justify-center text-xs text-gray-400 font-bold border border-gray-200 cursor-grab">${idx+1}</div>
+      <div>
+        <input type="text" placeholder="وصف الخدمة…" value="${escHtml(item.description||'')}"
+          onchange="updateItem(${idx},'description',this.value)" class="mb-1">
+        <input type="text" placeholder="الوجهة (اختياري)" value="${escHtml(item.destination||'')}"
+          onchange="updateItem(${idx},'destination',this.value)" style="font-size:10px;padding:4px 6px">
+      </div>
+      <select onchange="updateItem(${idx},'item_type',this.value)">
+        ${Object.entries(ITEM_TYPES).map(([v,l]) => `<option value="${v}" ${item.item_type===v?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <div>
+        <input type="number" value="${item.quantity||1}" min="1" placeholder="الكمية"
+          onchange="updateItemCalc(${idx},'quantity',this.value)" class="mb-1">
+        <input type="text" value="${escHtml(item.unit_label||'فرد')}" placeholder="وحدة"
+          onchange="updateItem(${idx},'unit_label',this.value)" style="font-size:10px;padding:4px 6px">
+      </div>
+      <input type="number" value="${item.unit_cost||0}" min="0" step="0.01" placeholder="التكلفة"
+        onchange="updateItemCalc(${idx},'unit_cost',this.value)">
+      <input type="number" value="${item.unit_price||0}" min="0" step="0.01" placeholder="سعر البيع"
+        onchange="updateItemCalc(${idx},'unit_price',this.value)">
+      <div class="font-bold text-sm text-primary text-center" id="itemTotal_${idx}">
+        ${(Number(item.unit_price||0)*Number(item.quantity||1)).toLocaleString('ar-EG')}
+      </div>
+      <button onclick="removeItem(${idx})" class="w-8 h-8 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition flex items-center justify-center">
+        <i class="fa-solid fa-trash text-xs"></i>
+      </button>
+    </div>`;
+  }).join('');
+
+  // Show save button
+  document.getElementById('saveItemsBtn').classList.toggle('hidden', !editable);
+}
+
+function renderTotalBox() {
+  const q = quoteData;
+  const fmt = n => Number(n||0).toLocaleString('ar-EG');
+  const cur = q.currency || 'EGP';
+
+  document.getElementById('totalBox').innerHTML = `
+    <div class="totals-row"><span class="text-gray-500">المجموع</span><span class="font-bold">${fmt(q.subtotal)} ${cur}</span></div>
+    ${Number(q.discount_amount)>0 ? `<div class="totals-row"><span class="text-gray-500">خصم ${q.discount_pct}%</span><span class="text-red-500 font-bold">− ${fmt(q.discount_amount)} ${cur}</span></div>` : ''}
+    ${Number(q.tax_amount)>0 ? `<div class="totals-row"><span class="text-gray-500">ضريبة ${q.tax_pct}%</span><span class="font-bold">+ ${fmt(q.tax_amount)} ${cur}</span></div>` : ''}
+    <div class="totals-row grand"><span>الإجمالي</span><span>${fmt(q.total_amount)} ${cur}</span></div>`;
+}
+
+// ── Item Operations ───────────────────────────────────
+function addItemRow() {
+  quoteItems.push({
+    id: null, quotation_id: QUOTE_ID, sort_order: quoteItems.length,
+    item_type: 'other', description: '', destination: '',
+    quantity: 1, unit_label: 'فرد', unit_cost: 0, unit_price: 0
+  });
+  itemsDirty = true;
+  const editable = ['draft','revision_requested','negotiation'].includes(quoteData.status);
+  renderItemRows(editable);
+  document.getElementById('noItems').classList.add('hidden');
+}
+
+function updateItem(idx, field, value) {
+  quoteItems[idx][field] = value;
+  itemsDirty = true;
+}
+
+function updateItemCalc(idx, field, value) {
+  quoteItems[idx][field] = parseFloat(value) || 0;
+  itemsDirty = true;
+  const tp = Number(quoteItems[idx].unit_price||0) * Number(quoteItems[idx].quantity||1);
+  const el = document.getElementById('itemTotal_'+idx);
+  if (el) el.textContent = tp.toLocaleString('ar-EG');
+}
+
+function removeItem(idx) {
+  quoteItems.splice(idx, 1);
+  itemsDirty = true;
+  const editable = ['draft','revision_requested','negotiation'].includes(quoteData.status);
+  renderItemRows(editable);
+}
+
+async function saveAllItems() {
+  const btn = document.getElementById('saveItemsBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جارٍ الحفظ…';
+
+  try {
+    // Delete existing items and re-insert (simple approach)
+    await db.from('quotation_items').delete().eq('quotation_id', QUOTE_ID);
+
+    if (quoteItems.length) {
+      const toInsert = quoteItems.map((item, idx) => ({
+        quotation_id: QUOTE_ID,
+        sort_order:   idx,
+        item_type:    item.item_type || 'other',
+        description:  item.description || '—',
+        destination:  item.destination || null,
+        quantity:     Number(item.quantity)||1,
+        unit_label:   item.unit_label || 'فرد',
+        unit_cost:    Number(item.unit_cost)||0,
+        unit_price:   Number(item.unit_price)||0,
+        supplier_id:  item.supplier_id || null,
+        notes:        item.notes || null,
+      }));
+      await db.from('quotation_items').insert(toInsert);
+    }
+
+    // Recalculate totals server-side
+    await db.rpc('recalculate_quote_totals', { p_quotation_id: QUOTE_ID });
+
+    itemsDirty = false;
+    // Reload fresh data
+    await loadQuote();
+  } catch(e) {
+    alert('خطأ أثناء الحفظ: ' + e.message);
+  }
+  btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ البنود';
+}
+
+// ── Info Tab ──────────────────────────────────────────
+function renderInfoTab() {
+  const q = quoteData;
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG') : '—';
+  const rows = [
+    ['رقم العرض',      q.quote_number],
+    ['الحالة',         STATUS_LABEL[q.status]||q.status],
+    ['الإصدار',        q.version],
+    ['العميل',         q.customers?.full_name || '—'],
+    ['الفرصة',         q.opportunities?.title || '—'],
+    ['الوجهة',         q.destination || '—'],
+    ['تاريخ السفر',    fmtDate(q.travel_date_from) + (q.travel_date_to ? ' → ' + fmtDate(q.travel_date_to) : '')],
+    ['الأفراد',        `${q.adults_count||0} بالغ / ${q.children_count||0} طفل / ${q.infants_count||0} رضيع`],
+    ['العملة',         q.currency],
+    ['صلاحية العرض',   fmtDate(q.validity_date)],
+    ['شروط الدفع',     q.payment_terms || '—'],
+    ['سياسة الإلغاء',  q.cancellation_policy || '—'],
+    ['الخدمات الشاملة', q.included_services || '—'],
+    ['الخدمات المستثناة', q.excluded_services || '—'],
+    ['تاريخ الإرسال',  fmtDate(q.sent_at)],
+    ['تاريخ القبول',   fmtDate(q.accepted_at)],
+    ['تاريخ الإنشاء',  fmtDate(q.created_at)],
+  ];
+
+  document.getElementById('infoRows').innerHTML = rows.map(([l,v]) => `
+    <div class="info-row">
+      <div class="info-label">${l}</div>
+      <div class="info-val">${v || '—'}</div>
+    </div>`).join('');
+}
+
+// ── Edit Form ─────────────────────────────────────────
+function renderEditForm() {
+  const q = quoteData;
+  const editable = ['draft','revision_requested','negotiation'].includes(q.status);
+
+  if (!editable) {
+    document.getElementById('editPanel').innerHTML = `
+      <div class="text-center text-gray-400 py-8">
+        <i class="fa-solid fa-lock text-3xl mb-3 block"></i>
+        <p class="text-sm">التعديل غير متاح في الحالة الحالية</p>
+        <p class="text-xs mt-1">(${STATUS_LABEL[q.status]})</p>
+      </div>`;
+    return;
+  }
+
+  const fmtD = d => d ? d.substring(0,10) : '';
+  document.getElementById('editForm').innerHTML = `
+    <div class="space-y-3">
+      <div>
+        <label>عنوان العرض</label>
+        <input type="text" id="e_title" value="${escHtml(q.title||'')}">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label>تاريخ السفر (من)</label>
+          <input type="date" id="e_travel_from" value="${fmtD(q.travel_date_from)}">
+        </div>
+        <div>
+          <label>تاريخ السفر (إلى)</label>
+          <input type="date" id="e_travel_to" value="${fmtD(q.travel_date_to)}">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label>بالغين</label>
+          <input type="number" id="e_adults" value="${q.adults_count||1}" min="0">
+        </div>
+        <div>
+          <label>أطفال</label>
+          <input type="number" id="e_children" value="${q.children_count||0}" min="0">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label>خصم %</label>
+          <input type="number" id="e_discount" value="${q.discount_pct||0}" min="0" max="100" step="0.1">
+        </div>
+        <div>
+          <label>ضريبة %</label>
+          <input type="number" id="e_tax" value="${q.tax_pct||0}" min="0" step="0.1">
+        </div>
+      </div>
+      <div>
+        <label>صلاحية العرض</label>
+        <input type="date" id="e_validity" value="${fmtD(q.validity_date)}">
+      </div>
+      <div>
+        <label>شروط الدفع</label>
+        <input type="text" id="e_payment_terms" value="${escHtml(q.payment_terms||'')}">
+      </div>
+      <div>
+        <label>يشمل</label>
+        <textarea id="e_included" rows="2">${escHtml(q.included_services||'')}</textarea>
+      </div>
+      <div>
+        <label>لا يشمل</label>
+        <textarea id="e_excluded" rows="2">${escHtml(q.excluded_services||'')}</textarea>
+      </div>
+      <div>
+        <label>ملاحظات للعميل</label>
+        <textarea id="e_client_notes" rows="2">${escHtml(q.client_notes||'')}</textarea>
+      </div>
+    </div>`;
+}
+
+async function saveQuoteInfo() {
+  const payload = {
+    title:              document.getElementById('e_title')?.value.trim()         || quoteData.title,
+    travel_date_from:   document.getElementById('e_travel_from')?.value          || null,
+    travel_date_to:     document.getElementById('e_travel_to')?.value            || null,
+    adults_count:       parseInt(document.getElementById('e_adults')?.value)||1,
+    children_count:     parseInt(document.getElementById('e_children')?.value)||0,
+    discount_pct:       parseFloat(document.getElementById('e_discount')?.value)||0,
+    tax_pct:            parseFloat(document.getElementById('e_tax')?.value)||0,
+    validity_date:      document.getElementById('e_validity')?.value             || null,
+    payment_terms:      document.getElementById('e_payment_terms')?.value.trim() || null,
+    included_services:  document.getElementById('e_included')?.value.trim()      || null,
+    excluded_services:  document.getElementById('e_excluded')?.value.trim()      || null,
+    client_notes:       document.getElementById('e_client_notes')?.value.trim()  || null,
+  };
+
+  const { error } = await db.from('quotations').update(payload).eq('id', QUOTE_ID);
+  if (error) { alert('خطأ: ' + error.message); return; }
+
+  // Recalculate totals (discount/tax changed)
+  await db.rpc('recalculate_quote_totals', { p_quotation_id: QUOTE_ID });
+  await loadQuote();
+  alert('تم الحفظ بنجاح ✓');
+}
+
+// ── Versions Tab ──────────────────────────────────────
+async function renderVersionsTab() {
+  const { data } = await db
+    .from('quotation_versions')
+    .select('*')
+    .eq('quotation_id', QUOTE_ID)
+    .order('version_number', { ascending: false });
+
+  const container = document.getElementById('versionsContainer');
+  if (!data?.length) {
+    container.innerHTML = `<p class="text-gray-400 text-sm text-center py-6">لا توجد إصدارات سابقة — الإصدار الحالي هو الأول</p>`;
+    return;
+  }
+
+  container.innerHTML = data.map(v => {
+    const snap = v.snapshot?.quote || {};
+    return `<div class="version-card">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <span class="font-bold text-gray-700">الإصدار ${v.version_number}</span>
+          <span class="text-xs text-gray-400 mr-2">${new Date(v.created_at).toLocaleDateString('ar-EG')}</span>
+        </div>
+        <span class="badge" style="background:#eff6ff;color:#1e40af">${STATUS_LABEL[snap.status]||snap.status||'—'}</span>
+      </div>
+      <div class="grid grid-cols-3 gap-3 text-xs text-gray-600">
+        <div><span class="text-gray-400">الإجمالي:</span> ${Number(snap.total_amount||0).toLocaleString('ar-EG')} ${snap.currency||''}</div>
+        <div><span class="text-gray-400">الهامش:</span> ${Number(snap.margin_pct||0).toFixed(1)}%</div>
+        <div><span class="text-gray-400">الصلاحية:</span> ${snap.validity_date ? new Date(snap.validity_date).toLocaleDateString('ar-EG') : '—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Link Tab ──────────────────────────────────────────
+function renderLinkTab() {
+  const link = `${location.origin}/quote-view.html?token=${quoteData.public_token}`;
+  document.getElementById('publicLinkInput').value = link;
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(document.getElementById('publicLinkInput').value)
+    .then(() => alert('تم نسخ الرابط ✓'));
+}
+
+function openLink() {
+  window.open(document.getElementById('publicLinkInput').value, '_blank');
+}
+
+// ── Status Change ──────────────────────────────────────
+let _pendingNewStatus = null;
+
+function changeStatus(newStatus) {
+  _pendingNewStatus = newStatus;
+  const labels = {
+    sent: 'إرسال للعميل', accepted: 'قبول العرض', rejected: 'رفض العرض',
+    internal_review: 'إرسال للمراجعة الداخلية', confirmed: 'تأكيد العرض',
+    deposit_pending: 'انتظار العربون', expired: 'إنهاء الصلاحية', cancelled: 'إلغاء العرض',
+  };
+  const label = labels[newStatus] || newStatus;
+
+  document.getElementById('statusModalTitle').textContent = label;
+  document.getElementById('statusModalBody').innerHTML = `
+    <p class="text-sm text-gray-600 mb-3">هل أنت متأكد من تغيير حالة العرض إلى <strong>${STATUS_LABEL[newStatus]}</strong>؟</p>
+    ${['rejected','cancelled'].includes(newStatus) ? `
+    <div>
+      <label>سبب (اختياري)</label>
+      <textarea id="statusNote" rows="2" placeholder="اكتب سبب الرفض أو الإلغاء…" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-sans"></textarea>
+    </div>` : ''}`;
+
+  document.getElementById('statusModal').classList.remove('hidden');
+}
+
+async function confirmStatusChange() {
+  const s = _pendingNewStatus;
+  if (!s) return;
+
+  const payload = { status: s };
+  if (s === 'sent' && !quoteData.sent_at) payload.sent_at = new Date().toISOString();
+  if (s === 'accepted') payload.accepted_at = new Date().toISOString();
+  if (s === 'rejected') payload.rejected_at = new Date().toISOString();
+  if (s === 'expired')  payload.expired_at  = new Date().toISOString();
+
+  const note = document.getElementById('statusNote')?.value.trim();
+  if (note) payload.notes = (quoteData.notes ? quoteData.notes + '\n\n' : '') + `[${new Date().toLocaleDateString('ar-EG')}] ${note}`;
+
+  const { error } = await db.from('quotations').update(payload).eq('id', QUOTE_ID);
+  if (error) { alert('خطأ: ' + error.message); return; }
+
+  closeStatusModal();
+  await loadQuote();
+}
+
+function closeStatusModal() {
+  document.getElementById('statusModal').classList.add('hidden');
+  _pendingNewStatus = null;
+}
+
+// ── Revise Quote ──────────────────────────────────────
+async function reviseQuote() {
+  if (!confirm('سيتم حفظ نسخة من هذا الإصدار وفتح العرض للتعديل. المتابعة؟')) return;
+
+  // Save current version snapshot
+  await db.rpc('save_quote_version', { p_quotation_id: QUOTE_ID });
+
+  // Set status back to revision
+  await db.from('quotations').update({ status: 'revision_requested' }).eq('id', QUOTE_ID);
+  await loadQuote();
+}
+
+// ── Convert to Booking ────────────────────────────────
+async function convertToBooking() {
+  alert('تحويل عرض السعر إلى حجز سيتم في المرحلة القادمة عند بناء Trip File. حالياً يمكنك إنشاء الحجز يدوياً وربطه بهذا العرض.');
+}
+
+// ── PDF ───────────────────────────────────────────────
+async function printQuotePDF() {
+  const { data: items } = await db
+    .from('quotation_items')
+    .select('*')
+    .eq('quotation_id', QUOTE_ID)
+    .order('sort_order');
+
+  printQuotation(quoteData, items || []);
+}
+
+// ── Tabs ──────────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+
+  if (id === 'versions') renderVersionsTab();
+}
+
+// ── Utilities ─────────────────────────────────────────
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── AI Quotation Intelligence ──────────────────────────
+async function runQuoteAI(feature) {
+  const container = document.getElementById('quoteAiContainer');
+  if (!window.AI) {
+    container.innerHTML = '<p class="text-red-500 text-sm text-center py-4">خدمة الذكاء الاصطناعي غير متاحة</p>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="flex items-center justify-center gap-2 py-6 text-purple-600">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <span class="text-sm">جارٍ مراجعة عرض السعر ذكياً…</span>
+    </div>`;
+  try {
+    const quoteId = new URLSearchParams(window.location.search).get('id');
+    const result = await window.AI.analyze(feature, quoteId, { context_type: 'quotation' });
+    container.innerHTML = `
+      <div class="border border-purple-100 rounded-xl bg-purple-50/50 p-4">
+        <div class="prose prose-sm max-w-none text-gray-800">
+          ${window.AIPanel.renderMarkdown(result)}
+        </div>
+        <p class="text-xs text-gray-400 mt-3 pt-3 border-t border-purple-100">
+          <i class="fa-solid fa-triangle-exclamation ml-1 text-yellow-500"></i>
+          هذا التحليل مبني على بيانات النظام — راجع مع مديرك قبل تعديل الأسعار
+        </p>
+      </div>`;
+  } catch(err) {
+    container.innerHTML = `<p class="text-red-500 text-sm text-center py-4">خطأ: ${err.message}</p>`;
+  }
+}
+</script>
+</body>
+</html>

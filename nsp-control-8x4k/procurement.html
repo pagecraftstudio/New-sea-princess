@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المشتريات والتأكيدات | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .badge { display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700; }
+    .badge-pending   { background:#fef3c7;color:#92400e; }
+    .badge-requested { background:#eff6ff;color:#1e40af; }
+    .badge-confirmed { background:#dcfce7;color:#166534; }
+    .badge-rejected  { background:#fee2e2;color:#991b1b; }
+    .badge-cancelled { background:#f3f4f6;color:#6b7280; }
+    .badge-critical  { background:#fee2e2;color:#991b1b; }
+    .badge-high      { background:#fef3c7;color:#92400e; }
+    .badge-medium    { background:#fefce8;color:#854d0e; }
+    .badge-low       { background:#f0fdf4;color:#166534; }
+    .service-row { transition: background .15s; cursor:pointer; }
+    .service-row:hover { background: #f9fafb; }
+    .service-row.selected { background:#eff6ff; }
+    /* History panel */
+    #historyPanel { transition: opacity .2s; }
+    /* Bulk bar */
+    #bulkBar { transition: transform .2s; }
+    /* Readiness score ring */
+    .score-ring { width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem;border:3px solid; }
+    .score-high   { border-color:#16a34a;color:#16a34a;background:#f0fdf4; }
+    .score-medium { border-color:#d97706;color:#d97706;background:#fffbeb; }
+    .score-low    { border-color:#dc2626;color:#dc2626;background:#fef2f2; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="erp-page-header">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-truck-ramp-box ml-2 text-primary"></i>المشتريات والتأكيدات</h1>
+      <p class="text-sm text-gray-500 mt-0.5">متابعة تأكيدات الموردين وطلبات الخدمات لكل رحلة</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick="refreshAll()" class="erp-page-btn"><i class="fa-solid fa-rotate-right ml-1"></i>تحديث</button>
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <div class="erp-card p-4 text-center cursor-pointer hover:shadow-md transition" onclick="setKpiFilter('')">
+      <p class="text-2xl font-black text-gray-800" id="kTotal">—</p>
+      <p class="text-xs text-gray-500 mt-0.5">إجمالي الخدمات</p>
+    </div>
+    <div class="erp-card p-4 text-center cursor-pointer hover:shadow-md transition" onclick="setKpiFilter('pending')">
+      <p class="text-2xl font-black text-amber-600" id="kPending">—</p>
+      <p class="text-xs text-gray-500 mt-0.5">بانتظار التأكيد</p>
+    </div>
+    <div class="erp-card p-4 text-center cursor-pointer hover:shadow-md transition" onclick="setKpiFilter('requested')">
+      <p class="text-2xl font-black text-blue-600" id="kRequested">—</p>
+      <p class="text-xs text-gray-500 mt-0.5">تم الطلب</p>
+    </div>
+    <div class="erp-card p-4 text-center cursor-pointer hover:shadow-md transition" onclick="setKpiFilter('confirmed')">
+      <p class="text-2xl font-black text-green-600" id="kConfirmed">—</p>
+      <p class="text-xs text-gray-500 mt-0.5">مؤكدة</p>
+    </div>
+    <div class="erp-card p-4 text-center cursor-pointer hover:shadow-md transition" onclick="setKpiFilter('critical')">
+      <p class="text-2xl font-black text-red-600" id="kCritical">—</p>
+      <p class="text-xs text-gray-500 mt-0.5">حرجة (≤7 أيام)</p>
+    </div>
+  </div>
+
+  <!-- Bulk Action Bar (hidden until rows selected) -->
+  <div id="bulkBar" class="hidden mb-4 bg-blue-600 text-white rounded-xl px-5 py-3 flex items-center gap-4 shadow-lg">
+    <span class="font-bold text-sm"><span id="bulkCount">0</span> خدمات محددة</span>
+    <button onclick="bulkMarkRequested()" class="bg-white text-blue-700 text-xs font-bold px-4 py-1.5 rounded-lg hover:bg-blue-50 transition">
+      <i class="fa-solid fa-paper-plane ml-1"></i>تعليم كـ"تم الطلب"
+    </button>
+    <button onclick="clearSelection()" class="text-blue-200 hover:text-white text-xs mr-auto">
+      <i class="fa-solid fa-xmark ml-1"></i>إلغاء التحديد
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="erp-card p-4 mb-4 flex flex-wrap gap-3 items-center">
+    <input id="searchInput" oninput="filterServices()" type="text"
+      placeholder="بحث بالرحلة أو الخدمة أو المورد…"
+      class="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1 min-w-[200px] focus:outline-none focus:border-primary">
+    <select id="filterStatus" onchange="filterServices()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      <option value="">كل الحالات</option>
+      <option value="pending">بانتظار التأكيد</option>
+      <option value="requested">تم الطلب</option>
+      <option value="confirmed">مؤكدة</option>
+      <option value="rejected">مرفوضة</option>
+      <option value="cancelled">ملغاة</option>
+    </select>
+    <select id="filterType" onchange="filterServices()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      <option value="">كل الخدمات</option>
+      <option value="hotel">فنادق</option>
+      <option value="transfer">نقل</option>
+      <option value="guide">مرشدون</option>
+      <option value="flight">طيران</option>
+      <option value="visa">تأشيرات</option>
+      <option value="activity">أنشطة</option>
+      <option value="other">أخرى</option>
+    </select>
+    <select id="filterCritical" onchange="filterServices()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      <option value="">الكل</option>
+      <option value="true">حرجة فقط</option>
+    </select>
+    <label class="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
+      <input type="checkbox" id="selAllChk" onchange="toggleSelectAll(this.checked)" class="accent-primary"> تحديد الكل
+    </label>
+  </div>
+
+  <!-- Services Table -->
+  <div class="erp-card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b">
+        <tr>
+          <th class="px-3 py-3 w-8"></th>
+          <th class="px-4 py-3 text-right font-bold text-gray-600 text-xs">الرحلة</th>
+          <th class="px-4 py-3 text-right font-bold text-gray-600 text-xs">الخدمة</th>
+          <th class="px-4 py-3 text-right font-bold text-gray-600 text-xs">المورد</th>
+          <th class="px-4 py-3 text-center font-bold text-gray-600 text-xs">تاريخ الخدمة</th>
+          <th class="px-4 py-3 text-center font-bold text-gray-600 text-xs">الحالة</th>
+          <th class="px-4 py-3 text-center font-bold text-gray-600 text-xs hidden md:table-cell">جاهزية الرحلة</th>
+          <th class="px-4 py-3 text-center font-bold text-gray-600 text-xs w-28">إجراء</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody" class="divide-y divide-gray-100"></tbody>
+    </table>
+    <div id="loadingState" class="text-center py-12 text-gray-400 text-sm">
+      <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 block"></i>جارٍ التحميل…
+    </div>
+    <p id="emptyState" class="hidden text-center text-gray-400 py-12 text-sm">لا توجد خدمات مطابقة</p>
+  </div>
+
+</main>
+
+<!-- ═══════════════ HISTORY PANEL (side drawer) ═══════════════ -->
+<div id="historyPanel" class="fixed inset-0 z-50 hidden">
+  <div id="historyOverlay" onclick="closeHistory()" class="absolute inset-0 bg-black/40"></div>
+  <div class="absolute top-0 left-0 bottom-0 w-full max-w-lg bg-white shadow-2xl flex flex-col" dir="rtl">
+    <div class="flex items-center justify-between px-5 py-4 border-b flex-shrink-0">
+      <h2 class="font-black text-gray-800 text-lg flex items-center gap-2">
+        <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+        سجل الخدمة
+      </h2>
+      <button onclick="closeHistory()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="historyServiceInfo" class="mx-5 mt-4 bg-gray-50 rounded-xl p-3 text-sm text-gray-600 border flex-shrink-0"></div>
+
+    <div class="flex gap-1 px-5 mt-4 flex-shrink-0 border-b">
+      <button onclick="switchHistoryTab('requests')"  id="htabReq"  class="htab active px-4 py-2 text-xs font-bold border-b-2 border-primary text-primary">الطلبات</button>
+      <button onclick="switchHistoryTab('confirmations')" id="htabConf" class="htab px-4 py-2 text-xs font-bold border-b-2 border-transparent text-gray-500">التأكيدات</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-5">
+      <div id="historyRequests"  class="space-y-3"></div>
+      <div id="historyConfs"    class="space-y-3 hidden"></div>
+    </div>
+  </div>
+</div>
+<style>
+  .htab { transition:all .15s;cursor:pointer; }
+  .htab:not(.active) { border-color:transparent !important;color:#6b7280 !important; }
+</style>
+
+<!-- ═══════════════ CONFIRMATION MODAL ═══════════════ -->
+<div id="confModal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-start justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl mt-8 mb-8">
+
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <h2 class="font-black text-gray-800 text-lg">تسجيل تأكيد المورد</h2>
+      <button onclick="closeConfModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div id="confServiceSummary" class="mx-6 mt-4 bg-gray-50 rounded-xl p-3 text-sm text-gray-600 border"></div>
+
+    <!-- Existing confirmation notice -->
+    <div id="existingConfNotice" class="hidden mx-6 mt-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-xs text-amber-800 flex items-center gap-2">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>يوجد تأكيد مسبق — سيتم استبداله بهذا التأكيد الجديد</span>
+    </div>
+
+    <div class="p-6 grid grid-cols-1 gap-4">
+
+      <!-- Status quick-set -->
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-2">تحديث حالة التأكيد</label>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="setStatus('requested')"
+            class="status-btn px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-blue-300 text-blue-700 hover:bg-blue-50">
+            <i class="fa-solid fa-paper-plane ml-1"></i>تم إرسال الطلب
+          </button>
+          <button onclick="setStatus('confirmed')"
+            class="status-btn px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-green-300 text-green-700 hover:bg-green-50">
+            <i class="fa-solid fa-circle-check ml-1"></i>مؤكدة
+          </button>
+          <button onclick="setStatus('rejected')"
+            class="status-btn px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-red-300 text-red-700 hover:bg-red-50">
+            <i class="fa-solid fa-circle-xmark ml-1"></i>مرفوضة
+          </button>
+        </div>
+        <input type="hidden" id="fNewStatus">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">رقم تأكيد المورد</label>
+          <input id="fConfRef" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="e.g. BK-20241201">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ التأكيد</label>
+          <input id="fConfDate" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+      </div>
+
+      <!-- NEW: confirmed quantity -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">الكمية المؤكدة</label>
+          <input id="fConfQty" type="number" min="1" value="1" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">وحدة الكمية</label>
+          <select id="fConfQtyUnit" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="pax">مسافر</option>
+            <option value="room">غرفة</option>
+            <option value="seat">مقعد</option>
+            <option value="unit">وحدة</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">اسم المسؤول لدى المورد</label>
+          <input id="fConfContact" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="الاسم">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">هاتف / بريد المسؤول</label>
+          <input id="fConfContactInfo" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">السعر المؤكد</label>
+          <input id="fConfRate" type="number" min="0" step="0.01"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">العملة</label>
+          <select id="fConfCurrency" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="EGP">EGP</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="SAR">SAR</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">نوع الغرفة (فنادق)</label>
+          <input id="fRoomType" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="Double / Twin…">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">أساس الإقامة</label>
+          <select id="fBoardBasis" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="">—</option>
+            <option value="RO">Room Only</option>
+            <option value="BB">Bed & Breakfast</option>
+            <option value="HB">Half Board</option>
+            <option value="FB">Full Board</option>
+            <option value="AI">All Inclusive</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">موعد الإلغاء المجاني</label>
+          <input id="fCancelDeadline" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">رقم الفاوتشر</label>
+          <input id="fVoucherRef" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
+        <textarea id="fConfNotes" rows="2"
+          class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"></textarea>
+      </div>
+
+      <p id="confErr" class="hidden text-red-500 text-xs font-bold"></p>
+    </div>
+
+    <div class="flex gap-2 justify-end px-6 py-4 border-t bg-gray-50 rounded-b-2xl">
+      <button onclick="closeConfModal()" class="erp-page-btn">إلغاء</button>
+      <button onclick="saveConfirmation()" id="btnSaveConf"
+        class="erp-page-btn bg-primary text-white hover:bg-lightGreen border-transparent">
+        <i class="fa-solid fa-floppy-disk ml-1"></i>حفظ التأكيد
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ REQUEST MODAL ═══════════════ -->
+<div id="reqModal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <h2 class="font-black text-gray-800 text-lg">تسجيل طلب للمورد</h2>
+      <button onclick="closeReqModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div id="reqServiceSummary" class="mx-6 mt-4 bg-gray-50 rounded-xl p-3 text-sm text-gray-600 border"></div>
+
+    <div class="p-6 grid grid-cols-1 gap-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">نوع الطلب</label>
+          <select id="rReqType" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="availability">استفسار عن التوفر</option>
+            <option value="confirmation">طلب تأكيد</option>
+            <option value="amendment">تعديل</option>
+            <option value="cancellation">إلغاء</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">قناة التواصل</label>
+          <select id="rChannel" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="email">بريد إلكتروني</option>
+            <option value="whatsapp">واتساب</option>
+            <option value="phone">هاتف</option>
+            <option value="system">نظام إلكتروني</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">اسم جهة الاتصال</label>
+          <input id="rContact" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">موعد الرد المطلوب</label>
+          <input id="rDeadline" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-600 mb-1">تفاصيل الطلب</label>
+        <textarea id="rBody" rows="3"
+          class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
+          placeholder="متطلبات خاصة، تفاصيل إضافية…"></textarea>
+      </div>
+      <p id="reqErr" class="hidden text-red-500 text-xs font-bold"></p>
+    </div>
+
+    <div class="flex gap-2 justify-end px-6 py-4 border-t bg-gray-50 rounded-b-2xl">
+      <button onclick="closeReqModal()" class="erp-page-btn">إلغاء</button>
+      <button onclick="saveRequest()" id="btnSaveReq"
+        class="erp-page-btn bg-primary text-white hover:bg-lightGreen border-transparent">
+        <i class="fa-solid fa-paper-plane ml-1"></i>تسجيل الطلب
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 hidden z-50 px-5 py-3 rounded-xl shadow-xl text-sm font-bold text-white"></div>
+
+<script src="/js/admin-nav.js"></script>
+<script>
+const db = window.db;
+
+let allServices    = [];
+let activeServiceId = null;
+let selectedIds    = new Set();
+let tripReadiness  = {};  // trip_file_id → score
+
+const STATUS_LABEL = { pending:'بانتظار التأكيد', requested:'تم الطلب', confirmed:'مؤكدة', rejected:'مرفوضة', cancelled:'ملغاة' };
+const STATUS_BADGE = { pending:'badge-pending', requested:'badge-requested', confirmed:'badge-confirmed', rejected:'badge-rejected', cancelled:'badge-cancelled' };
+const TYPE_LABEL   = { hotel:'فنادق', transfer:'نقل', guide:'مرشد', flight:'طيران', visa:'تأشيرة', activity:'نشاط', ticket:'تذاكر', meal:'وجبات', insurance:'تأمين', transport:'مركبات', camp:'مخيم', other:'أخرى' };
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function toast(msg, ok = true) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-xl text-sm font-bold text-white ${ok ? 'bg-green-600' : 'bg-red-500'}`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3200);
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  await loadServices();
+});
+
+// ── Load ───────────────────────────────────────────────────────────────────
+async function loadServices() {
+  document.getElementById('loadingState').classList.remove('hidden');
+  document.getElementById('tableBody').innerHTML = '';
+  document.getElementById('emptyState').classList.add('hidden');
+
+  const { data, error } = await db
+    .from('trip_services')
+    .select(`
+      id, service_type, name_ar, service_date, confirmation_status,
+      confirmation_ref, confirmation_date, confirmation_deadline, is_critical,
+      cost_unit, currency, trip_file_id,
+      suppliers(id, name_ar, phone, email),
+      trip_files(id, trip_number, customer_name, destination, travel_date_start, ops_status)
+    `)
+    .not('trip_files.ops_status', 'in', '("closed","cancelled")')
+    .order('service_date', { ascending: true, nullsFirst: false });
+
+  document.getElementById('loadingState').classList.add('hidden');
+
+  if (error) { toast('خطأ في التحميل: ' + error.message, false); return; }
+
+  allServices = (data || []).filter(s => s.trip_files);
+
+  // Load readiness scores for unique trip files
+  await loadReadinessScores();
+
+  updateKPIs();
+  filterServices();
+}
+
+// ── Readiness scores via RPC ───────────────────────────────────────────────
+async function loadReadinessScores() {
+  const tripIds = [...new Set(allServices.map(s => s.trip_file_id).filter(Boolean))];
+  if (!tripIds.length) return;
+
+  // Call RPC per trip - batch if available, else loop small sets
+  const results = await Promise.allSettled(
+    tripIds.map(id => db.rpc('get_trip_readiness_score', { p_trip_file_id: id }))
+  );
+
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled' && r.value.data !== null) {
+      tripReadiness[tripIds[i]] = r.value.data;
+    }
+  });
+}
+
+function readinessBadge(tripFileId) {
+  const score = tripReadiness[tripFileId];
+  if (score === undefined || score === null) return '<span class="text-xs text-gray-300">—</span>';
+  const cls = score >= 80 ? 'score-high' : score >= 50 ? 'score-medium' : 'score-low';
+  return `<div class="score-ring ${cls} mx-auto">${score}%</div>`;
+}
+
+// ── KPIs ───────────────────────────────────────────────────────────────────
+function updateKPIs() {
+  const today = new Date();
+  document.getElementById('kTotal').textContent     = allServices.length;
+  document.getElementById('kPending').textContent   = allServices.filter(s => s.confirmation_status === 'pending').length;
+  document.getElementById('kRequested').textContent = allServices.filter(s => s.confirmation_status === 'requested').length;
+  document.getElementById('kConfirmed').textContent = allServices.filter(s => s.confirmation_status === 'confirmed').length;
+  document.getElementById('kCritical').textContent  = allServices.filter(s => {
+    if (s.confirmation_status === 'confirmed') return false;
+    if (!s.service_date) return s.is_critical;
+    const days = Math.ceil((new Date(s.service_date) - today) / 86400000);
+    return days <= 7 && days >= -1;
+  }).length;
+}
+
+function setKpiFilter(val) {
+  document.getElementById('filterStatus').value = val === 'critical' ? '' : val;
+  if (val === 'critical') document.getElementById('filterCritical').value = 'true';
+  else document.getElementById('filterCritical').value = '';
+  filterServices();
+}
+
+// ── Filter ─────────────────────────────────────────────────────────────────
+function filterServices() {
+  const q    = document.getElementById('searchInput').value.toLowerCase();
+  const st   = document.getElementById('filterStatus').value;
+  const tp   = document.getElementById('filterType').value;
+  const crit = document.getElementById('filterCritical').value;
+  const today = new Date();
+
+  const filtered = allServices.filter(s => {
+    const tf  = s.trip_files || {};
+    const sup = s.suppliers?.name_ar || '';
+    const match = !q || [s.name_ar, tf.customer_name, tf.destination, tf.trip_number, sup]
+                          .some(v => v?.toLowerCase().includes(q));
+    const isCrit = s.confirmation_status !== 'confirmed' && s.service_date &&
+      Math.ceil((new Date(s.service_date) - today) / 86400000) <= 7;
+    return match &&
+      (!st   || s.confirmation_status === st) &&
+      (!tp   || s.service_type === tp) &&
+      (crit === '' || isCrit || s.is_critical);
+  });
+
+  renderTable(filtered);
+}
+
+// ── Render table ───────────────────────────────────────────────────────────
+function renderTable(list) {
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (!list.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  const today = new Date();
+
+  tbody.innerHTML = list.map(s => {
+    const tf       = s.trip_files || {};
+    const sup      = s.suppliers;
+    const days     = s.service_date
+      ? Math.ceil((new Date(s.service_date) - today) / 86400000)
+      : null;
+    const urgent   = days !== null && days <= 7 && days >= -1 && s.confirmation_status !== 'confirmed';
+    const priority = days === null ? 'low'
+      : days <= 7  ? 'critical'
+      : days <= 14 ? 'high'
+      : days <= 30 ? 'medium' : 'low';
+    const priorityLabel = { critical:'حرج ≤7 أيام', high:'عالي ≤14', medium:'متوسط ≤30', low:'منخفض' };
+    const isSelected = selectedIds.has(s.id);
+
+    return `<tr class="service-row ${urgent ? 'bg-red-50' : ''} ${isSelected ? 'selected' : ''}" onclick="handleRowClick(event,'${s.id}')">
+      <td class="px-3 py-3" onclick="event.stopPropagation()">
+        <input type="checkbox" class="row-chk accent-primary" data-id="${s.id}"
+          ${isSelected ? 'checked' : ''}
+          onchange="toggleRowSelect('${s.id}',this.checked)">
+      </td>
+      <td class="px-4 py-3">
+        <a href="/nsp-control-8x4k/trip-file.html?id=${tf.id || ''}"
+           onclick="event.stopPropagation()"
+           class="font-bold text-sm text-primary hover:underline">${tf.trip_number || '—'}</a>
+        <p class="text-xs text-gray-500">${tf.customer_name || tf.destination || '—'}</p>
+        <p class="text-xs text-gray-400">${fmtDate(tf.travel_date_start)}</p>
+      </td>
+      <td class="px-4 py-3">
+        <p class="font-bold text-sm text-gray-800">${s.name_ar}</p>
+        <p class="text-xs text-gray-500">${TYPE_LABEL[s.service_type] || s.service_type}</p>
+        ${s.confirmation_ref ? `<p class="text-xs text-primary font-mono">${s.confirmation_ref}</p>` : ''}
+      </td>
+      <td class="px-4 py-3">
+        ${sup ? `<p class="text-sm text-gray-700 font-bold">${sup.name_ar}</p>
+          ${sup.phone ? `<p class="text-xs text-gray-400"><i class="fa-solid fa-phone ml-1"></i>${sup.phone}</p>` : ''}
+          ${sup.email ? `<p class="text-xs text-gray-400 truncate max-w-[140px]"><i class="fa-solid fa-envelope ml-1"></i>${sup.email}</p>` : ''}` :
+          '<p class="text-xs text-gray-400 italic">لم يُحدد مورد</p>'}
+      </td>
+      <td class="px-4 py-3 text-center">
+        <p class="text-sm font-bold ${urgent ? 'text-red-600' : 'text-gray-700'}">${fmtDate(s.service_date)}</p>
+        ${days !== null ? `<p class="text-xs ${urgent ? 'text-red-500 font-bold' : 'text-gray-400'}">${days >= 0 ? 'بعد ' + days + ' يوم' : 'منذ ' + Math.abs(days) + ' يوم'}</p>` : ''}
+      </td>
+      <td class="px-4 py-3 text-center">
+        <span class="badge ${STATUS_BADGE[s.confirmation_status]}">${STATUS_LABEL[s.confirmation_status]}</span>
+        ${s.confirmation_date ? `<p class="text-xs text-gray-400 mt-0.5">${fmtDate(s.confirmation_date)}</p>` : ''}
+      </td>
+      <td class="px-4 py-3 text-center hidden md:table-cell">
+        ${readinessBadge(s.trip_file_id)}
+      </td>
+      <td class="px-4 py-3 text-center">
+        <div class="flex gap-1 justify-center" onclick="event.stopPropagation()">
+          <button onclick="openHistory('${s.id}')"
+            class="text-gray-400 hover:text-gray-600 p-1.5 rounded hover:bg-gray-100 transition"
+            title="سجل الطلبات والتأكيدات">
+            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+          </button>
+          <button onclick="openReqModal('${s.id}')"
+            class="text-blue-500 hover:text-blue-700 p-1.5 rounded hover:bg-blue-50 transition"
+            title="تسجيل طلب للمورد">
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </button>
+          <button onclick="openConfModal('${s.id}')"
+            class="text-green-600 hover:text-green-800 p-1.5 rounded hover:bg-green-50 transition"
+            title="تسجيل تأكيد">
+            <i class="fa-solid fa-circle-check text-xs"></i>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Row click (open history) ───────────────────────────────────────────────
+function handleRowClick(event, id) {
+  // Only open history if not clicking a checkbox/button/link
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.tagName === 'A') return;
+  if (event.target.closest('button') || event.target.closest('a')) return;
+  openHistory(id);
+}
+
+// ── Selection ──────────────────────────────────────────────────────────────
+function toggleRowSelect(id, checked) {
+  if (checked) selectedIds.add(id);
+  else selectedIds.delete(id);
+  updateBulkBar();
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.row-chk').forEach(chk => {
+    const id = chk.dataset.id;
+    if (checked) selectedIds.add(id);
+    else selectedIds.delete(id);
+    chk.checked = checked;
+    chk.closest('tr').classList.toggle('selected', checked);
+  });
+  updateBulkBar();
+}
+
+function clearSelection() {
+  selectedIds.clear();
+  document.querySelectorAll('.row-chk').forEach(c => { c.checked = false; c.closest('tr').classList.remove('selected'); });
+  document.getElementById('selAllChk').checked = false;
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  if (selectedIds.size > 0) {
+    bar.classList.remove('hidden');
+    document.getElementById('bulkCount').textContent = selectedIds.size;
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+async function bulkMarkRequested() {
+  if (!selectedIds.size) return;
+  const ids = [...selectedIds];
+  const { error } = await db.from('trip_services')
+    .update({ confirmation_status: 'requested' })
+    .in('id', ids)
+    .eq('confirmation_status', 'pending');  // only update pending ones
+
+  if (error) { toast('خطأ: ' + error.message, false); return; }
+  toast(`تم تعليم ${ids.length} خدمة كـ"تم الطلب"`);
+  clearSelection();
+  await loadServices();
+}
+
+// ── History Panel ──────────────────────────────────────────────────────────
+let historyServiceId = null;
+let historyTab = 'requests';
+
+async function openHistory(serviceId) {
+  historyServiceId = serviceId;
+  const s  = allServices.find(x => x.id === serviceId);
+  const tf = s?.trip_files || {};
+
+  document.getElementById('historyServiceInfo').innerHTML = `
+    <p class="font-bold text-gray-800">${s?.name_ar || ''} — ${TYPE_LABEL[s?.service_type] || ''}</p>
+    <p class="text-gray-500 mt-0.5">${tf.trip_number || ''} · ${tf.customer_name || tf.destination || ''} · ${fmtDate(s?.service_date)}</p>
+    <a href="/nsp-control-8x4k/trip-file.html?id=${tf.id || ''}" class="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1">
+      <i class="fa-solid fa-arrow-up-right-from-square"></i> فتح ملف الرحلة
+    </a>`;
+
+  document.getElementById('historyPanel').classList.remove('hidden');
+  await loadHistoryTab('requests');
+}
+
+function closeHistory() {
+  document.getElementById('historyPanel').classList.add('hidden');
+  historyServiceId = null;
+}
+
+function switchHistoryTab(tab) {
+  historyTab = tab;
+  document.querySelectorAll('.htab').forEach(b => b.classList.remove('active'));
+  document.getElementById(tab === 'requests' ? 'htabReq' : 'htabConf').classList.add('active');
+  document.getElementById('historyRequests').classList.toggle('hidden', tab !== 'requests');
+  document.getElementById('historyConfs').classList.toggle('hidden', tab !== 'confirmations');
+  loadHistoryTab(tab);
+}
+
+async function loadHistoryTab(tab) {
+  if (!historyServiceId) return;
+
+  if (tab === 'requests') {
+    const el = document.getElementById('historyRequests');
+    el.innerHTML = '<p class="text-gray-400 text-xs text-center py-6"><i class="fa-solid fa-spinner fa-spin"></i></p>';
+    const { data } = await db.from('supplier_requests')
+      .select('*, admin_users(email)')
+      .eq('trip_service_id', historyServiceId)
+      .order('created_at', { ascending: false });
+
+    if (!data?.length) { el.innerHTML = '<p class="text-gray-400 text-xs text-center py-6">لا طلبات مسجلة</p>'; return; }
+
+    const REQ_TYPE = { availability:'استفسار توفر', confirmation:'طلب تأكيد', amendment:'تعديل', cancellation:'إلغاء' };
+    const CHAN = { email:'بريد', whatsapp:'واتساب', phone:'هاتف', system:'نظام' };
+
+    el.innerHTML = data.map(r => `
+      <div class="border border-gray-100 rounded-xl p-3 text-xs text-gray-700">
+        <div class="flex items-center justify-between mb-1">
+          <span class="font-bold text-gray-800">${REQ_TYPE[r.request_type] || r.request_type}</span>
+          <span class="text-gray-400">${fmtDate(r.requested_date)}</span>
+        </div>
+        <p class="text-gray-500">القناة: ${CHAN[r.channel] || r.channel}${r.contact_name ? ' · ' + r.contact_name : ''}</p>
+        ${r.response_deadline ? `<p class="text-amber-600">موعد الرد: ${fmtDate(r.response_deadline)}</p>` : ''}
+        ${r.request_body ? `<p class="mt-1 text-gray-600 bg-gray-50 rounded p-2">${r.request_body}</p>` : ''}
+        ${r.admin_users?.email ? `<p class="text-gray-400 mt-1">بواسطة: ${r.admin_users.email}</p>` : ''}
+      </div>`).join('');
+
+  } else {
+    const el = document.getElementById('historyConfs');
+    el.innerHTML = '<p class="text-gray-400 text-xs text-center py-6"><i class="fa-solid fa-spinner fa-spin"></i></p>';
+    const { data } = await db.from('supplier_confirmations')
+      .select('*, admin_users(email)')
+      .eq('trip_service_id', historyServiceId)
+      .order('created_at', { ascending: false });
+
+    if (!data?.length) { el.innerHTML = '<p class="text-gray-400 text-xs text-center py-6">لا تأكيدات مسجلة</p>'; return; }
+
+    el.innerHTML = data.map(c => `
+      <div class="border ${c.is_active ? 'border-green-300 bg-green-50' : 'border-gray-100'} rounded-xl p-3 text-xs text-gray-700">
+        <div class="flex items-center justify-between mb-1">
+          <span class="font-bold ${c.is_active ? 'text-green-700' : 'text-gray-500'}">
+            ${c.is_active ? '✓ نشط' : 'مستبدل'} ${c.confirmation_ref ? '· ' + c.confirmation_ref : ''}
+          </span>
+          <span class="text-gray-400">${fmtDate(c.confirmation_date || c.created_at)}</span>
+        </div>
+        ${c.confirmed_by_name ? `<p>المسؤول: ${c.confirmed_by_name}${c.confirmed_by_contact ? ' · ' + c.confirmed_by_contact : ''}</p>` : ''}
+        ${c.confirmed_qty ? `<p>الكمية: ${c.confirmed_qty} ${c.confirmed_qty_unit || ''}</p>` : ''}
+        ${c.confirmed_rate ? `<p>السعر: ${c.confirmed_rate} ${c.rate_currency || ''}</p>` : ''}
+        ${c.room_type ? `<p>الغرفة: ${c.room_type}${c.board_basis ? ' · ' + c.board_basis : ''}</p>` : ''}
+        ${c.voucher_ref ? `<p class="text-primary font-mono">فاوتشر: ${c.voucher_ref}</p>` : ''}
+        ${c.cancellation_deadline ? `<p class="text-amber-600">إلغاء مجاني حتى: ${fmtDate(c.cancellation_deadline)}</p>` : ''}
+        ${c.notes ? `<p class="mt-1 text-gray-600 bg-white rounded p-1 border">${c.notes}</p>` : ''}
+      </div>`).join('');
+  }
+}
+
+// ── Confirmation Modal ─────────────────────────────────────────────────────
+async function openConfModal(serviceId) {
+  activeServiceId = serviceId;
+  const s  = allServices.find(x => x.id === serviceId);
+  const tf = s?.trip_files || {};
+
+  document.getElementById('confServiceSummary').innerHTML = `
+    <p class="font-bold text-gray-800">${s?.name_ar || ''} — ${TYPE_LABEL[s?.service_type] || ''}</p>
+    <p class="text-gray-500 mt-0.5">${tf.trip_number || ''} · ${tf.customer_name || tf.destination || ''} · ${fmtDate(s?.service_date)}</p>`;
+
+  // Check for existing active confirmation
+  const { data: existingConf } = await db.from('supplier_confirmations')
+    .select('*')
+    .eq('trip_service_id', serviceId)
+    .eq('is_active', true)
+    .single();
+
+  const noticeEl = document.getElementById('existingConfNotice');
+
+  if (existingConf) {
+    // Pre-fill from existing confirmation
+    noticeEl.classList.remove('hidden');
+    document.getElementById('fConfRef').value         = existingConf.confirmation_ref || '';
+    document.getElementById('fConfDate').value        = existingConf.confirmation_date?.slice(0,10) || '';
+    document.getElementById('fConfContact').value     = existingConf.confirmed_by_name || '';
+    document.getElementById('fConfContactInfo').value = existingConf.confirmed_by_contact || '';
+    document.getElementById('fConfRate').value        = existingConf.confirmed_rate || '';
+    document.getElementById('fConfCurrency').value    = existingConf.rate_currency || s?.currency || 'EGP';
+    document.getElementById('fConfQty').value         = existingConf.confirmed_qty || 1;
+    document.getElementById('fConfQtyUnit').value     = existingConf.confirmed_qty_unit || 'pax';
+    document.getElementById('fRoomType').value        = existingConf.room_type || '';
+    document.getElementById('fBoardBasis').value      = existingConf.board_basis || '';
+    document.getElementById('fCancelDeadline').value  = existingConf.cancellation_deadline?.slice(0,10) || '';
+    document.getElementById('fVoucherRef').value      = existingConf.voucher_ref || '';
+    document.getElementById('fConfNotes').value       = existingConf.notes || '';
+  } else {
+    // Fresh — pre-fill only from service data
+    noticeEl.classList.add('hidden');
+    document.getElementById('fConfRef').value         = s?.confirmation_ref || '';
+    document.getElementById('fConfDate').value        = s?.confirmation_date?.slice(0,10) || '';
+    document.getElementById('fConfContact').value     = s?.suppliers?.name_ar || '';
+    document.getElementById('fConfContactInfo').value = s?.suppliers?.phone || s?.suppliers?.email || '';
+    document.getElementById('fConfRate').value        = '';
+    document.getElementById('fConfCurrency').value    = s?.currency || 'EGP';
+    document.getElementById('fConfQty').value         = 1;
+    document.getElementById('fConfQtyUnit').value     = 'pax';
+    document.getElementById('fRoomType').value        = '';
+    document.getElementById('fBoardBasis').value      = '';
+    document.getElementById('fCancelDeadline').value  = s?.confirmation_deadline?.slice(0,10) || '';
+    document.getElementById('fVoucherRef').value      = '';
+    document.getElementById('fConfNotes').value       = '';
+  }
+
+  document.getElementById('confErr').classList.add('hidden');
+  updateStatusBtns(s?.confirmation_status || 'confirmed');
+  document.getElementById('fNewStatus').value = s?.confirmation_status || 'confirmed';
+  document.getElementById('confModal').classList.remove('hidden');
+}
+
+function setStatus(val) {
+  document.getElementById('fNewStatus').value = val;
+  updateStatusBtns(val);
+}
+
+function updateStatusBtns(val) {
+  document.querySelectorAll('.status-btn').forEach(b => {
+    const active = b.getAttribute('onclick').includes(`'${val}'`);
+    b.style.fontWeight = active ? '900' : '700';
+    b.style.opacity    = active ? '1' : '0.5';
+  });
+}
+
+function closeConfModal() { document.getElementById('confModal').classList.add('hidden'); }
+
+async function saveConfirmation() {
+  const newStatus = document.getElementById('fNewStatus').value;
+  if (!newStatus) {
+    document.getElementById('confErr').textContent = 'اختر حالة التأكيد';
+    document.getElementById('confErr').classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('btnSaveConf');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i>';
+
+  const { data: session } = await db.auth.getSession();
+
+  try {
+    // 1. Deactivate any existing active confirmation for this service
+    await db.from('supplier_confirmations')
+      .update({ is_active: false })
+      .eq('trip_service_id', activeServiceId)
+      .eq('is_active', true);
+
+    // 2. Update trip_service status + ref
+    const svcPayload = {
+      confirmation_status:   newStatus,
+      confirmation_ref:      document.getElementById('fConfRef').value.trim() || null,
+      confirmation_date:     document.getElementById('fConfDate').value || null,
+      confirmation_deadline: document.getElementById('fCancelDeadline').value || null,
+    };
+    const { error: svcErr } = await db.from('trip_services').update(svcPayload).eq('id', activeServiceId);
+    if (svcErr) throw svcErr;
+
+    // 3. Insert new active confirmation record
+    const svc = allServices.find(x => x.id === activeServiceId);
+    const confPayload = {
+      trip_service_id:       activeServiceId,
+      trip_file_id:          svc?.trip_file_id,
+      supplier_id:           svc?.suppliers?.id || null,
+      confirmation_ref:      document.getElementById('fConfRef').value.trim() || null,
+      confirmation_date:     document.getElementById('fConfDate').value || null,
+      confirmed_by_name:     document.getElementById('fConfContact').value.trim() || null,
+      confirmed_by_contact:  document.getElementById('fConfContactInfo').value.trim() || null,
+      confirmed_qty:         parseInt(document.getElementById('fConfQty').value) || 1,
+      confirmed_qty_unit:    document.getElementById('fConfQtyUnit').value,
+      confirmed_rate:        parseFloat(document.getElementById('fConfRate').value) || null,
+      rate_currency:         document.getElementById('fConfCurrency').value,
+      room_type:             document.getElementById('fRoomType').value.trim() || null,
+      board_basis:           document.getElementById('fBoardBasis').value || null,
+      cancellation_deadline: document.getElementById('fCancelDeadline').value || null,
+      voucher_ref:           document.getElementById('fVoucherRef').value.trim() || null,
+      notes:                 document.getElementById('fConfNotes').value.trim() || null,
+      recorded_by:           session?.session?.user?.id,
+      is_active:             true,
+    };
+    const { error: confErr } = await db.from('supplier_confirmations').insert(confPayload);
+    if (confErr) throw confErr;
+
+    toast('تم حفظ التأكيد بنجاح');
+    closeConfModal();
+    await loadServices();
+  } catch (e) {
+    document.getElementById('confErr').textContent = 'خطأ: ' + e.message;
+    document.getElementById('confErr').classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk ml-1"></i>حفظ التأكيد';
+  }
+}
+
+// ── Request Modal ──────────────────────────────────────────────────────────
+function openReqModal(serviceId) {
+  activeServiceId = serviceId;
+  const s  = allServices.find(x => x.id === serviceId);
+  const tf = s?.trip_files || {};
+  const sup = s?.suppliers;
+
+  document.getElementById('reqServiceSummary').innerHTML = `
+    <p class="font-bold text-gray-800">${s?.name_ar || ''} — ${TYPE_LABEL[s?.service_type] || ''}</p>
+    <p class="text-gray-500 mt-0.5">${tf.trip_number || ''} · ${fmtDate(s?.service_date)}</p>
+    ${sup ? `<p class="text-primary mt-0.5 text-xs"><i class="fa-solid fa-building ml-1"></i>${sup.name_ar}${sup.phone ? ' · ' + sup.phone : ''}</p>` : ''}`;
+
+  document.getElementById('rReqType').value  = 'confirmation';
+  document.getElementById('rChannel').value  = 'email';
+  document.getElementById('rContact').value  = sup?.name_ar || '';
+  document.getElementById('rDeadline').value = '';
+  document.getElementById('rBody').value     = '';
+  document.getElementById('reqErr').classList.add('hidden');
+  document.getElementById('reqModal').classList.remove('hidden');
+}
+
+function closeReqModal() { document.getElementById('reqModal').classList.add('hidden'); }
+
+async function saveRequest() {
+  const btn = document.getElementById('btnSaveReq');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i>';
+
+  const svc = allServices.find(x => x.id === activeServiceId);
+  const { data: session } = await db.auth.getSession();
+
+  try {
+    const payload = {
+      trip_service_id:   activeServiceId,
+      trip_file_id:      svc?.trip_file_id,
+      supplier_id:       svc?.suppliers?.id || null,
+      request_type:      document.getElementById('rReqType').value,
+      channel:           document.getElementById('rChannel').value,
+      contact_name:      document.getElementById('rContact').value.trim() || null,
+      response_deadline: document.getElementById('rDeadline').value || null,
+      request_body:      document.getElementById('rBody').value.trim() || null,
+      requested_date:    new Date().toISOString().slice(0,10),
+      requested_by:      session?.session?.user?.id,
+    };
+    const { error } = await db.from('supplier_requests').insert(payload);
+    if (error) throw error;
+
+    // Move status to 'requested' if still pending
+    if (svc?.confirmation_status === 'pending') {
+      await db.from('trip_services')
+        .update({ confirmation_status: 'requested' })
+        .eq('id', activeServiceId);
+    }
+
+    toast('تم تسجيل الطلب');
+    closeReqModal();
+    await loadServices();
+  } catch (e) {
+    document.getElementById('reqErr').textContent = 'خطأ: ' + e.message;
+    document.getElementById('reqErr').classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane ml-1"></i>تسجيل الطلب';
+  }
+}
+
+async function refreshAll() { await loadServices(); }
+</script>
+</body>
+</html>

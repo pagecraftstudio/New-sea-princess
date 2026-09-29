@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الفواتير — بوابة الشركاء</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/partner-auth.js"></script>
+  <script src="/js/partner-layout.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;background:#f3f4f6;}
+    .card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 1px 8px rgba(0,0,0,.06);border:1px solid #e5e7eb;}
+    .kpi{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 1px 8px rgba(0,0,0,.06);border:1px solid #e5e7eb;}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:700;}
+    .s-paid{background:#d1fae5;color:#065f46;}
+    .s-partial{background:#fef3c7;color:#b45309;}
+    .s-issued{background:#dbeafe;color:#1d4ed8;}
+    .s-overdue{background:#fee2e2;color:#991b1b;}
+    .s-cancelled{background:#f3f4f6;color:#6b7280;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="min-h-screen">
+<div class="flex min-h-screen">
+  <div id="partnerNavMount" class="flex"></div>
+
+  <main class="flex-1 overflow-auto p-4 md:p-6">
+    <div class="mb-6">
+      <h1 class="text-xl font-black text-gray-800"><i class="fa-solid fa-file-invoice text-primary ml-2"></i>الفواتير والمدفوعات</h1>
+      <p class="text-sm text-gray-400">كشف حساب الشريك</p>
+    </div>
+
+    <!-- KPI summary -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div class="kpi">
+        <p class="text-xs text-gray-400 mb-1">إجمالي الفواتير</p>
+        <p class="text-2xl font-black text-gray-800" id="kTotal">—</p>
+      </div>
+      <div class="kpi">
+        <p class="text-xs text-gray-400 mb-1">مدفوع</p>
+        <p class="text-2xl font-black text-green-600" id="kPaid">—</p>
+      </div>
+      <div class="kpi">
+        <p class="text-xs text-gray-400 mb-1">متبقي</p>
+        <p class="text-2xl font-black text-amber-600" id="kOut">—</p>
+      </div>
+      <div class="kpi">
+        <p class="text-xs text-gray-400 mb-1">متأخرة</p>
+        <p class="text-2xl font-black text-red-600" id="kOver">—</p>
+      </div>
+    </div>
+
+    <!-- Invoices list -->
+    <div class="card">
+      <div id="invList" class="space-y-3">
+        <div class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const ppu = await PartnerAuth.requirePartnerAuth();
+  if (!ppu) return;
+  PartnerLayout.init();
+  await load();
+});
+
+async function load() {
+  const pid = PartnerAuth.getPartnerId();
+  // Get invoices linked to partner via bookings
+  const { data } = await db.from('nsp_invoices')
+    .select('id,invoice_number,customer_name,total,paid_amount,remaining_amount,status,due_date,created_at,booking_id,bookings(booking_number,b2b_partner_id)')
+    .order('created_at',{ascending:false});
+
+  // Filter client-side to partner's bookings (RLS already limits via booking)
+  const inv = (data||[]).filter(i => i.bookings?.b2b_partner_id === pid);
+
+  // KPIs
+  const totalAmt  = inv.reduce((s,i)=>s+(i.total||0),0);
+  const paidAmt   = inv.reduce((s,i)=>s+(i.paid_amount||0),0);
+  const outAmt    = inv.reduce((s,i)=>s+(i.remaining_amount||0),0);
+  const overdue   = inv.filter(i=>i.status==='overdue').reduce((s,i)=>s+(i.remaining_amount||0),0);
+  document.getElementById('kTotal').textContent = fmt(totalAmt)+' EGP';
+  document.getElementById('kPaid').textContent  = fmt(paidAmt)+' EGP';
+  document.getElementById('kOut').textContent   = fmt(outAmt)+' EGP';
+  document.getElementById('kOver').textContent  = fmt(overdue)+' EGP';
+
+  const el = document.getElementById('invList');
+  if (!inv.length) { el.innerHTML='<p class="text-center text-gray-400 py-10">لا توجد فواتير</p>'; return; }
+  const sMap = {paid:'s-paid مدفوع',partial:'s-partial جزئي',issued:'s-issued مُصدر',overdue:'s-overdue متأخر',cancelled:'s-cancelled ملغي'};
+  el.innerHTML = inv.map(i => {
+    const [sc,sl] = (sMap[i.status]||'s-issued مُصدر').split(' ');
+    return `<div class="flex items-center gap-4 p-4 border border-gray-100 rounded-xl hover:border-primary/30 transition">
+      <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+        <i class="fa-solid fa-file-invoice text-sm"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap mb-0.5">
+          <span class="font-bold text-sm text-gray-800 font-mono">${esc(i.invoice_number)}</span>
+          <span class="badge ${sc}">${sl}</span>
+        </div>
+        <div class="text-xs text-gray-400 flex gap-3 flex-wrap">
+          ${i.bookings?.booking_number ? `<span>${esc(i.bookings.booking_number)}</span>` : ''}
+          ${i.due_date ? `<span>استحقاق: ${i.due_date}</span>` : ''}
+          <span>${new Date(i.created_at).toLocaleDateString('ar-EG')}</span>
+        </div>
+      </div>
+      <div class="text-left shrink-0">
+        <p class="font-black text-sm text-gray-800">${fmt(i.total||0)} EGP</p>
+        ${i.remaining_amount > 0 ? `<p class="text-xs text-red-500 font-bold">متبقي: ${fmt(i.remaining_amount)}</p>` : '<p class="text-xs text-green-600 font-bold">مسدد بالكامل</p>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmt(n){return (n||0).toLocaleString('ar-EG',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

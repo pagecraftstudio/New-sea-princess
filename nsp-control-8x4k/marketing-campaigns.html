@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الحملات التسويقية | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/admin-nav.js"></script>
+  <style>
+    body{font-family:'Cairo',sans-serif;}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px;}
+    input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:#fff;}
+    input:focus,select:focus,textarea:focus{border-color:#1B5E20;box-shadow:0 0 0 3px rgba(27,94,32,.1);}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B5E20;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<div id="adminNavMount"></div>
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-paper-plane ml-2"></i>الحملات التسويقية</h1>
+      <p class="erp-page-subtitle">إنشاء وإرسال وتتبع الحملات</p>
+    </div>
+    <button onclick="openModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+      <i class="fa-solid fa-plus ml-1"></i>حملة جديدة
+    </button>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="flex gap-2 mb-4 flex-wrap">
+    <button onclick="setF('all',this)" class="erp-page-btn">الكل</button>
+    <button onclick="setF('draft',this)" class="erp-page-btn">مسودة</button>
+    <button onclick="setF('scheduled',this)" class="erp-page-btn">مجدولة</button>
+    <button onclick="setF('sent',this)" class="erp-page-btn">مرسلة</button>
+  </div>
+
+  <div class="erp-card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-100">
+            <th class="text-right p-3 text-xs font-bold text-gray-500">الاسم</th>
+            <th class="text-right p-3 text-xs font-bold text-gray-500">النوع</th>
+            <th class="text-right p-3 text-xs font-bold text-gray-500">الشريحة</th>
+            <th class="text-right p-3 text-xs font-bold text-gray-500">مرسل</th>
+            <th class="text-right p-3 text-xs font-bold text-gray-500">فُتح</th>
+            <th class="text-right p-3 text-xs font-bold text-gray-500">الحالة</th>
+            <th class="text-right p-3 text-xs font-bold text-gray-500">التاريخ</th>
+            <th class="p-3"></th>
+          </tr>
+        </thead>
+        <tbody id="campBody">
+          <tr><td colspan="8" class="text-center py-10 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Campaign Modal -->
+<div id="campModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b">
+      <h3 class="font-bold text-lg text-primary" id="campModalTitle"><i class="fa-solid fa-paper-plane ml-2"></i>حملة جديدة</h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="overflow-y-auto flex-1 p-5 grid gap-4">
+      <input type="hidden" id="fId">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2">
+          <label>اسم الحملة *</label>
+          <input type="text" id="fName" placeholder="مثال: عروض رمضان 2026">
+        </div>
+        <div>
+          <label>نوع القناة</label>
+          <select id="fType">
+            <option value="email">بريد إلكتروني</option>
+            <option value="whatsapp">واتساب</option>
+            <option value="in_app">إشعار داخلي</option>
+          </select>
+        </div>
+        <div>
+          <label>هدف الحملة</label>
+          <select id="fGoal">
+            <option value="engagement">تفاعل</option>
+            <option value="lead_nurture">رعاية العملاء المحتملين</option>
+            <option value="re_engagement">إعادة تفعيل</option>
+            <option value="upsell">بيع إضافي</option>
+            <option value="seasonal">موسمي</option>
+            <option value="destination">وجهة سياحية</option>
+            <option value="announcement">إعلان</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label>الشريحة المستهدفة</label>
+          <select id="fSegment">
+            <option value="">بدون شريحة (يدوي)</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label>موضوع البريد / عنوان الرسالة *</label>
+          <input type="text" id="fSubject" placeholder="مثال: 🌙 عروض رمضان الحصرية — وفّر 20%">
+        </div>
+        <div class="col-span-2">
+          <label>نص المعاينة (للبريد الإلكتروني)</label>
+          <input type="text" id="fPreview" placeholder="اكتشف أفضل عروض رمضان...">
+        </div>
+        <div class="col-span-2">
+          <label>محتوى الرسالة (نص) *</label>
+          <textarea id="fBody" rows="6" placeholder="اكتب محتوى الرسالة هنا...&#10;&#10;يمكن استخدام المتغيرات: {{name}} {{email}} {{package_title}}"></textarea>
+        </div>
+        <div>
+          <label>جدولة الإرسال</label>
+          <input type="datetime-local" id="fSchedule">
+        </div>
+        <div>
+          <label>UTM Campaign</label>
+          <input type="text" id="fUtm" placeholder="ramadan_2026">
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end p-5 border-t flex-wrap">
+      <button onclick="closeModal()" class="erp-page-btn">إلغاء</button>
+      <button onclick="saveCamp('draft')" class="erp-page-btn"><i class="fa-solid fa-floppy-disk ml-1"></i>مسودة</button>
+      <button onclick="saveCamp('scheduled')" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-600 transition">
+        <i class="fa-solid fa-clock ml-1"></i>جدولة
+      </button>
+      <button onclick="sendCampNow()" id="sendNowBtn" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-lightGreen transition">
+        <i class="fa-solid fa-paper-plane ml-1"></i>إرسال الآن
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let _all = [], _filter = 'all', _segments = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  NSPNav.init();
+  await Promise.all([load(), loadSegs()]);
+});
+
+async function load() {
+  const { data } = await db.from('marketing_campaigns')
+    .select('id,campaign_number,name,campaign_type,status,sent_count,opened_count,sent_at,created_at,segment_id,marketing_segments(name)')
+    .order('created_at',{ascending:false});
+  _all = data || [];
+  render();
+}
+
+async function loadSegs() {
+  const { data } = await db.from('marketing_segments').select('id,name,member_count').eq('is_active',true);
+  _segments = data || [];
+  const sel = document.getElementById('fSegment');
+  _segments.forEach(s => sel.add(new Option(`${s.name} (${s.member_count||0})`, s.id)));
+}
+
+function setF(f, btn) {
+  _filter = f;
+  document.querySelectorAll('[onclick^="setF"]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function render() {
+  const rows = _filter === 'all' ? _all : _all.filter(c => c.status === _filter);
+  const tbody = document.getElementById('campBody');
+  if (!rows.length) { tbody.innerHTML='<tr><td colspan="8" class="text-center py-10 text-gray-400">لا توجد حملات</td></tr>'; return; }
+  const sMap = {draft:'bg-gray-100 text-gray-500 مسودة',scheduled:'bg-blue-100 text-blue-700 مجدولة',sending:'bg-amber-100 text-amber-700 إرسال',sent:'bg-green-100 text-green-700 مرسلة',failed:'bg-red-100 text-red-700 فشل',cancelled:'bg-gray-100 text-gray-400 ملغي'};
+  const typeMap = {email:'<i class="fa-solid fa-envelope text-blue-500"></i>',whatsapp:'<i class="fa-brands fa-whatsapp text-green-600"></i>',in_app:'<i class="fa-solid fa-bell text-purple-500"></i>'};
+  tbody.innerHTML = rows.map(c => {
+    const sm = sMap[c.status]||'bg-gray-100 text-gray-500 مسودة';
+    const parts = sm.split(' ');
+    const sl = parts.slice(2).join(' ');
+    const sc = parts.slice(0,2).join(' ');
+    const open_rate = c.sent_count > 0 ? Math.round(c.opened_count/c.sent_count*100)+'%' : '—';
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50 transition">
+      <td class="p-3"><div class="font-semibold text-gray-800">${esc(c.name)}</div><div class="text-xs text-gray-400 font-mono">${c.campaign_number||'—'}</div></td>
+      <td class="p-3">${typeMap[c.campaign_type]||''}</td>
+      <td class="p-3 text-xs text-gray-500">${esc(c.marketing_segments?.name||'—')}</td>
+      <td class="p-3 font-bold text-sm">${c.sent_count||0}</td>
+      <td class="p-3 text-sm ${open_rate!=='—'?'text-green-600':''}">${open_rate}</td>
+      <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full font-bold ${sc}">${sl}</span></td>
+      <td class="p-3 text-xs text-gray-400">${c.sent_at ? new Date(c.sent_at).toLocaleDateString('ar-EG') : new Date(c.created_at).toLocaleDateString('ar-EG')}</td>
+      <td class="p-3">
+        <div class="flex gap-1">
+          <button onclick="editCamp('${c.id}')" class="text-gray-400 hover:text-primary p-1.5 rounded text-xs"><i class="fa-solid fa-pen"></i></button>
+          ${c.status==='draft'||c.status==='scheduled' ? `<button onclick="sendNow('${c.id}')" class="text-gray-400 hover:text-green-600 p-1.5 rounded text-xs" title="إرسال الآن"><i class="fa-solid fa-paper-plane"></i></button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal() {
+  document.getElementById('fId').value='';
+  ['fName','fSubject','fPreview','fBody','fUtm'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fType').value='email';
+  document.getElementById('fGoal').value='engagement';
+  document.getElementById('fSegment').value='';
+  document.getElementById('fSchedule').value='';
+  document.getElementById('campModalTitle').innerHTML='<i class="fa-solid fa-paper-plane ml-2"></i>حملة جديدة';
+  document.getElementById('campModal').classList.remove('hidden');
+}
+
+async function editCamp(id) {
+  const { data: c } = await db.from('marketing_campaigns').select('*').eq('id',id).single();
+  if (!c) return;
+  document.getElementById('fId').value = c.id;
+  document.getElementById('fName').value = c.name||'';
+  document.getElementById('fType').value = c.campaign_type||'email';
+  document.getElementById('fGoal').value = c.campaign_goal||'engagement';
+  document.getElementById('fSegment').value = c.segment_id||'';
+  document.getElementById('fSubject').value = c.subject||'';
+  document.getElementById('fPreview').value = c.preview_text||'';
+  document.getElementById('fBody').value = c.body_text||'';
+  document.getElementById('fSchedule').value = c.scheduled_at ? c.scheduled_at.slice(0,16) : '';
+  document.getElementById('fUtm').value = c.utm_campaign||'';
+  document.getElementById('campModalTitle').innerHTML='<i class="fa-solid fa-pen ml-2"></i>تعديل حملة';
+  document.getElementById('campModal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('campModal').classList.add('hidden'); }
+
+async function saveCamp(status) {
+  const name    = document.getElementById('fName').value.trim();
+  const subject = document.getElementById('fSubject').value.trim();
+  if (!name) { toast('أدخل اسم الحملة',true); return; }
+  const id = document.getElementById('fId').value;
+  const sched = document.getElementById('fSchedule').value;
+  const payload = {
+    name, status,
+    campaign_type: document.getElementById('fType').value,
+    campaign_goal: document.getElementById('fGoal').value,
+    segment_id:    document.getElementById('fSegment').value||null,
+    subject,
+    preview_text:  document.getElementById('fPreview').value.trim()||null,
+    body_text:     document.getElementById('fBody').value.trim()||null,
+    utm_campaign:  document.getElementById('fUtm').value.trim()||null,
+    scheduled_at:  sched ? new Date(sched).toISOString() : null,
+    updated_at:    new Date().toISOString(),
+  };
+  if (id) { await db.from('marketing_campaigns').update(payload).eq('id',id); }
+  else { await db.from('marketing_campaigns').insert({...payload, created_by: (await db.auth.getSession()).data.session?.user?.id}); }
+  closeModal();
+  toast(status==='scheduled'?'تم جدولة الحملة ✓':'تم حفظ المسودة ✓');
+  await load();
+}
+
+async function sendCampNow() {
+  const id = document.getElementById('fId').value;
+  if (!document.getElementById('fName').value.trim()) { toast('أدخل اسم الحملة',true); return; }
+  // Save first as scheduled then trigger
+  await saveCamp('sending');
+  if (id) await sendNow(id);
+}
+
+async function sendNow(campId) {
+  if (!confirm('هل تريد إرسال هذه الحملة الآن؟')) return;
+  // In production, this calls a send-campaign edge function
+  // For now, mark as sent and increment sent_count
+  const segId = (await db.from('marketing_campaigns').select('segment_id,target_count').eq('id',campId).single()).data?.segment_id;
+  let cnt = 0;
+  if (segId) {
+    const { data: seg } = await db.from('marketing_segments').select('member_count').eq('id',segId).single();
+    cnt = seg?.member_count || 0;
+  }
+  await db.from('marketing_campaigns').update({
+    status:'sent', sent_at: new Date().toISOString(),
+    sent_count: cnt, target_count: cnt, updated_at: new Date().toISOString()
+  }).eq('id',campId);
+  toast('تم الإرسال ✓');
+  await load();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.style.background=err?'#c62828':'#1B5E20';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المبيعات | نيو سي برنسيس</title>
+  <script>tailwind={config:{theme:{extend:{colors:{primary:"#1B5E20",lightGreen:"#2E7D32",gold:"#B8860B",lightGold:"#DAA520",darkBg:"#0D1B0E",offWhite:"#F8F5EC",borderGold:"#D4AF6A",success:"#2E7D32",warning:"#F57F17",error:"#C62828"},fontFamily:{sans:["Cairo","sans-serif"]}}}}}}</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="stylesheet" href="/css/erp-ui.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+
+    .status-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; }
+    .funnel-bar { transition: width 0.6s ease; }
+  </style>
+  <script src="/js/admin-nav.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="adminNavMount"></div>
+
+<main class="flex-1 overflow-auto p-4 md:p-6">
+
+  <!-- Page Header -->
+  <div class="erp-page-header mb-6">
+    <div>
+      <h1 class="erp-page-title"><i class="fa-solid fa-chart-line ml-2 text-primary"></i>لوحة المبيعات والـ CRM</h1>
+      <p class="erp-page-subtitle">متابعة العملاء المحتملين، الفرص، والمهام</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="/nsp-control-8x4k/leads.html"
+         class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-lightGreen transition flex items-center gap-2">
+        <i class="fa-solid fa-user-plus"></i> عميل محتمل جديد
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Grid -->
+  <div class="kpi-grid mb-6" id="kpiGrid">
+    <!-- Populated by JS -->
+    <div class="kpi-card border-blue-500 animate-pulse"><div class="h-3 bg-gray-200 rounded w-24 mb-2"></div><div class="h-7 bg-gray-100 rounded w-16"></div></div>
+    <div class="kpi-card border-yellow-400 animate-pulse"><div class="h-3 bg-gray-200 rounded w-24 mb-2"></div><div class="h-7 bg-gray-100 rounded w-16"></div></div>
+    <div class="kpi-card border-green-500 animate-pulse"><div class="h-3 bg-gray-200 rounded w-24 mb-2"></div><div class="h-7 bg-gray-100 rounded w-16"></div></div>
+    <div class="kpi-card border-red-400 animate-pulse"><div class="h-3 bg-gray-200 rounded w-24 mb-2"></div><div class="h-7 bg-gray-100 rounded w-16"></div></div>
+  </div>
+
+  <!-- Row: Funnel + Tasks -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+
+    <!-- Lead Status Funnel -->
+    <div class="erp-card lg:col-span-2">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-filter text-primary"></i>مسار العملاء المحتملين</span>
+        <a href="/nsp-control-8x4k/leads.html" class="text-xs text-primary hover:underline font-bold">عرض الكل ←</a>
+      </div>
+      <div id="funnelChart" class="space-y-3 py-2">
+        <p class="text-gray-400 text-xs text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+
+    <!-- Overdue Tasks -->
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-bell text-warning"></i>مهام متأخرة</span>
+        <span id="overdueCount" class="text-xs bg-red-100 text-red-700 font-bold px-2 py-1 rounded-full">—</span>
+      </div>
+      <div id="overdueTasksList" class="space-y-2 max-h-72 overflow-y-auto">
+        <p class="text-gray-400 text-xs text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row: Pipeline value + Recent Leads -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+
+    <!-- Pipeline by Stage -->
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-layer-group text-purple-600"></i>قيمة الفرص البيعية</span>
+        <a href="/nsp-control-8x4k/opportunities.html" class="text-xs text-primary hover:underline font-bold">إدارة الفرص ←</a>
+      </div>
+      <canvas id="pipelineChart" height="200"></canvas>
+    </div>
+
+    <!-- Recent Leads -->
+    <div class="erp-card">
+      <div class="erp-card-header">
+        <span class="erp-card-title"><i class="fa-solid fa-user-clock text-blue-600"></i>أحدث العملاء المحتملين</span>
+        <a href="/nsp-control-8x4k/leads.html" class="text-xs text-primary hover:underline font-bold">عرض الكل ←</a>
+      </div>
+      <div id="recentLeadsList" class="space-y-2 max-h-72 overflow-y-auto">
+        <p class="text-gray-400 text-xs text-center py-8 animate-pulse">جارٍ التحميل…</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await adminCheckAuth()) return;
+  await loadDashboard();
+});
+
+const STATUS_LABELS = {
+  new:'جديد', contacted:'تم التواصل', qualified:'مؤهل',
+  unqualified:'غير مؤهل', opportunity:'فرصة', won:'رابح', lost:'خسارة', nurture:'تربية'
+};
+const STATUS_COLORS = {
+  new:'#3b82f6', contacted:'#f59e0b', qualified:'#10b981',
+  unqualified:'#6b7280', opportunity:'#8b5cf6', won:'#16a34a', lost:'#ef4444', nurture:'#f97316'
+};
+
+const STAGE_LABELS = {
+  new:'جديد', qualification:'تأهيل', discovery:'استكشاف', itinerary:'برنامج',
+  quote:'عرض سعر', follow_up:'متابعة', negotiation:'تفاوض',
+  deposit_pending:'إيداع معلق', won:'رابح', lost:'خسارة'
+};
+
+async function loadDashboard() {
+  try {
+    // CRM Summary
+    const { data: summary, error } = await db.rpc('get_crm_summary');
+    if (error) throw error;
+
+    renderKPIs(summary);
+    await renderFunnel();
+    await renderPipelineChart();
+    await renderRecentLeads();
+    await renderOverdueTasks(summary);
+  } catch(e) {
+    console.error('CRM dashboard error:', e);
+  }
+}
+
+function renderKPIs(s) {
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card" style="border-bottom-color:#3b82f6">
+      <i class="kpi-card-icon fa-solid fa-users text-blue-100"></i>
+      <p class="text-xs text-gray-500 font-bold">إجمالي العملاء المحتملين</p>
+      <p class="text-2xl font-bold text-gray-800">${s.leads_total}</p>
+      <p class="text-xs text-blue-500 mt-1">جديد: ${s.leads_new}</p>
+    </div>
+    <div class="kpi-card" style="border-bottom-color:#f59e0b">
+      <i class="kpi-card-icon fa-solid fa-bell text-yellow-100"></i>
+      <p class="text-xs text-gray-500 font-bold">متابعات متأخرة</p>
+      <p class="text-2xl font-bold ${s.overdue_followups > 0 ? 'text-red-600' : 'text-gray-800'}">${s.overdue_followups}</p>
+      <p class="text-xs text-gray-400 mt-1">مهام مفتوحة: ${s.open_tasks}</p>
+    </div>
+    <div class="kpi-card" style="border-bottom-color:#10b981">
+      <i class="kpi-card-icon fa-solid fa-trophy text-green-100"></i>
+      <p class="text-xs text-gray-500 font-bold">قيمة الفرص</p>
+      <p class="text-xl font-bold text-green-600">${formatCurrency ? formatCurrency(s.pipeline_value) : s.pipeline_value.toLocaleString()}</p>
+      <p class="text-xs text-gray-400 mt-1">${s.pipeline_count} فرصة نشطة</p>
+    </div>
+    <div class="kpi-card" style="border-bottom-color:#16a34a">
+      <i class="kpi-card-icon fa-solid fa-circle-check text-green-100"></i>
+      <p class="text-xs text-gray-500 font-bold">إجمالي الفوز</p>
+      <p class="text-xl font-bold text-green-700">${formatCurrency ? formatCurrency(s.won_value) : s.won_value.toLocaleString()}</p>
+      <p class="text-xs text-gray-400 mt-1">رابح: ${s.leads_won} عميل</p>
+    </div>
+  `;
+}
+
+async function renderFunnel() {
+  const { data, error } = await db
+    .from('leads')
+    .select('status')
+    .not('status', 'in', '(won,lost)');
+
+  if (error) return;
+
+  const counts = {};
+  const order = ['new','contacted','qualified','opportunity'];
+  order.forEach(s => counts[s] = 0);
+  data.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+
+  const max = Math.max(...Object.values(counts), 1);
+  const html = order.map(s => {
+    const pct = Math.round((counts[s] / max) * 100);
+    return `
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 w-24 text-left shrink-0">${STATUS_LABELS[s]}</span>
+        <div class="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
+          <div class="funnel-bar h-full rounded-full flex items-center px-2"
+               style="width:${Math.max(pct,4)}%;background:${STATUS_COLORS[s]}">
+            <span class="text-white text-xs font-bold">${counts[s]}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('funnelChart').innerHTML = html || '<p class="text-gray-400 text-xs text-center py-6">لا يوجد عملاء محتملون بعد</p>';
+}
+
+async function renderPipelineChart() {
+  const { data, error } = await db
+    .from('opportunities')
+    .select('stage, estimated_value')
+    .not('stage', 'in', '(won,lost)');
+
+  if (error || !data.length) {
+    document.getElementById('pipelineChart').parentElement.innerHTML += '<p class="text-gray-400 text-xs text-center py-6">لا توجد فرص نشطة</p>';
+    return;
+  }
+
+  const byStage = {};
+  data.forEach(r => {
+    byStage[r.stage] = (byStage[r.stage] || 0) + (Number(r.estimated_value) || 0);
+  });
+
+  const labels = Object.keys(byStage).map(s => STAGE_LABELS[s] || s);
+  const values = Object.values(byStage);
+
+  new Chart(document.getElementById('pipelineChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'قيمة الفرص (EGP)', data: values,
+        backgroundColor: '#1B5E20', borderRadius: 6 }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { font: { family: 'Cairo', size: 11 } } }, y: { ticks: { font: { family: 'Cairo', size: 10 } } } }
+    }
+  });
+}
+
+async function renderRecentLeads() {
+  const { data, error } = await db
+    .from('leads')
+    .select('id, full_name, status, source, created_at, destination')
+    .order('created_at', { ascending: false })
+    .limit(8);
+
+  if (error || !data.length) {
+    document.getElementById('recentLeadsList').innerHTML = '<p class="text-gray-400 text-xs text-center py-6">لا يوجد عملاء محتملون</p>';
+    return;
+  }
+
+  document.getElementById('recentLeadsList').innerHTML = data.map(l => `
+    <a href="/nsp-control-8x4k/lead-detail.html?id=${l.id}"
+       class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition group">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+          ${(l.full_name||'؟')[0]}
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-gray-800 truncate">${l.full_name}</p>
+          <p class="text-xs text-gray-400 truncate">${l.destination || l.source || '—'}</p>
+        </div>
+      </div>
+      <span class="status-badge shrink-0 mr-2"
+            style="background:${STATUS_COLORS[l.status]}22;color:${STATUS_COLORS[l.status]}">
+        ${STATUS_LABELS[l.status]||l.status}
+      </span>
+    </a>
+  `).join('');
+}
+
+async function renderOverdueTasks(summary) {
+  document.getElementById('overdueCount').textContent = summary.overdue_tasks;
+
+  const { data, error } = await db
+    .from('tasks')
+    .select('id, title, due_at, priority, lead_id')
+    .lt('due_at', new Date().toISOString())
+    .neq('status', 'done')
+    .order('due_at', { ascending: true })
+    .limit(6);
+
+  if (error || !data.length) {
+    document.getElementById('overdueTasksList').innerHTML = '<p class="text-gray-400 text-xs text-center py-6">لا مهام متأخرة 👍</p>';
+    return;
+  }
+
+  const PRI = { urgent:'#ef4444', high:'#f97316', medium:'#f59e0b', low:'#6b7280' };
+  document.getElementById('overdueTasksList').innerHTML = data.map(t => `
+    <div class="flex items-start gap-2 p-2 rounded-lg bg-red-50 border border-red-100">
+      <span class="w-2 h-2 mt-1.5 rounded-full shrink-0" style="background:${PRI[t.priority]||'#6b7280'}"></span>
+      <div class="min-w-0">
+        <p class="text-xs font-bold text-gray-800 truncate">${t.title}</p>
+        <p class="text-xs text-red-500">${formatDate ? formatDate(t.due_at) : t.due_at?.slice(0,10)}</p>
+      </div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>
