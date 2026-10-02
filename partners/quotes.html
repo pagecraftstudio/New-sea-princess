@@ -94,7 +94,7 @@ async function load() {
   const pid = PartnerAuth.getPartnerId();
   // Quotes linked to this partner via partner_id field on quotations OR via b2b_partner_id
   const { data } = await db.from('quotations')
-    .select('id,quote_number,title,status,total_amount,currency,valid_until,created_at,travel_date_from,travel_date_to,adults_count')
+    .select('id,quote_number,title,status,total_amount,currency,validity_date,created_at,travel_date_from,travel_date_to,adults_count')
     .eq('b2b_partner_id', pid)
     .order('created_at',{ascending:false});
   _all = data || [];
